@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const SKOOL_URL = "https://www.skool.com/ai-pocket-agency-9047";
+const SKOOL_URL = "https://www.skool.com/aipocketagency";
 
 const deliverables: { label: string; value: string }[] = [
   { label: "The AI Brain Install", value: "$997" },
