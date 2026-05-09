@@ -26,6 +26,7 @@ export default function Page() {
   return (
     <main className="min-h-screen text-slate-100">
       <Hero />
+      <MemoryWall />
       <Hook />
       <DashboardPreview />
       <AntiGuru />
@@ -89,8 +90,9 @@ function Hero() {
           </span>
         </h1>
         <p className="mt-6 max-w-2xl text-balance text-lg text-slate-300 sm:text-xl">
-          Get the AI brain that makes it possible — the system I use to run
-          real software businesses from anywhere, with any agent.
+          Get the AI brain that makes it possible — the file-based memory
+          and multi-lane agent system I use to run real software businesses
+          from anywhere, with any agent. No more context walls.
         </p>
         <div className="mt-10">
           <PrimaryCTA
@@ -101,6 +103,45 @@ function Hero() {
         <p className="mt-4 text-sm text-slate-400">
           Locked for life · 50 spots only · Then $97/mo
         </p>
+      </div>
+    </section>
+  );
+}
+
+function MemoryWall() {
+  return (
+    <section className="border-b border-white/5 bg-gradient-to-b from-accent/[0.05] via-transparent to-transparent">
+      <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
+        <SectionLabel>The wall you just hit</SectionLabel>
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          Built for the wall you just hit.
+        </h2>
+        <div className="mt-6 space-y-5 text-lg text-slate-300">
+          <p>
+            You&apos;re vibe-coding a real SaaS. The agent&apos;s humming.
+            Then your context fills up around the 40k-token mark and you
+            don&apos;t know how to keep going. Multiple projects in parallel?
+            Forget it.
+          </p>
+          <p className="text-slate-100">
+            Your agent&apos;s context fills up at 40k tokens.{" "}
+            <span className="text-accent">
+              Mine doesn&apos;t — because the brain lives in files.
+            </span>
+          </p>
+          <p>
+            Persistent memory in markdown. Multi-lane agent orchestration.
+            Build one large app or ten in parallel without the working
+            memory of any single agent ever filling up. The agent reads
+            from the brain, decides, writes back. Tomorrow&apos;s agent
+            picks up exactly where today&apos;s left off.
+          </p>
+          <p className="text-slate-400">
+            This isn&apos;t a prompt trick. It&apos;s an operating system
+            for building software with AI — and it&apos;s the whole reason
+            the brain exists.
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -361,11 +402,13 @@ function Guarantee() {
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
         <SectionLabel>Guarantee</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          7-day setup or 1-on-1 coaching.
+          One command setup. You&apos;re building inside 5 minutes.
         </h2>
         <p className="mt-4 text-lg text-slate-300">
-          If you can&apos;t get your AI brain running in your business inside
-          7 days, I&apos;ll personally walk you through it on a call.
+          No 7-day onboarding. No 47-step checklist. Run the install
+          command, point your agent at the brain, ship your first task —
+          all inside the first 5 minutes. If something blocks you, I&apos;ll
+          personally walk you through it on a call.
         </p>
       </div>
     </section>
