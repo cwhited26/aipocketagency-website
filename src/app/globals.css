@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: #05070a;
+  color: #e6edf3;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* subtle grid backdrop on the hero */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
+}
+
+/* radial glow */
+.bg-hero-glow {
+  background: radial-gradient(
+      80% 50% at 50% 0%,
+      rgba(34, 211, 238, 0.18) 0%,
+      rgba(34, 211, 238, 0) 60%
+    ),
+    radial-gradient(
+      40% 30% at 80% 20%,
+      rgba(99, 102, 241, 0.18) 0%,
+      rgba(99, 102, 241, 0) 60%
+    );
+}
