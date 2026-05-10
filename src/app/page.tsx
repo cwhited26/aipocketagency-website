@@ -9,7 +9,7 @@ const deliverables: { label: string; value: string }[] = [
   { label: "The Skill Library", value: "$297" },
   { label: "The Discovery Call → Video Pipeline", value: "$397" },
   { label: "Live Builds 2-3x Weekly", value: "$1,200/yr" },
-  { label: "Founder's Office Hours", value: "$1,200/yr" },
+  { label: "Friday Office Hours", value: "$1,200/yr" },
   { label: "The Builder Network", value: "priceless" },
   { label: "Lifetime Updates", value: "$2,000+" },
 ];
@@ -129,6 +129,11 @@ function MemoryWall() {
               Mine doesn&apos;t — because the brain lives in files.
             </span>
           </p>
+          <p className="text-slate-100">
+            Your business&apos;s ceiling is the information you can hold in
+            your head.{" "}
+            <span className="text-accent">The brain raises that ceiling.</span>
+          </p>
           <p>
             Persistent memory in markdown. Multi-lane agent orchestration.
             Build one large app or ten in parallel without the working
@@ -150,7 +155,7 @@ function MemoryWall() {
 function Hook() {
   return (
     <section className="border-b border-white/5 bg-black/30">
-      <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
+      <div className="mx-auto max-w-3xl space-y-6 px-6 py-20 sm:py-24">
         <p className="text-balance text-xl leading-relaxed text-slate-200 sm:text-2xl">
           You shouldn&apos;t have to choose between building real businesses
           and living your life. Your AI brain is the operating system I built
@@ -161,6 +166,20 @@ function Hook() {
           <span className="text-accent">model-churn-resistant</span>, and built
           so the work happens when it shows up, not when you&apos;re chained
           to a desk.
+        </p>
+        <p className="text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
+          Wires into{" "}
+          <span className="text-slate-100">
+            Drive, Gmail, Slack, Calendar, Notion, Linear, GitHub
+          </span>{" "}
+          — anywhere with an MCP connector or API.{" "}
+          <span className="text-accent">Your stack stays yours.</span>
+        </p>
+        <p className="text-balance text-lg leading-relaxed text-slate-400 sm:text-xl">
+          Still building. Not exited.{" "}
+          <span className="text-slate-200">
+            You watch the actual decisions in real time.
+          </span>
         </p>
       </div>
     </section>
@@ -391,6 +410,16 @@ function Deliverables() {
             </span>
           </li>
         </ul>
+        <div className="mt-8 rounded-2xl border border-accent/30 bg-accent/[0.06] p-6 sm:p-7">
+          <div className="text-sm font-semibold uppercase tracking-wider text-accent">
+            Friday Office Hours
+          </div>
+          <p className="mt-2 text-base text-slate-200 sm:text-lg">
+            Bring your real stuck question, get an actual answer.{" "}
+            <span className="text-slate-100">Not pre-submitted. Not moderated.</span>{" "}
+            Real business, real stack, real question — every Friday at 3 PM ET.
+          </p>
+        </div>
       </div>
     </section>
   );
