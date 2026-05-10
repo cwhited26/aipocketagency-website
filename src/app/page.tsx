@@ -504,9 +504,9 @@ function FinalCTA() {
 
 function Footer() {
   const links: { label: string; href: string }[] = [
-    { label: "Whited Consulting", href: "https://whitedconsulting.com" },
+    { label: "Whited Consulting", href: "https://whited.consulting" },
     { label: "Buildout Studios", href: "https://buildoutstudios.com" },
-    { label: "AthleteOS", href: "https://athleteos.com" },
+    { label: "AthleteOS", href: "https://athlete-os.com" },
     { label: "Skool group", href: SKOOL_URL },
   ];
   return (
