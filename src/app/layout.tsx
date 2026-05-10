@@ -20,12 +20,28 @@ export const metadata: Metadata = {
     url: "https://aipocketagency.com",
     siteName: "AI Pocket Agency",
     type: "website",
+    images: [
+      {
+        url: "https://aipocketagency.com/og-share.png",
+        width: 1200,
+        height: 630,
+        alt: "AI Pocket Agency — Run an AI agency from your pocket",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "AI Pocket Agency — Built for the wall you just hit",
     description:
       "Your agent's context fills up at 40k tokens. The AI brain doesn't — because it lives in files. File-based memory + multi-lane agents for builders who refuse to start over.",
+    images: ["https://aipocketagency.com/og-share.png"],
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
   },
 };
 
