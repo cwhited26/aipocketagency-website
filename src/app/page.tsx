@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const SKOOL_URL = "https://www.skool.com/aipocketagency";
@@ -80,29 +81,42 @@ function Hero() {
     <section className="relative overflow-hidden border-b border-white/5">
       <div className="absolute inset-0 bg-grid opacity-40" aria-hidden />
       <div className="absolute inset-0 bg-hero-glow" aria-hidden />
-      <div className="relative mx-auto flex max-w-5xl flex-col items-center px-6 pb-20 pt-24 text-center sm:pt-32">
-        <SectionLabel>AI Pocket Agency · Founding 50</SectionLabel>
-        <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
-          Run an AI agency
-          <br />
-          <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
-            from your pocket.
-          </span>
-        </h1>
-        <p className="mt-6 max-w-2xl text-balance text-lg text-slate-300 sm:text-xl">
-          Get the AI brain that makes it possible — the file-based memory
-          and multi-lane agent system I use to run real software businesses
-          from anywhere, with any agent. No more context walls.
-        </p>
-        <div className="mt-10">
-          <PrimaryCTA
-            label="Join the Founding 50"
-            sublabel="$47/mo"
+      <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-24 sm:pt-32 lg:grid-cols-2 lg:gap-12">
+        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+          <SectionLabel>AI Pocket Agency · Founding 50</SectionLabel>
+          <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
+            Run an AI agency
+            <br />
+            <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
+              from your pocket.
+            </span>
+          </h1>
+          <p className="mt-6 max-w-2xl text-balance text-lg text-slate-300 sm:text-xl">
+            Get the AI brain that makes it possible — the file-based memory
+            and multi-lane agent system I use to run real software businesses
+            from anywhere, with any agent. No more context walls.
+          </p>
+          <div className="mt-10">
+            <PrimaryCTA
+              label="Join the Founding 50"
+              sublabel="$47/mo"
+            />
+          </div>
+          <p className="mt-4 text-sm text-slate-400">
+            Locked for life · 50 spots only · Then $97/mo
+          </p>
+        </div>
+        <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
+          <Image
+            src="/landing-hero.png"
+            alt="AI Pocket Agency — the brain that runs from your pocket"
+            width={1672}
+            height={941}
+            priority
+            sizes="(min-width: 1024px) 50vw, 100vw"
+            className="h-auto w-full rounded-2xl shadow-xl ring-1 ring-white/10"
           />
         </div>
-        <p className="mt-4 text-sm text-slate-400">
-          Locked for life · 50 spots only · Then $97/mo
-        </p>
       </div>
     </section>
   );
