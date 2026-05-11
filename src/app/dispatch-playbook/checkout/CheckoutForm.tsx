@@ -45,14 +45,14 @@ export default function CheckoutForm() {
     }
 
     setStatus("submitting");
-    const id = generateUuidV4();
+    const leadId = generateUuidV4();
 
     try {
       const res = await fetch("/api/apa/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id,
+          lead_id: leadId,
           name: trimmedName,
           email: trimmedEmail,
           phone: trimmedPhone || undefined,
