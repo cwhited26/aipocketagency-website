@@ -6,7 +6,7 @@ const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/test_dRm6oIf2Zgb08pfaNegQE00
 const PAGE_URL = "https://aipocketagency.com/dispatch-playbook";
 const PAGE_TITLE = "The Dispatch Playbook — pre-order $15";
 const PAGE_DESCRIPTION =
-  "Stop being scared to spawn parallel agents. The operator manual for running parallel Claude Code agents without them stepping on each other. Pre-order $15, ships in 2 weeks.";
+  "Stop being scared to spawn parallel agents. The operator manual for running parallel Claude Code agents without them stepping on each other. Pre-order $15, delivered to your inbox within 2 weeks of publish.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -110,7 +110,7 @@ function Hero() {
             className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
             style={{ fontFamily: MONO_FONT }}
           >
-            [ pre-order · $15 · ships in 2 weeks ]
+            [ pre-order · $15 · 2 weeks to inbox ]
           </div>
           <h1 className="text-balance text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
             <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
@@ -124,7 +124,7 @@ function Hero() {
             <PreorderCTA />
           </div>
           <p className="mt-4 text-sm text-slate-400">
-            Ships within 2 weeks · PDF + markdown
+            PDF + markdown · in your inbox within 2 weeks
           </p>
         </div>
       </div>
@@ -206,13 +206,13 @@ function TheDeal() {
       <div className="relative mx-auto flex max-w-3xl flex-col items-center px-6 py-24 text-center sm:py-28">
         <SectionLabel>the deal</SectionLabel>
         <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
-          $15. Ships within 2 weeks. First 50 buyers get the live walkthrough.
+          $15. Inbox within 2 weeks. First 50 buyers get the live walkthrough.
         </h2>
         <p className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
-          Pre-order today, ships within 2 weeks to your inbox. First 50 buyers
-          get an invite to a 30-minute live walkthrough call where I
-          screen-share my actual setup running 6 lanes at once and answer
-          questions.
+          Pre-order today. PDF + markdown bundle lands in your inbox within 2
+          weeks of publish. First 50 buyers get an invite to a 30-minute live
+          walkthrough call where I screen-share my actual setup running 6 lanes
+          at once and answer questions.
         </p>
         <div className="mt-10">
           <PreorderCTA />
@@ -236,9 +236,9 @@ function Footer() {
     <footer className="bg-black/40">
       <div className="mx-auto max-w-3xl px-6 py-12 text-center">
         <p className="text-sm leading-relaxed text-slate-400">
-          Ships as PDF + markdown to the email used at checkout. If you
-          don&apos;t get it within 2 weeks, full refund — just reply to the
-          receipt.
+          Delivered as PDF + markdown to the email used at checkout. If
+          it&apos;s not in your inbox within 2 weeks, full refund — just reply
+          to the receipt.
         </p>
       </div>
       <div className="border-t border-white/5">

@@ -439,7 +439,7 @@ function InsideCTA() {
           </div>
           <p className="text-balance text-sm text-slate-400 sm:text-base">
             Not ready for the community? Pre-order the Dispatch Playbook — $15.
-            Ships in 2 weeks.
+            Lands in your inbox in 2 weeks.
           </p>
           <Link
             href="/dispatch-playbook"
