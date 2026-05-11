@@ -438,14 +438,14 @@ function InsideCTA() {
             [ or — just the playbook ]
           </div>
           <p className="text-balance text-sm text-slate-400 sm:text-base">
-            Not ready for the community? Pre-order the Dispatch Playbook — $15.
-            Lands in your inbox in 2 weeks.
+            Not ready for the community? Grab the Dispatch Playbook — $15.
+            Instant download.
           </p>
           <Link
             href="/dispatch-playbook"
             className="mt-3 text-sm font-medium text-accent underline-offset-4 transition hover:underline"
           >
-            Pre-order →
+            Get the playbook →
           </Link>
         </div>
         <p className="mt-8 text-sm text-slate-400">

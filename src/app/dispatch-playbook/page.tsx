@@ -4,9 +4,9 @@ import Link from "next/link";
 const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/test_dRm6oIf2Zgb08pfaNegQE00";
 
 const PAGE_URL = "https://aipocketagency.com/dispatch-playbook";
-const PAGE_TITLE = "The Dispatch Playbook — pre-order $15";
+const PAGE_TITLE = "The Dispatch Playbook — $15 Instant Download | AI Pocket Agency";
 const PAGE_DESCRIPTION =
-  "Stop being scared to spawn parallel agents. The operator manual for running parallel Claude Code agents without them stepping on each other. Pre-order $15, delivered to your inbox within 2 weeks of publish.";
+  "Stop being scared to spawn parallel agents. The operator manual for running parallel Claude Code agents without them stepping on each other. $15, instant download — the PDF + markdown bundle lands in your inbox the moment Stripe confirms payment.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
         url: "https://aipocketagency.com/og-share.png",
         width: 1200,
         height: 630,
-        alt: "The Dispatch Playbook — pre-order $15",
+        alt: "The Dispatch Playbook — $15 instant download",
       },
     ],
   },
@@ -79,14 +79,14 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function PreorderCTA({ size = "lg" }: { size?: "md" | "lg" }) {
+function BuyCTA({ size = "lg" }: { size?: "md" | "lg" }) {
   const pad = size === "lg" ? "px-8 py-4 text-base sm:text-lg" : "px-6 py-3 text-base";
   return (
     <Link
       href={STRIPE_PAYMENT_LINK}
       className={`group inline-flex flex-col items-center gap-1 rounded-full bg-accent ${pad} font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] sm:flex-row sm:gap-3`}
     >
-      <span>Pre-order — $15</span>
+      <span>Buy — $15 instant download</span>
       <svg
         aria-hidden
         viewBox="0 0 20 20"
@@ -110,7 +110,7 @@ function Hero() {
             className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
             style={{ fontFamily: MONO_FONT }}
           >
-            [ pre-order · $15 · 2 weeks to inbox ]
+            [ $15 · instant download ]
           </div>
           <h1 className="text-balance text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
             <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
@@ -121,10 +121,10 @@ function Hero() {
             Stop being scared to spawn parallel agents.
           </p>
           <div className="mt-10">
-            <PreorderCTA />
+            <BuyCTA />
           </div>
           <p className="mt-4 text-sm text-slate-400">
-            PDF + markdown · in your inbox within 2 weeks
+            PDF + markdown · in your inbox the moment Stripe confirms payment
           </p>
         </div>
       </div>
@@ -206,16 +206,20 @@ function TheDeal() {
       <div className="relative mx-auto flex max-w-3xl flex-col items-center px-6 py-24 text-center sm:py-28">
         <SectionLabel>the deal</SectionLabel>
         <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
-          $15. Inbox within 2 weeks. First 50 buyers get the live walkthrough.
+          $15. Instant download. First 50 buyers get the live walkthrough.
         </h2>
         <p className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
-          Pre-order today. PDF + markdown bundle lands in your inbox within 2
-          weeks of publish. First 50 buyers get an invite to a 30-minute live
-          walkthrough call where I screen-share my actual setup running 6 lanes
-          at once and answer questions.
+          $15. Instant download. The moment Stripe confirms payment, the PDF +
+          markdown bundle lands in your inbox. No 2-week wait, no shipping
+          queue, no founder gate-keeping. You bought it, you have it.
+        </p>
+        <p className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
+          First 50 buyers get an invite to a 30-minute live walkthrough call
+          where I screen-share my actual setup running 6 lanes at once and
+          answer questions.
         </p>
         <div className="mt-10">
-          <PreorderCTA />
+          <BuyCTA />
         </div>
         <p className="mt-6 text-sm text-slate-400">
           Want the whole brain pattern, not just the playbook?{" "}
@@ -236,9 +240,9 @@ function Footer() {
     <footer className="bg-black/40">
       <div className="mx-auto max-w-3xl px-6 py-12 text-center">
         <p className="text-sm leading-relaxed text-slate-400">
-          Delivered as PDF + markdown to the email used at checkout. If
-          it&apos;s not in your inbox within 2 weeks, full refund — just reply
-          to the receipt.
+          Delivered as PDF + markdown to the email used at checkout. If it
+          doesn&apos;t land within minutes, full refund — just reply to the
+          receipt.
         </p>
       </div>
       <div className="border-t border-white/5">
