@@ -18,8 +18,30 @@ type MarkLeadPaidArgs = {
 type EmailEventArgs = {
   leadId: string;
   emailId: string;
-  event: "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained";
+  event: "sent" | "delivered" | "opened" | "clicked" | "bounced" | "unsubscribed";
 };
+
+export type DripEmailRow = {
+  id: string;
+  slug: string;
+  day_offset: number;
+  subject: string;
+  preheader: string;
+  html_body: string;
+  text_body: string;
+};
+
+export type DripLeadRow = {
+  id: string;
+  email: string;
+  name: string | null;
+  status: string;
+  drip_subscribed: boolean;
+  created_at: string;
+  email_sequence_state: Record<string, unknown>;
+};
+
+type FetchResult<T> = { ok: true; rows: T[] } | { ok: false; status: number; error: string };
 
 function supabaseEnv(): { url: string; key: string } | { error: string } {
   const url = process.env.WC_ADMIN_SUPABASE_URL;
@@ -78,6 +100,155 @@ export async function markApaLeadPaid(args: MarkLeadPaidArgs): Promise<InsertRes
       Prefer: "return=minimal",
     },
     body: JSON.stringify(patch),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  return { ok: true };
+}
+
+export async function fetchActiveDripEmails(): Promise<FetchResult<DripEmailRow>> {
+  const env = supabaseEnv();
+  if ("error" in env) {
+    return { ok: false, status: 500, error: env.error };
+  }
+
+  const endpoint =
+    `${env.url.replace(/\/$/, "")}/rest/v1/apa_drip_emails` +
+    `?select=id,slug,day_offset,subject,preheader,html_body,text_body` +
+    `&active=eq.true&order=day_offset.asc`;
+  const res = await fetch(endpoint, {
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  const rows = (await res.json()) as DripEmailRow[];
+  return { ok: true, rows };
+}
+
+export async function fetchDripEligibleLeads(
+  limit: number,
+): Promise<FetchResult<DripLeadRow>> {
+  const env = supabaseEnv();
+  if ("error" in env) {
+    return { ok: false, status: 500, error: env.error };
+  }
+
+  const endpoint =
+    `${env.url.replace(/\/$/, "")}/rest/v1/apa_leads` +
+    `?select=id,email,name,status,drip_subscribed,created_at,email_sequence_state` +
+    `&status=in.(paid,member)&drip_subscribed=eq.true` +
+    `&order=created_at.asc&limit=${encodeURIComponent(String(limit))}`;
+  const res = await fetch(endpoint, {
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  const rows = (await res.json()) as DripLeadRow[];
+  return { ok: true, rows };
+}
+
+export async function updateLeadSequenceState(
+  leadId: string,
+  sequenceState: Record<string, unknown>,
+): Promise<InsertResult> {
+  const env = supabaseEnv();
+  if ("error" in env) {
+    return { ok: false, status: 500, error: env.error };
+  }
+
+  const endpoint = `${env.url.replace(/\/$/, "")}/rest/v1/apa_leads?id=eq.${encodeURIComponent(leadId)}`;
+  const res = await fetch(endpoint, {
+    method: "PATCH",
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      email_sequence_state: sequenceState,
+      updated_at: new Date().toISOString(),
+    }),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  return { ok: true };
+}
+
+type LeadByIdResult =
+  | { ok: true; lead: DripLeadRow | null }
+  | { ok: false; status: number; error: string };
+
+export async function fetchLeadById(leadId: string): Promise<LeadByIdResult> {
+  const env = supabaseEnv();
+  if ("error" in env) {
+    return { ok: false, status: 500, error: env.error };
+  }
+
+  const endpoint =
+    `${env.url.replace(/\/$/, "")}/rest/v1/apa_leads` +
+    `?select=id,email,name,status,drip_subscribed,created_at,email_sequence_state` +
+    `&id=eq.${encodeURIComponent(leadId)}&limit=1`;
+  const res = await fetch(endpoint, {
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  const rows = (await res.json()) as DripLeadRow[];
+  return { ok: true, lead: rows[0] ?? null };
+}
+
+export async function setLeadDripSubscribed(
+  leadId: string,
+  subscribed: boolean,
+): Promise<InsertResult> {
+  const env = supabaseEnv();
+  if ("error" in env) {
+    return { ok: false, status: 500, error: env.error };
+  }
+
+  const endpoint = `${env.url.replace(/\/$/, "")}/rest/v1/apa_leads?id=eq.${encodeURIComponent(leadId)}`;
+  const res = await fetch(endpoint, {
+    method: "PATCH",
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      drip_subscribed: subscribed,
+      updated_at: new Date().toISOString(),
+    }),
     cache: "no-store",
   });
 
