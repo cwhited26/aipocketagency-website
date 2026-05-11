@@ -2,40 +2,18 @@ import Image from "next/image";
 import Link from "next/link";
 
 const SKOOL_URL = "https://www.skool.com/aipocketagency";
-
-const deliverables: { label: string; value: string }[] = [
-  { label: "The AI Brain Install", value: "$997" },
-  { label: "The Multi-Agent Workflow", value: "$497" },
-  { label: "The Custom Build Playbook", value: "$497" },
-  { label: "The Skill Library", value: "$297" },
-  { label: "The Discovery Call → Video Pipeline", value: "$397" },
-  { label: "Live Builds 2-3x Weekly", value: "$1,200/yr" },
-  { label: "Friday Office Hours", value: "$1,200/yr" },
-  { label: "The Builder Network", value: "priceless" },
-  { label: "Lifetime Updates", value: "$2,000+" },
-];
-
-const audience = [
-  "small business owner",
-  "content creator",
-  "service provider",
-  "aspiring agency builder",
-  "AI-curious entrepreneur",
-];
+const BUILDOUT_URL = "https://buildoutstudios.com";
 
 export default function Page() {
   return (
     <main className="min-h-screen text-slate-100">
       <Hero />
-      <MemoryWall />
-      <Hook />
-      <DashboardPreview />
-      <AntiGuru />
-      <Audience />
-      <Deliverables />
-      <Guarantee />
-      <Urgency />
-      <FinalCTA />
+      <Manifesto />
+      <Origin />
+      <HowItWorks />
+      <WhatItIsNot />
+      <WhoItsFor />
+      <InsideCTA />
       <Footer />
     </main>
   );
@@ -84,26 +62,25 @@ function Hero() {
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-24 sm:pt-32 lg:grid-cols-2 lg:gap-12">
         <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
           <SectionLabel>AI Pocket Agency · Founding 50</SectionLabel>
-          <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
-            Run an AI agency
-            <br />
+          <h1 className="text-balance text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
             <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
-              from your pocket.
+              Your AI brain.
             </span>
           </h1>
+          <p className="mt-6 text-balance text-xl text-slate-200 sm:text-2xl">
+            Built for the context wall you just hit.
+          </p>
           <p className="mt-6 max-w-2xl text-balance text-lg text-slate-300 sm:text-xl">
-            Get the AI brain that makes it possible — the file-based memory
-            and multi-lane agent system I use to run real software businesses
-            from anywhere, with any agent. No more context walls.
+            Persistent memory across every agent — Claude, Codex, Cursor,
+            Manus, Dispatch. Pull a decision you made today a year from now
+            and the system finds it. Nothing gets lost. No what, no why, no
+            how.
           </p>
           <div className="mt-10">
-            <PrimaryCTA
-              label="Join the Founding 50"
-              sublabel="$47/mo"
-            />
+            <PrimaryCTA label="Join the Founding 50" sublabel="$47/mo" />
           </div>
           <p className="mt-4 text-sm text-slate-400">
-            Locked for life · 50 spots only · Then $97/mo
+            Locked for life · 50 spots only
           </p>
         </div>
         <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
@@ -122,100 +99,26 @@ function Hero() {
   );
 }
 
-function MemoryWall() {
+function Manifesto() {
   return (
     <section className="border-b border-white/5 bg-gradient-to-b from-accent/[0.05] via-transparent to-transparent">
-      <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>The wall you just hit</SectionLabel>
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Built for the wall you just hit.
-        </h2>
-        <div className="mt-6 space-y-5 text-lg text-slate-300">
-          <p>
-            You&apos;re vibe-coding a real SaaS. The agent&apos;s humming.
-            Then your context fills up around the 40k-token mark and you
-            don&apos;t know how to keep going. Multiple projects in parallel?
-            Forget it.
-          </p>
-          <p className="text-slate-100">
-            Your agent&apos;s context fills up at 40k tokens.{" "}
-            <span className="text-accent">
-              Mine doesn&apos;t — because the brain lives in files.
-            </span>
-          </p>
-          <p className="text-slate-100">
-            Your business&apos;s ceiling is the information you can hold in
-            your head.{" "}
-            <span className="text-accent">The brain raises that ceiling.</span>
-          </p>
-          <p>
-            Persistent memory in markdown. Multi-lane agent orchestration.
-            Build one large app or ten in parallel without the working
-            memory of any single agent ever filling up. The agent reads
-            from the brain, decides, writes back. Tomorrow&apos;s agent
-            picks up exactly where today&apos;s left off.
-          </p>
-          <p className="text-slate-400">
-            This isn&apos;t a prompt trick. It&apos;s an operating system
-            for building software with AI — and it&apos;s the whole reason
-            the brain exists.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Hook() {
-  return (
-    <section className="border-b border-white/5 bg-black/30">
-      <div className="mx-auto max-w-3xl space-y-6 px-6 py-20 sm:py-24">
-        <p className="text-balance text-xl leading-relaxed text-slate-200 sm:text-2xl">
-          You shouldn&apos;t have to choose between building real businesses
-          and living your life. Your AI brain is the operating system I built
-          so I can run multiple software companies from a phone, from a job
-          site, from a hotel, from anywhere. It&apos;s a portable brain for
-          your business —{" "}
-          <span className="text-accent">agent-agnostic</span>,{" "}
-          <span className="text-accent">model-churn-resistant</span>, and built
-          so the work happens when it shows up, not when you&apos;re chained
-          to a desk.
-        </p>
-        <p className="text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
-          Wires into{" "}
-          <span className="text-slate-100">
-            Drive, Gmail, Slack, Calendar, Notion, Linear, GitHub
-          </span>{" "}
-          — anywhere with an MCP connector or API.{" "}
-          <span className="text-accent">Your stack stays yours.</span>
-        </p>
-        <p className="text-balance text-lg leading-relaxed text-slate-400 sm:text-xl">
-          Still building. Not exited.{" "}
-          <span className="text-slate-200">
-            You watch the actual decisions in real time.
-          </span>
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function DashboardPreview() {
-  return (
-    <section className="border-b border-white/5">
       <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
-        <div className="mb-8 text-center">
-          <SectionLabel>The receipt</SectionLabel>
+        <div className="mx-auto max-w-3xl">
+          <SectionLabel>The manifesto</SectionLabel>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             This is the brain that runs my businesses.
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-slate-400">
-            Real activity. Real decisions. Real velocity. The dashboard
-            isn&apos;t decoration — it&apos;s the receipt that the brain is
-            real, working, and producing measurable output.
+          <p className="mt-6 text-lg leading-relaxed text-slate-300 sm:text-xl">
+            You shouldn&apos;t have to choose between building real businesses
+            and living your life. Your AI brain is the operating system I built
+            so I can run multiple software companies from a phone, from a job
+            site, from a hotel, from anywhere. It&apos;s a portable brain for
+            your business — agent-agnostic, model-churn-resistant, and built so
+            the work happens when it shows up, not when you&apos;re chained to
+            a desk.
           </p>
         </div>
-        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-black shadow-2xl">
+        <div className="mt-12 relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-black shadow-2xl">
           <div className="flex items-center gap-2 border-b border-white/10 bg-black/60 px-4 py-3">
             <span className="h-3 w-3 rounded-full bg-red-500/70" />
             <span className="h-3 w-3 rounded-full bg-yellow-500/70" />
@@ -224,9 +127,6 @@ function DashboardPreview() {
           </div>
           <DashboardMock />
         </div>
-        <p className="mt-4 text-center text-xs text-slate-500">
-          Replace with real screenshot/GIF post-launch.
-        </p>
       </div>
     </section>
   );
@@ -306,130 +206,48 @@ function DashboardMock() {
   );
 }
 
-function AntiGuru() {
-  return (
-    <section className="border-b border-white/5 bg-gradient-to-b from-black/40 via-black/20 to-transparent">
-      <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>Anti-guru</SectionLabel>
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Tired of $47 AI courses that teach you how to ask Claude better
-          questions?
-        </h2>
-        <div className="mt-6 space-y-5 text-lg text-slate-300">
-          <p>
-            So am I. This isn&apos;t a course. It isn&apos;t a prompt pack.
-            It&apos;s the actual system — the AI brain — that I run my own
-            businesses on.
-          </p>
-          <p>
-            You get the structure, the conventions, the workflows, and the
-            live builds.{" "}
-            <span className="text-slate-100">Platform-agnostic.</span>{" "}
-            <span className="text-slate-100">Model-agnostic.</span> If the
-            agent landscape shifts tomorrow, your AI brain still works.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Audience() {
-  return (
-    <section className="border-b border-white/5">
-      <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>Built for you</SectionLabel>
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Built with beginners in mind.
-        </h2>
-        <p className="mt-3 text-lg text-slate-300">
-          No coding. No tech background. No overwhelm.
-        </p>
-        <ul className="mt-8 grid gap-3 sm:grid-cols-2">
-          {audience.map((a) => (
-            <li
-              key={a}
-              className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3"
-            >
-              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-accent/15 text-accent">
-                <svg
-                  aria-hidden
-                  viewBox="0 0 20 20"
-                  className="h-4 w-4"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.704 5.29a1 1 0 010 1.42l-7.5 7.5a1 1 0 01-1.42 0l-3.5-3.5a1 1 0 111.42-1.42L8.5 12.08l6.79-6.79a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </span>
-              <span className="text-base text-slate-200">{a}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-8 text-base text-slate-400">
-          If you&apos;re any of the above, this is built for you.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function Deliverables() {
+function Origin() {
   return (
     <section className="border-b border-white/5 bg-black/30">
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>What you get</SectionLabel>
+        <SectionLabel>Origin</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          The deliverables stack.
+          Why I built this
         </h2>
-        <ul className="mt-8 divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
-          {deliverables.map((d) => (
-            <li
-              key={d.label}
-              className="flex items-center gap-4 px-5 py-4 sm:px-6"
-            >
-              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-emerald-400/15 text-emerald-400">
-                <svg
-                  aria-hidden
-                  viewBox="0 0 20 20"
-                  className="h-4 w-4"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.704 5.29a1 1 0 010 1.42l-7.5 7.5a1 1 0 01-1.42 0l-3.5-3.5a1 1 0 111.42-1.42L8.5 12.08l6.79-6.79a1 1 0 011.414 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </span>
-              <span className="flex-1 text-base text-slate-200 sm:text-lg">
-                {d.label}
-              </span>
-              <span className="text-sm font-medium text-slate-400 sm:text-base">
-                {d.value}
-              </span>
-            </li>
-          ))}
-          <li className="flex items-center gap-4 bg-accent/10 px-5 py-5 sm:px-6">
-            <span className="flex-1 text-base font-semibold text-slate-100 sm:text-lg">
-              Total Value
-            </span>
-            <span className="text-lg font-bold text-accent sm:text-xl">
-              $7,000+
-            </span>
-          </li>
-        </ul>
-        <div className="mt-8 rounded-2xl border border-accent/30 bg-accent/[0.06] p-6 sm:p-7">
-          <div className="text-sm font-semibold uppercase tracking-wider text-accent">
-            Friday Office Hours
-          </div>
-          <p className="mt-2 text-base text-slate-200 sm:text-lg">
-            Bring your real stuck question, get an actual answer.{" "}
-            <span className="text-slate-100">Not pre-submitted. Not moderated.</span>{" "}
-            Real business, real stack, real question — every Friday at 3 PM ET.
+        <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
+          <p>
+            I was running multiple brands at the same time — brainstorming one,
+            building another, shipping a third, onboarding a client on a
+            fourth. It got messy fast. Agents started mixing things up. Folders
+            inside the platform didn&apos;t help. Manus would build something
+            Codex didn&apos;t know about. Claude Code would refactor a file
+            Cursor was halfway through. Every time I needed a different agent
+            for a different job, I was manually handing off context,
+            copy-pasting decisions, re-explaining what we&apos;d already
+            figured out.
+          </p>
+          <p>
+            The bigger problem: I&apos;m not at a desk. I&apos;m at my
+            kid&apos;s practice. Or a game. Or in the truck between job sites.
+            I needed to run all of this from my phone — approving the next
+            agent action, kicking off the next build, watching what shipped —
+            without sitting at a screen hitting &ldquo;allow&rdquo; every five
+            minutes hoping the agents kept things straight.
+          </p>
+          <p>
+            So I built the brain. File-based, git-versioned, readable by every
+            agent on the planet. Then I wired it to a dashboard so I could see
+            everything at a glance. Then I started using Dispatch — that&apos;s
+            when it all came together. I could spin up as many agents as I
+            needed in parallel, every one of them with the exact context they
+            needed to keep their lane straight. Manus running in one tab.
+            Codex remoted in another. Claude Code in three worktrees at once.
+            All sharing the same brain. None of them stepping on each other.
+          </p>
+          <p>
+            That&apos;s when I knew this was real. I was onboarding new
+            custom-build clients — going from a 30-minute discovery transcript
+            to a working MVP — in hours. From my phone. From wherever I was.
           </p>
         </div>
       </div>
@@ -437,63 +255,149 @@ function Deliverables() {
   );
 }
 
-function Guarantee() {
+function HowItWorks() {
   return (
     <section className="border-b border-white/5">
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>Guarantee</SectionLabel>
+        <SectionLabel>How it works</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          One command setup. You&apos;re building inside 5 minutes.
+          Your agent&apos;s context fills up at 40k tokens. Mine doesn&apos;t —
+          because the brain lives in files.
         </h2>
-        <p className="mt-4 text-lg text-slate-300">
-          No 7-day onboarding. No 47-step checklist. Run the install
-          command, point your agent at the brain, ship your first task —
-          all inside the first 5 minutes. If something blocks you, I&apos;ll
-          personally walk you through it on a call.
+        <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
+          <p>
+            Your business&apos;s ceiling is the information you can hold in
+            your head. The brain raises that ceiling.
+          </p>
+          <p>
+            Persistent memory in markdown. Multi-lane agent orchestration.
+            Build one large app or ten in parallel without the working memory
+            of any single agent ever filling up. The agent reads from the
+            brain, decides, writes back. Tomorrow&apos;s agent picks up exactly
+            where today&apos;s left off.
+          </p>
+        </div>
+        <div className="mt-10">
+          <h3 className="text-xl font-semibold text-slate-100 sm:text-2xl">
+            Two layers run in parallel:
+          </h3>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+              <div className="text-sm font-semibold uppercase tracking-wider text-accent">
+                Intentional
+              </div>
+              <p className="mt-3 text-base leading-relaxed text-slate-300">
+                your conventions, decisions, feature inventories, project
+                state. The stuff you&apos;d write down if you had time. The
+                brain writes it for you, then any agent reads it before it
+                touches anything.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+              <div className="text-sm font-semibold uppercase tracking-wider text-accent">
+                Ambient
+              </div>
+              <p className="mt-3 text-base leading-relaxed text-slate-300">
+                every conversation, every commit, every shipped change captured
+                automatically. Searchable a year from now. The full why behind
+                every what.
+              </p>
+            </div>
+          </div>
+        </div>
+        <p className="mt-8 text-lg leading-relaxed text-slate-300">
+          Wire it into{" "}
+          <span className="text-slate-100">
+            Drive, Gmail, Slack, Notion, Linear, GitHub, Supabase
+          </span>{" "}
+          — anything with an MCP or API.{" "}
+          <span className="text-accent">Your stack, your data.</span>
         </p>
       </div>
     </section>
   );
 }
 
-function Urgency() {
+function WhatItIsNot() {
   return (
-    <section className="border-b border-white/5 bg-gradient-to-b from-accent/5 via-transparent to-transparent">
+    <section className="border-b border-white/5 bg-gradient-to-b from-black/40 via-black/20 to-transparent">
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>Founding 50 only</SectionLabel>
+        <SectionLabel>What it is not</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          $47/mo. Locked for life.
+          It&apos;s not a prompt pack. It&apos;s not a skill builder.
         </h2>
-        <p className="mt-4 text-lg text-slate-300">
-          After the founding 50 fill, the price goes to{" "}
-          <span className="text-slate-100">$97/mo</span>. Existing members
-          keep $47/mo forever.
-        </p>
+        <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
+          <p>
+            I&apos;ve sat on AI workflow calls with operators charging $5k for
+            what amounts to a folder of GPTs and a Notion template. None of
+            them are doing this. They&apos;re stacking prompts. I&apos;m
+            running a system.
+          </p>
+          <p>
+            This isn&apos;t a prompt trick. It&apos;s an operating system for
+            building software with AI — and it&apos;s the whole reason the
+            brain exists.
+          </p>
+        </div>
       </div>
     </section>
   );
 }
 
-function FinalCTA() {
+function WhoItsFor() {
   return (
-    <section className="relative overflow-hidden border-b border-white/5">
+    <section className="border-b border-white/5">
+      <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
+        <SectionLabel>Who it&apos;s for</SectionLabel>
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          Who it&apos;s for
+        </h2>
+        <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
+          <p>
+            Agency operators running 4 client builds at once. Solo SaaS
+            builders shipping faster than they can document. Vibe-coders tired
+            of context resets killing the conversation right when it got good.
+            Anyone whose brain has become the bottleneck.
+          </p>
+          <p>
+            If you&apos;ve ever rebuilt the same context three times in one
+            week, this is for you.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function InsideCTA() {
+  return (
+    <section className="relative overflow-hidden border-b border-white/5 bg-gradient-to-b from-accent/5 via-transparent to-transparent">
       <div className="absolute inset-0 bg-hero-glow" aria-hidden />
       <div className="relative mx-auto flex max-w-3xl flex-col items-center px-6 py-24 text-center sm:py-28">
-        <h2 className="text-balance text-4xl font-extrabold tracking-tight sm:text-5xl">
-          Lock in the founding rate.
+        <SectionLabel>Inside</SectionLabel>
+        <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
+          $47/mo or $470/yr (save 2 months). Founding 50 only. Locked for life.
         </h2>
-        <p className="mt-4 max-w-xl text-balance text-lg text-slate-300">
-          Join the AI Pocket Agency. Get the brain. Run the work from
-          wherever you are.
+        <p className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
+          Five classroom modules. Mon Brain Build. Wed From the Road. Fri
+          Office Hours — your real stuck question, an actual answer, 3 PM ET.
         </p>
         <div className="mt-10">
           <PrimaryCTA
-            label="Lock in founding rate"
-            sublabel="$47/mo · Founding 50"
+            label="Join the Founding 50"
+            sublabel="$47/mo · Locked for life"
           />
         </div>
-        <p className="mt-4 text-sm text-slate-400">
-          Cancel anytime. The brain is yours regardless.
+        <p className="mt-6 text-sm text-slate-400">
+          Want it built FOR you instead?{" "}
+          <Link
+            href={BUILDOUT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent underline-offset-4 transition hover:underline"
+          >
+            buildoutstudios.com
+          </Link>
         </p>
       </div>
     </section>
