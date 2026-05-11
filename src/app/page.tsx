@@ -62,7 +62,12 @@ function Hero() {
       <div className="absolute inset-0 bg-hero-glow" aria-hidden />
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-24 sm:pt-32 lg:grid-cols-2 lg:gap-12">
         <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
-          <SectionLabel>AI Pocket Agency · Founding 50</SectionLabel>
+          <div
+            className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
+            style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
+          >
+            [ founding-50 · 47/mo · open ]
+          </div>
           <h1 className="text-balance text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
             <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
               Your AI brain.
