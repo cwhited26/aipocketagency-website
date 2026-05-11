@@ -18,7 +18,7 @@ type MarkLeadPaidArgs = {
 type EmailEventArgs = {
   leadId: string;
   emailId: string;
-  event: "sent" | "failed" | "opened" | "clicked" | "bounced" | "complained";
+  event: "sent" | "delivered" | "opened" | "clicked" | "bounced" | "complained";
 };
 
 function supabaseEnv(): { url: string; key: string } | { error: string } {

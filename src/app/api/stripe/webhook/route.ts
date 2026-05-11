@@ -159,18 +159,6 @@ async function handleCheckoutCompleted(session: CheckoutSession): Promise<void> 
       status: send.status,
       error: send.error,
     });
-    const ev = await insertApaEmailEvent({
-      leadId,
-      emailId: "delivery",
-      event: "failed",
-    });
-    if (!ev.ok) {
-      console.error("[stripe/webhook] failed to record email event (failed)", {
-        lead_id: leadId,
-        status: ev.status,
-        error: ev.error,
-      });
-    }
     return;
   }
 
