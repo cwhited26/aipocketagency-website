@@ -48,9 +48,11 @@ function PrimaryCTA({ label, sublabel }: { label: string; sublabel?: string }) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/5 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-accent">
-      <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-      {children}
+    <div
+      className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
+      style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
+    >
+      [ {children} ]
     </div>
   );
 }
@@ -110,7 +112,7 @@ function Manifesto() {
     <section className="border-b border-white/5 bg-gradient-to-b from-accent/[0.05] via-transparent to-transparent">
       <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
         <div className="mx-auto max-w-3xl">
-          <SectionLabel>The manifesto</SectionLabel>
+          <SectionLabel>manifesto</SectionLabel>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             This is the brain that runs my businesses.
           </h2>
@@ -216,7 +218,7 @@ function Origin() {
   return (
     <section className="border-b border-white/5 bg-black/30">
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>Origin</SectionLabel>
+        <SectionLabel>origin</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Why I built this
         </h2>
@@ -265,7 +267,7 @@ function HowItWorks() {
   return (
     <section className="border-b border-white/5">
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>How it works</SectionLabel>
+        <SectionLabel>how it works</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Your agent&apos;s context fills up at 40k tokens. Mine doesn&apos;t —
           because the brain lives in files.
@@ -328,7 +330,7 @@ function DevTeamArtifacts() {
   return (
     <section className="border-b border-white/5 bg-black/30">
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>Dev-team artifacts</SectionLabel>
+        <SectionLabel>in the brain</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           What&apos;s already in the brain on day one
         </h2>
@@ -360,7 +362,7 @@ function WhatItIsNot() {
   return (
     <section className="border-b border-white/5 bg-gradient-to-b from-black/40 via-black/20 to-transparent">
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>What it is not</SectionLabel>
+        <SectionLabel>not this</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           It&apos;s not a prompt pack. It&apos;s not a skill builder.
         </h2>
@@ -386,7 +388,7 @@ function WhoItsFor() {
   return (
     <section className="border-b border-white/5">
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>Who it&apos;s for</SectionLabel>
+        <SectionLabel>for</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Who it&apos;s for
         </h2>
@@ -414,7 +416,7 @@ function InsideCTA() {
     <section className="relative overflow-hidden border-b border-white/5 bg-gradient-to-b from-accent/5 via-transparent to-transparent">
       <div className="absolute inset-0 bg-hero-glow" aria-hidden />
       <div className="relative mx-auto flex max-w-3xl flex-col items-center px-6 py-24 text-center sm:py-28">
-        <SectionLabel>Inside</SectionLabel>
+        <SectionLabel>inside</SectionLabel>
         <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
           $47/mo or $470/yr (save 2 months). Founding 50 only. Locked for life.
         </h2>
