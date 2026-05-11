@@ -430,7 +430,25 @@ function InsideCTA() {
             sublabel="$47/mo · Locked for life"
           />
         </div>
-        <p className="mt-6 text-sm text-slate-400">
+        <div className="mt-12 flex w-full max-w-md flex-col items-center border-t border-white/10 pt-8">
+          <div
+            className="mb-3 whitespace-nowrap text-xs text-cyan-300/60"
+            style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
+          >
+            [ or — just the playbook ]
+          </div>
+          <p className="text-balance text-sm text-slate-400 sm:text-base">
+            Not ready for the community? Pre-order the Dispatch Playbook — $15.
+            Ships in 2 weeks.
+          </p>
+          <Link
+            href="/dispatch-playbook"
+            className="mt-3 text-sm font-medium text-accent underline-offset-4 transition hover:underline"
+          >
+            Pre-order →
+          </Link>
+        </div>
+        <p className="mt-8 text-sm text-slate-400">
           Want it built FOR you instead?{" "}
           <Link
             href={BUILDOUT_URL}
@@ -447,11 +465,12 @@ function InsideCTA() {
 }
 
 function Footer() {
-  const links: { label: string; href: string }[] = [
-    { label: "Whited Consulting", href: "https://whited.consulting" },
-    { label: "Buildout Studios", href: "https://buildoutstudios.com" },
-    { label: "AthleteOS", href: "https://athlete-os.com" },
-    { label: "Skool group", href: SKOOL_URL },
+  const links: { label: string; href: string; external?: boolean }[] = [
+    { label: "Whited Consulting", href: "https://whited.consulting", external: true },
+    { label: "Buildout Studios", href: "https://buildoutstudios.com", external: true },
+    { label: "AthleteOS", href: "https://athlete-os.com", external: true },
+    { label: "Dispatch Playbook", href: "/dispatch-playbook" },
+    { label: "Skool group", href: SKOOL_URL, external: true },
   ];
   return (
     <footer className="bg-black/40">
@@ -470,8 +489,9 @@ function Footer() {
             <li key={l.label}>
               <Link
                 href={l.href}
-                target="_blank"
-                rel="noopener noreferrer"
+                {...(l.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
                 className="transition hover:text-accent"
               >
                 {l.label}
