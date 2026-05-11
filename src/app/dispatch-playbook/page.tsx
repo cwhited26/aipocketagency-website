@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-const STRIPE_PAYMENT_LINK = "https://buy.stripe.com/test_dRm6oIf2Zgb08pfaNegQE00";
+const CHECKOUT_PATH = "/dispatch-playbook/checkout";
 
 const PAGE_URL = "https://aipocketagency.com/dispatch-playbook";
 const PAGE_TITLE = "The Dispatch Playbook — $15 Instant Download | AI Pocket Agency";
@@ -83,7 +83,7 @@ function BuyCTA({ size = "lg" }: { size?: "md" | "lg" }) {
   const pad = size === "lg" ? "px-8 py-4 text-base sm:text-lg" : "px-6 py-3 text-base";
   return (
     <Link
-      href={STRIPE_PAYMENT_LINK}
+      href={CHECKOUT_PATH}
       className={`group inline-flex flex-col items-center gap-1 rounded-full bg-accent ${pad} font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] sm:flex-row sm:gap-3`}
     >
       <span>Buy — $15 instant download</span>
