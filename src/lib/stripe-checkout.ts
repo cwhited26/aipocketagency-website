@@ -10,10 +10,7 @@ type CheckoutResult =
   | { ok: true; url: string }
   | { ok: false; status: number; error: string };
 
-const DISPATCH_PLAYBOOK_AMOUNT_CENTS = 1500;
-const DISPATCH_PLAYBOOK_NAME = "The Dispatch Playbook";
-const DISPATCH_PLAYBOOK_DESCRIPTION =
-  "PDF + markdown bundle — operator manual for running parallel Claude Code agents.";
+const DISPATCH_PLAYBOOK_PRICE_ID = "price_1TVyNTJ6S5nx9HK5MCGQTOoh";
 
 export async function createDispatchPlaybookCheckout(
   ctx: LeadContext,
@@ -34,19 +31,7 @@ export async function createDispatchPlaybookCheckout(
   );
   params.set("cancel_url", `${origin}/dispatch-playbook/checkout?cancelled=1`);
   params.set("line_items[0][quantity]", "1");
-  params.set("line_items[0][price_data][currency]", "usd");
-  params.set(
-    "line_items[0][price_data][unit_amount]",
-    String(DISPATCH_PLAYBOOK_AMOUNT_CENTS),
-  );
-  params.set(
-    "line_items[0][price_data][product_data][name]",
-    DISPATCH_PLAYBOOK_NAME,
-  );
-  params.set(
-    "line_items[0][price_data][product_data][description]",
-    DISPATCH_PLAYBOOK_DESCRIPTION,
-  );
+  params.set("line_items[0][price]", DISPATCH_PLAYBOOK_PRICE_ID);
   params.set("metadata[lead_id]", ctx.leadId);
   params.set("metadata[name]", ctx.name);
   params.set("metadata[phone]", ctx.phone);
