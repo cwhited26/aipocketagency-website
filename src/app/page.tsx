@@ -220,9 +220,7 @@ function DashboardPreview() {
             <span className="h-3 w-3 rounded-full bg-red-500/70" />
             <span className="h-3 w-3 rounded-full bg-yellow-500/70" />
             <span className="h-3 w-3 rounded-full bg-green-500/70" />
-            <span className="ml-3 text-xs text-slate-500">
-              brain.buildoutstudios.co
-            </span>
+            <span className="ml-3 text-xs text-slate-500">the brain</span>
           </div>
           <DashboardMock />
         </div>
