@@ -11,6 +11,7 @@ export default function Page() {
       <Manifesto />
       <Origin />
       <HowItWorks />
+      <DevTeamArtifacts />
       <WhatItIsNot />
       <WhoItsFor />
       <InsideCTA />
@@ -318,6 +319,38 @@ function HowItWorks() {
   );
 }
 
+function DevTeamArtifacts() {
+  return (
+    <section className="border-b border-white/5 bg-black/30">
+      <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
+        <SectionLabel>Dev-team artifacts</SectionLabel>
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          What&apos;s already in the brain on day one
+        </h2>
+        <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
+          <p>
+            You don&apos;t get an empty repo. You get the full dev-team
+            document set — coding conventions, architecture decision records,
+            feature inventories, change log and decision log scaffolds,
+            pre-build spec templates, agent rules, security gates, deployment
+            checklists. The same documents a senior engineering team would
+            build before shipping anything serious.
+          </p>
+          <p className="text-slate-100">
+            There are products on the market sold solely for this checklist.{" "}
+            <span className="text-accent">It&apos;s already in the brain.</span>
+          </p>
+          <p>
+            Non-technical operators end up with the same guardrails a
+            five-engineer team would have. The agents read these docs first,
+            every time, and refuse to ship slop.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function WhatItIsNot() {
   return (
     <section className="border-b border-white/5 bg-gradient-to-b from-black/40 via-black/20 to-transparent">
@@ -355,9 +388,11 @@ function WhoItsFor() {
         <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
           <p>
             Agency operators running 4 client builds at once. Solo SaaS
-            builders shipping faster than they can document. Vibe-coders tired
-            of context resets killing the conversation right when it got good.
-            Anyone whose brain has become the bottleneck.
+            builders shipping faster than they can document. Non-technical
+            founders who need their AI to build like a real dev team, not
+            vibe-code spaghetti. Vibe-coders tired of context resets killing
+            the conversation right when it got good. Anyone whose brain has
+            become the bottleneck.
           </p>
           <p>
             If you&apos;ve ever rebuilt the same context three times in one
