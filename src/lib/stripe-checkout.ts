@@ -6,6 +6,12 @@ type LeadContext = {
   name: string;
   phone: string;
   source: string;
+  /**
+   * If set, the buyer accepted the $10 order bump on the checkout page.
+   * The checkout session includes a second line item for the bump kit's
+   * $10 add-on price (looked up by `metadata.bump_price = 'true'`).
+   */
+  bumpSlug?: KitSlug;
 };
 
 type CheckoutResult =
@@ -27,23 +33,21 @@ type PriceLookupResult =
 const PRICE_CACHE_TTL_MS = 60 * 60 * 1000;
 type CacheEntry = { priceId: string; expiresAt: number };
 const priceCache = new Map<KitSlug, CacheEntry>();
+const bumpPriceCache = new Map<KitSlug, CacheEntry>();
 
-async function lookupPriceIdForKit(
+async function searchActivePrice(
   slug: KitSlug,
   secret: string,
+  filter: (p: { active: boolean; metadata?: Record<string, string> }) => boolean,
+  filterLabel: string,
 ): Promise<PriceLookupResult> {
-  const cached = priceCache.get(slug);
-  if (cached && cached.expiresAt > Date.now()) {
-    return { ok: true, priceId: cached.priceId };
-  }
-
   // `prices/search` is the canonical way to query by metadata. We constrain to
   // active prices so a deprecated/archived price never gets resold. The
   // Whited Stripe account's default API version pre-dates Search — pin a
   // modern version per-call rather than bumping the account default (which
   // would ripple across every other Stripe webhook this account already serves).
   const query = `active:'true' AND metadata['kit_slug']:'${slug}'`;
-  const url = `https://api.stripe.com/v1/prices/search?query=${encodeURIComponent(query)}&limit=2`;
+  const url = `https://api.stripe.com/v1/prices/search?query=${encodeURIComponent(query)}&limit=5`;
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${secret}`,
@@ -58,27 +62,75 @@ async function lookupPriceIdForKit(
   const body = (await res.json()) as {
     data?: Array<{ id: string; active: boolean; metadata?: Record<string, string> }>;
   };
-  const matches = (body.data ?? []).filter((p) => p.active && p.metadata?.kit_slug === slug);
+  const matches = (body.data ?? []).filter(filter);
   if (matches.length === 0) {
     return {
       ok: false,
       status: 404,
-      error: `No active Stripe price with metadata.kit_slug='${slug}'`,
+      error: `No active Stripe price for ${filterLabel} kit_slug='${slug}'`,
     };
   }
   if (matches.length > 1) {
     return {
       ok: false,
       status: 409,
-      error: `Multiple active Stripe prices with metadata.kit_slug='${slug}': ${matches
+      error: `Multiple active Stripe prices for ${filterLabel} kit_slug='${slug}': ${matches
         .map((m) => m.id)
         .join(", ")} — archive duplicates before checkout.`,
     };
   }
+  return { ok: true, priceId: matches[0].id };
+}
 
-  const priceId = matches[0].id;
-  priceCache.set(slug, { priceId, expiresAt: Date.now() + PRICE_CACHE_TTL_MS });
-  return { ok: true, priceId };
+async function lookupPriceIdForKit(
+  slug: KitSlug,
+  secret: string,
+): Promise<PriceLookupResult> {
+  const cached = priceCache.get(slug);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { ok: true, priceId: cached.priceId };
+  }
+  const result = await searchActivePrice(
+    slug,
+    secret,
+    (p) =>
+      p.active &&
+      p.metadata?.kit_slug === slug &&
+      p.metadata?.bump_price !== "true",
+    "primary",
+  );
+  if (result.ok) {
+    priceCache.set(slug, { priceId: result.priceId, expiresAt: Date.now() + PRICE_CACHE_TTL_MS });
+  }
+  return result;
+}
+
+/**
+ * Lookup the `$10 bump_price = true` price for a given kit slug. The bump
+ * price exists alongside the standard $15 price under the same Stripe
+ * product, with `metadata.bump_price = 'true'` discriminating it.
+ */
+async function lookupBumpPriceIdForKit(
+  slug: KitSlug,
+  secret: string,
+): Promise<PriceLookupResult> {
+  const cached = bumpPriceCache.get(slug);
+  if (cached && cached.expiresAt > Date.now()) {
+    return { ok: true, priceId: cached.priceId };
+  }
+  const result = await searchActivePrice(
+    slug,
+    secret,
+    (p) =>
+      p.active &&
+      p.metadata?.kit_slug === slug &&
+      p.metadata?.bump_price === "true",
+    "bump",
+  );
+  if (result.ok) {
+    bumpPriceCache.set(slug, { priceId: result.priceId, expiresAt: Date.now() + PRICE_CACHE_TTL_MS });
+  }
+  return result;
 }
 
 export async function createKitCheckout(
@@ -103,25 +155,64 @@ export async function createKitCheckout(
     return priceLookup;
   }
 
+  // Order bump (Russell-style): +$10 second line item for the kit listed in
+  // `kit.bumpTarget`. Looked up by `metadata.bump_price = 'true'` so a future
+  // price rename never silently re-prices the bump.
+  let bumpPriceId: string | null = null;
+  let bumpSlug: KitSlug | null = null;
+  if (ctx.bumpSlug) {
+    if (ctx.bumpSlug === kit.slug) {
+      return {
+        ok: false,
+        status: 400,
+        error: `Bump target cannot match primary kit: ${ctx.bumpSlug}`,
+      };
+    }
+    if (!getKitConfig(ctx.bumpSlug)) {
+      return {
+        ok: false,
+        status: 400,
+        error: `Unknown bump kit: ${ctx.bumpSlug}`,
+      };
+    }
+    const bumpLookup = await lookupBumpPriceIdForKit(ctx.bumpSlug, secret);
+    if (!bumpLookup.ok) {
+      return bumpLookup;
+    }
+    bumpPriceId = bumpLookup.priceId;
+    bumpSlug = ctx.bumpSlug;
+  }
+
   const params = new URLSearchParams();
   params.set("mode", "payment");
   params.set("customer_email", ctx.email);
   params.set("client_reference_id", ctx.leadId);
+  // Funnel slide: payment success drops the buyer at the bundle pitch first,
+  // not the kit's success page. The bundle page reads the session to know
+  // what they already bought, then makes the all-five-kits offer at $47.
   params.set(
     "success_url",
-    `${origin}/${kit.slug}/success?session_id={CHECKOUT_SESSION_ID}`,
+    `${origin}/upsell-bundle/{CHECKOUT_SESSION_ID}`,
   );
   params.set("cancel_url", `${origin}/${kit.slug}/checkout?cancelled=1`);
   params.set("line_items[0][quantity]", "1");
   params.set("line_items[0][price]", priceLookup.priceId);
+  if (bumpPriceId && bumpSlug) {
+    params.set("line_items[1][quantity]", "1");
+    params.set("line_items[1][price]", bumpPriceId);
+    params.set("metadata[bump_kit_slug]", bumpSlug);
+    params.set("payment_intent_data[metadata][bump_kit_slug]", bumpSlug);
+  }
   params.set("metadata[lead_id]", ctx.leadId);
   params.set("metadata[name]", ctx.name);
   params.set("metadata[phone]", ctx.phone);
   params.set("metadata[source]", ctx.source);
   params.set("metadata[kit_slug]", ctx.source);
+  params.set("metadata[funnel_stage]", "primary");
   params.set("payment_intent_data[metadata][lead_id]", ctx.leadId);
   params.set("payment_intent_data[metadata][source]", ctx.source);
   params.set("payment_intent_data[metadata][kit_slug]", ctx.source);
+  params.set("payment_intent_data[metadata][funnel_stage]", "primary");
 
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
@@ -147,3 +238,134 @@ export async function createKitCheckout(
 
 /** Legacy alias retained for older callers. New code should use `createKitCheckout`. */
 export const createDispatchPlaybookCheckout = createKitCheckout;
+
+type RetrievedSession = {
+  id: string;
+  client_reference_id: string | null;
+  customer: string | null;
+  customer_email: string | null;
+  payment_status: string;
+  amount_total: number | null;
+  metadata: Record<string, string> | null;
+};
+
+type RetrieveResult =
+  | { ok: true; session: RetrievedSession }
+  | { ok: false; status: number; error: string };
+
+/** Pull a Checkout Session by id — used by the bundle / skool funnel pages. */
+export async function retrieveCheckoutSession(
+  sessionId: string,
+): Promise<RetrieveResult> {
+  const secret = process.env.STRIPE_SECRET_KEY;
+  if (!secret) {
+    return { ok: false, status: 500, error: "STRIPE_SECRET_KEY not set" };
+  }
+  const res = await fetch(
+    `https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`,
+    {
+      headers: {
+        Authorization: `Bearer ${secret}`,
+        "Stripe-Version": "2024-09-30.acacia",
+      },
+      cache: "no-store",
+    },
+  );
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  const session = (await res.json()) as RetrievedSession;
+  return { ok: true, session };
+}
+
+type BundleDeltaArgs = {
+  leadId: string;
+  email: string;
+  /** Original primary kit slug — used to set cancel_url back to the bundle page. */
+  originSlug: KitSlug;
+  /** Original Stripe Checkout Session id — referenced in cancel + skool URLs. */
+  originSessionId: string;
+  /** Delta in cents to charge — `(bundle_target_usd - already_paid_usd) * 100`. */
+  deltaCents: number;
+};
+
+/**
+ * Mint a one-off Stripe Checkout Session for the bundle-upgrade delta.
+ *
+ * Uses `price_data` (inline price) rather than a pre-created price because the
+ * delta depends on what the buyer already paid (kit + optional bump). One
+ * price per session keeps Stripe clean and the math transparent.
+ */
+export async function createBundleUpgradeCheckout(
+  args: BundleDeltaArgs,
+  origin: string,
+): Promise<CheckoutResult> {
+  const secret = process.env.STRIPE_SECRET_KEY;
+  if (!secret) {
+    return { ok: false, status: 500, error: "STRIPE_SECRET_KEY not set" };
+  }
+  if (args.deltaCents <= 0) {
+    return {
+      ok: false,
+      status: 400,
+      error: `Bundle delta must be > 0, got ${args.deltaCents}`,
+    };
+  }
+
+  const params = new URLSearchParams();
+  params.set("mode", "payment");
+  params.set("customer_email", args.email);
+  params.set("client_reference_id", args.leadId);
+  params.set(
+    "success_url",
+    `${origin}/skool-invite/{CHECKOUT_SESSION_ID}?bundled=1&origin=${encodeURIComponent(args.originSessionId)}`,
+  );
+  params.set(
+    "cancel_url",
+    `${origin}/upsell-bundle/${encodeURIComponent(args.originSessionId)}?cancelled=1`,
+  );
+  params.set("line_items[0][quantity]", "1");
+  params.set("line_items[0][price_data][currency]", "usd");
+  params.set(
+    "line_items[0][price_data][product_data][name]",
+    "APA Kit Bundle Upgrade — all 5 kits",
+  );
+  params.set(
+    "line_items[0][price_data][product_data][description]",
+    "Upgrade to the full 5-kit bundle: Dispatch Playbook, Dev-Team Document Set, CLAUDE.md Template Library, Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack.",
+  );
+  params.set(
+    "line_items[0][price_data][unit_amount]",
+    String(args.deltaCents),
+  );
+  params.set("metadata[lead_id]", args.leadId);
+  params.set("metadata[origin_session_id]", args.originSessionId);
+  params.set("metadata[origin_kit_slug]", args.originSlug);
+  params.set("metadata[funnel_stage]", "bundle_upgrade");
+  params.set("payment_intent_data[metadata][lead_id]", args.leadId);
+  params.set("payment_intent_data[metadata][funnel_stage]", "bundle_upgrade");
+  params.set(
+    "payment_intent_data[metadata][origin_session_id]",
+    args.originSessionId,
+  );
+
+  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${secret}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: params.toString(),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  const data = (await res.json()) as { url?: string };
+  if (!data.url) {
+    return { ok: false, status: 500, error: "Stripe response missing url" };
+  }
+  return { ok: true, url: data.url };
+}

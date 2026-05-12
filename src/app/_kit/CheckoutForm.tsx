@@ -18,14 +18,29 @@ function generateUuidV4(): string {
 
 type Status = "idle" | "submitting" | "redirecting";
 
-export default function CheckoutForm({ source }: { source: string }) {
+export type BumpOffer = {
+  /** Display name of the bumped kit ("CLAUDE.md Template Library"). */
+  name: string;
+  /** One-line pitch tying the bump to the primary kit. */
+  pitch: string;
+};
+
+export default function CheckoutForm({
+  source,
+  bump,
+}: {
+  source: string;
+  bump: BumpOffer | null;
+}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [bumpChecked, setBumpChecked] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
 
   const busy = status !== "idle";
+  const total = bump && bumpChecked ? 25 : 15;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -57,6 +72,7 @@ export default function CheckoutForm({ source }: { source: string }) {
           email: trimmedEmail,
           phone: trimmedPhone || undefined,
           source,
+          bump: bump ? bumpChecked : false,
         }),
       });
 
@@ -121,6 +137,39 @@ export default function CheckoutForm({ source }: { source: string }) {
         />
       </div>
 
+      {bump ? (
+        <label
+          htmlFor="bump"
+          className={`mt-6 flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
+            bumpChecked
+              ? "border-accent/60 bg-accent/[0.06]"
+              : "border-white/15 bg-white/[0.02] hover:border-accent/40"
+          } ${busy ? "pointer-events-none opacity-60" : ""}`}
+        >
+          <input
+            id="bump"
+            type="checkbox"
+            checked={bumpChecked}
+            onChange={(e) => setBumpChecked(e.target.checked)}
+            disabled={busy}
+            className="mt-1 h-4 w-4 cursor-pointer rounded border-white/30 bg-black/40 accent-cyan-400"
+          />
+          <div className="flex-1 text-sm leading-relaxed text-slate-200">
+            <div className="font-semibold text-slate-100">
+              Yes — add{" "}
+              <span className="text-accent">{bump.name}</span> for just{" "}
+              <span className="text-slate-400 line-through">$15</span>{" "}
+              <span className="font-bold text-accent">+$10 more</span>
+            </div>
+            <div className="mt-1 text-slate-300">{bump.pitch}</div>
+            <div className="mt-2 text-xs text-slate-400">
+              Save $5 when you add it now — this price isn&apos;t shown anywhere
+              else on the site.
+            </div>
+          </div>
+        </label>
+      ) : null}
+
       {error ? (
         <div
           className="mt-5 rounded-xl border border-red-400/30 bg-red-400/[0.08] p-3 text-sm text-red-200"
@@ -139,7 +188,7 @@ export default function CheckoutForm({ source }: { source: string }) {
           ? "Starting checkout…"
           : status === "redirecting"
             ? "Redirecting to Stripe…"
-            : "Continue to payment →"}
+            : `Continue to payment · $${total} →`}
       </button>
     </form>
   );

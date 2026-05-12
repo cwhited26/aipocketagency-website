@@ -33,12 +33,13 @@ export default function Page({
   searchParams,
 }: {
   params: { "kit-slug": string };
-  searchParams: { session_id?: string; email?: string };
+  searchParams: { session_id?: string; email?: string; bundled?: string };
 }) {
   const slug = params["kit-slug"];
   if (!isKitSlug(slug)) {
     notFound();
   }
   const email = searchParams?.email?.trim() || "";
-  return <KitSuccessPage slug={slug} email={email} />;
+  const bundled = searchParams?.bundled === "1";
+  return <KitSuccessPage slug={slug} email={email} bundled={bundled} />;
 }

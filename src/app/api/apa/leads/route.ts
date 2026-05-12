@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { insertApaLead } from "@/lib/wc-admin-supabase";
 import { createKitCheckout } from "@/lib/stripe-checkout";
-import { isKitSlug } from "@/lib/kit-config";
+import { getKitConfig, isKitSlug, type KitSlug } from "@/lib/kit-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +18,7 @@ type LeadBody = {
   email?: unknown;
   phone?: unknown;
   source?: unknown;
+  bump?: unknown;
 };
 
 function pickTrimmed(...candidates: unknown[]): string {
@@ -60,6 +61,19 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const phone = phoneRaw || null;
 
+  // Russell order-bump: if `bump === true`, look up the kit's locked
+  // `bumpTarget` (defined in kit-config) and pass it to the checkout session.
+  // We do NOT accept an arbitrary bump slug from the client — the pairing is
+  // controlled server-side so a malicious form can't repackage the offer.
+  let bumpSlug: KitSlug | undefined;
+  if (body.bump === true) {
+    const sourceConfig = getKitConfig(source);
+    if (!sourceConfig) {
+      return badRequest(`Unknown kit source: ${source}`);
+    }
+    bumpSlug = sourceConfig.bumpTarget;
+  }
+
   const leadResult = await insertApaLead({
     id: leadId,
     name,
@@ -85,6 +99,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       name,
       phone: phone ?? "",
       source,
+      bumpSlug,
     },
     origin,
   );

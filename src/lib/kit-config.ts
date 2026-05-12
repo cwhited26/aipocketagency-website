@@ -34,7 +34,49 @@ export type KitConfig = {
   pdfPath: `/${string}.pdf`;
   /** Resend delivery subject when the buyer pays. */
   deliverySubject: string;
+  /**
+   * The kit Stripe should bundle into this checkout at +$10 if the buyer
+   * accepts the order bump. Russell-Brunson order-bump pairings — natural
+   * adjacencies that compound (Dispatch → Dev-Team artifacts, etc.).
+   */
+  bumpTarget: KitSlug;
 };
+
+/**
+ * Full bundle (all 5 kits) anchor + offer pricing. Locked in APA Decision Log
+ * 2026-05-11 (Russell-style funnel — anchor $97, offer $47, delta computed
+ * against what the buyer already paid for kit + optional bump).
+ */
+export const BUNDLE_PRICING = {
+  anchorUsd: 97,
+  offerUsd: 47,
+} as const;
+
+/**
+ * Single-kit retail (before any bump or bundle). Locked at unified $15 launch
+ * tier per Digital_Products_Catalog.md.
+ */
+export const KIT_RETAIL_USD = 15;
+
+/**
+ * Order-bump price (+$10 over the $15 retail when added at checkout).
+ * The Stripe price ID with this unit_amount is created per kit alongside the
+ * standard $15 price, marked with `metadata.bump_price = 'true'` and the same
+ * `kit_slug` metadata for lookup.
+ */
+export const BUMP_USD = 10;
+
+/** Skool community offer — locked anchor + founding-50 rate per APA decision log. */
+export const SKOOL_PRICING = {
+  anchorUsd: 97,
+  offerUsd: 47,
+  foundingSpots: 50,
+  /**
+   * Founding-50 spots remaining display value. Hard-coded here so the page
+   * doesn't have to hit the Skool API. Update by hand as members join.
+   */
+  spotsRemaining: 50,
+} as const;
 
 export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
   "dispatch-playbook": {
@@ -46,6 +88,7 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     ogAlt: "The Dispatch Playbook — $15 instant download",
     pdfPath: "/dispatch-playbook.pdf",
     deliverySubject: "Your Dispatch Playbook is here",
+    bumpTarget: "dev-team-document-set",
   },
   "dev-team-document-set": {
     slug: "dev-team-document-set",
@@ -56,6 +99,7 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     ogAlt: "The Dev-Team Document Set — $15 instant download",
     pdfPath: "/dev-team-document-set.pdf",
     deliverySubject: "Your Dev-Team Document Set is here",
+    bumpTarget: "claude-md-template-library",
   },
   "claude-md-template-library": {
     slug: "claude-md-template-library",
@@ -66,6 +110,7 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     ogAlt: "CLAUDE.md Template Library — $15 instant download",
     pdfPath: "/claude-md-template-library.pdf",
     deliverySubject: "Your CLAUDE.md Template Library is here",
+    bumpTarget: "wire-brain-to-stack-guide",
   },
   "discovery-to-mvp-prompt-pack": {
     slug: "discovery-to-mvp-prompt-pack",
@@ -76,6 +121,7 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     ogAlt: "Discovery → MVP Prompt Pack — $15 instant download",
     pdfPath: "/discovery-to-mvp-prompt-pack.pdf",
     deliverySubject: "Your Discovery → MVP Prompt Pack is here",
+    bumpTarget: "dispatch-playbook",
   },
   "wire-brain-to-stack-guide": {
     slug: "wire-brain-to-stack-guide",
@@ -86,6 +132,7 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     ogAlt: "Wire the Brain to Your Stack — $15 instant download",
     pdfPath: "/wire-brain-to-stack-guide.pdf",
     deliverySubject: "Your Wire-the-Brain guide is here",
+    bumpTarget: "discovery-to-mvp-prompt-pack",
   },
 };
 

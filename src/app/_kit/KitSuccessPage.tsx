@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { getKitConfig, type KitSlug } from "@/lib/kit-config";
+import {
+  getKitConfig,
+  KIT_CONFIG,
+  type KitSlug,
+} from "@/lib/kit-config";
 
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
@@ -9,14 +13,21 @@ const SKOOL_URL = "https://www.skool.com/aipocketagency";
 export default function KitSuccessPage({
   slug,
   email,
+  bundled,
 }: {
   slug: KitSlug;
   email: string;
+  bundled: boolean;
 }) {
   const kit = getKitConfig(slug);
   if (!kit) {
     throw new Error(`KitSuccessPage rendered with unknown slug: ${slug}`);
   }
+  const allKits = Object.values(KIT_CONFIG) as Array<{
+    slug: KitSlug;
+    shortName: string;
+    pdfPath: `/${string}.pdf`;
+  }>;
   return (
     <main className="min-h-screen text-slate-100">
       <section className="relative overflow-hidden border-b border-white/5">
@@ -35,25 +46,55 @@ export default function KitSuccessPage({
                 You&apos;re in.
               </span>
             </h1>
-            <p className="mt-6 max-w-xl text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
-              The {kit.shortName} PDF is being delivered to{" "}
-              {email ? (
-                <span className="font-medium text-slate-100">{email}</span>
-              ) : (
-                <>the email you used at checkout</>
-              )}
-              . Check your inbox within the next few minutes. If you don&apos;t
-              see it, check spam or reply to the receipt for help.
-            </p>
+            {bundled ? (
+              <p className="mt-6 max-w-xl text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
+                All 5 APA kits are being delivered to{" "}
+                {email ? (
+                  <span className="font-medium text-slate-100">{email}</span>
+                ) : (
+                  <>the email you used at checkout</>
+                )}
+                . Check your inbox within the next few minutes. If you don&apos;t
+                see them, check spam or reply to the receipt for help.
+              </p>
+            ) : (
+              <p className="mt-6 max-w-xl text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
+                The {kit.shortName} PDF is being delivered to{" "}
+                {email ? (
+                  <span className="font-medium text-slate-100">{email}</span>
+                ) : (
+                  <>the email you used at checkout</>
+                )}
+                . Check your inbox within the next few minutes. If you don&apos;t
+                see it, check spam or reply to the receipt for help.
+              </p>
+            )}
 
-            <div className="mt-10">
-              <Link
-                href={kit.pdfPath}
-                className="group inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)]"
-              >
-                Open the PDF now →
-              </Link>
-            </div>
+            {bundled ? (
+              <div className="mt-10 w-full max-w-md space-y-2">
+                {allKits.map((k) => (
+                  <Link
+                    key={k.slug}
+                    href={k.pdfPath}
+                    className="group flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left transition hover:border-accent/40 hover:bg-white/[0.07]"
+                  >
+                    <span className="text-sm font-medium text-slate-100">
+                      {k.shortName}
+                    </span>
+                    <span className="text-xs text-accent">Open PDF →</span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-10">
+                <Link
+                  href={kit.pdfPath}
+                  className="group inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)]"
+                >
+                  Open the PDF now →
+                </Link>
+              </div>
+            )}
 
             <p className="mt-8 text-sm text-slate-400">
               Want the live system that keeps these kits current?{" "}

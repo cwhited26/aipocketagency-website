@@ -13,6 +13,26 @@ type MarkLeadPaidArgs = {
   leadId: string;
   stripeCustomerId: string | null;
   stripePaymentIntentId: string | null;
+  /** Set when the buyer accepted the +$10 order bump at checkout. */
+  bumpedKitSlug?: string | null;
+};
+
+type MarkBundleArgs = {
+  leadId: string;
+  bundleSessionId: string;
+  bundlePaymentIntentId: string | null;
+};
+
+type LeadWithFunnel = {
+  id: string;
+  name: string | null;
+  email: string;
+  source: string;
+  status: string;
+  bumped_kit_slug: string | null;
+  bundle_upgraded: boolean;
+  bundle_stripe_session_id: string | null;
+  stripe_payment_intent_id: string | null;
 };
 
 type EmailEventArgs = {
@@ -97,6 +117,9 @@ export async function markApaLeadPaid(args: MarkLeadPaidArgs): Promise<InsertRes
     stripe_payment_intent_id: args.stripePaymentIntentId,
     updated_at: new Date().toISOString(),
   };
+  if (args.bumpedKitSlug !== undefined) {
+    patch.bumped_kit_slug = args.bumpedKitSlug;
+  }
   const res = await fetch(endpoint, {
     method: "PATCH",
     headers: {
@@ -114,6 +137,110 @@ export async function markApaLeadPaid(args: MarkLeadPaidArgs): Promise<InsertRes
     return { ok: false, status: res.status, error };
   }
   return { ok: true };
+}
+
+export async function recordBundleUpgradeSession(args: {
+  leadId: string;
+  bundleSessionId: string;
+}): Promise<InsertResult> {
+  const env = supabaseEnv();
+  if ("error" in env) {
+    return { ok: false, status: 500, error: env.error };
+  }
+  const endpoint = `${env.url.replace(/\/$/, "")}/rest/v1/apa_leads?id=eq.${encodeURIComponent(args.leadId)}`;
+  const patch = {
+    bundle_stripe_session_id: args.bundleSessionId,
+    updated_at: new Date().toISOString(),
+  };
+  const res = await fetch(endpoint, {
+    method: "PATCH",
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(patch),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  return { ok: true };
+}
+
+export async function markApaLeadBundleUpgraded(
+  args: MarkBundleArgs,
+): Promise<InsertResult> {
+  const env = supabaseEnv();
+  if ("error" in env) {
+    return { ok: false, status: 500, error: env.error };
+  }
+  const endpoint = `${env.url.replace(/\/$/, "")}/rest/v1/apa_leads?id=eq.${encodeURIComponent(args.leadId)}`;
+  const patch: Record<string, string | boolean | null> = {
+    bundle_upgraded: true,
+    bundle_stripe_session_id: args.bundleSessionId,
+    bundle_stripe_payment_intent_id: args.bundlePaymentIntentId,
+    bundle_paid_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  const res = await fetch(endpoint, {
+    method: "PATCH",
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify(patch),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  return { ok: true };
+}
+
+type FetchLeadFunnelResult =
+  | { ok: true; lead: LeadWithFunnel | null }
+  | { ok: false; status: number; error: string };
+
+export async function fetchLeadFunnelById(
+  leadId: string,
+): Promise<FetchLeadFunnelResult> {
+  const env = supabaseEnv();
+  if ("error" in env) {
+    return { ok: false, status: 500, error: env.error };
+  }
+  const cols = [
+    "id",
+    "name",
+    "email",
+    "source",
+    "status",
+    "bumped_kit_slug",
+    "bundle_upgraded",
+    "bundle_stripe_session_id",
+    "stripe_payment_intent_id",
+  ].join(",");
+  const endpoint =
+    `${env.url.replace(/\/$/, "")}/rest/v1/apa_leads` +
+    `?select=${cols}&id=eq.${encodeURIComponent(leadId)}&limit=1`;
+  const res = await fetch(endpoint, {
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+    },
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  const rows = (await res.json()) as LeadWithFunnel[];
+  return { ok: true, lead: rows[0] ?? null };
 }
 
 export async function fetchActiveDripEmails(): Promise<FetchResult<DripEmailRow>> {
