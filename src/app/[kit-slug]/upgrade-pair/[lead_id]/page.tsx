@@ -147,16 +147,18 @@ export default async function UpgradePairPage({
             </p>
           </div>
 
-          <div className="mt-10 overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
-            <Image
-              src={`/funnel-images/${bumpKit.slug}-hero.png`}
-              alt={bumpKit.ogAlt}
-              width={1200}
-              height={800}
-              priority
-              className="block w-full h-auto"
-            />
-          </div>
+          {bumpKit.heroAvailable ? (
+            <div className="mt-10 overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
+              <Image
+                src={`/funnel-images/${bumpKit.slug}-hero.png`}
+                alt={bumpKit.ogAlt}
+                width={1200}
+                height={800}
+                priority
+                className="block w-full h-auto"
+              />
+            </div>
+          ) : null}
 
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.04] p-7 shadow-[0_0_60px_-25px_rgba(99,102,241,0.55)] sm:p-9">
             <h2 className="text-2xl font-bold leading-tight text-slate-50 sm:text-3xl">

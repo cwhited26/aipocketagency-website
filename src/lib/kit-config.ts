@@ -73,6 +73,19 @@ export type KitConfig = {
    * leave this undefined render a bare hero + form treatment.
    */
   marketingContent?: KitMarketingContent;
+  /**
+   * Set to `true` ONLY when a clean per-kit hero PNG is sitting at
+   * `public/funnel-images/<slug>-hero.png`. When `false` the hero image
+   * is skipped entirely (page renders hero text + form, no broken-image
+   * box). Default to `false` for any new kit until art is verified.
+   *
+   * Background: 2026-05-12 audit caught all 5 then-shipped per-kit hero
+   * PNGs had a baked-in agent caption ("Premium PDF mockup · dark-mode
+   * launch asset") that leaked as visible artwork. The corrupt PNGs were
+   * deleted; this flag lets a kit re-enable its hero one-by-one as Chase
+   * delivers clean replacements.
+   */
+  heroAvailable: boolean;
 };
 
 /**
@@ -122,6 +135,7 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     pdfPath: "/dispatch-playbook.pdf",
     deliverySubject: "Your Dispatch Playbook is here",
     bumpTarget: "dev-team-document-set",
+    heroAvailable: false,
     marketingContent: {
       heroPill: "[ $15 · instant download ]",
       heroSubhead: "Stop being scared to spawn parallel agents.",
@@ -194,6 +208,7 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     pdfPath: "/dev-team-document-set.pdf",
     deliverySubject: "Your Dev-Team Document Set is here",
     bumpTarget: "claude-md-template-library",
+    heroAvailable: false,
   },
   "claude-md-template-library": {
     slug: "claude-md-template-library",
@@ -205,6 +220,7 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     pdfPath: "/claude-md-template-library.pdf",
     deliverySubject: "Your CLAUDE.md Template Library is here",
     bumpTarget: "wire-brain-to-stack-guide",
+    heroAvailable: false,
   },
   "discovery-to-mvp-prompt-pack": {
     slug: "discovery-to-mvp-prompt-pack",
@@ -216,6 +232,7 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     pdfPath: "/discovery-to-mvp-prompt-pack.pdf",
     deliverySubject: "Your Discovery → MVP Prompt Pack is here",
     bumpTarget: "dispatch-playbook",
+    heroAvailable: false,
   },
   "wire-brain-to-stack-guide": {
     slug: "wire-brain-to-stack-guide",
@@ -227,6 +244,7 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     pdfPath: "/wire-brain-to-stack-guide.pdf",
     deliverySubject: "Your Wire-the-Brain guide is here",
     bumpTarget: "discovery-to-mvp-prompt-pack",
+    heroAvailable: false,
   },
 };
 

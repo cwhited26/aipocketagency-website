@@ -34,6 +34,7 @@ export default function KitLandingPage({ slug }: { slug: KitSlug }) {
         slug={kit.slug}
         pill={content?.heroPill ?? "[ $15 · instant download ]"}
         subhead={content?.heroSubhead ?? kit.blurb}
+        showHeroImage={kit.heroAvailable}
       />
       {content ? <Problem content={content} /> : null}
       {content ? <WhatsInside content={content} /> : null}
@@ -64,12 +65,14 @@ function Hero({
   slug,
   pill,
   subhead,
+  showHeroImage,
 }: {
   fullName: string;
   ogAlt: string;
   slug: KitSlug;
   pill: string;
   subhead: string;
+  showHeroImage: boolean;
 }) {
   return (
     <section className="relative overflow-hidden border-b border-white/5">
@@ -91,16 +94,18 @@ function Hero({
           <p className="mt-6 text-balance text-lg text-slate-200 sm:text-xl">
             {subhead}
           </p>
-          <div className="mt-10 w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
-            <Image
-              src={`/funnel-images/${slug}-hero.png`}
-              alt={ogAlt}
-              width={1200}
-              height={800}
-              priority
-              className="block w-full h-auto"
-            />
-          </div>
+          {showHeroImage ? (
+            <div className="mt-10 w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
+              <Image
+                src={`/funnel-images/${slug}-hero.png`}
+                alt={ogAlt}
+                width={1200}
+                height={800}
+                priority
+                className="block w-full h-auto"
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </section>
