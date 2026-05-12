@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { insertApaLead } from "@/lib/wc-admin-supabase";
-import { createDispatchPlaybookCheckout } from "@/lib/stripe-checkout";
+import { createKitCheckout, getKitConfig } from "@/lib/stripe-checkout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,6 +55,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
   if (!name) return badRequest("Name is required");
   if (!EMAIL_RE.test(email)) return badRequest("Invalid email");
+  if (!getKitConfig(source)) return badRequest(`Unknown kit source: ${source}`);
 
   const phone = phoneRaw || null;
 
@@ -76,7 +77,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const origin = new URL(req.url).origin;
-  const checkout = await createDispatchPlaybookCheckout(
+  const checkout = await createKitCheckout(
     {
       leadId,
       email,
