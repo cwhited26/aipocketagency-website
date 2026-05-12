@@ -8,19 +8,19 @@ Image assets used across the APA funnel.
 | :--- | :--- | :--- | :--- | :--- |
 | `bundle-hero.png` | 1672×941 | ~16:9 | `/[kit-slug]/upgrade-bundle/[lead_id]` (hero) | LIVE — clean |
 | `skool-community-card.png` | 1200×675 | 16:9 | `/skool-invite/[session_id]` (hero) | LIVE — clean |
-| `dispatch-playbook-hero.png` | 1200×800 | 3:2 | `/[kit-slug]` (per-kit hero, gated) | PENDING REGEN |
-| `dev-team-document-set-hero.png` | 1200×800 | 3:2 | `/[kit-slug]` (per-kit hero, gated) | PENDING REGEN |
-| `claude-md-template-library-hero.png` | 1200×800 | 3:2 | `/[kit-slug]` (per-kit hero, gated) | PENDING REGEN |
-| `discovery-to-mvp-prompt-pack-hero.png` | 1200×800 | 3:2 | `/[kit-slug]` (per-kit hero, gated) | PENDING REGEN |
-| `wire-brain-to-stack-guide-hero.png` | 1200×800 | 3:2 | `/[kit-slug]` (per-kit hero, gated) | PENDING REGEN |
+| `dispatch-playbook-hero.png` | 1200×800 | 3:2 | `/[kit-slug]` (per-kit hero, gated) | LIVE — clean (2026-05-12 evening regen) |
+| `dev-team-document-set-hero.png` | 1200×800 | 3:2 | `/[kit-slug]` (per-kit hero, gated) | LIVE — clean (2026-05-12 evening regen) |
+| `claude-md-template-library-hero.png` | 1200×800 | 3:2 | `/[kit-slug]` (per-kit hero, gated) | LIVE — clean (2026-05-12 evening regen) |
+| `discovery-to-mvp-prompt-pack-hero.png` | 1200×800 | 3:2 | `/[kit-slug]` (per-kit hero, gated) | LIVE — clean (2026-05-12 evening regen) |
+| `wire-brain-to-stack-guide-hero.png` | 1200×800 | 3:2 | `/[kit-slug]` (per-kit hero, gated) | LIVE — clean (2026-05-12 evening regen) |
 
-## PENDING REGEN — pulled 2026-05-12
+## Regen history — 2026-05-12 evening
 
-The five per-kit hero PNGs were deleted on 2026-05-12 because they shipped with a baked-in agent caption ("Premium PDF mockup · dark-mode launch asset") that rendered as visible artwork in the upper-left of every per-kit landing page. Internal description, not customer copy.
+The five per-kit hero PNGs were deleted on 2026-05-12 (morning) because they shipped with a baked-in agent caption ("Premium PDF mockup · dark-mode launch asset") that rendered as visible artwork in the upper-left of every per-kit landing page. Internal description, not customer copy.
 
-Until clean replacements land, the per-kit hero `<Image>` element is gated by `KIT_CONFIG[slug].heroAvailable` (default `false`). Pages render hero text + form only — no broken-image box.
+ChatGPT regenerated all five clean on 2026-05-12 evening — no caption leak, proper `[ bracket ]` tag markers per kit (`[ dispatch playbook ]`, `[ docs ]`, `[ templates ]`, `[ prompts ]`, `[ systems ]`), AI Pocket Agency badge present. All five `heroAvailable` flags flipped to `true` in `src/lib/kit-config.ts`. `bundle-hero.png` and `skool-community-card.png` were also refreshed in the same batch.
 
-**To re-enable a kit's hero after regenerating:**
+**To re-enable a kit's hero after regenerating (future):**
 
 1. Drop the new PNG at `public/funnel-images/<slug>-hero.png`. Confirm with eyes (not just file presence) that no agent caption / mockup label / "premium PDF" subtitle is baked into the artwork.
 2. Flip `heroAvailable: true` for that kit in `src/lib/kit-config.ts`.
