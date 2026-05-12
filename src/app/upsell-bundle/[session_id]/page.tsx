@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { retrieveCheckoutSession } from "@/lib/stripe-checkout";
@@ -111,16 +112,15 @@ export default async function UpsellBundlePage({
             </p>
           </div>
 
-          {/* IMAGE-SLOT: 1200×675, stack of all 5 PDFs on iPad / phone / desktop — replace src when Chase delivers (see public/funnel-images/README.md) */}
-          <div className="mt-10 aspect-[16/9] w-full overflow-hidden rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/40 flex items-center justify-center text-slate-500 text-sm">
-            <div className="text-center">
-              <div className="font-semibold text-slate-400">
-                Placeholder: stack-of-5-pdfs.png
-              </div>
-              <div className="mt-1 text-xs">
-                1200×675 · stack of 5 kits on iPad / phone / desktop
-              </div>
-            </div>
+          <div className="mt-10 overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
+            <Image
+              src="/funnel-images/bundle-hero.png"
+              alt="All 5 AI Pocket Agency kits — Dispatch Playbook on MacBook, Dev-Team Document Set on iPad, CLAUDE.md Template Library on iPhone, Discovery → MVP Prompt Pack and Wire-the-Brain-to-Stack as physical PDFs"
+              width={1672}
+              height={941}
+              priority
+              className="block w-full h-auto"
+            />
           </div>
 
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.04] p-7 shadow-[0_0_60px_-25px_rgba(99,102,241,0.55)] sm:p-9">

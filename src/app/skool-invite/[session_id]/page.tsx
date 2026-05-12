@@ -85,14 +85,14 @@ export default async function SkoolInvitePage({
             </p>
           </div>
 
-          {/* IMAGE-SLOT: 1200×675, Skool community screenshot or mock — replace src when Chase delivers (see public/funnel-images/README.md) */}
+          {/* IMAGE-SLOT: 1200×675, Skool community card — replace dashed-border placeholder with <Image src="/funnel-images/skool-community-card.png" .../> when Chase delivers (see public/funnel-images/README.md) */}
           <div className="mt-10 aspect-[16/9] w-full overflow-hidden rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/40 flex items-center justify-center text-slate-500 text-sm">
             <div className="text-center">
               <div className="font-semibold text-slate-400">
-                Placeholder: skool-community.png
+                Placeholder: skool-community-card.png
               </div>
               <div className="mt-1 text-xs">
-                1200×675 · Skool community / classroom mockup
+                1200×675 · Skool community classroom card
               </div>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import CheckoutForm, { type BumpOffer } from "./CheckoutForm";
 import { getKitConfig, type KitSlug } from "@/lib/kit-config";
 
@@ -80,6 +81,22 @@ export default function KitCheckoutPage({
             We never share your info. Used only to deliver the kit and send
             occasional updates.
           </p>
+
+          <div className="mx-auto mt-16 max-w-xl">
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
+              <Image
+                src="/funnel-images/bundle-hero.png"
+                alt="All 5 AI Pocket Agency kits across MacBook, iPad, iPhone, and print"
+                width={1672}
+                height={941}
+                className="block w-full h-auto opacity-80"
+              />
+            </div>
+            <p className="mt-4 text-center text-xs text-slate-500">
+              The full stack — 5 kits across MacBook, iPad, iPhone, print. The
+              bundle offer is on the page right after checkout.
+            </p>
+          </div>
         </div>
       </section>
     </main>
