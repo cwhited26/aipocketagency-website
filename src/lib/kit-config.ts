@@ -20,6 +20,34 @@ export type KitSlug =
   | "discovery-to-mvp-prompt-pack"
   | "wire-brain-to-stack-guide";
 
+/**
+ * Per-kit marketing content rendered by `KitLandingPage` beneath the hero
+ * + form block. Optional — kits without a populated `marketingContent` get
+ * the bare hero + form treatment.
+ */
+export type KitMarketingContent = {
+  /** One-line hook displayed beneath the hero headline. */
+  heroSubhead: string;
+  /** "[ kit · …" pill label rendered in monospace above the hero headline. */
+  heroPill: string;
+  /** Section heading on the problem block. */
+  problemHeadline: string;
+  /** 2–3 short paragraphs of problem context. */
+  problemParagraphs: string[];
+  /** Section heading on the value-prop block. */
+  whatsInsideHeadline: string;
+  /** One-paragraph intro above the bulleted/numbered list. */
+  whatsInsideIntro: string;
+  /** Numbered value-prop items rendered as a list. */
+  whatsInsideItems: { n: number; title: string }[];
+  /** One-paragraph outro beneath the list. */
+  whatsInsideOutro: string;
+  /** Section heading on the close block above the form. */
+  dealHeadline: string;
+  /** 1–2 short paragraphs supporting the close. */
+  dealParagraphs: string[];
+};
+
 export type KitConfig = {
   slug: KitSlug;
   /** Display title used on cover pages, Stripe product name, email subject hooks. */
@@ -40,6 +68,11 @@ export type KitConfig = {
    * adjacencies that compound (Dispatch → Dev-Team artifacts, etc.).
    */
   bumpTarget: KitSlug;
+  /**
+   * Long-form marketing content rendered by `KitLandingPage`. Kits that
+   * leave this undefined render a bare hero + form treatment.
+   */
+  marketingContent?: KitMarketingContent;
 };
 
 /**
@@ -89,6 +122,67 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     pdfPath: "/dispatch-playbook.pdf",
     deliverySubject: "Your Dispatch Playbook is here",
     bumpTarget: "dev-team-document-set",
+    marketingContent: {
+      heroPill: "[ $15 · instant download ]",
+      heroSubhead: "Stop being scared to spawn parallel agents.",
+      problemHeadline: "Most operators using Claude Code never touch Dispatch.",
+      problemParagraphs: [
+        "They've heard about it. They know parallel lanes would let them ship 4 things at once instead of waiting on one chat. But the fear is real — agents stepping on each other, branches diverging, half-finished pushes, code they didn't write going to main.",
+        "So they stay single-threaded. Watch one agent work. Hit “allow” every 5 minutes. Wait.",
+      ],
+      whatsInsideHeadline: "The operator manual I should have had.",
+      whatsInsideIntro:
+        "The Dispatch Playbook is the operator manual I should have had when I started running parallel agents. Eleven sections covering:",
+      whatsInsideItems: [
+        { n: 1, title: "Why Dispatch matters (vs single-thread Claude Code)" },
+        { n: 2, title: "The “rogue agent” fear and why it’s solvable" },
+        { n: 3, title: "The 3-tier task model: cowork vs code vs main thread" },
+        {
+          n: 4,
+          title:
+            "Worktree-based parallel lane pattern (agents don’t step on each other)",
+        },
+        {
+          n: 5,
+          title:
+            "Standing rules every lane needs (rebase, verify push, self-cleanup)",
+        },
+        {
+          n: 6,
+          title:
+            "How to write a clean lane prompt (verbatim copy, success criteria, blockers)",
+        },
+        {
+          n: 7,
+          title:
+            "Verification discipline (lane-report vs disk vs remote vs behavior-verified)",
+        },
+        {
+          n: 8,
+          title:
+            "Parallel orchestration patterns (sequential, fan-out, watch-and-merge)",
+        },
+        {
+          n: 9,
+          title:
+            "Common failure modes (duplicate lanes, stale branches, push conflicts, FUSE EPERM, dispatch timeouts)",
+        },
+        {
+          n: 10,
+          title:
+            "Real example walkthroughs (Patrick / APA / TVE — client specifics scrubbed)",
+        },
+        { n: 11, title: "What to do when it goes wrong (abort, rollback, recover)" },
+      ],
+      whatsInsideOutro:
+        "PDF + markdown bundle, written in plain operator voice. No theory. No filler. Just the rules I run my own multi-agent setup on.",
+      dealHeadline:
+        "$15. Instant download. First 50 buyers get the live walkthrough.",
+      dealParagraphs: [
+        "$15. Instant download. The moment Stripe confirms payment, the PDF + markdown bundle lands in your inbox. No 2-week wait, no shipping queue, no founder gate-keeping. You bought it, you have it.",
+        "First 50 buyers get an invite to a 30-minute live walkthrough call where I screen-share my actual setup running 6 lanes at once and answer questions.",
+      ],
+    },
   },
   "dev-team-document-set": {
     slug: "dev-team-document-set",

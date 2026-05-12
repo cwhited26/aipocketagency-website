@@ -26,7 +26,7 @@ export default async function SkoolInvitePage({
   searchParams,
 }: {
   params: { session_id: string };
-  searchParams: { bundled?: string; origin?: string };
+  searchParams: { bundled?: string };
 }) {
   const sessionId = params.session_id;
   if (!sessionId || !sessionId.startsWith("cs_")) {
@@ -34,30 +34,30 @@ export default async function SkoolInvitePage({
   }
 
   // We tolerate session retrieval failures here — the Skool pitch shouldn't
-  // block on Stripe. We use the session only to enrich the success copy.
+  // block on Stripe. We use the session only to enrich the success copy
+  // and pick the right "skip" destination.
   const lookup = await retrieveCheckoutSession(sessionId);
   const session = lookup.ok ? lookup.session : null;
 
-  const bundled = searchParams?.bundled === "1";
-  const originSessionId = searchParams?.origin?.trim() || sessionId;
+  // The inline-funnel flow means there's exactly ONE Stripe session per
+  // checkout — `?bundled=1` is set by the success_url on bundle sessions
+  // and absent on kit / kit+pair sessions. We also fall back to the
+  // session metadata `funnel_stage` so a missing query param doesn't break
+  // the copy.
+  const bundled =
+    searchParams?.bundled === "1" ||
+    session?.metadata?.funnel_stage === "bundle_upgrade";
 
-  // If we came from /upsell-bundle, the buyer either skipped or bundled. The
-  // primary kit slug lives on the ORIGINAL session, not the bundle delta one.
-  let originKitSlug = session?.metadata?.kit_slug ?? null;
-  if (bundled && searchParams?.origin) {
-    const originLookup = await retrieveCheckoutSession(originSessionId);
-    if (originLookup.ok) {
-      originKitSlug = originLookup.session.metadata?.kit_slug ?? null;
-    }
-  }
+  const kitSlug =
+    session?.metadata?.kit_slug ??
+    session?.metadata?.source ??
+    session?.metadata?.origin_kit_slug ??
+    null;
   const primaryKit =
-    originKitSlug && isKitSlug(originKitSlug) ? getKitConfig(originKitSlug) : null;
+    kitSlug && isKitSlug(kitSlug) ? getKitConfig(kitSlug) : null;
 
-  // Where the "skip" link drops them — the kit-success page for what they
-  // already paid for. If we have neither origin nor session metadata, fall
-  // back to home.
   const skipHref = primaryKit
-    ? `/${primaryKit.slug}/success?session_id=${encodeURIComponent(originSessionId)}${bundled ? "&bundled=1" : ""}`
+    ? `/${primaryKit.slug}/success?session_id=${encodeURIComponent(sessionId)}${bundled ? "&bundled=1" : ""}`
     : "/";
 
   return (

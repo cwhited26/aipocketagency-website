@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { retrieveCheckoutSession } from "@/lib/stripe-checkout";
+import { fetchLeadFunnelById } from "@/lib/wc-admin-supabase";
 import {
   BUNDLE_PRICING,
-  KIT_RETAIL_USD,
   BUMP_USD,
+  KIT_RETAIL_USD,
   KIT_CONFIG,
   getKitConfig,
   isKitSlug,
   type KitSlug,
 } from "@/lib/kit-config";
-import BundleUpgradeButton from "./BundleUpgradeButton";
+import FunnelCheckoutButtons from "./FunnelCheckoutButtons";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -20,70 +19,64 @@ export const runtime = "nodejs";
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
+const UUID_V4_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export function generateMetadata(): Metadata {
   return {
-    title: "One more thing — APA Kit Bundle | AI Pocket Agency",
+    title: "Last call — APA kit bundle | AI Pocket Agency",
     description:
       "All five APA kits, packaged once. $47 — anchor $97. This price isn't shown anywhere else on the site.",
     robots: { index: false, follow: false },
   };
 }
 
-function dollarsFromCents(cents: number | null): number {
-  if (!cents || !Number.isFinite(cents)) return 0;
-  return Math.round(cents) / 100;
-}
-
-export default async function UpsellBundlePage({
+export default async function UpgradeBundlePage({
   params,
   searchParams,
 }: {
-  params: { session_id: string };
-  searchParams: { cancelled?: string };
+  params: { "kit-slug": string; lead_id: string };
+  searchParams: { pair?: string };
 }) {
-  const sessionId = params.session_id;
-  if (!sessionId || !sessionId.startsWith("cs_")) {
-    notFound();
-  }
+  const slug = params["kit-slug"];
+  const leadId = params.lead_id;
 
-  const lookup = await retrieveCheckoutSession(sessionId);
+  if (!isKitSlug(slug)) notFound();
+  if (!UUID_V4_RE.test(leadId)) notFound();
+
+  const lookup = await fetchLeadFunnelById(leadId);
   if (!lookup.ok) {
-    console.error("[upsell-bundle] failed to retrieve session", {
-      session_id: sessionId,
+    console.error("[upgrade-bundle] failed to load lead", {
+      lead_id: leadId,
       status: lookup.status,
       error: lookup.error,
     });
     notFound();
   }
-  const session = lookup.session;
-  const kitSlugRaw = session.metadata?.kit_slug ?? session.metadata?.source;
-  const bumpSlugRaw = session.metadata?.bump_kit_slug ?? null;
-  const leadId = session.client_reference_id;
-
-  if (!kitSlugRaw || !isKitSlug(kitSlugRaw) || !leadId) {
-    console.error("[upsell-bundle] session missing kit metadata", {
-      session_id: sessionId,
-      metadata: session.metadata,
+  if (!lookup.lead) notFound();
+  if (lookup.lead.source !== slug) {
+    console.error("[upgrade-bundle] slug/source mismatch", {
+      lead_id: leadId,
+      url_slug: slug,
+      lead_source: lookup.lead.source,
     });
     notFound();
   }
-  const primaryKit = getKitConfig(kitSlugRaw);
-  const bumpKit =
-    bumpSlugRaw && isKitSlug(bumpSlugRaw) ? getKitConfig(bumpSlugRaw) : null;
-  if (!primaryKit) notFound();
 
-  const paidUsd = dollarsFromCents(session.amount_total);
-  // Authoritative "what they paid": Stripe `amount_total` is the source of truth.
-  // The catalog math (KIT_RETAIL_USD + BUMP_USD) is a fallback if the session
-  // omits a total for any reason (sandbox / promotion / off-Stripe edits).
-  const expectedUsd = KIT_RETAIL_USD + (bumpKit ? BUMP_USD : 0);
-  const effectivePaidUsd = paidUsd > 0 ? paidUsd : expectedUsd;
-  const deltaUsd = Math.max(0, BUNDLE_PRICING.offerUsd - effectivePaidUsd);
+  const primaryKit = getKitConfig(slug);
+  if (!primaryKit) notFound();
+  const pairAccepted = searchParams?.pair === "1";
+  const bumpKit = pairAccepted ? getKitConfig(primaryKit.bumpTarget) : null;
+
+  const alreadyCommittedUsd =
+    KIT_RETAIL_USD + (pairAccepted ? BUMP_USD : 0);
+  const deltaUsd = Math.max(
+    0,
+    BUNDLE_PRICING.offerUsd - alreadyCommittedUsd,
+  );
   const remainingKits = (
     Object.values(KIT_CONFIG) as Array<{ slug: KitSlug; shortName: string }>
   ).filter((k) => k.slug !== primaryKit.slug && (!bumpKit || k.slug !== bumpKit.slug));
-
-  const cancelled = searchParams?.cancelled === "1";
 
   return (
     <main className="min-h-screen text-slate-100">
@@ -96,26 +89,25 @@ export default async function UpsellBundlePage({
               className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
               style={{ fontFamily: MONO_FONT }}
             >
-              [ paid · one-time offer ]
+              [ step 2 of 2 · last call ]
             </div>
             <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
               <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
-                Wait — one more thing before you get your kit.
+                One last thing — the full stack at a price you won&apos;t see again.
               </span>
             </h1>
             <p className="mt-5 text-lg text-slate-300 sm:text-xl">
               Your {primaryKit.shortName}
-              {bumpKit ? <> + {bumpKit.shortName}</> : null} is on its way to
-              your inbox. Before you go, an offer for the other{" "}
-              {bumpKit ? "three" : "four"} kits — at a price that doesn&apos;t
-              show up anywhere else on the site.
+              {bumpKit ? <> + {bumpKit.shortName}</> : null} is queued. Before
+              payment, an offer for the other {remainingKits.length} kits — at
+              a price that doesn&apos;t show up anywhere else on the site.
             </p>
           </div>
 
           <div className="mt-10 overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
             <Image
               src="/funnel-images/bundle-hero.png"
-              alt="All 5 AI Pocket Agency kits — Dispatch Playbook on MacBook, Dev-Team Document Set on iPad, CLAUDE.md Template Library on iPhone, Discovery → MVP Prompt Pack and Wire-the-Brain-to-Stack as physical PDFs"
+              alt="All 5 AI Pocket Agency kits — Dispatch Playbook, Dev-Team Document Set, CLAUDE.md Template Library, Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack"
               width={1672}
               height={941}
               priority
@@ -179,16 +171,18 @@ export default async function UpsellBundlePage({
                 <span className="text-sm text-slate-400">today only</span>
               </div>
               <div className="mt-3 text-sm leading-relaxed text-slate-300">
-                You already paid ${effectivePaidUsd.toFixed(0)}, so today
-                it&apos;s{" "}
+                You&apos;d pay ${alreadyCommittedUsd} for what&apos;s already
+                queued. Add the rest now and the full stack is{" "}
                 <span className="font-bold text-slate-100">
-                  ${deltaUsd.toFixed(0)} more
-                </span>{" "}
-                for the remaining {remainingKits.length} kits. That&apos;s $
-                {(BUNDLE_PRICING.anchorUsd - BUNDLE_PRICING.offerUsd).toFixed(0)}{" "}
-                off retail, and less than the cost of{" "}
-                {Math.floor(BUNDLE_PRICING.offerUsd / KIT_RETAIL_USD)} kits at
-                $15 each.
+                  ${BUNDLE_PRICING.offerUsd}
+                </span>
+                {deltaUsd > 0 ? (
+                  <>
+                    {" "}
+                    — that&apos;s ${deltaUsd} more for the remaining{" "}
+                    {remainingKits.length} kits.
+                  </>
+                ) : null}
               </div>
               <div className="mt-3 text-xs text-slate-500">
                 This price isn&apos;t shown anywhere else on the site. Skip
@@ -196,30 +190,16 @@ export default async function UpsellBundlePage({
               </div>
             </div>
 
-            {cancelled ? (
-              <div
-                className="mt-6 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] p-3 text-center text-sm text-amber-200"
-                role="status"
-              >
-                Bundle upgrade cancelled — no charge made. Your original kit is
-                still being delivered.
-              </div>
-            ) : null}
-
             <div className="mt-8">
-              <BundleUpgradeButton
-                sessionId={sessionId}
-                deltaUsd={deltaUsd}
-                remainingCount={remainingKits.length}
+              <FunnelCheckoutButtons
+                leadId={leadId}
+                pair={pairAccepted}
+                bundleDeltaUsd={deltaUsd}
+                pairAddOnUsd={pairAccepted ? BUMP_USD : 0}
+                primaryUsd={KIT_RETAIL_USD}
+                primaryShortName={primaryKit.shortName}
+                bumpShortName={bumpKit?.shortName ?? null}
               />
-              <div className="mt-4 text-center">
-                <Link
-                  href={`/skool-invite/${encodeURIComponent(sessionId)}`}
-                  className="text-sm text-slate-400 underline-offset-4 transition hover:text-slate-200 hover:underline"
-                >
-                  No thanks, just give me my kit
-                </Link>
-              </div>
             </div>
           </div>
         </div>

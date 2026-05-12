@@ -187,14 +187,17 @@ export async function createKitCheckout(
   params.set("mode", "payment");
   params.set("customer_email", ctx.email);
   params.set("client_reference_id", ctx.leadId);
-  // Funnel slide: payment success drops the buyer at the bundle pitch first,
-  // not the kit's success page. The bundle page reads the session to know
-  // what they already bought, then makes the all-five-kits offer at $47.
+  // Bundle interstitial now happens BEFORE Stripe (the funnel asks pair +
+  // bundle inline, then mints the right session). Success goes straight to
+  // the Skool community pitch.
   params.set(
     "success_url",
-    `${origin}/upsell-bundle/{CHECKOUT_SESSION_ID}`,
+    `${origin}/skool-invite/{CHECKOUT_SESSION_ID}`,
   );
-  params.set("cancel_url", `${origin}/${kit.slug}/checkout?cancelled=1`);
+  params.set(
+    "cancel_url",
+    `${origin}/${kit.slug}/upgrade-bundle/${encodeURIComponent(ctx.leadId)}?pair=${ctx.bumpSlug ? "1" : "0"}&cancelled=1`,
+  );
   params.set("line_items[0][quantity]", "1");
   params.set("line_items[0][price]", priceLookup.priceId);
   if (bumpPriceId && bumpSlug) {
@@ -236,9 +239,6 @@ export async function createKitCheckout(
   return { ok: true, url: data.url };
 }
 
-/** Legacy alias retained for older callers. New code should use `createKitCheckout`. */
-export const createDispatchPlaybookCheckout = createKitCheckout;
-
 type RetrievedSession = {
   id: string;
   client_reference_id: string | null;
@@ -279,37 +279,37 @@ export async function retrieveCheckoutSession(
   return { ok: true, session };
 }
 
-type BundleDeltaArgs = {
+type BundleCheckoutArgs = {
   leadId: string;
   email: string;
-  /** Original primary kit slug — used to set cancel_url back to the bundle page. */
+  /** The kit slug the buyer started the funnel from — preserved on the
+   *  session metadata so wc-admin attribution still tracks "first touch". */
   originSlug: KitSlug;
-  /** Original Stripe Checkout Session id — referenced in cancel + skool URLs. */
-  originSessionId: string;
-  /** Delta in cents to charge — `(bundle_target_usd - already_paid_usd) * 100`. */
-  deltaCents: number;
+  /** Bundle price in cents (canonically `BUNDLE_PRICING.offerUsd * 100`). */
+  unitAmountCents: number;
 };
 
 /**
- * Mint a one-off Stripe Checkout Session for the bundle-upgrade delta.
+ * Mint a Stripe Checkout Session for the all-5-kit bundle.
  *
- * Uses `price_data` (inline price) rather than a pre-created price because the
- * delta depends on what the buyer already paid (kit + optional bump). One
- * price per session keeps Stripe clean and the math transparent.
+ * Single inline `price_data` line item at the bundle price. The webhook
+ * branches on `funnel_stage = bundle_upgrade` to deliver all 5 PDFs and
+ * stamp `apa_leads.bundle_upgraded = true`. Used by the inline funnel
+ * after the buyer accepts the bundle pitch on /upgrade-bundle.
  */
-export async function createBundleUpgradeCheckout(
-  args: BundleDeltaArgs,
+export async function createBundleCheckout(
+  args: BundleCheckoutArgs,
   origin: string,
 ): Promise<CheckoutResult> {
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) {
     return { ok: false, status: 500, error: "STRIPE_SECRET_KEY not set" };
   }
-  if (args.deltaCents <= 0) {
+  if (args.unitAmountCents <= 0) {
     return {
       ok: false,
       status: 400,
-      error: `Bundle delta must be > 0, got ${args.deltaCents}`,
+      error: `Bundle price must be > 0, got ${args.unitAmountCents}`,
     };
   }
 
@@ -319,36 +319,32 @@ export async function createBundleUpgradeCheckout(
   params.set("client_reference_id", args.leadId);
   params.set(
     "success_url",
-    `${origin}/skool-invite/{CHECKOUT_SESSION_ID}?bundled=1&origin=${encodeURIComponent(args.originSessionId)}`,
+    `${origin}/skool-invite/{CHECKOUT_SESSION_ID}?bundled=1`,
   );
   params.set(
     "cancel_url",
-    `${origin}/upsell-bundle/${encodeURIComponent(args.originSessionId)}?cancelled=1`,
+    `${origin}/${args.originSlug}/upgrade-bundle/${encodeURIComponent(args.leadId)}?pair=0&cancelled=1`,
   );
   params.set("line_items[0][quantity]", "1");
   params.set("line_items[0][price_data][currency]", "usd");
   params.set(
     "line_items[0][price_data][product_data][name]",
-    "APA Kit Bundle Upgrade — all 5 kits",
+    "APA Kit Bundle — all 5 kits",
   );
   params.set(
     "line_items[0][price_data][product_data][description]",
-    "Upgrade to the full 5-kit bundle: Dispatch Playbook, Dev-Team Document Set, CLAUDE.md Template Library, Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack.",
+    "All five APA kits: Dispatch Playbook, Dev-Team Document Set, CLAUDE.md Template Library, Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack.",
   );
-  params.set(
-    "line_items[0][price_data][unit_amount]",
-    String(args.deltaCents),
-  );
+  params.set("line_items[0][price_data][unit_amount]", String(args.unitAmountCents));
   params.set("metadata[lead_id]", args.leadId);
-  params.set("metadata[origin_session_id]", args.originSessionId);
   params.set("metadata[origin_kit_slug]", args.originSlug);
+  params.set("metadata[kit_slug]", args.originSlug);
+  params.set("metadata[source]", args.originSlug);
   params.set("metadata[funnel_stage]", "bundle_upgrade");
   params.set("payment_intent_data[metadata][lead_id]", args.leadId);
+  params.set("payment_intent_data[metadata][source]", args.originSlug);
+  params.set("payment_intent_data[metadata][kit_slug]", args.originSlug);
   params.set("payment_intent_data[metadata][funnel_stage]", "bundle_upgrade");
-  params.set(
-    "payment_intent_data[metadata][origin_session_id]",
-    args.originSessionId,
-  );
 
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",

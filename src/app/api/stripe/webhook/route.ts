@@ -293,9 +293,25 @@ async function deliverBundle(
   leadId: string,
   email: string,
 ): Promise<void> {
-  // The bundle delivery sends ALL 5 kits as attachments. Webhook is the only
-  // place this happens — the post-purchase upsell page kicks off a delta
-  // checkout session, the payment intent fires this branch on completion.
+  // The bundle delivery sends ALL 5 kits as attachments. In the inline-funnel
+  // pattern, the bundle Stripe session is the buyer's FIRST (and only) paid
+  // charge — so we flip status='paid' here as well as stamping the bundle
+  // columns. Both PATCHes are required: the drip cron filters on status,
+  // and wc-admin filters on bundle_upgraded.
+  const paid = await markApaLeadPaid({
+    leadId,
+    stripeCustomerId: session.customer,
+    stripePaymentIntentId: session.payment_intent,
+    bumpedKitSlug: null,
+  });
+  if (!paid.ok) {
+    console.error("[stripe/webhook] failed to mark bundle lead paid", {
+      lead_id: leadId,
+      session_id: session.id,
+      status: paid.status,
+      error: paid.error,
+    });
+  }
   const mark = await markApaLeadBundleUpgraded({
     leadId,
     bundleSessionId: session.id,

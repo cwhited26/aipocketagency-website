@@ -139,37 +139,6 @@ export async function markApaLeadPaid(args: MarkLeadPaidArgs): Promise<InsertRes
   return { ok: true };
 }
 
-export async function recordBundleUpgradeSession(args: {
-  leadId: string;
-  bundleSessionId: string;
-}): Promise<InsertResult> {
-  const env = supabaseEnv();
-  if ("error" in env) {
-    return { ok: false, status: 500, error: env.error };
-  }
-  const endpoint = `${env.url.replace(/\/$/, "")}/rest/v1/apa_leads?id=eq.${encodeURIComponent(args.leadId)}`;
-  const patch = {
-    bundle_stripe_session_id: args.bundleSessionId,
-    updated_at: new Date().toISOString(),
-  };
-  const res = await fetch(endpoint, {
-    method: "PATCH",
-    headers: {
-      apikey: env.key,
-      Authorization: `Bearer ${env.key}`,
-      "Content-Type": "application/json",
-      Prefer: "return=minimal",
-    },
-    body: JSON.stringify(patch),
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    const error = await res.text();
-    return { ok: false, status: res.status, error };
-  }
-  return { ok: true };
-}
-
 export async function markApaLeadBundleUpgraded(
   args: MarkBundleArgs,
 ): Promise<InsertResult> {

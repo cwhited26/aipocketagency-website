@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { insertApaLead } from "@/lib/wc-admin-supabase";
-import { createKitCheckout } from "@/lib/stripe-checkout";
-import { getKitConfig, isKitSlug, type KitSlug } from "@/lib/kit-config";
+import { isKitSlug } from "@/lib/kit-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,7 +17,6 @@ type LeadBody = {
   email?: unknown;
   phone?: unknown;
   source?: unknown;
-  bump?: unknown;
 };
 
 function pickTrimmed(...candidates: unknown[]): string {
@@ -35,6 +33,16 @@ function badRequest(message: string) {
   return NextResponse.json({ error: message }, { status: 400 });
 }
 
+/**
+ * Lead capture step 1 of the APA funnel.
+ *
+ * Inserts the lead row immediately (so wc-admin attribution still tracks
+ * abandoners) and returns the URL of the next funnel page — the order-bump
+ * interstitial at /[kit-slug]/upgrade-pair/<lead_id>. Stripe is NOT opened
+ * here; the buyer makes the pair and bundle decisions first, then the
+ * /api/apa/funnel/checkout endpoint mints the Stripe Checkout Session with
+ * the right line items.
+ */
 export async function POST(req: Request): Promise<NextResponse> {
   let body: LeadBody;
   try {
@@ -61,19 +69,6 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const phone = phoneRaw || null;
 
-  // Russell order-bump: if `bump === true`, look up the kit's locked
-  // `bumpTarget` (defined in kit-config) and pass it to the checkout session.
-  // We do NOT accept an arbitrary bump slug from the client — the pairing is
-  // controlled server-side so a malicious form can't repackage the offer.
-  let bumpSlug: KitSlug | undefined;
-  if (body.bump === true) {
-    const sourceConfig = getKitConfig(source);
-    if (!sourceConfig) {
-      return badRequest(`Unknown kit source: ${source}`);
-    }
-    bumpSlug = sourceConfig.bumpTarget;
-  }
-
   const leadResult = await insertApaLead({
     id: leadId,
     name,
@@ -91,30 +86,8 @@ export async function POST(req: Request): Promise<NextResponse> {
     });
   }
 
-  const origin = new URL(req.url).origin;
-  const checkout = await createKitCheckout(
-    {
-      leadId,
-      email,
-      name,
-      phone: phone ?? "",
-      source,
-      bumpSlug,
-    },
-    origin,
-  );
-
-  if (!checkout.ok) {
-    console.error("[apa/leads] Stripe Checkout Session failed", {
-      status: checkout.status,
-      error: checkout.error,
-      lead_id: leadId,
-    });
-    return NextResponse.json(
-      { error: "Unable to start checkout. Please try again in a moment." },
-      { status: 502 },
-    );
-  }
-
-  return NextResponse.json({ checkout_url: checkout.url });
+  return NextResponse.json({
+    lead_id: leadId,
+    next_url: `/${source}/upgrade-pair/${encodeURIComponent(leadId)}`,
+  });
 }
