@@ -46,6 +46,38 @@ function PrimaryCTA({ label, sublabel }: { label: string; sublabel?: string }) {
   );
 }
 
+function SecondaryCTA({
+  href,
+  label,
+  sublabel,
+}: {
+  href: string;
+  label: string;
+  sublabel?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group inline-flex flex-col items-center gap-1 rounded-full border border-accent/60 bg-accent/[0.04] px-8 py-4 text-base font-semibold text-accent shadow-[0_0_30px_-15px_rgba(34,211,238,0.6)] transition hover:scale-[1.02] hover:border-accent hover:bg-accent/[0.08] hover:shadow-[0_0_50px_-10px_rgba(34,211,238,0.7)] sm:flex-row sm:gap-3 sm:text-lg"
+    >
+      <span>{label}</span>
+      {sublabel ? (
+        <span className="text-xs font-medium uppercase tracking-wider text-accent/80 sm:text-sm">
+          {sublabel}
+        </span>
+      ) : null}
+      <svg
+        aria-hidden
+        viewBox="0 0 20 20"
+        className="hidden h-5 w-5 transition group-hover:translate-x-1 sm:inline"
+        fill="currentColor"
+      >
+        <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 110-2h8.586L7.05 5.464a1 1 0 010-1.414z" />
+      </svg>
+    </Link>
+  );
+}
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div
@@ -424,29 +456,22 @@ function InsideCTA() {
           Five classroom modules. Mon Brain Build. Wed From the Road. Fri
           Office Hours — your real stuck question, an actual answer, 3 PM ET.
         </p>
-        <div className="mt-10">
+        <div className="mt-10 flex w-full max-w-md flex-col items-center gap-4">
           <PrimaryCTA
             label="Join the Founding 50"
             sublabel="$47/mo · Locked for life"
           />
-        </div>
-        <div className="mt-12 flex w-full max-w-md flex-col items-center border-t border-white/10 pt-8">
           <div
-            className="mb-3 whitespace-nowrap text-xs text-cyan-300/60"
+            className="whitespace-nowrap text-xs text-cyan-300/60"
             style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
           >
-            [ or — just the playbook ]
+            [ or ]
           </div>
-          <p className="text-balance text-sm text-slate-400 sm:text-base">
-            Not ready for the community? Grab the Dispatch Playbook — $15.
-            Instant download.
-          </p>
-          <Link
+          <SecondaryCTA
             href="/dispatch-playbook"
-            className="mt-3 text-sm font-medium text-accent underline-offset-4 transition hover:underline"
-          >
-            Get the playbook →
-          </Link>
+            label="Get the playbook"
+            sublabel="$15 · Instant download"
+          />
         </div>
         <p className="mt-8 text-sm text-slate-400">
           Want it built FOR you instead?{" "}
