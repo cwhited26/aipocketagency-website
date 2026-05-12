@@ -29,12 +29,18 @@ export type DripEmailRow = {
   preheader: string;
   html_body: string;
   text_body: string;
+  /**
+   * NULL = applies to every paid APA lead (generic nurture).
+   * '<kit-slug>' = applies only to leads with `apa_leads.source = <kit-slug>`.
+   */
+  kit_source: string | null;
 };
 
 export type DripLeadRow = {
   id: string;
   email: string;
   name: string | null;
+  source: string;
   status: string;
   drip_subscribed: boolean;
   created_at: string;
@@ -118,7 +124,7 @@ export async function fetchActiveDripEmails(): Promise<FetchResult<DripEmailRow>
 
   const endpoint =
     `${env.url.replace(/\/$/, "")}/rest/v1/apa_drip_emails` +
-    `?select=id,slug,day_offset,subject,preheader,html_body,text_body` +
+    `?select=id,slug,day_offset,subject,preheader,html_body,text_body,kit_source` +
     `&active=eq.true&order=day_offset.asc`;
   const res = await fetch(endpoint, {
     headers: {
@@ -146,7 +152,7 @@ export async function fetchDripEligibleLeads(
 
   const endpoint =
     `${env.url.replace(/\/$/, "")}/rest/v1/apa_leads` +
-    `?select=id,email,name,status,drip_subscribed,created_at,email_sequence_state` +
+    `?select=id,email,name,source,status,drip_subscribed,created_at,email_sequence_state` +
     `&status=in.(paid,member)&drip_subscribed=eq.true` +
     `&order=created_at.asc&limit=${encodeURIComponent(String(limit))}`;
   const res = await fetch(endpoint, {
@@ -209,7 +215,7 @@ export async function fetchLeadById(leadId: string): Promise<LeadByIdResult> {
 
   const endpoint =
     `${env.url.replace(/\/$/, "")}/rest/v1/apa_leads` +
-    `?select=id,email,name,status,drip_subscribed,created_at,email_sequence_state` +
+    `?select=id,email,name,source,status,drip_subscribed,created_at,email_sequence_state` +
     `&id=eq.${encodeURIComponent(leadId)}&limit=1`;
   const res = await fetch(endpoint, {
     headers: {

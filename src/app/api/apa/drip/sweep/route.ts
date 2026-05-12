@@ -62,6 +62,14 @@ function daysSince(createdAt: string, now: number): number {
   return Math.floor((now - created) / MS_PER_DAY);
 }
 
+function dripAppliesToLead(drip: DripEmailRow, lead: DripLeadRow): boolean {
+  // Per Pipeline Playbook §Drip series:
+  //   kit_source IS NULL  → applies to every paid lead (generic nurture)
+  //   kit_source = source → applies only to leads with that lead.source
+  if (drip.kit_source === null) return true;
+  return drip.kit_source === lead.source;
+}
+
 function nextDripForLead(
   lead: DripLeadRow,
   drips: DripEmailRow[],
@@ -70,6 +78,7 @@ function nextDripForLead(
   const sent = new Set(readSentDays(lead.email_sequence_state ?? {}));
   const elapsed = daysSince(lead.created_at, now);
   for (const drip of drips) {
+    if (!dripAppliesToLead(drip, lead)) continue;
     if (sent.has(drip.day_offset)) continue;
     if (elapsed < drip.day_offset) continue;
     return drip;

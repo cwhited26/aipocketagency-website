@@ -1,5 +1,5 @@
 import CheckoutForm from "./CheckoutForm";
-import { getKitMeta } from "./catalog";
+import { getKitConfig, type KitSlug } from "@/lib/kit-config";
 
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
@@ -8,10 +8,13 @@ export default function KitCheckoutPage({
   slug,
   cancelled,
 }: {
-  slug: string;
+  slug: KitSlug;
   cancelled: boolean;
 }) {
-  const kit = getKitMeta(slug);
+  const kit = getKitConfig(slug);
+  if (!kit) {
+    throw new Error(`KitCheckoutPage rendered with unknown slug: ${slug}`);
+  }
   return (
     <main className="min-h-screen text-slate-100">
       <section className="relative overflow-hidden border-b border-white/5">

@@ -5,14 +5,14 @@ import {
   markApaLeadPaid,
 } from "@/lib/wc-admin-supabase";
 import { sendEmail } from "@/lib/resend";
+import { getKitConfig, isKitSlug, type KitConfig } from "@/lib/kit-config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const STRIPE_SIGNATURE_TOLERANCE_SECONDS = 5 * 60;
-const PDF_URL = "https://aipocketagency.com/dispatch-playbook.pdf";
+const SITE_ORIGIN = "https://aipocketagency.com";
 const FROM = "Chase Whited <chase@aipocketagency.com>";
-const SUBJECT = "Your Dispatch Playbook is here";
 
 type StripeEvent = {
   id: string;
@@ -80,35 +80,42 @@ function verifyStripeSignature(
   return { ok: false, reason: "no matching v1 signature" };
 }
 
-function deliveryEmailHtml(): string {
+function deliveryEmailHtml(kit: KitConfig, pdfUrl: string): string {
   return `<!doctype html>
 <html><body style="margin:0;padding:24px 16px;background:#0b0b0b;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;">
 <div style="max-width:560px;margin:0 auto;">
-<p>You bought the Dispatch Playbook. It's attached.</p>
-<p>Eleven sections. ~10,000 words. The operator manual for safely spawning parallel agents &mdash; written by someone who runs his businesses on the pattern.</p>
-<p>Read it cover to cover. Try one fan-out lane next time you sit down at your desk. Your confidence is hands-on, not theoretical.</p>
-<p>If the PDF doesn't open, <a href="${PDF_URL}" style="color:#6ee7b7;">download it directly here</a>.</p>
-<p>If you want the full system the playbook lives inside &mdash; the brain pattern, the community, the live operators trading patterns weekly &mdash; that's at:</p>
-<p><a href="https://aipocketagency.com" style="color:#6ee7b7;">aipocketagency.com</a></p>
+<p>You bought ${kit.fullName}. It's attached.</p>
+<p>${kit.blurb}</p>
+<p>Read it cover to cover. Try one thing from it next time you sit down at your desk. The first clean run is the day this stops feeling theoretical.</p>
+<p>If the PDF doesn't open, <a href="${pdfUrl}" style="color:#6ee7b7;">download it directly here</a>.</p>
+<p>If you want the live system around the kits — the brain pattern, the community, the operators trading patterns weekly — that's at:</p>
+<p><a href="${SITE_ORIGIN}" style="color:#6ee7b7;">aipocketagency.com</a></p>
 <p style="margin-top:32px;">&mdash; Chase</p>
 </div>
 </body></html>`;
 }
 
-function deliveryEmailText(): string {
-  return `You bought the Dispatch Playbook. It's attached.
+function deliveryEmailText(kit: KitConfig, pdfUrl: string): string {
+  return `You bought ${kit.fullName}. It's attached.
 
-Eleven sections. ~10,000 words. The operator manual for safely spawning parallel agents — written by someone who runs his businesses on the pattern.
+${kit.blurb}
 
-Read it cover to cover. Try one fan-out lane next time you sit down at your desk. Your confidence is hands-on, not theoretical.
+Read it cover to cover. Try one thing from it next time you sit down at your desk. The first clean run is the day this stops feeling theoretical.
 
-If the PDF doesn't open, the bundle is here: ${PDF_URL}
+If the PDF doesn't open, the file is here: ${pdfUrl}
 
-If you want the full system the playbook lives inside — the brain pattern, the community, the live operators trading patterns weekly — that's at:
+If you want the live system around the kits — the brain pattern, the community, the operators trading patterns weekly — that's at:
 
-aipocketagency.com
+${SITE_ORIGIN}
 
 — Chase`;
+}
+
+function resolveKitFromSession(session: CheckoutSession): KitConfig | null {
+  const candidate = session.metadata?.kit_slug ?? session.metadata?.source;
+  if (!candidate) return null;
+  if (!isKitSlug(candidate)) return null;
+  return getKitConfig(candidate);
 }
 
 async function handleCheckoutCompleted(session: CheckoutSession): Promise<void> {
@@ -143,19 +150,35 @@ async function handleCheckoutCompleted(session: CheckoutSession): Promise<void> 
     return;
   }
 
+  // Pipeline playbook: branch on lead.source (carried via session metadata) to
+  // pick which PDF to attach. Fail loud rather than ship the wrong file.
+  const kit = resolveKitFromSession(session);
+  if (!kit) {
+    console.error("[stripe/webhook] cannot resolve kit from session metadata; skipping delivery", {
+      lead_id: leadId,
+      session_id: session.id,
+      metadata: session.metadata,
+    });
+    return;
+  }
+
+  const pdfUrl = `${SITE_ORIGIN}${kit.pdfPath}`;
+  const pdfFilename = kit.pdfPath.replace(/^\//, "");
+
   const send = await sendEmail({
     from: FROM,
     to: email,
-    subject: SUBJECT,
-    html: deliveryEmailHtml(),
-    text: deliveryEmailText(),
-    attachments: [{ filename: "dispatch-playbook.pdf", path: PDF_URL }],
+    subject: kit.deliverySubject,
+    html: deliveryEmailHtml(kit, pdfUrl),
+    text: deliveryEmailText(kit, pdfUrl),
+    attachments: [{ filename: pdfFilename, path: pdfUrl }],
   });
 
   if (!send.ok) {
     console.error("[stripe/webhook] Resend send failed", {
       lead_id: leadId,
       session_id: session.id,
+      kit_source: kit.slug,
       status: send.status,
       error: send.error,
     });
@@ -164,12 +187,13 @@ async function handleCheckoutCompleted(session: CheckoutSession): Promise<void> 
 
   const ev = await insertApaEmailEvent({
     leadId,
-    emailId: "delivery",
+    emailId: `delivery:${kit.slug}`,
     event: "sent",
   });
   if (!ev.ok) {
     console.error("[stripe/webhook] failed to record email event (sent)", {
       lead_id: leadId,
+      kit_source: kit.slug,
       status: ev.status,
       error: ev.error,
       resend_id: send.id,

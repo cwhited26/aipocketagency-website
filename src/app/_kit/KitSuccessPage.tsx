@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getKitMeta } from "./catalog";
+import { getKitConfig, type KitSlug } from "@/lib/kit-config";
 
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
@@ -10,10 +10,13 @@ export default function KitSuccessPage({
   slug,
   email,
 }: {
-  slug: string;
+  slug: KitSlug;
   email: string;
 }) {
-  const kit = getKitMeta(slug);
+  const kit = getKitConfig(slug);
+  if (!kit) {
+    throw new Error(`KitSuccessPage rendered with unknown slug: ${slug}`);
+  }
   return (
     <main className="min-h-screen text-slate-100">
       <section className="relative overflow-hidden border-b border-white/5">
@@ -45,7 +48,7 @@ export default function KitSuccessPage({
 
             <div className="mt-10">
               <Link
-                href={`/${kit.slug}.pdf`}
+                href={kit.pdfPath}
                 className="group inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)]"
               >
                 Open the PDF now →
