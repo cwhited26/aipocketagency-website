@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 const CHECKOUT_PATH = "/dispatch-playbook/checkout";
@@ -120,6 +121,16 @@ function Hero() {
           <p className="mt-6 text-balance text-xl text-slate-200 sm:text-2xl">
             Stop being scared to spawn parallel agents.
           </p>
+          <div className="mt-10 w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
+            <Image
+              src="/funnel-images/dispatch-playbook-hero.png"
+              alt="The Dispatch Playbook — $15 instant download cover art"
+              width={1200}
+              height={800}
+              priority
+              className="block w-full h-auto"
+            />
+          </div>
           <div className="mt-10">
             <BuyCTA />
           </div>

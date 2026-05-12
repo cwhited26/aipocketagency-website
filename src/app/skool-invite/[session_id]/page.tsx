@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { retrieveCheckoutSession } from "@/lib/stripe-checkout";
@@ -85,16 +86,15 @@ export default async function SkoolInvitePage({
             </p>
           </div>
 
-          {/* IMAGE-SLOT: 1200×675, Skool community card — replace dashed-border placeholder with <Image src="/funnel-images/skool-community-card.png" .../> when Chase delivers (see public/funnel-images/README.md) */}
-          <div className="mt-10 aspect-[16/9] w-full overflow-hidden rounded-xl border-2 border-dashed border-slate-700 bg-slate-900/40 flex items-center justify-center text-slate-500 text-sm">
-            <div className="text-center">
-              <div className="font-semibold text-slate-400">
-                Placeholder: skool-community-card.png
-              </div>
-              <div className="mt-1 text-xs">
-                1200×675 · Skool community classroom card
-              </div>
-            </div>
+          <div className="mt-10 overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
+            <Image
+              src="/funnel-images/skool-community-card.png"
+              alt="AI Pocket Agency Skool community — founding-50 cohort, three live calls per week"
+              width={1200}
+              height={675}
+              priority
+              className="block w-full h-auto"
+            />
           </div>
 
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.04] p-7 shadow-[0_0_60px_-25px_rgba(99,102,241,0.55)] sm:p-9">

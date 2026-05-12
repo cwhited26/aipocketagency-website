@@ -63,6 +63,17 @@ export default function KitCheckoutPage({
             </p>
           </div>
 
+          <div className="mx-auto mt-10 max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
+            <Image
+              src={`/funnel-images/${kit.slug}-hero.png`}
+              alt={`${kit.fullName} — $15 instant download cover art`}
+              width={1200}
+              height={800}
+              priority
+              className="block w-full h-auto"
+            />
+          </div>
+
           {cancelled ? (
             <div
               className="mx-auto mt-8 max-w-md rounded-2xl border border-amber-400/30 bg-amber-400/[0.06] p-4 text-center text-sm text-amber-200"

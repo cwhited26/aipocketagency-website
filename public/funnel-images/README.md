@@ -1,72 +1,47 @@
 # Funnel image slots
 
-Image assets used across the APA funnel. Chase generates these in ChatGPT
-(or hands them to a designer); the per-page slots below note dimensions and
-status. Drop a final asset into this directory and replace the placeholder
-`<div>` with a Next.js `<Image>` at the same dimensions.
+Image assets used across the APA funnel. All 7 final assets delivered by
+Chase (ChatGPT-generated) are now wired live.
 
-## Asset inventory
+## Asset inventory (all LIVE)
 
-| File | Dimensions | Status | Used on |
+| File | Dimensions | Aspect | Used on |
 | :--- | :--- | :--- | :--- |
-| `bundle-hero.png` | 1672×941 (~16:9) | LIVE 2026-05-11 | `/upsell-bundle/[session_id]` (hero) · all 5 `/[kit-slug]/checkout` pages (passive footer / social proof) |
-| `dispatch-playbook-hero.png` | 1200×675 (16:9) | PENDING | (slot reserved; not yet referenced on a page) |
-| `dev-team-document-set-hero.png` | 1200×675 (16:9) | PENDING | (slot reserved) |
-| `claude-md-template-library-hero.png` | 1200×675 (16:9) | PENDING | (slot reserved) |
-| `discovery-to-mvp-prompt-pack-hero.png` | 1200×675 (16:9) | PENDING | (slot reserved) |
-| `wire-brain-to-stack-guide-hero.png` | 1200×675 (16:9) | PENDING | (slot reserved) |
-| `skool-community-card.png` | 1200×675 (16:9) | PENDING | `/skool-invite/[session_id]` (hero) |
+| `bundle-hero.png` | 1672×941 | ~16:9 | `/upsell-bundle/[session_id]` (hero, top of page) · all 5 `/[kit-slug]/checkout` pages (passive footer / social-proof below form) |
+| `dispatch-playbook-hero.png` | 1200×800 | 3:2 | `/dispatch-playbook/checkout` (hero between subhead and form) · `/dispatch-playbook` marketing page (hero between subhead and CTA) |
+| `dev-team-document-set-hero.png` | 1200×800 | 3:2 | `/dev-team-document-set/checkout` (hero between subhead and form) |
+| `claude-md-template-library-hero.png` | 1200×800 | 3:2 | `/claude-md-template-library/checkout` (hero between subhead and form) |
+| `discovery-to-mvp-prompt-pack-hero.png` | 1200×800 | 3:2 | `/discovery-to-mvp-prompt-pack/checkout` (hero between subhead and form) |
+| `wire-brain-to-stack-guide-hero.png` | 1200×800 | 3:2 | `/wire-brain-to-stack-guide/checkout` (hero between subhead and form) |
+| `skool-community-card.png` | 1200×675 | 16:9 | `/skool-invite/[session_id]` (hero, top of page) |
 
-## Bundle hero (`bundle-hero.png`) — shipped
+## Divergences from original plan
 
-Composed shot showing all 5 APA kits on real devices: MacBook (Dispatch
-Playbook), iPad (Dev-Team Document Set), iPhone (CLAUDE.md Template
-Library), plus two physical PDFs in front (Discovery → MVP, Wire-Brain-to-
-Stack). Dark slate background, cyan/indigo accents, monospace bracket
-markers, "AI POCKET AGENCY" wordmark.
+- **Per-kit hero aspect = 3:2, not 16:9.** Original placeholder dimensions
+  in this README assumed 1200×675. Final delivered assets are 1200×800
+  (3:2). All `<Image>` components use natural `width={1200} height={800}`
+  so the surrounding layout flows from the asset, not a fixed
+  `aspect-[16/9]` box. Bundle hero (16:9-ish) and Skool card (16:9)
+  retained the planned aspect.
 
-Wired live at:
+## Where each is referenced in code
 
-- `src/app/upsell-bundle/[session_id]/page.tsx` — full-width hero above the
-  bundle pricing block
-- `src/app/_kit/KitCheckoutPage.tsx` — passive footer image below the
-  checkout form on every kit checkout page (preview of "the full stack")
+- `src/app/upsell-bundle/[session_id]/page.tsx` — `bundle-hero.png` at top.
+- `src/app/_kit/KitCheckoutPage.tsx` — per-kit hero from
+  `/funnel-images/${kit.slug}-hero.png` (resolves to 5 distinct files),
+  rendered between the title block and the form. Bundle-hero footer below
+  the form remains as passive social-proof for the upsell.
+- `src/app/dispatch-playbook/page.tsx` — `dispatch-playbook-hero.png`
+  between hero subhead and CTA on the marketing page.
+- `src/app/skool-invite/[session_id]/page.tsx` — `skool-community-card.png`
+  at top.
 
-## Swap pattern (for pending slots)
+## Add-future-images pattern
 
-When the final image is ready:
+If a new asset comes in:
 
-1. Save it into `public/funnel-images/<slot-name>.png` (or `.webp` — match
-   the filename in the table above).
-2. Find the placeholder `<div>` in the page (search for the `IMAGE-SLOT:`
-   comment — e.g. `src/app/skool-invite/[session_id]/page.tsx`).
-3. Replace the placeholder block with:
-
-   ```tsx
-   import Image from "next/image";
-
-   <Image
-     src="/funnel-images/skool-community-card.png"
-     alt="AI Pocket Agency Skool community classroom"
-     width={1200}
-     height={675}
-     priority
-     className="block w-full h-auto rounded-xl"
-   />
-   ```
-
-4. Remove the `IMAGE-SLOT:` comment line so a future grep doesn't flag it
-   as still pending.
-
-## Notes
-
-- Use `priority` on the bundle / skool images since they're above-the-fold
-  on conversion pages.
-- Keep the 16:9 ratio — the placeholder divs use `aspect-[16/9]` and the
-  surrounding layout was sized against that ratio.
-- If you ship `.webp` instead of `.png`, also keep the filename aligned
-  with the table — update this README in the same commit.
-- Per-kit single-product hero images are reserved slots; no page references
-  them yet. When they ship, decide whether to swap them into the existing
-  kit checkout pages (replacing the bundle-hero footer) or use them on the
-  kit landing pages.
+1. Drop it into `public/funnel-images/<slot-name>.png`.
+2. Use natural dimensions in the `<Image>` component (don't crop to a
+   fixed aspect — let the asset breathe).
+3. Use `priority` only on above-the-fold conversion images.
+4. Update this README's table with the new row + the page references.
