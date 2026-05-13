@@ -7,6 +7,14 @@ import {
   markApaLeadCheckoutStatus,
   markApaLeadPaid,
 } from "@/lib/wc-admin-supabase";
+import {
+  fetchPocketAgentByCustomerId,
+  fetchPocketAgentBySubscriptionId,
+  markPocketAgentActive,
+  markPocketAgentCanceled,
+  markPocketAgentTrialEndNotified,
+  upsertPocketAgentTrial,
+} from "@/lib/pocket-agent-supabase";
 import { sendEmail } from "@/lib/resend";
 import {
   getKitConfig,
@@ -375,6 +383,221 @@ async function deliverBundle(
   }
 }
 
+// ─── Pocket Agent subscription types ────────────────────────────────────────
+
+type StripeSubscription = {
+  id: string;
+  customer: string | null;
+  status: string;
+  trial_start: number | null;
+  trial_end: number | null;
+  metadata: Record<string, string> | null;
+};
+
+type StripeInvoice = {
+  id: string;
+  customer: string | null;
+  customer_email: string | null;
+  subscription: string | null;
+  status: string | null;
+  amount_paid: number;
+  billing_reason: string | null;
+};
+
+// ─── Pocket Agent subscription handlers ─────────────────────────────────────
+
+async function handlePocketAgentSubscriptionCreated(
+  sub: StripeSubscription,
+): Promise<void> {
+  const email = sub.metadata?.email ?? null;
+  const name = sub.metadata?.name ?? null;
+  if (!email) {
+    console.error("[stripe/webhook] pocket_agent subscription.created missing email metadata", {
+      subscription_id: sub.id,
+      customer: sub.customer,
+    });
+    return;
+  }
+  if (!sub.customer) {
+    console.error("[stripe/webhook] pocket_agent subscription.created missing customer", {
+      subscription_id: sub.id,
+    });
+    return;
+  }
+
+  const trialStartedAt = sub.trial_start
+    ? new Date(sub.trial_start * 1000).toISOString()
+    : new Date().toISOString();
+  const trialEndsAt = sub.trial_end
+    ? new Date(sub.trial_end * 1000).toISOString()
+    : null;
+
+  const upsert = await upsertPocketAgentTrial({
+    email,
+    name,
+    stripeCustomerId: sub.customer,
+    stripeSubscriptionId: sub.id,
+    stripeSessionId: null,
+    trialStartedAt,
+    trialEndsAt,
+  });
+  if (!upsert.ok) {
+    console.error("[stripe/webhook] failed to upsert pocket_agent trial", {
+      subscription_id: sub.id,
+      status: upsert.status,
+      error: upsert.error,
+    });
+  } else {
+    console.info("[stripe/webhook] pocket_agent trial started", {
+      subscription_id: sub.id,
+      email,
+      trial_ends_at: trialEndsAt,
+    });
+  }
+}
+
+async function handlePocketAgentTrialWillEnd(
+  sub: StripeSubscription,
+): Promise<void> {
+  const email = sub.metadata?.email ?? null;
+  const name = sub.metadata?.name ?? null;
+  if (!email) {
+    console.warn("[stripe/webhook] pocket_agent trial_will_end missing email metadata", {
+      subscription_id: sub.id,
+    });
+    return;
+  }
+
+  const trialEndDate = sub.trial_end
+    ? new Date(sub.trial_end * 1000).toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      })
+    : "in 3 days";
+
+  const html = `<!doctype html>
+<html><body style="margin:0;padding:24px 16px;background:#0b0b0b;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;">
+<div style="max-width:560px;margin:0 auto;">
+<p>Hey${name ? ` ${name}` : ""} —</p>
+<p>Your Pocket Agent free trial ends on <strong>${trialEndDate}</strong>. After that, your card will be charged $97/mo.</p>
+<p>If you want to cancel before then, you can do it any time from your billing portal. Just reply to this email and I'll send you the link.</p>
+<p>If you're still getting set up, the brain template is at <a href="https://aipocketagency.com" style="color:#6ee7b7;">aipocketagency.com</a> — everything you need is there.</p>
+<p style="margin-top:32px;">&mdash; Chase</p>
+</div>
+</body></html>`;
+
+  const text = `Hey${name ? ` ${name}` : ""} —
+
+Your Pocket Agent free trial ends on ${trialEndDate}. After that, your card will be charged $97/mo.
+
+If you want to cancel before then, you can do it any time from your billing portal. Just reply to this email and I'll send you the link.
+
+If you're still getting set up, the brain template is at https://aipocketagency.com
+
+— Chase`;
+
+  const send = await sendEmail({
+    from: FROM,
+    to: email,
+    subject: `Your Pocket Agent trial ends ${trialEndDate}`,
+    html,
+    text,
+  });
+  if (!send.ok) {
+    console.error("[stripe/webhook] failed to send pocket_agent trial_will_end email", {
+      subscription_id: sub.id,
+      email,
+      status: send.status,
+      error: send.error,
+    });
+    return;
+  }
+
+  const mark = await markPocketAgentTrialEndNotified(sub.id);
+  if (!mark.ok) {
+    console.error("[stripe/webhook] failed to mark pocket_agent trial_end_notified", {
+      subscription_id: sub.id,
+      status: mark.status,
+      error: mark.error,
+    });
+  }
+  console.info("[stripe/webhook] pocket_agent trial_will_end email sent", {
+    subscription_id: sub.id,
+    email,
+  });
+}
+
+async function handlePocketAgentInvoicePaid(invoice: StripeInvoice): Promise<void> {
+  if (!invoice.subscription) {
+    return;
+  }
+
+  const lookup = await fetchPocketAgentBySubscriptionId(invoice.subscription);
+  if (!lookup.ok) {
+    console.error("[stripe/webhook] pocket_agent invoice.payment_succeeded: lookup failed", {
+      invoice_id: invoice.id,
+      subscription_id: invoice.subscription,
+      status: lookup.status,
+      error: lookup.error,
+    });
+    return;
+  }
+  if (!lookup.row) {
+    // Not a Pocket Agent subscription — ignore silently.
+    return;
+  }
+
+  const mark = await markPocketAgentActive(invoice.subscription);
+  if (!mark.ok) {
+    console.error("[stripe/webhook] failed to mark pocket_agent active", {
+      invoice_id: invoice.id,
+      subscription_id: invoice.subscription,
+      status: mark.status,
+      error: mark.error,
+    });
+    return;
+  }
+  console.info("[stripe/webhook] pocket_agent marked active", {
+    invoice_id: invoice.id,
+    subscription_id: invoice.subscription,
+    email: lookup.row.email,
+  });
+}
+
+async function handlePocketAgentSubscriptionDeleted(
+  sub: StripeSubscription,
+): Promise<void> {
+  const lookup = await fetchPocketAgentBySubscriptionId(sub.id);
+  if (!lookup.ok) {
+    console.error("[stripe/webhook] pocket_agent subscription.deleted: lookup failed", {
+      subscription_id: sub.id,
+      status: lookup.status,
+      error: lookup.error,
+    });
+    return;
+  }
+  if (!lookup.row) {
+    return;
+  }
+
+  const mark = await markPocketAgentCanceled(sub.id);
+  if (!mark.ok) {
+    console.error("[stripe/webhook] failed to mark pocket_agent canceled", {
+      subscription_id: sub.id,
+      status: mark.status,
+      error: mark.error,
+    });
+    return;
+  }
+  console.info("[stripe/webhook] pocket_agent marked canceled", {
+    subscription_id: sub.id,
+    email: lookup.row.email,
+  });
+}
+
+// ─── Kit helpers ─────────────────────────────────────────────────────────────
+
 /** Stable ordering for the bundle email — Dispatch first, then the rest. */
 function kitOrder(slug: KitSlug): number {
   const order: Record<KitSlug, number> = {
@@ -526,11 +749,38 @@ export async function POST(req: Request): Promise<NextResponse> {
       event.type === "checkout.session.completed" ||
       event.type === "checkout.session.async_payment_succeeded"
     ) {
-      await handleCheckoutCompleted(event.data.object as unknown as CheckoutSession);
+      const session = event.data.object as unknown as CheckoutSession;
+      if (session.metadata?.source === "pocket_agent") {
+        // Pocket Agent checkout — no digital delivery needed; subscription
+        // lifecycle is handled by customer.subscription.* events.
+        console.info("[stripe/webhook] pocket_agent checkout.session.completed (no-op)", {
+          session_id: session.id,
+        });
+      } else {
+        await handleCheckoutCompleted(session);
+      }
     } else if (event.type === "checkout.session.expired") {
-      await handleCheckoutExpired(event.data.object as unknown as CheckoutSession);
+      const session = event.data.object as unknown as CheckoutSession;
+      if (session.metadata?.source !== "pocket_agent") {
+        await handleCheckoutExpired(session);
+      }
     } else if (event.type === "payment_intent.payment_failed") {
       await handlePaymentFailed(event.data.object as unknown as PaymentIntent);
+    } else if (event.type === "customer.subscription.created") {
+      const sub = event.data.object as unknown as StripeSubscription;
+      if (sub.metadata?.source === "pocket_agent") {
+        await handlePocketAgentSubscriptionCreated(sub);
+      }
+    } else if (event.type === "customer.subscription.trial_will_end") {
+      const sub = event.data.object as unknown as StripeSubscription;
+      if (sub.metadata?.source === "pocket_agent") {
+        await handlePocketAgentTrialWillEnd(sub);
+      }
+    } else if (event.type === "invoice.payment_succeeded") {
+      await handlePocketAgentInvoicePaid(event.data.object as unknown as StripeInvoice);
+    } else if (event.type === "customer.subscription.deleted") {
+      const sub = event.data.object as unknown as StripeSubscription;
+      await handlePocketAgentSubscriptionDeleted(sub);
     } else {
       console.warn("[stripe/webhook] ignoring unhandled event type", {
         event_id: event.id,
