@@ -5,8 +5,11 @@ const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
 const PAGE_URL = "https://aipocketagency.com/output-pack/decision-query";
+const TEMPLATE_REPO_URL = "https://github.com/cwhited26/aipocketagency-brain";
+const TEMPLATE_CLONE_URL =
+  "https://github.com/cwhited26/aipocketagency-brain.git";
 const RECIPE_URL =
-  "https://github.com/cwhited26/whited-brain/blob/main/automations/brain-ask-shortcut-recipe.md";
+  "https://github.com/cwhited26/aipocketagency-brain/blob/main/automations/brain-ask-shortcut-recipe.md";
 const DESCRIPTION =
   "Plain-English Decision Query. Ask the brain a question in your terminal or from your phone — get a cited answer in three seconds. The first Output Pack module is live.";
 
@@ -53,6 +56,14 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function InlineCode({ children }: { children: React.ReactNode }) {
+  return (
+    <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-slate-100">
+      {children}
+    </code>
+  );
+}
+
 function Hero() {
   return (
     <section className="relative overflow-hidden border-b border-white/5">
@@ -74,9 +85,9 @@ function Hero() {
           </h1>
           <p className="mt-6 text-balance text-lg text-slate-200 sm:text-xl">
             The first Output Pack module is live. One command in your
-            terminal — or a Siri phrase on your phone — and the brain tells
-            you what you decided, with the file and line cited so you can
-            verify before you act.
+            terminal — or a Siri phrase on your phone — and the brain
+            tells you what you decided, with the file and line cited so
+            you can verify before you act.
           </p>
           <Link
             href="#install"
@@ -100,10 +111,10 @@ function WhatItDoes() {
           reasoning. So you re-debate.
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-slate-300">
-          You debated whether to ship feature X or feature Y. You picked X.
-          Two weeks later somebody asks why and you&apos;re hunting through
-          Slack history, Notion, and three old decision logs. Hours lost
-          re-litigating something you already settled.
+          You debated whether to ship feature X or feature Y. You picked
+          X. Two weeks later somebody asks why and you&apos;re hunting
+          through Slack history, Notion, and three old decision logs.
+          Hours lost re-litigating something you already settled.
         </p>
         <p className="mt-5 text-lg leading-relaxed text-slate-300">
           Plain-English Decision Query is the antidote. The brain answers
@@ -118,20 +129,20 @@ function WhatItDoes() {
             className="mb-3 text-xs text-slate-500"
             style={{ fontFamily: MONO_FONT }}
           >
-            $ brain ask &quot;what did we decide about Patrick&apos;s PDF
-            cover photo?&quot;
+            $ brain ask &quot;what did we decide about the cover photo
+            on the inspector report?&quot;
           </div>
           <pre
             className="overflow-x-auto whitespace-pre-wrap text-sm leading-relaxed text-slate-200"
             style={{ fontFamily: MONO_FONT }}
-          >{`Cover photo was deferred to Patrick P2. The cover-notes drop-cap fix
-shipped on 2026-05-08 (FPHI \`aba06f9\`); the photo-hero treatment moved
-to the Phase 2 punch list pending Patrick's Loom feedback on the rendered
+          >{`Cover photo was deferred to Phase 2 of the report build. The cover-notes
+drop-cap fix shipped on 2026-05-08; the photo-hero treatment moved to the
+Phase 2 punch list pending the next round of feedback on the rendered
 output.
 
 Sources:
-  BOS/Products/Patrick/Patrick_Decision_Log.md:142
-  BOS/Products/Patrick/Patrick_Loom_2026-05-11_Bug_Feature_List.md:128`}</pre>
+  memory/project_inspector_report_v1.md:142
+  sessions/2026-05-08/cover-notes-drop-cap-fix.md:18`}</pre>
         </div>
       </div>
     </section>
@@ -151,91 +162,94 @@ function Install() {
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-slate-300">
           The Output Pack assumes you already have the AI Pocket Agency
-          brain pattern running locally — a brain repo with{" "}
-          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-slate-100">
-            memory/
-          </code>{" "}
-          and{" "}
-          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-slate-100">
-            sessions/
-          </code>
-          , the{" "}
-          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-slate-100">
-            bin/brain
-          </code>{" "}
-          CLI on PATH, and{" "}
-          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-slate-100">
-            ANTHROPIC_API_KEY
-          </code>{" "}
-          set. If you don&apos;t have that yet, start with the Capture Pack
-          and the open-source brain template.
+          brain running locally — a brain repo with{" "}
+          <InlineCode>memory/</InlineCode>,{" "}
+          <InlineCode>sessions/</InlineCode>, and the{" "}
+          <InlineCode>brain</InlineCode> CLI on PATH. If you don&apos;t,
+          start with the open-source template repo below; it ships with
+          everything wired.
         </p>
 
         <h3 className="mt-12 text-xl font-semibold text-slate-100 sm:text-2xl">
-          1. Pull the latest brain CLI
+          1. Clone or pull the brain template
         </h3>
         <p className="mt-3 text-base leading-relaxed text-slate-300">
           The{" "}
-          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-slate-100">
-            ask
-          </code>{" "}
-          subcommand ships in{" "}
-          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-slate-100">
-            bin/brain
-          </code>
-          . Pull from the canonical brain template repo or copy the
-          subcommand block into your local CLI.
+          <InlineCode>ask</InlineCode>{" "}
+          subcommand ships in the public{" "}
+          <Link
+            href={TEMPLATE_REPO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent underline-offset-4 hover:underline"
+          >
+            cwhited26/aipocketagency-brain
+          </Link>{" "}
+          template (MIT). If this is your first time installing the
+          brain, clone it. If you already have it, pull main.
         </p>
         <div className="mt-4 rounded-2xl border border-white/10 bg-black/40 p-5 sm:p-6">
           <pre
             className="overflow-x-auto whitespace-pre-wrap text-sm leading-relaxed text-slate-200"
             style={{ fontFamily: MONO_FONT }}
-          >{`cd ~/your-brain-repo
-git pull            # if you cloned the brain template
+          >{`# first time
+git clone ${TEMPLATE_CLONE_URL} ~/your-brain
+cd ~/your-brain
+bash install-ambient.sh        # wires the Stop hook + brain CLI
 
-# or copy the \`ask)\` case block from
-# https://github.com/cwhited26/whited-brain/blob/main/bin/brain
-# into your existing bin/brain`}</pre>
+# already installed
+cd ~/your-brain
+git pull                       # picks up the new \`ask\` subcommand`}</pre>
         </div>
+        <p className="mt-3 text-sm leading-relaxed text-slate-400">
+          The CLI lives at{" "}
+          <InlineCode>templates/bin/brain</InlineCode>{" "}
+          inside the template. The install script symlinks it onto
+          your PATH; if you wired it manually, make sure your shell
+          can find <InlineCode>brain</InlineCode>.
+        </p>
 
         <h3 className="mt-12 text-xl font-semibold text-slate-100 sm:text-2xl">
-          2. Confirm the key resolves
+          2. Set your Anthropic API key
         </h3>
         <p className="mt-3 text-base leading-relaxed text-slate-300">
           The CLI reads{" "}
-          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-slate-100">
-            ANTHROPIC_API_KEY
-          </code>{" "}
-          from the environment first, then falls back to{" "}
-          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-slate-100">
-            getsecret
-          </code>{" "}
-          against 1Password. Same resolution path as{" "}
-          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-slate-100">
-            brain consolidate
-          </code>
-          .
+          <InlineCode>ANTHROPIC_API_KEY</InlineCode>{" "}
+          from your environment. Export it in your shell rc (
+          <InlineCode>~/.zshrc</InlineCode> or{" "}
+          <InlineCode>~/.bashrc</InlineCode>) so every new terminal
+          picks it up, or pass it inline for a quick test.
         </p>
         <div className="mt-4 rounded-2xl border border-white/10 bg-black/40 p-5 sm:p-6">
           <pre
             className="overflow-x-auto whitespace-pre-wrap text-sm leading-relaxed text-slate-200"
             style={{ fontFamily: MONO_FONT }}
-          >{`export ANTHROPIC_API_KEY=sk-ant-...      # quick check
-brain ask "what did we ship today?"      # should print an answer or
-                                         # "I don't have context on this."`}</pre>
+          >{`# persist (recommended)
+echo 'export ANTHROPIC_API_KEY=sk-ant-...' >> ~/.zshrc
+source ~/.zshrc
+
+# or inline for a quick test
+ANTHROPIC_API_KEY=sk-ant-... brain ask "what did we ship today?"`}</pre>
         </div>
+        <p className="mt-3 text-base leading-relaxed text-slate-300">
+          You should see either a cited answer or the canonical{" "}
+          <em>I don&apos;t have context on this — first time it&apos;s
+          come up.</em>{" "}
+          The second response is the brain refusing to hallucinate when
+          the corpus is empty on the topic. That&apos;s the trust
+          mechanism working.
+        </p>
 
         <h3 className="mt-12 text-xl font-semibold text-slate-100 sm:text-2xl">
           3. Wire the iOS Shortcut (optional, three minutes)
         </h3>
         <p className="mt-3 text-base leading-relaxed text-slate-300">
-          The recipe lives in the brain repo. SSH-over-Tailscale is the
-          recommended path — no paid app, no Vercel route, no token to
-          rotate. The Shortcut accepts a typed or spoken question, pipes
-          it through{" "}
-          <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-sm text-slate-100">
-            brain ask
-          </code>{" "}
+          The Shortcut recipe lives in the same public template under{" "}
+          <InlineCode>automations/</InlineCode>. SSH-over-Tailscale is
+          the recommended path — no paid app, no Vercel route, no token
+          to rotate. The Shortcut accepts a typed or spoken question,
+          pipes it through{" "}
+          <InlineCode>brain ask</InlineCode>{" "}
           on your Mac, and shows the answer back on your phone.
         </p>
         <div className="mt-6">
@@ -361,10 +375,10 @@ function Footer() {
     <footer className="bg-black/40">
       <div className="mx-auto max-w-3xl px-6 py-12 text-center">
         <p className="text-sm leading-relaxed text-slate-400">
-          The brain pattern, the CLI, and the install recipes are open
-          source. The Output Pack is the operating layer on top — paid
-          when the full pack ships, free waitlist while modules roll
-          out one at a time.
+          The brain template, the CLI, and the install recipes are
+          open source under MIT. The Output Pack is the operating
+          layer on top — paid when the full pack ships, free
+          waitlist while modules roll out one at a time.
         </p>
       </div>
       <div className="border-t border-white/5">

@@ -109,7 +109,7 @@ export const CAPTURE_PACK: WaitlistBundle = {
         "Hit Share on any URL — Safari, Facebook, X, LinkedIn — type one word, it lands in your brain organized. Your home-screen graveyard becomes a real research pile.",
       status: "live",
       liveHref:
-        "https://github.com/cwhited26/whited-brain/blob/main/automations/brain-inbox-shortcut-recipe.md",
+        "https://github.com/cwhited26/aipocketagency-brain/blob/main/automations/brain-inbox-shortcut-recipe.md",
       liveCta: "Install recipe",
     },
     {
