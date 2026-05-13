@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const TRIAL_URL = "https://app.aipocketagency.com/signup";
+const TRIAL_URL = "/start";
 const BUILDOUT_URL = "https://buildoutstudios.com";
 const SKOOL_URL = "https://www.skool.com/aipocketagency";
 
@@ -10,6 +10,7 @@ export default function Page() {
     <main className="min-h-screen text-slate-100">
       <Hero />
       <PainHooks />
+      <OldVsNew />
       <Manifesto />
       <Ladder />
       <Origin />
@@ -110,7 +111,7 @@ function Hero() {
             </span>
           </h1>
           <p className="mt-6 text-balance text-xl text-slate-200 sm:text-2xl">
-            Pocket Agent gives it a brain that lives in your git repo.
+            Pocket Agent gives it a brain that doesn&apos;t.
           </p>
           <p className="mt-4 max-w-2xl text-balance text-lg text-slate-300 sm:text-xl">
             Sign up, connect GitHub, and every decision you&apos;ve ever made
@@ -179,6 +180,75 @@ function PainHooks() {
           every decision, every conversation, every piece of context. You
           own it forever. No platform lock-in.
         </p>
+      </div>
+    </section>
+  );
+}
+
+function OldVsNew() {
+  const oldWay = [
+    "Re-explain your business every single conversation",
+    "Hunt through Slack, Notion, three old docs for a decision you already made",
+    "Pay per seat for tools that forget you the moment you close the tab",
+    "Hire an EA, a marketer, an analyst — or the work just doesn't get done",
+    "Stop paying, lose everything — your data lives on their servers",
+  ];
+  const newWay = [
+    "Your AI remembers every decision you've ever made",
+    "Ask in plain English — cited answer in three seconds",
+    "One flat rate: $97/mo. Everything included.",
+    "Drafts your standup, briefs you before every call, handles Q&A in your voice",
+    "Your data stays yours — no lock-in, no platform wall",
+  ];
+  return (
+    <section className="border-b border-white/5">
+      <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
+        <SectionLabel>old way vs. new way</SectionLabel>
+        <div className="mt-8 grid gap-6 sm:grid-cols-2">
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-6 sm:p-7">
+            <div
+              className="mb-5 text-xs font-semibold uppercase tracking-wider text-red-400"
+              style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
+            >
+              [ the old way ]
+            </div>
+            <ul className="space-y-3">
+              {oldWay.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-start gap-3 text-base leading-snug text-slate-400"
+                >
+                  <span
+                    className="mt-0.5 shrink-0 text-red-500/70"
+                    style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
+                  >
+                    ×
+                  </span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-2xl border border-accent/20 bg-accent/[0.03] p-6 sm:p-7">
+            <div
+              className="mb-5 text-xs font-semibold uppercase tracking-wider text-accent"
+              style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
+            >
+              [ pocket agent ]
+            </div>
+            <ul className="space-y-3">
+              {newWay.map((item) => (
+                <li
+                  key={item}
+                  className="flex items-start gap-3 text-base leading-snug text-slate-200"
+                >
+                  <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -689,7 +759,7 @@ function WhatItIsNot() {
         </h2>
         <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
           <p>
-            I&apos;ve sat on AI workflow calls with operators charging $5k for
+            I&apos;ve sat on AI workflow calls with people charging $5k for
             what amounts to a folder of GPTs and a Notion template. None of
             them are doing this. They&apos;re stacking prompts. I&apos;m
             running a system.
@@ -785,7 +855,7 @@ function FinalCTA() {
 
 function Footer() {
   const links: { label: string; href: string; external?: boolean }[] = [
-    { label: "Pocket Agent", href: TRIAL_URL, external: true },
+    { label: "Pocket Agent", href: TRIAL_URL },
     { label: "Whited Consulting", href: "https://whited.consulting", external: true },
     { label: "Buildout Studios", href: BUILDOUT_URL, external: true },
     { label: "AthleteOS", href: "https://athlete-os.com", external: true },

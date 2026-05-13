@@ -137,7 +137,7 @@ export default async function SkoolInvitePage({
 
             <div className="mt-8">
               <a
-                href="https://app.aipocketagency.com/signup"
+                href="/start"
                 className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_50px_-12px_rgba(34,211,238,0.8)] transition hover:scale-[1.01] hover:shadow-[0_0_70px_-8px_rgba(34,211,238,0.95)] sm:text-lg"
               >
                 Start your 14-day free trial — $97/mo →

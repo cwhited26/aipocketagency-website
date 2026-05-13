@@ -1,25 +1,9 @@
 import Link from "next/link";
-import WaitlistForm from "./WaitlistForm";
-import type {
-  WaitlistBundle,
-  WaitlistModule,
-  WaitlistModuleStatus,
-} from "./waitlist-config";
+import type { WaitlistBundle, WaitlistModule } from "./waitlist-config";
 
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
-/**
- * Single landing component for the two "Coming Soon" bundle pages —
- * Capture Pack + Output Pack. Renders hero, the module catalog with
- * per-module status badges, the Hormozi-anchor pricing tease, and the
- * waitlist email-capture form.
- *
- * The status badges are the user-facing signal of which modules are
- * shipped. Flip a module's status from `coming-soon` → `live` in
- * `waitlist-config.ts` when it ships; the badge updates immediately,
- * no schema changes needed.
- */
 export default function WaitlistLanding({ bundle }: { bundle: WaitlistBundle }) {
   return (
     <main className="min-h-screen text-slate-100">
@@ -39,21 +23,13 @@ export default function WaitlistLanding({ bundle }: { bundle: WaitlistBundle }) 
         headline={bundle.pricingHeadline}
         paragraphs={bundle.pricingParagraphs}
       />
-      <FormSection
-        label={bundle.formLabel}
-        headline={bundle.formHeadline}
-        subhead={bundle.formSubhead}
-        cta={bundle.formCta}
-        successLine={bundle.successLine}
-        slug={bundle.slug}
-      />
-      <PackTrialCTA />
+      <SubscribeCTA />
       <Footer />
     </main>
   );
 }
 
-function PackTrialCTA() {
+function SubscribeCTA() {
   return (
     <section className="border-b border-white/5 bg-gradient-to-b from-accent/[0.04] via-transparent to-transparent">
       <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20 text-center">
@@ -64,15 +40,15 @@ function PackTrialCTA() {
           [ pocket agent · $97/mo · 14-day free trial ]
         </div>
         <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
-          Want your AI doing this automatically?
+          All of this is included with your Pocket Agent subscription.
         </h2>
         <p className="mt-5 text-lg leading-relaxed text-slate-300">
-          Pocket Agent members get every new capability as it goes live — no
-          separate purchase, no separate setup. It shows up in your account.
+          Sign up and every capability is active from day one — no separate
+          purchase, no separate setup.
         </p>
         <div className="mt-8">
           <Link
-            href="https://app.aipocketagency.com/signup"
+            href="/start"
             className="inline-flex items-center gap-3 rounded-full bg-accent px-8 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] sm:text-lg"
           >
             Start your 14-day free trial
@@ -126,18 +102,12 @@ function Hero({
           <p className="mt-6 text-balance text-lg text-slate-200 sm:text-xl">
             {subhead}
           </p>
-          <div className="mt-10 flex flex-col items-center gap-3">
+          <div className="mt-10">
             <Link
-              href="https://app.aipocketagency.com/signup"
+              href="/start"
               className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)]"
             >
-              Start your 14-day free trial of Pocket Agent
-            </Link>
-            <Link
-              href="#waitlist"
-              className="text-sm text-slate-400 underline-offset-4 transition hover:text-slate-200 hover:underline"
-            >
-              Or get notified when this one goes live
+              Start your 14-day free trial
             </Link>
           </div>
         </div>
@@ -178,62 +148,22 @@ function Catalog({
 function ModuleRow({ mod }: { mod: WaitlistModule }) {
   return (
     <li className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-baseline gap-3">
-          <span
-            className="inline-flex shrink-0 items-center justify-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent"
-            style={{ fontFamily: MONO_FONT }}
-          >
-            {mod.code}
-          </span>
-          <h3 className="text-lg font-semibold text-slate-100 sm:text-xl">
-            {mod.title}
-          </h3>
-        </div>
-        <StatusBadge status={mod.status} />
+      <div className="flex items-baseline gap-3">
+        <span
+          className="inline-flex shrink-0 items-center justify-center rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent"
+          style={{ fontFamily: MONO_FONT }}
+        >
+          {mod.code}
+        </span>
+        <h3 className="text-lg font-semibold text-slate-100 sm:text-xl">
+          {mod.title}
+        </h3>
       </div>
       <p className="mt-3 text-base leading-relaxed text-slate-300 sm:text-lg">
         {mod.blurb}
       </p>
-      {mod.status === "live" && mod.liveHref ? (
-        <div className="mt-4">
-          <Link
-            href={mod.liveHref}
-            target={mod.liveHref.startsWith("http") ? "_blank" : undefined}
-            rel={
-              mod.liveHref.startsWith("http") ? "noopener noreferrer" : undefined
-            }
-            className="inline-flex items-center gap-2 rounded-full border border-accent/60 bg-accent/[0.06] px-4 py-2 text-sm font-semibold text-accent transition hover:border-accent hover:bg-accent/[0.12]"
-          >
-            {mod.liveCta || "Install"}
-            <svg
-              aria-hidden
-              viewBox="0 0 20 20"
-              className="h-4 w-4"
-              fill="currentColor"
-            >
-              <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 110-2h8.586L7.05 5.464a1 1 0 010-1.414z" />
-            </svg>
-          </Link>
-        </div>
-      ) : null}
     </li>
   );
-}
-
-function StatusBadge({ status }: { status: WaitlistModuleStatus }) {
-  if (status === "live") {
-    return (
-      <span
-        className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/[0.08] px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-emerald-300"
-        style={{ fontFamily: MONO_FONT }}
-      >
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-        [ live ]
-      </span>
-    );
-  }
-  return null;
 }
 
 function Pricing({
@@ -256,50 +186,6 @@ function Pricing({
           {paragraphs.map((p, i) => (
             <p key={i}>{p}</p>
           ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FormSection({
-  label,
-  headline,
-  subhead,
-  cta,
-  successLine,
-  slug,
-}: {
-  label: string;
-  headline: string;
-  subhead: string;
-  cta: string;
-  successLine: string;
-  slug: "capture_pack" | "output_pack";
-}) {
-  return (
-    <section
-      id="waitlist"
-      className="relative overflow-hidden border-b border-white/5 bg-gradient-to-b from-accent/5 via-transparent to-transparent scroll-mt-20"
-    >
-      <div className="absolute inset-0 bg-hero-glow" aria-hidden />
-      <div className="relative mx-auto max-w-xl px-6 py-20 sm:py-24">
-        <div className="text-center">
-          <SectionLabel>{label}</SectionLabel>
-          <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl">
-            {headline}
-          </h2>
-          <p className="mt-6 text-base leading-relaxed text-slate-300 sm:text-lg">
-            {subhead}
-          </p>
-        </div>
-
-        <div className="mx-auto mt-10 max-w-md">
-          <WaitlistForm
-            waitlistFor={slug}
-            cta={cta}
-            successLine={successLine}
-          />
         </div>
       </div>
     </section>

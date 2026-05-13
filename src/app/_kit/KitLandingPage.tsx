@@ -13,7 +13,7 @@ import {
 
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
-const TRIAL_URL = "https://app.aipocketagency.com/signup";
+const TRIAL_URL = "/start";
 
 export default function KitLandingPage({ slug }: { slug: KitSlug }) {
   const kit = getKitConfig(slug);

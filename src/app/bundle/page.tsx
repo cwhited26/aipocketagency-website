@@ -170,7 +170,7 @@ export default function BundlePage() {
           </p>
           <div className="mt-8">
             <Link
-              href="https://app.aipocketagency.com/signup"
+              href="/start"
               className="inline-flex items-center gap-3 rounded-full bg-accent px-8 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] sm:text-lg"
             >
               Start your 14-day free trial
