@@ -3,7 +3,10 @@ import {
   createBundleCheckout,
   createKitCheckout,
 } from "@/lib/stripe-checkout";
-import { fetchLeadFunnelById } from "@/lib/wc-admin-supabase";
+import {
+  fetchLeadFunnelById,
+  markApaLeadCheckoutStatus,
+} from "@/lib/wc-admin-supabase";
 import {
   BUNDLE_PRICING,
   getKitConfig,
@@ -116,6 +119,19 @@ export async function POST(req: Request): Promise<NextResponse> {
         { status: 502 },
       );
     }
+    const stamp = await markApaLeadCheckoutStatus({
+      leadId,
+      status: "pending",
+      stripeSessionId: checkout.sessionId,
+    });
+    if (!stamp.ok) {
+      console.error("[funnel/checkout] failed to stamp pending checkout (bundle)", {
+        lead_id: leadId,
+        session_id: checkout.sessionId,
+        status: stamp.status,
+        error: stamp.error,
+      });
+    }
     return NextResponse.json({ checkout_url: checkout.url });
   }
 
@@ -140,6 +156,19 @@ export async function POST(req: Request): Promise<NextResponse> {
       { error: "Could not start checkout. Please try again." },
       { status: 502 },
     );
+  }
+  const stamp = await markApaLeadCheckoutStatus({
+    leadId,
+    status: "pending",
+    stripeSessionId: checkout.sessionId,
+  });
+  if (!stamp.ok) {
+    console.error("[funnel/checkout] failed to stamp pending checkout (primary)", {
+      lead_id: leadId,
+      session_id: checkout.sessionId,
+      status: stamp.status,
+      error: stamp.error,
+    });
   }
   return NextResponse.json({ checkout_url: checkout.url });
 }

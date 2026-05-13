@@ -1,8 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
+  findLeadIdByStripeSessionId,
   insertApaEmailEvent,
   markApaLeadBundleUpgraded,
+  markApaLeadCheckoutStatus,
   markApaLeadPaid,
 } from "@/lib/wc-admin-supabase";
 import { sendEmail } from "@/lib/resend";
@@ -38,6 +40,12 @@ type CheckoutSession = {
   payment_intent: string | null;
   amount_total: number | null;
   metadata: Record<string, string> | null;
+};
+
+type PaymentIntent = {
+  id: string;
+  metadata: Record<string, string> | null;
+  last_payment_error: { code?: string; message?: string; type?: string } | null;
 };
 
 function verifyStripeSignature(
@@ -379,6 +387,82 @@ function kitOrder(slug: KitSlug): number {
   return order[slug];
 }
 
+async function resolveLeadIdFromSession(
+  session: CheckoutSession,
+): Promise<string | null> {
+  if (session.client_reference_id) return session.client_reference_id;
+  const fromMetadata = session.metadata?.lead_id;
+  if (fromMetadata) return fromMetadata;
+  const fallback = await findLeadIdByStripeSessionId(session.id);
+  if (!fallback.ok) {
+    console.error("[stripe/webhook] findLeadIdByStripeSessionId failed", {
+      session_id: session.id,
+      status: fallback.status,
+      error: fallback.error,
+    });
+    return null;
+  }
+  return fallback.leadId;
+}
+
+async function handleCheckoutExpired(session: CheckoutSession): Promise<void> {
+  const leadId = await resolveLeadIdFromSession(session);
+  if (!leadId) {
+    console.warn("[stripe/webhook] checkout.session.expired: no matching lead", {
+      session_id: session.id,
+      funnel_stage: session.metadata?.funnel_stage ?? null,
+    });
+    return;
+  }
+  const mark = await markApaLeadCheckoutStatus({
+    leadId,
+    status: "abandoned",
+    stripeSessionId: session.id,
+    expiredAt: new Date().toISOString(),
+  });
+  if (!mark.ok) {
+    console.error("[stripe/webhook] failed to mark lead abandoned", {
+      lead_id: leadId,
+      session_id: session.id,
+      status: mark.status,
+      error: mark.error,
+    });
+    return;
+  }
+  console.info("[stripe/webhook] marked lead abandoned", {
+    lead_id: leadId,
+    session_id: session.id,
+  });
+}
+
+async function handlePaymentFailed(intent: PaymentIntent): Promise<void> {
+  const leadId = intent.metadata?.lead_id ?? null;
+  if (!leadId) {
+    console.warn("[stripe/webhook] payment_intent.payment_failed missing lead_id metadata", {
+      intent_id: intent.id,
+    });
+    return;
+  }
+  const mark = await markApaLeadCheckoutStatus({
+    leadId,
+    status: "payment_failed",
+  });
+  if (!mark.ok) {
+    console.error("[stripe/webhook] failed to mark lead payment_failed", {
+      lead_id: leadId,
+      intent_id: intent.id,
+      status: mark.status,
+      error: mark.error,
+    });
+    return;
+  }
+  console.info("[stripe/webhook] marked lead payment_failed", {
+    lead_id: leadId,
+    intent_id: intent.id,
+    last_payment_error_code: intent.last_payment_error?.code ?? null,
+  });
+}
+
 async function handleCheckoutCompleted(session: CheckoutSession): Promise<void> {
   const leadId = session.client_reference_id;
   const email = session.customer_email;
@@ -444,11 +528,9 @@ export async function POST(req: Request): Promise<NextResponse> {
     ) {
       await handleCheckoutCompleted(event.data.object as unknown as CheckoutSession);
     } else if (event.type === "checkout.session.expired") {
-      const session = event.data.object as unknown as CheckoutSession;
-      console.warn("[stripe/webhook] checkout session expired", {
-        session_id: session.id,
-        lead_id: session.client_reference_id,
-      });
+      await handleCheckoutExpired(event.data.object as unknown as CheckoutSession);
+    } else if (event.type === "payment_intent.payment_failed") {
+      await handlePaymentFailed(event.data.object as unknown as PaymentIntent);
     } else {
       console.warn("[stripe/webhook] ignoring unhandled event type", {
         event_id: event.id,

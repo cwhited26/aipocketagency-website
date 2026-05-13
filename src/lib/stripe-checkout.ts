@@ -15,7 +15,7 @@ type LeadContext = {
 };
 
 type CheckoutResult =
-  | { ok: true; url: string }
+  | { ok: true; url: string; sessionId: string }
   | { ok: false; status: number; error: string };
 
 type PriceLookupResult =
@@ -232,11 +232,11 @@ export async function createKitCheckout(
     return { ok: false, status: res.status, error };
   }
 
-  const data = (await res.json()) as { url?: string };
-  if (!data.url) {
-    return { ok: false, status: 500, error: "Stripe response missing url" };
+  const data = (await res.json()) as { id?: string; url?: string };
+  if (!data.url || !data.id) {
+    return { ok: false, status: 500, error: "Stripe response missing url/id" };
   }
-  return { ok: true, url: data.url };
+  return { ok: true, url: data.url, sessionId: data.id };
 }
 
 type RetrievedSession = {
@@ -359,9 +359,9 @@ export async function createBundleCheckout(
     const error = await res.text();
     return { ok: false, status: res.status, error };
   }
-  const data = (await res.json()) as { url?: string };
-  if (!data.url) {
-    return { ok: false, status: 500, error: "Stripe response missing url" };
+  const data = (await res.json()) as { id?: string; url?: string };
+  if (!data.url || !data.id) {
+    return { ok: false, status: 500, error: "Stripe response missing url/id" };
   }
-  return { ok: true, url: data.url };
+  return { ok: true, url: data.url, sessionId: data.id };
 }
