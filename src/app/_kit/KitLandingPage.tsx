@@ -45,6 +45,7 @@ export default function KitLandingPage({ slug }: { slug: KitSlug }) {
       {content ? <WhatsInside content={content} /> : null}
       <BundleCTA currentSlug={kit.slug} />
       <RelatedKits currentSlug={kit.slug} />
+      <BrainStackCTA />
       <FormSection
         slug={kit.slug}
         dealHeadline={content?.dealHeadline ?? null}
@@ -311,6 +312,75 @@ function RelatedKits({ currentSlug }: { currentSlug: KitSlug }) {
         </ul>
       </div>
     </section>
+  );
+}
+
+function BrainStackCTA() {
+  return (
+    <section className="border-b border-white/5 bg-black/30">
+      <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
+        <SectionLabel>the rest of the stack</SectionLabel>
+        <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+          While you&apos;re here — the rest of the brain stack is in motion.
+        </h2>
+        <p className="mt-6 text-lg leading-relaxed text-slate-300">
+          This kit is one piece. Two more layers — Capture (how thoughts get
+          into the brain) and Output (what the brain does on its own) — are
+          mapped, in motion, and shipping module by module. Catalog is public
+          today so you can see what&apos;s coming before it lands.
+        </p>
+        <div className="mt-10 grid gap-5 sm:grid-cols-2">
+          <BrainStackCard
+            pill="[ capture pack ]"
+            title="Tap once. The brain captures the rest."
+            detail="5 modules — voice, screenshot, share sheet, email, Loom. C3 LIVE. 4 coming."
+            href="/capture-pack"
+          />
+          <BrainStackCard
+            pill="[ output pack ]"
+            title="Your brain works while you sleep."
+            detail="8 modules — standup, pre-call brief, customer Q&A in your voice, compete-watch, content from past wins. All coming."
+            href="/output-pack"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BrainStackCard({
+  pill,
+  title,
+  detail,
+  href,
+}: {
+  pill: string;
+  title: string;
+  detail: string;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col rounded-2xl border border-white/10 bg-white/[0.02] p-6 transition hover:border-accent/40 hover:bg-white/[0.04] sm:p-7"
+    >
+      <div
+        className="text-xs text-cyan-300/70 sm:text-sm"
+        style={{ fontFamily: MONO_FONT }}
+      >
+        {pill}
+      </div>
+      <h3 className="mt-3 text-xl font-semibold tracking-tight text-slate-100 sm:text-2xl">
+        {title}
+      </h3>
+      <p className="mt-3 text-base leading-relaxed text-slate-300">{detail}</p>
+      <div
+        className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent transition group-hover:translate-x-0.5"
+        style={{ fontFamily: MONO_FONT }}
+      >
+        See the catalog →
+      </div>
+    </Link>
   );
 }
 
