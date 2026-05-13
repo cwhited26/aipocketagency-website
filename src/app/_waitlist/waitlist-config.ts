@@ -79,14 +79,14 @@ export type WaitlistBundle = {
 export const CAPTURE_PACK: WaitlistBundle = {
   slug: "capture_pack",
   pageTitle: "Capture Pack — AI Pocket Agency",
-  heroPill: "[ capture pack · waitlist ]",
+  heroPill: "[ capture pack · ships into pocket agent ]",
   heroHeadline: "Tap once. The brain captures the rest.",
   heroSubhead:
-    "Five modules that turn your phone — voice, screenshot, share sheet, email, Loom — into a friction-free door into your AI Pocket Agency. The first one is live tonight.",
+    "Five modules shipping into your Pocket Agent dashboard — voice, screenshot, share sheet, email, Loom. Every thought hits the brain without you typing into a CRM. C3 is live now.",
   catalogLabel: "the catalog",
   catalogHeadline: "Five capture modules. One door into the brain.",
   catalogIntro:
-    "Friction equals forgotten. Remove the friction, the brain compounds. Each module is a 5-minute install on top of your existing AI Pocket Agency setup — every capture lands in the same inbox, gets the same consolidation pass, becomes searchable forever.",
+    "Friction equals forgotten. Remove the friction, the brain compounds. Each module ships into Pocket Agent one at a time — every capture lands in the same inbox, gets the same consolidation pass, becomes searchable forever.",
   modules: [
     {
       code: "C1",
@@ -127,31 +127,31 @@ export const CAPTURE_PACK: WaitlistBundle = {
       status: "coming-soon",
     },
   ],
-  pricingLabel: "the deal",
-  pricingHeadline: "Bundle when complete: $47 for all 5. Today: free waitlist.",
+  pricingLabel: "how it works",
+  pricingHeadline: "Modules ship into Pocket Agent. $97/mo gets them all.",
   pricingParagraphs: [
-    "A VA who could transcribe your voice, categorize your screenshots, parse your emails, fetch Loom transcripts, and remember every Facebook save would cost you $2,000–4,000 a month. The Capture Pack runs on your $20/mo Anthropic key. One-time $47 when the full pack ships.",
-    "Per-module $15 kits ship as each module locks in — Dispatch Playbook pattern. Buyer self-selects. Stack à la carte. Today: get on the list and you'll be first in line for each module as it goes live.",
+    "A VA who could transcribe your voice, categorize your screenshots, parse your emails, fetch Loom transcripts, and remember every Facebook save would cost you $2,000–4,000 a month. The Capture Pack runs on your Anthropic key — and if you're on Pocket Agent, every module lands in your dashboard automatically.",
+    "Each module also sells as a standalone $15 kit when it ships, if you want just that piece. But subscribers get every module as it goes live — no separate purchase, no separate install. It just shows up.",
   ],
-  formLabel: "the list",
-  formHeadline: "Get notified when each module ships.",
+  formLabel: "get notified",
+  formHeadline: "Get notified when this module lands in Pocket Agent.",
   formSubhead:
-    "No drip. No upsell sequence. Just an email the moment a module flips to LIVE so you can install it before anybody else.",
-  formCta: "Save my spot",
-  successLine: "You're on the list. We'll email you as each module ships.",
+    "One email when each module flips to live in the dashboard. No drip. No upsell sequence.",
+  formCta: "Notify me when it ships",
+  successLine: "You're on the list. We'll email you when the next module lands.",
 };
 
 export const OUTPUT_PACK: WaitlistBundle = {
   slug: "output_pack",
   pageTitle: "Output Pack — AI Pocket Agency",
-  heroPill: "[ output pack · waitlist ]",
+  heroPill: "[ output pack · ships into pocket agent ]",
   heroHeadline: "Your brain works while you sleep.",
   heroSubhead:
-    "Eight modules that turn captured context into action — daily standups, pre-call briefs, customer Q&A in your voice, compete-watch, content from past wins. Plain-English Decision Query is live tonight; the rest of the operating layer ships behind it.",
+    "Eight modules shipping into your Pocket Agent dashboard — daily standups, pre-call briefs, customer Q&A in your voice, compete-watch, content from past wins. O7 Plain-English Decision Query is live now; the rest of the operating layer ships behind it.",
   catalogLabel: "the catalog",
   catalogHeadline: "Eight output modules. Your brain in motion.",
   catalogIntro:
-    "Without outputs you have a sophisticated note-taking system. With outputs you have an operating layer. Every module reads your brain on a schedule (or on demand) and delivers something useful to your phone — standup before coffee, brief before every call, content drafts in your voice.",
+    "Without outputs you have a sophisticated note-taking system. With outputs you have an operating layer. Every module ships into Pocket Agent on a schedule (or on demand) and delivers something useful to your phone — standup before coffee, brief before every call, content drafts in your voice.",
   modules: [
     {
       code: "O1",
@@ -212,17 +212,17 @@ export const OUTPUT_PACK: WaitlistBundle = {
       status: "coming-soon",
     },
   ],
-  pricingLabel: "the deal",
+  pricingLabel: "how it works",
   pricingHeadline:
-    "Founder Brain $97. Sales Brain $97. Full Output Pack $147. Today: free waitlist.",
+    "Modules ship into Pocket Agent. $97/mo gets them all.",
   pricingParagraphs: [
-    "What you'd pay an EA + a junior marketer + a sales analyst + a content writer to do all of this — badly — is $8,000–15,000 a month. The Output Pack runs on your $20–50/mo Anthropic key.",
-    "Founder Brain bundle (O1 + O2 + O5 + O7 + O8): the operator's pack. Sales Brain bundle (O2 + O3 + O5 + O6 + O4 when V2 ships): pre-call brief + customer Q&A + compete-watch + content drafts. Full Output Pack: all 7 V1 modules. Per-module $15 kits ship as each module locks in. Get on the list today and you're first in line.",
+    "What you'd pay an EA + a junior marketer + a sales analyst + a content writer to do all of this — badly — is $8,000–15,000 a month. Every Output Pack module runs on your Anthropic key inside Pocket Agent.",
+    "Each module also sells as a standalone $15 kit when it ships. Pocket Agent subscribers get every module as it goes live — it lands in the dashboard automatically. O7 is live now. The rest are shipping behind it.",
   ],
-  formLabel: "the list",
-  formHeadline: "Get notified when each module ships.",
+  formLabel: "get notified",
+  formHeadline: "Get notified when the next module lands in Pocket Agent.",
   formSubhead:
-    "No drip. No upsell sequence. Just an email the moment a module flips to LIVE so you can install it before anybody else.",
-  formCta: "Save my spot",
-  successLine: "You're on the list. We'll email you as each module ships.",
+    "One email when each module flips to live in the dashboard. No drip. No upsell sequence.",
+  formCta: "Notify me when it ships",
+  successLine: "You're on the list. We'll email you when the next module lands.",
 };

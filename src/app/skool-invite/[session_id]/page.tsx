@@ -3,20 +3,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { retrieveCheckoutSession } from "@/lib/stripe-checkout";
-import { SKOOL_PRICING, getKitConfig, isKitSlug } from "@/lib/kit-config";
+import { getKitConfig, isKitSlug } from "@/lib/kit-config";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
-const SKOOL_URL = "https://www.skool.com/aipocketagency";
 
 export function generateMetadata(): Metadata {
   return {
-    title: "One last thing — AI Pocket Agency community | $47/mo founding 50",
+    title: "One last thing — Pocket Agent | AI Pocket Agency",
     description:
-      "Three live calls a week, the kits get refreshed monthly, me in the room twice a week. Founding 50 locked at $47/mo for life.",
+      "The software that runs all of this. $97/mo, 14-day free trial, Skool community included.",
     robots: { index: false, follow: false },
   };
 }
@@ -71,7 +70,7 @@ export default async function SkoolInvitePage({
               className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
               style={{ fontFamily: MONO_FONT }}
             >
-              [ founding-50 · {SKOOL_PRICING.offerUsd}/mo · open ]
+              [ pocket agent · $97/mo · 14-day free trial ]
             </div>
             <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
               <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
@@ -79,10 +78,11 @@ export default async function SkoolInvitePage({
               </span>
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-slate-300 sm:text-xl">
-              These kits make 10x more sense when you&apos;re actually applying
-              them with operators who are running the same playbook. Join the
-              AI Pocket Agency community — three live calls per week, the kits
-              get refreshed monthly, and you get me in the room twice a week.
+              The kits you just bought are the install layer. Pocket Agent is
+              the software that runs them — connected to GitHub, brain live in
+              minutes, every kit pre-installed. Skool community included with
+              your subscription: three live calls per week, build sessions with
+              me, operators running the same playbook.
             </p>
           </div>
 
@@ -105,8 +105,8 @@ export default async function SkoolInvitePage({
               </p>
               <p>
                 The kits get refreshed monthly as Claude, Cursor, and Codex
-                ship breaking changes — community members get the new versions
-                included.
+                ship breaking changes — subscribers get new versions
+                automatically.
               </p>
               <p>I&apos;m in the room twice a week.</p>
             </div>
@@ -119,37 +119,28 @@ export default async function SkoolInvitePage({
                 pricing
               </div>
               <div className="mt-2 flex items-baseline gap-3 text-base">
-                <span className="text-slate-500 line-through">
-                  ${SKOOL_PRICING.anchorUsd}/mo
-                </span>
                 <span className="text-2xl font-extrabold text-accent">
-                  ${SKOOL_PRICING.offerUsd}/mo
+                  $97/mo
                 </span>
                 <span className="text-sm text-slate-400">
-                  founding-50 rate
+                  Pocket Agent — Skool included
                 </span>
               </div>
               <div className="mt-3 text-sm leading-relaxed text-slate-300">
-                Locked at this rate forever — even after the dashboard ships
-                and new members come in at ${SKOOL_PRICING.anchorUsd}/mo.
-              </div>
-              <div className="mt-3 text-sm text-slate-300">
-                <span className="font-semibold text-accent">
-                  {SKOOL_PRICING.spotsRemaining} of {SKOOL_PRICING.foundingSpots}
-                </span>{" "}
-                founding-member spots remaining.
+                14-day free trial. Card collected at signup, nothing charges
+                until day 15. Cancel before then and you pay nothing.
               </div>
               <div className="mt-3 text-xs text-slate-500">
-                Cancel anytime. The first live call this week is Wednesday.
+                Cancel anytime. Skool access comes with the subscription.
               </div>
             </div>
 
             <div className="mt-8">
               <a
-                href={SKOOL_URL}
+                href="https://app.aipocketagency.com/signup"
                 className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_50px_-12px_rgba(34,211,238,0.8)] transition hover:scale-[1.01] hover:shadow-[0_0_70px_-8px_rgba(34,211,238,0.95)] sm:text-lg"
               >
-                Join the founding 50 — ${SKOOL_PRICING.offerUsd}/mo →
+                Start your 14-day free trial — $97/mo →
               </a>
               <div className="mt-4 text-center">
                 <Link

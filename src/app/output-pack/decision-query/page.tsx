@@ -338,23 +338,24 @@ function NextStep() {
     <section className="relative overflow-hidden border-b border-white/5 bg-gradient-to-b from-accent/5 via-transparent to-transparent">
       <div className="absolute inset-0 bg-hero-glow" aria-hidden />
       <div className="relative mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>the rest of the pack</SectionLabel>
+        <SectionLabel>what ships next</SectionLabel>
         <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl">
-          O7 is the wedge. Seven more modules are queued — get
-          notified as each one flips to LIVE.
+          O7 is the first Output Pack module in Pocket Agent. Seven
+          more are queued — they land in your dashboard as they ship.
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-slate-300">
           Daily Standup, Pre-Call Brief, Customer Q&amp;A in Your
           Voice, Weekly Compete-Watch, Content From Past Wins, and
-          MVP Signal — the Output Pack roadmap. One email when each
-          one ships. No drip. No upsell sequence.
+          MVP Signal — all shipping into Pocket Agent. Subscribers get
+          each module when it goes live. No separate install, no
+          separate purchase.
         </p>
-        <div className="mt-10">
+        <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row">
           <Link
-            href="/output-pack#waitlist"
+            href="https://app.aipocketagency.com/signup"
             className="inline-flex items-center gap-3 rounded-full bg-accent px-8 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] sm:text-lg"
           >
-            <span>Get on the Output Pack list</span>
+            <span>Start your 14-day free trial</span>
             <svg
               aria-hidden
               viewBox="0 0 20 20"
@@ -363,6 +364,12 @@ function NextStep() {
             >
               <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 110-2h8.586L7.05 5.464a1 1 0 010-1.414z" />
             </svg>
+          </Link>
+          <Link
+            href="/output-pack#waitlist"
+            className="inline-flex items-center gap-2 rounded-full border border-accent/50 bg-accent/[0.05] px-6 py-4 text-base font-semibold text-accent transition hover:border-accent hover:bg-accent/[0.10]"
+          >
+            Get notified when each module ships
           </Link>
         </div>
       </div>
@@ -375,10 +382,12 @@ function Footer() {
     <footer className="bg-black/40">
       <div className="mx-auto max-w-3xl px-6 py-12 text-center">
         <p className="text-sm leading-relaxed text-slate-400">
-          The brain template, the CLI, and the install recipes are
-          open source under MIT. The Output Pack is the operating
-          layer on top — paid when the full pack ships, free
-          waitlist while modules roll out one at a time.
+          The brain template, the CLI, and the install recipes are open source
+          under MIT. Output Pack modules ship into Pocket Agent as they&apos;re
+          ready — subscribers get each one when it goes live.{" "}
+          <Link href="/" className="text-accent transition hover:underline">
+            Back to the homepage.
+          </Link>
         </p>
       </div>
       <div className="border-t border-white/5">

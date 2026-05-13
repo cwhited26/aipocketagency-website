@@ -13,17 +13,8 @@ import {
 
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
+const TRIAL_URL = "https://app.aipocketagency.com/signup";
 
-/**
- * Single landing component for every $15 kit. Hero + image + form sit
- * inline (no separate /checkout hop). When `marketingContent` is populated
- * on the kit (e.g. Dispatch Playbook), the long-form problem / what's
- * inside / deal sections render beneath the form. Other kits get the bare
- * hero + form treatment until their marketing content is written.
- *
- * After form submit the buyer goes to /[kit-slug]/upgrade-pair/<lead_id>
- * (the order-bump interstitial) — Stripe is NOT opened from this page.
- */
 export default function KitLandingPage({ slug }: { slug: KitSlug }) {
   const kit = getKitConfig(slug);
   if (!kit) {
@@ -33,6 +24,7 @@ export default function KitLandingPage({ slug }: { slug: KitSlug }) {
 
   return (
     <main className="min-h-screen text-slate-100">
+      <KitInstallBanner />
       <Hero
         fullName={kit.fullName}
         ogAlt={kit.ogAlt}
@@ -51,8 +43,58 @@ export default function KitLandingPage({ slug }: { slug: KitSlug }) {
         dealHeadline={content?.dealHeadline ?? null}
         dealParagraphs={content?.dealParagraphs ?? null}
       />
+      <PocketAgentCTA />
       <Footer />
     </main>
+  );
+}
+
+function KitInstallBanner() {
+  return (
+    <div className="border-b border-accent/20 bg-accent/[0.04] px-6 py-3">
+      <p className="mx-auto max-w-3xl text-center text-sm leading-snug text-slate-300">
+        These frameworks come pre-installed in{" "}
+        <Link href={TRIAL_URL} className="font-semibold text-accent underline-offset-4 hover:underline">
+          Pocket Agent
+        </Link>
+        . The kits teach the patterns; the software runs them for you.
+      </p>
+    </div>
+  );
+}
+
+function PocketAgentCTA() {
+  return (
+    <section className="border-b border-white/5 bg-gradient-to-b from-accent/[0.04] via-transparent to-transparent">
+      <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20 text-center">
+        <SectionLabel>want it running automatically?</SectionLabel>
+        <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
+          Pocket Agent installs this and runs it for you.
+        </h2>
+        <p className="mt-5 text-lg leading-relaxed text-slate-300">
+          The kit is the pattern. Pocket Agent is the software that runs it —
+          hosted, connected to GitHub, and wired up in under ten minutes. Every
+          kit in this stack ships pre-installed in your dashboard.
+        </p>
+        <div className="mt-8">
+          <Link
+            href={TRIAL_URL}
+            className="inline-flex items-center gap-3 rounded-full bg-accent px-8 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] sm:text-lg"
+          >
+            Start your 14-day free trial of Pocket Agent
+            <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor">
+              <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 110-2h8.586L7.05 5.464a1 1 0 010-1.414z" />
+            </svg>
+          </Link>
+          <div
+            className="mt-3 text-xs text-slate-500"
+            style={{ fontFamily: MONO_FONT }}
+          >
+            [ $97/mo after 14 days · cancel anytime ]
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -321,25 +363,25 @@ function BrainStackCTA() {
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
         <SectionLabel>the rest of the stack</SectionLabel>
         <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-          While you&apos;re here — the rest of the brain stack is in motion.
+          Two more layers ship into Pocket Agent as modules.
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-slate-300">
-          This kit is one piece. Two more layers — Capture (how thoughts get
-          into the brain) and Output (what the brain does on its own) — are
-          mapped, in motion, and shipping module by module. Catalog is public
-          today so you can see what&apos;s coming before it lands.
+          This kit is one piece. Capture Pack and Output Pack modules ship
+          directly into your Pocket Agent dashboard one at a time — you don&apos;t
+          hunt for them, they show up. The catalog is public so you can see what
+          lands next.
         </p>
         <div className="mt-10 grid gap-5 sm:grid-cols-2">
           <BrainStackCard
             pill="[ capture pack ]"
             title="Tap once. The brain captures the rest."
-            detail="5 modules — voice, screenshot, share sheet, email, Loom. C3 LIVE. 4 coming."
+            detail="5 modules — voice, screenshot, share sheet, email, Loom. Ships into your Pocket Agent dashboard. C3 live now."
             href="/capture-pack"
           />
           <BrainStackCard
             pill="[ output pack ]"
             title="Your brain works while you sleep."
-            detail="8 modules — standup, pre-call brief, customer Q&A in your voice, compete-watch, content from past wins. All coming."
+            detail="8 modules — standup, pre-call brief, customer Q&A in your voice, compete-watch, content from past wins. Ships into Pocket Agent. O7 live now."
             href="/output-pack"
           />
         </div>

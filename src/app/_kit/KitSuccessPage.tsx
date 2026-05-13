@@ -8,7 +8,7 @@ import {
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
-const SKOOL_URL = "https://www.skool.com/aipocketagency";
+const TRIAL_URL = "https://app.aipocketagency.com/signup";
 
 export default function KitSuccessPage({
   slug,
@@ -97,12 +97,12 @@ export default function KitSuccessPage({
             )}
 
             <p className="mt-8 text-sm text-slate-400">
-              Want the live system that keeps these kits current?{" "}
+              Want the software that runs these kits automatically?{" "}
               <Link
-                href={SKOOL_URL}
+                href={TRIAL_URL}
                 className="text-accent underline-offset-4 transition hover:underline"
               >
-                Join the AI Pocket Agency community
+                Start your 14-day free trial of Pocket Agent
               </Link>
             </p>
 

@@ -47,8 +47,42 @@ export default function WaitlistLanding({ bundle }: { bundle: WaitlistBundle }) 
         successLine={bundle.successLine}
         slug={bundle.slug}
       />
+      <PackTrialCTA />
       <Footer />
     </main>
+  );
+}
+
+function PackTrialCTA() {
+  return (
+    <section className="border-b border-white/5 bg-gradient-to-b from-accent/[0.04] via-transparent to-transparent">
+      <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20 text-center">
+        <div
+          className="mb-4 text-xs text-cyan-300/70 sm:text-sm"
+          style={{ fontFamily: MONO_FONT }}
+        >
+          [ pocket agent · $97/mo · 14-day free trial ]
+        </div>
+        <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
+          Want these modules running automatically?
+        </h2>
+        <p className="mt-5 text-lg leading-relaxed text-slate-300">
+          Pocket Agent subscribers get every module as it goes live — no
+          separate purchase, no separate install. It lands in your dashboard.
+        </p>
+        <div className="mt-8">
+          <Link
+            href="https://app.aipocketagency.com/signup"
+            className="inline-flex items-center gap-3 rounded-full bg-accent px-8 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] sm:text-lg"
+          >
+            Start your 14-day free trial
+            <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor">
+              <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 110-2h8.586L7.05 5.464a1 1 0 010-1.414z" />
+            </svg>
+          </Link>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -92,12 +126,20 @@ function Hero({
           <p className="mt-6 text-balance text-lg text-slate-200 sm:text-xl">
             {subhead}
           </p>
-          <Link
-            href="#waitlist"
-            className="mt-10 inline-flex items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)]"
-          >
-            Get on the list
-          </Link>
+          <div className="mt-10 flex flex-col items-center gap-3">
+            <Link
+              href="https://app.aipocketagency.com/signup"
+              className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)]"
+            >
+              Start your 14-day free trial of Pocket Agent
+            </Link>
+            <Link
+              href="#waitlist"
+              className="text-sm text-slate-400 underline-offset-4 transition hover:text-slate-200 hover:underline"
+            >
+              Or get notified when this module lands
+            </Link>
+          </div>
         </div>
       </div>
     </section>
@@ -197,7 +239,7 @@ function StatusBadge({ status }: { status: WaitlistModuleStatus }) {
       style={{ fontFamily: MONO_FONT }}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-      [ coming soon ]
+      [ shipping next ]
     </span>
   );
 }

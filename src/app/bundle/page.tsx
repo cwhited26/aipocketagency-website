@@ -156,6 +156,32 @@ export default function BundlePage() {
         </div>
       </section>
 
+      <section className="border-b border-white/5 bg-gradient-to-b from-accent/[0.04] via-transparent to-transparent">
+        <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20 text-center">
+          <SectionLabel>the kits teach the patterns</SectionLabel>
+          <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
+            Pocket Agent runs them.
+          </h2>
+          <p className="mt-5 text-lg leading-relaxed text-slate-300">
+            The bundle is the install layer. Pocket Agent is the hosted software
+            that keeps everything running — connected to GitHub, every kit
+            pre-installed, modules shipping into your dashboard as they go live.
+            $97/mo, 14-day free trial.
+          </p>
+          <div className="mt-8">
+            <Link
+              href="https://app.aipocketagency.com/signup"
+              className="inline-flex items-center gap-3 rounded-full bg-accent px-8 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] sm:text-lg"
+            >
+              Start your 14-day free trial
+              <svg aria-hidden viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor">
+                <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 110-2h8.586L7.05 5.464a1 1 0 010-1.414z" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <footer className="bg-black/40">
         <div className="mx-auto max-w-3xl px-6 py-12 text-center">
           <p className="text-sm leading-relaxed text-slate-400">
