@@ -50,6 +50,15 @@ export default function BundlePage() {
 
   return (
     <main className="min-h-screen text-slate-100">
+      <div className="border-b border-white/5 bg-black/60 px-6 py-3">
+        <p className="mx-auto max-w-3xl text-center text-sm leading-snug text-slate-400">
+          Buy the bundle if you want the docs.{" "}
+          <Link href="/start" className="font-medium text-accent underline-offset-4 hover:underline">
+            Start Pocket Agent
+          </Link>{" "}
+          if you want the system running.
+        </p>
+      </div>
       <section className="relative overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 bg-grid opacity-30" aria-hidden />
         <div className="absolute inset-0 bg-hero-glow" aria-hidden />

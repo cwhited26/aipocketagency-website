@@ -13,8 +13,8 @@ const APP_URL = "https://app.aipocketagency.com";
 
 export function generateMetadata(): Metadata {
   return {
-    title: "Welcome to Pocket Agent — trial active",
-    description: "Your 14-day free trial is active. Set up your AI brain.",
+    title: "Your trial is live — Pocket Agent | AI Pocket Agency",
+    description: "Get your first useful answer from Pocket Agent in the next 10 minutes.",
     robots: { index: false, follow: false },
   };
 }
@@ -46,8 +46,6 @@ export default async function PocketAgentWelcomePage({
 }) {
   const sessionId = searchParams?.session_id ?? "";
 
-  // Verify the session is real. Tolerate failures — the welcome copy
-  // should never block on a Stripe network hiccup.
   let email: string | null = null;
   let trialEnd: string | null = null;
   let sessionValid = false;
@@ -57,14 +55,19 @@ export default async function PocketAgentWelcomePage({
     if (lookup.ok) {
       sessionValid = true;
       email = lookup.session.customer_email;
-      // Stripe doesn't surface trial_end directly on the session object;
-      // the subscription trial is tracked in DB via the webhook. We can
-      // derive the approximate end date from now + 14 days for display.
       const approxEnd = new Date();
       approxEnd.setDate(approxEnd.getDate() + 14);
       trialEnd = approxEnd.toISOString();
     }
   }
+
+  const steps = [
+    "Send one voice note describing your business in 30 seconds.",
+    "Add one screenshot of something you want to remember.",
+    "Paste one customer email or sales conversation.",
+    'Ask: "Draft the reply in my voice."',
+    'Ask: "What should I remember before my next call?"',
+  ];
 
   return (
     <main className="min-h-screen text-slate-100">
@@ -80,7 +83,8 @@ export default async function PocketAgentWelcomePage({
 
             <h1 className="mt-6 text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
               <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
-                Welcome to Pocket Agent.
+                Your trial is live. Get your first useful answer in the next 10
+                minutes.
               </span>
             </h1>
 
@@ -91,64 +95,49 @@ export default async function PocketAgentWelcomePage({
             )}
 
             <p className="mt-5 text-lg leading-relaxed text-slate-300">
-              Your 14-day free trial is active. No charge until the trial ends.
+              The first 10 minutes are how you&apos;ll know this is the real
+              thing. Do these five in order:
             </p>
           </div>
 
-          <div className="mt-10 space-y-4">
-            {/* Step 1 */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 sm:p-7">
-              <div
-                className="mb-3 text-xs uppercase tracking-wider text-cyan-400/70"
-                style={{ fontFamily: MONO_FONT }}
+          <ol className="mt-10 space-y-3">
+            {steps.map((step, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6"
               >
-                step 1
-              </div>
-              <h2 className="text-lg font-semibold text-slate-100">
-                Sign in and set up your brain
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                Your AI brain lives in a git repo you own — file-based memory,
-                multi-lane agents, no context wall. Sign in at the app to
-                connect it to your stack.
-              </p>
-              <a
-                href={APP_URL}
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_0_40px_-12px_rgba(34,211,238,0.7)] transition hover:scale-[1.01]"
-              >
-                Open app.aipocketagency.com →
-              </a>
-            </div>
+                <span
+                  className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-sm font-semibold text-accent"
+                  style={{ fontFamily: MONO_FONT }}
+                >
+                  {i + 1}
+                </span>
+                <span className="text-base leading-relaxed text-slate-200 sm:text-lg">
+                  {step}
+                </span>
+              </li>
+            ))}
+          </ol>
 
-            {/* Step 2 */}
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 sm:p-7">
-              <div
-                className="mb-3 text-xs uppercase tracking-wider text-indigo-400/70"
-                style={{ fontFamily: MONO_FONT }}
-              >
-                step 2
-              </div>
-              <h2 className="text-lg font-semibold text-slate-100">
-                Join the Skool community
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">
-                Three live calls a week, the operators trading patterns weekly,
-                and me in the room twice a week. Pocket Agent subscribers are in
-                the same community.
-              </p>
-              <a
-                href={SKOOL_URL}
-                className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
-              >
-                Join the community →
-              </a>
-            </div>
+          <div className="mt-10 flex flex-col gap-4">
+            <a
+              href={APP_URL}
+              className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-accent px-6 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-12px_rgba(34,211,238,0.7)] transition hover:scale-[1.01]"
+            >
+              Open your Pocket Agent →
+            </a>
+            <a
+              href={SKOOL_URL}
+              className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-6 py-4 text-base font-semibold text-slate-200 transition hover:bg-white/[0.08]"
+            >
+              Join the live builds with Chase →
+            </a>
           </div>
 
           {!sessionValid && sessionId && (
             <p className="mt-8 text-center text-xs text-slate-500">
-              Could not verify your checkout session — but your subscription is
-              recorded. Check your email for confirmation.
+              Could not verify your checkout — but your trial is recorded. Check
+              your email for confirmation.
             </p>
           )}
 

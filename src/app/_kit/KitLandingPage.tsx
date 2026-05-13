@@ -39,6 +39,7 @@ export default function KitLandingPage({ slug }: { slug: KitSlug }) {
       <BundleCTA currentSlug={kit.slug} />
       <BrainStackCTA />
       <PocketAgentCTA />
+      <ManualVsAutomatic />
       <FormSection
         slug={kit.slug}
         dealHeadline={content?.dealHeadline ?? null}
@@ -51,13 +52,13 @@ export default function KitLandingPage({ slug }: { slug: KitSlug }) {
 
 function KitInstallBanner() {
   return (
-    <div className="border-b border-accent/20 bg-accent/[0.04] px-6 py-3">
-      <p className="mx-auto max-w-3xl text-center text-sm leading-snug text-slate-300">
-        These playbooks come pre-loaded in{" "}
-        <Link href={TRIAL_URL} className="font-semibold text-accent underline-offset-4 hover:underline">
-          Pocket Agent
-        </Link>
-        . The playbooks teach the patterns; the software runs them for you.
+    <div className="border-b border-white/5 bg-black/60 px-6 py-3">
+      <p className="mx-auto max-w-3xl text-center text-sm leading-snug text-slate-400">
+        This is the manual version.{" "}
+        <Link href={TRIAL_URL} className="font-medium text-accent underline-offset-4 hover:underline">
+          Start Pocket Agent
+        </Link>{" "}
+        if you want the system to run for you.
       </p>
     </div>
   );
@@ -375,13 +376,13 @@ function BrainStackCTA() {
             pill="[ capture ]"
             title="Tap once. Your AI captures the rest."
             detail="Voice memos, screenshots, share links, emails, Loom recordings — all filed automatically. Nothing dies in your head."
-            href="/capture-pack"
+            href="/pocket-agent"
           />
           <BrainStackCard
             pill="[ output ]"
             title="Your AI works while you sleep."
             detail="Standup before coffee. Brief before every call. Customer Q&A in your voice. Content from past wins. It just runs."
-            href="/output-pack"
+            href="/pocket-agent"
           />
         </div>
       </div>
@@ -422,6 +423,35 @@ function BrainStackCard({
         See the catalog →
       </div>
     </Link>
+  );
+}
+
+function ManualVsAutomatic() {
+  return (
+    <section className="border-b border-white/5 bg-black/30">
+      <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20 text-center">
+        <p className="text-lg leading-relaxed text-slate-300">
+          You can buy this kit and build the workflow yourself.
+        </p>
+        <p className="mt-3 text-lg leading-relaxed text-slate-300">
+          Or start Pocket Agent and have your AI run the workflow for you.
+        </p>
+        <div className="mt-8">
+          <Link
+            href={TRIAL_URL}
+            className="inline-flex items-center gap-3 rounded-full bg-accent px-8 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] sm:text-lg"
+          >
+            Start free →
+          </Link>
+          <p
+            className="mt-3 text-xs text-slate-500"
+            style={{ fontFamily: MONO_FONT }}
+          >
+            [ $97/mo · 14-day free trial · Skool community included ]
+          </p>
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -3,11 +3,10 @@ const nextConfig = {
   reactStrictMode: true,
   async redirects() {
     return [
-      {
-        source: "/output-pack/decision-query",
-        destination: "/output-pack",
-        permanent: true,
-      },
+      { source: "/capture-pack", destination: "/pocket-agent", permanent: true },
+      { source: "/output-pack", destination: "/pocket-agent", permanent: true },
+      { source: "/output-pack/:slug*", destination: "/pocket-agent", permanent: true },
+      { source: "/pricing", destination: "/pocket-agent#pricing", permanent: true },
     ];
   },
 };

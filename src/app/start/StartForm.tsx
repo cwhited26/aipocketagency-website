@@ -132,6 +132,38 @@ export default function StartForm() {
               After payment confirms, you&apos;ll be sent to your Pocket Agent.
             </p>
           </form>
+
+          <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+            <div
+              className="mb-4 text-xs uppercase tracking-wider text-slate-500"
+              style={{ fontFamily: MONO_FONT }}
+            >
+              what happens next
+            </div>
+            <ol className="space-y-3">
+              {[
+                "Start your 14-day trial.",
+                "Open your Pocket Agent.",
+                "Add your first context — voice note, screenshot, or email.",
+                "Get your first draft or call brief.",
+                "Charged on day 15 unless you cancel.",
+              ].map((step, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm text-slate-300">
+                  <span
+                    className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent"
+                    style={{ fontFamily: MONO_FONT }}
+                  >
+                    {i + 1}
+                  </span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+            <p className="mt-5 text-xs leading-relaxed text-slate-500">
+              Your Pocket Agent will not send emails or customer replies without
+              you. Every output is a draft you approve.
+            </p>
+          </div>
         </div>
       </section>
 

@@ -107,25 +107,24 @@ function Hero() {
           </div>
           <h1 className="text-balance text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
             <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
-              Your AI forgets everything you told it.
+              Your business finally has a memory.
             </span>
           </h1>
-          <p className="mt-6 text-balance text-xl text-slate-200 sm:text-2xl">
-            Pocket Agent gives it a brain that doesn&apos;t.
+          <p className="mt-6 max-w-2xl text-balance text-lg text-slate-300 sm:text-xl">
+            Pocket Agent remembers the context you keep repeating, drafts
+            emails in your voice, briefs you before calls, and finds old
+            decisions in seconds — with the source. Send it the voice note,
+            screenshot, email, link, or transcript. It keeps the memory. You
+            get the work back.
           </p>
-          <p className="mt-4 max-w-2xl text-balance text-lg text-slate-300 sm:text-xl">
-            Sign up, connect GitHub, and every decision you&apos;ve ever made
-            is searchable in three seconds. Your new agent drafts emails for
-            you. Moves leads. Writes estimates when you don&apos;t have time.
-            Nothing lives in the chat window anymore — it lives in your system.
-          </p>
-          <div className="mt-10 flex flex-col items-center gap-4 lg:items-start">
-            <PrimaryCTA label="Start your 14-day free trial" sublabel="$97/mo after · cancel anytime" />
-            <SecondaryCTA
-              href="/dispatch-playbook"
-              label="Start with a $15 kit"
-              sublabel="instant download"
-            />
+          <div className="mt-10 flex flex-col items-center gap-3 lg:items-start">
+            <PrimaryCTA label="Start your 14-day trial" />
+            <p
+              className="text-xs text-slate-500"
+              style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
+            >
+              $97/mo after day 14. Cancel before then and pay $0.
+            </p>
           </div>
         </div>
         <div className="relative mx-auto w-full max-w-xl lg:max-w-none">
@@ -389,8 +388,8 @@ function Ladder() {
       title: "Your AI captures everything. And gives back.",
       detail:
         "Voice memos, screenshots, emails, Loom recordings — your AI files them without you typing into a CRM. And it gives back: drafts your standup before coffee, briefs you before every call, handles customer Q&A in your voice.",
-      cta: "See what's live",
-      href: "/output-pack",
+      cta: "See what it does",
+      href: "/pocket-agent",
     },
     {
       n: "3",
@@ -398,7 +397,7 @@ function Ladder() {
       label: "Pocket Agent",
       title: "The software that runs all of it",
       detail:
-        "Hosted at app.aipocketagency.com. Sign up, and your AI is live in minutes — every playbook loaded, every capability active, Skool community included. Your data stays yours. 14-day free trial.",
+        "Sign up and your AI is running — every playbook loaded, every capability active, Skool community included. Your data stays yours. 14-day free trial.",
       cta: "Start your 14-day free trial",
       href: TRIAL_URL,
       primary: true,
@@ -682,18 +681,18 @@ function ModulesShipping() {
         </p>
         <div className="mt-10 grid gap-5 sm:grid-cols-2">
           <PackCard
-            href="/capture-pack"
+            href="/pocket-agent"
             pill="[ capture ]"
             title="Tap once. Your AI captures the rest."
             blurb="Voice memos, screenshots, share links, emails, Loom recordings — all filed automatically. Nothing dies in your head."
-            statusLine="1 live now · more coming"
+            statusLine="five capture tools"
           />
           <PackCard
-            href="/output-pack"
+            href="/pocket-agent"
             pill="[ output ]"
             title="Your AI works while you sleep."
             blurb="Standup before coffee. Brief before every call. Customer Q&A in your voice. Content from past wins. It just runs."
-            statusLine="Decision Query live · more coming"
+            statusLine="five output tools"
           />
         </div>
       </div>
@@ -808,43 +807,35 @@ function FinalCTA() {
       <div className="relative mx-auto flex max-w-3xl flex-col items-center px-6 py-24 text-center sm:py-28">
         <SectionLabel>start here</SectionLabel>
         <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
-          $97/mo. 14-day free trial. Skool included.
+          $97/mo. 14-day free trial. Your data stays yours.
         </h2>
         <p className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
-          Sign up and your AI is live in minutes — every playbook loaded, every
-          capability active, Skool community included. New capabilities arrive
-          automatically. You don&apos;t manage it — it just works.
+          Sign up and your AI is running — every playbook loaded, every
+          capability active, Skool community included.
         </p>
         <div className="mt-10 flex w-full max-w-md flex-col items-center gap-4">
           <PrimaryCTA
-            label="Start your 14-day free trial"
-            sublabel="$97/mo after · cancel anytime"
+            label="Start your 14-day trial"
           />
-          <div
-            className="whitespace-nowrap text-xs text-cyan-300/60"
+          <p
+            className="text-xs text-slate-500"
             style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
           >
-            [ or ]
-          </div>
-          <SecondaryCTA
-            href="/dispatch-playbook"
-            label="Start with the Dispatch Playbook"
-            sublabel="$15 · instant download"
-          />
+            [ $97/mo after day 14 · cancel before then and pay $0 ]
+          </p>
         </div>
-        <p className="mt-8 text-sm text-slate-400">
-          Want it built FOR you instead?{" "}
+        <p className="mt-8 text-sm text-slate-500">
+          Want this built around your exact business?{" "}
           <Link
             href={BUILDOUT_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-accent underline-offset-4 transition hover:underline"
+            className="text-slate-400 underline-offset-4 transition hover:text-slate-200 hover:underline"
           >
             Buildout Studios
           </Link>{" "}
-          — a full creative studio that builds custom software, websites, web
-          apps, and internal tools, with Pocket Agent pre-installed and
-          pre-trained on your business.
+          handles custom builds, websites, and software. Pocket Agent is the
+          starting point. BOS is the custom path.
         </p>
       </div>
     </section>
