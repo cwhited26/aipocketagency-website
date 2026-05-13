@@ -148,7 +148,7 @@ export default function WaitlistForm({
       </button>
 
       <p className="mt-4 text-center text-xs text-slate-500">
-        No spam. No drip sequence. Just a heads-up when each module ships.
+        No spam. No drip sequence. Just a heads-up when each one goes live.
       </p>
     </form>
   );

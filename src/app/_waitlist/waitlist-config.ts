@@ -79,14 +79,14 @@ export type WaitlistBundle = {
 export const CAPTURE_PACK: WaitlistBundle = {
   slug: "capture_pack",
   pageTitle: "Capture Pack — AI Pocket Agency",
-  heroPill: "[ capture pack · ships into pocket agent ]",
-  heroHeadline: "Tap once. The brain captures the rest.",
+  heroPill: "[ capture · what your ai remembers ]",
+  heroHeadline: "Tap once. Your AI captures the rest.",
   heroSubhead:
-    "Five modules shipping into your Pocket Agent dashboard — voice, screenshot, share sheet, email, Loom. Every thought hits the brain without you typing into a CRM. C3 is live now.",
-  catalogLabel: "the catalog",
-  catalogHeadline: "Five capture modules. One door into the brain.",
+    "Voice memos, screenshots, share links, emails, Loom recordings — your Pocket Agent files all of it without you typing a word. Nothing dies in your head.",
+  catalogLabel: "what your ai captures",
+  catalogHeadline: "Five ways your AI remembers things for you.",
   catalogIntro:
-    "Friction equals forgotten. Remove the friction, the brain compounds. Each module ships into Pocket Agent one at a time — every capture lands in the same inbox, gets the same consolidation pass, becomes searchable forever.",
+    "Friction equals forgotten. Remove the friction, the memory compounds. Each capability goes live in your Pocket Agent one at a time — every capture lands in the same place, gets organized automatically, becomes searchable forever.",
   modules: [
     {
       code: "C1",
@@ -104,13 +104,13 @@ export const CAPTURE_PACK: WaitlistBundle = {
     },
     {
       code: "C3",
-      title: "Share Sheet URL → Brain",
+      title: "Share Sheet URL → Your AI",
       blurb:
-        "Hit Share on any URL — Safari, Facebook, X, LinkedIn — type one word, it lands in your brain organized. Your home-screen graveyard becomes a real research pile.",
+        "Hit Share on any URL — Safari, Facebook, X, LinkedIn — type one word, it lands in your Pocket Agent organized. Your home-screen graveyard becomes a real research pile.",
       status: "live",
       liveHref:
         "https://github.com/cwhited26/aipocketagency-brain/blob/main/automations/brain-inbox-shortcut-recipe.md",
-      liveCta: "Install recipe",
+      liveCta: "Get the setup guide",
     },
     {
       code: "C4",
@@ -128,30 +128,30 @@ export const CAPTURE_PACK: WaitlistBundle = {
     },
   ],
   pricingLabel: "how it works",
-  pricingHeadline: "Modules ship into Pocket Agent. $97/mo gets them all.",
+  pricingHeadline: "Your Pocket Agent gets sharper every week. $97/mo includes everything as it arrives.",
   pricingParagraphs: [
-    "A VA who could transcribe your voice, categorize your screenshots, parse your emails, fetch Loom transcripts, and remember every Facebook save would cost you $2,000–4,000 a month. The Capture Pack runs on your Anthropic key — and if you're on Pocket Agent, every module lands in your dashboard automatically.",
-    "Each module also sells as a standalone $15 kit when it ships, if you want just that piece. But subscribers get every module as it goes live — no separate purchase, no separate install. It just shows up.",
+    "A VA who could transcribe your voice, categorize your screenshots, parse your emails, fetch Loom transcripts, and remember every Facebook save would cost you $2,000–4,000 a month. Your Pocket Agent does all of it.",
+    "Each capability also sells as a standalone $15 playbook when it goes live, if you want just that piece. Pocket Agent members get every new capability as it arrives — no separate purchase, no separate setup. It just shows up.",
   ],
   formLabel: "get notified",
-  formHeadline: "Get notified when this module lands in Pocket Agent.",
+  formHeadline: "Get notified when the next capability goes live.",
   formSubhead:
-    "One email when each module flips to live in the dashboard. No drip. No upsell sequence.",
-  formCta: "Notify me when it ships",
-  successLine: "You're on the list. We'll email you when the next module lands.",
+    "One email when each new feature is ready. No drip. No upsell sequence.",
+  formCta: "Notify me when it's live",
+  successLine: "You're on the list. We'll email you when the next one goes live.",
 };
 
 export const OUTPUT_PACK: WaitlistBundle = {
   slug: "output_pack",
   pageTitle: "Output Pack — AI Pocket Agency",
-  heroPill: "[ output pack · ships into pocket agent ]",
-  heroHeadline: "Your brain works while you sleep.",
+  heroPill: "[ output · what your ai gives back ]",
+  heroHeadline: "Your AI works while you sleep.",
   heroSubhead:
-    "Eight modules shipping into your Pocket Agent dashboard — daily standups, pre-call briefs, customer Q&A in your voice, compete-watch, content from past wins. O7 Plain-English Decision Query is live now; the rest of the operating layer ships behind it.",
-  catalogLabel: "the catalog",
-  catalogHeadline: "Eight output modules. Your brain in motion.",
+    "Daily standups before coffee. Pre-call briefs. Customer Q&A in your voice. Competitive intel. Content from past wins. Your Pocket Agent just runs. Decision Query is live now.",
+  catalogLabel: "what your ai gives back",
+  catalogHeadline: "Eight ways your AI does the work for you.",
   catalogIntro:
-    "Without outputs you have a sophisticated note-taking system. With outputs you have an operating layer. Every module ships into Pocket Agent on a schedule (or on demand) and delivers something useful to your phone — standup before coffee, brief before every call, content drafts in your voice.",
+    "Without outputs you have a sophisticated note-taking system. With outputs you have a second brain that works for you. Your Pocket Agent runs these on a schedule or on demand and delivers something useful straight to your phone.",
   modules: [
     {
       code: "O1",
@@ -178,7 +178,7 @@ export const OUTPUT_PACK: WaitlistBundle = {
       code: "O4",
       title: "Real-Time Objection Handler (V2)",
       blurb:
-        "Live sales call. Objection raised. Your phone silently surfaces the proven handler from your objection bank. Read it natural, close the deal. V2 — ships after the V1 modules are generating revenue.",
+        "Live sales call. Objection raised. Your phone silently surfaces the proven handler from your objection bank. Read it natural, close the deal.",
       status: "coming-soon",
     },
     {
@@ -202,7 +202,7 @@ export const OUTPUT_PACK: WaitlistBundle = {
         "Ask 'what did we decide about Patrick's PDF cover?' Answer in three seconds with the exact decision log entry and session excerpt cited. The 'I know we figured this out' graveyard dies.",
       status: "live",
       liveHref: "/output-pack/decision-query",
-      liveCta: "Install recipe",
+      liveCta: "See how it works",
     },
     {
       code: "O8",
@@ -214,15 +214,15 @@ export const OUTPUT_PACK: WaitlistBundle = {
   ],
   pricingLabel: "how it works",
   pricingHeadline:
-    "Modules ship into Pocket Agent. $97/mo gets them all.",
+    "Your Pocket Agent gets sharper every week. $97/mo includes everything as it arrives.",
   pricingParagraphs: [
-    "What you'd pay an EA + a junior marketer + a sales analyst + a content writer to do all of this — badly — is $8,000–15,000 a month. Every Output Pack module runs on your Anthropic key inside Pocket Agent.",
-    "Each module also sells as a standalone $15 kit when it ships. Pocket Agent subscribers get every module as it goes live — it lands in the dashboard automatically. O7 is live now. The rest are shipping behind it.",
+    "What you'd pay an EA + a junior marketer + a sales analyst + a content writer to do all of this — badly — is $8,000–15,000 a month. Your Pocket Agent does it.",
+    "Each capability also sells as a standalone $15 playbook when it goes live. Pocket Agent members get every new capability as it arrives — no separate purchase, no separate setup. Decision Query is live now. The rest are coming behind it.",
   ],
   formLabel: "get notified",
-  formHeadline: "Get notified when the next module lands in Pocket Agent.",
+  formHeadline: "Get notified when the next capability goes live.",
   formSubhead:
-    "One email when each module flips to live in the dashboard. No drip. No upsell sequence.",
-  formCta: "Notify me when it ships",
-  successLine: "You're on the list. We'll email you when the next module lands.",
+    "One email when each new feature is ready. No drip. No upsell sequence.",
+  formCta: "Notify me when it's live",
+  successLine: "You're on the list. We'll email you when the next one goes live.",
 };

@@ -4,10 +4,10 @@ import { OUTPUT_PACK } from "@/app/_waitlist/waitlist-config";
 
 const PAGE_URL = "https://aipocketagency.com/output-pack";
 const DESCRIPTION =
-  "Your brain works while you sleep. Eight modules — daily standup, pre-call brief, customer Q&A in your voice, compete-watch, content from past wins — that turn captured context into action. Free waitlist while modules ship.";
+  "Your Pocket Agent works while you sleep. Eight ways — daily standup, pre-call brief, customer Q&A in your voice, compete-watch, content from past wins — that turn captured context into action. Decision Query is live now.";
 
 export const metadata: Metadata = {
-  title: "Output Pack — Waitlist | AI Pocket Agency",
+  title: "Output Pack — AI Pocket Agency",
   description: DESCRIPTION,
   alternates: { canonical: PAGE_URL },
   openGraph: {

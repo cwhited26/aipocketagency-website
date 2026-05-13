@@ -11,7 +11,7 @@ const TEMPLATE_CLONE_URL =
 const RECIPE_URL =
   "https://github.com/cwhited26/aipocketagency-brain/blob/main/automations/brain-ask-shortcut-recipe.md";
 const DESCRIPTION =
-  "Plain-English Decision Query. Ask the brain a question in your terminal or from your phone — get a cited answer in three seconds. The first Output Pack module is live.";
+  "Plain-English Decision Query. Ask your Pocket Agent anything about your past decisions — get a cited answer in three seconds. Live now.";
 
 export const metadata: Metadata = {
   title:
@@ -84,10 +84,10 @@ function Hero() {
             </span>
           </h1>
           <p className="mt-6 text-balance text-lg text-slate-200 sm:text-xl">
-            The first Output Pack module is live. One command in your
-            terminal — or a Siri phrase on your phone — and the brain
-            tells you what you decided, with the file and line cited so
-            you can verify before you act.
+            Decision Query is live now. One command in your terminal —
+            or a Siri phrase on your phone — and your Pocket Agent
+            tells you what you decided, with the source cited so you
+            can verify before you act.
           </p>
           <Link
             href="#install"
@@ -161,8 +161,8 @@ function Install() {
           Two minutes. CLI today. Siri on your phone next.
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-slate-300">
-          The Output Pack assumes you already have the AI Pocket Agency
-          brain running locally — a brain repo with{" "}
+          Decision Query assumes you already have the AI Pocket Agency
+          brain running locally — a local brain directory with{" "}
           <InlineCode>memory/</InlineCode>,{" "}
           <InlineCode>sessions/</InlineCode>, and the{" "}
           <InlineCode>brain</InlineCode> CLI on PATH. If you don&apos;t,
@@ -340,15 +340,14 @@ function NextStep() {
       <div className="relative mx-auto max-w-3xl px-6 py-20 sm:py-24">
         <SectionLabel>what ships next</SectionLabel>
         <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl">
-          O7 is the first Output Pack module in Pocket Agent. Seven
-          more are queued — they land in your dashboard as they ship.
+          Decision Query is the first. Seven more are queued — your
+          Pocket Agent gets each one when it goes live.
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-slate-300">
           Daily Standup, Pre-Call Brief, Customer Q&amp;A in Your
           Voice, Weekly Compete-Watch, Content From Past Wins, and
-          MVP Signal — all shipping into Pocket Agent. Subscribers get
-          each module when it goes live. No separate install, no
-          separate purchase.
+          MVP Signal — all coming to Pocket Agent. Members get each
+          one when it goes live. No separate purchase.
         </p>
         <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row">
           <Link
@@ -369,7 +368,7 @@ function NextStep() {
             href="/output-pack#waitlist"
             className="inline-flex items-center gap-2 rounded-full border border-accent/50 bg-accent/[0.05] px-6 py-4 text-base font-semibold text-accent transition hover:border-accent hover:bg-accent/[0.10]"
           >
-            Get notified when each module ships
+            Get notified when each one goes live
           </Link>
         </div>
       </div>
@@ -382,9 +381,9 @@ function Footer() {
     <footer className="bg-black/40">
       <div className="mx-auto max-w-3xl px-6 py-12 text-center">
         <p className="text-sm leading-relaxed text-slate-400">
-          The brain template, the CLI, and the install recipes are open source
-          under MIT. Output Pack modules ship into Pocket Agent as they&apos;re
-          ready — subscribers get each one when it goes live.{" "}
+          The brain template, the CLI, and the setup guides are open source
+          under MIT. New capabilities go live in Pocket Agent as they&apos;re
+          ready — members get each one automatically.{" "}
           <Link href="/" className="text-accent transition hover:underline">
             Back to the homepage.
           </Link>

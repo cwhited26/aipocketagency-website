@@ -4,10 +4,10 @@ import { CAPTURE_PACK } from "@/app/_waitlist/waitlist-config";
 
 const PAGE_URL = "https://aipocketagency.com/capture-pack";
 const DESCRIPTION =
-  "Tap once. The brain captures the rest. Five modules — voice, screenshot, share sheet, email, Loom — that turn your phone into a friction-free door into your AI Pocket Agency. Free waitlist while modules ship.";
+  "Tap once. Your AI captures the rest. Five ways — voice, screenshot, share sheet, email, Loom — that turn your phone into a friction-free door into your Pocket Agent. Get notified as each one goes live.";
 
 export const metadata: Metadata = {
-  title: "Capture Pack — Waitlist | AI Pocket Agency",
+  title: "Capture Pack — AI Pocket Agency",
   description: DESCRIPTION,
   alternates: { canonical: PAGE_URL },
   openGraph: {

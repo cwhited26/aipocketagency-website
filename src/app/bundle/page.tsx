@@ -63,7 +63,7 @@ export default function BundlePage() {
             </div>
             <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl">
               <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
-                The full operator stack — bundled once.
+                The full playbook stack — bundled once.
               </span>
             </h1>
             <p className="mt-6 text-balance text-lg text-slate-200 sm:text-xl">
@@ -163,10 +163,10 @@ export default function BundlePage() {
             Pocket Agent runs them.
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-slate-300">
-            The bundle is the install layer. Pocket Agent is the hosted software
-            that keeps everything running — connected to GitHub, every kit
-            pre-installed, modules shipping into your dashboard as they go live.
-            $97/mo, 14-day free trial.
+            The bundle teaches the patterns. Pocket Agent is the hosted software
+            that keeps everything running — connected to your tools, every
+            playbook in one place, new capabilities added automatically as they
+            go live. $97/mo, 14-day free trial.
           </p>
           <div className="mt-8">
             <Link

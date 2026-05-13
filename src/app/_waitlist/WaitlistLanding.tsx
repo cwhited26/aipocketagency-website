@@ -64,11 +64,11 @@ function PackTrialCTA() {
           [ pocket agent · $97/mo · 14-day free trial ]
         </div>
         <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
-          Want these modules running automatically?
+          Want your AI doing this automatically?
         </h2>
         <p className="mt-5 text-lg leading-relaxed text-slate-300">
-          Pocket Agent subscribers get every module as it goes live — no
-          separate purchase, no separate install. It lands in your dashboard.
+          Pocket Agent members get every new capability as it goes live — no
+          separate purchase, no separate setup. It shows up in your account.
         </p>
         <div className="mt-8">
           <Link
@@ -137,7 +137,7 @@ function Hero({
               href="#waitlist"
               className="text-sm text-slate-400 underline-offset-4 transition hover:text-slate-200 hover:underline"
             >
-              Or get notified when this module lands
+              Or get notified when this one goes live
             </Link>
           </div>
         </div>
@@ -233,15 +233,7 @@ function StatusBadge({ status }: { status: WaitlistModuleStatus }) {
       </span>
     );
   }
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 rounded-full border border-slate-500/40 bg-slate-500/[0.08] px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider text-slate-400"
-      style={{ fontFamily: MONO_FONT }}
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-      [ shipping next ]
-    </span>
-  );
+  return null;
 }
 
 function Pricing({
@@ -319,7 +311,7 @@ function Footer() {
     <footer className="bg-black/40">
       <div className="mx-auto max-w-3xl px-6 py-12 text-center">
         <p className="text-sm leading-relaxed text-slate-400">
-          AI Pocket Agency · Built by an operator. Used by operators.{" "}
+          AI Pocket Agency · Built by a builder. Run in the field.{" "}
           <Link href="/" className="text-accent transition hover:underline">
             Back to the homepage
           </Link>

@@ -38,12 +38,12 @@ export default function KitLandingPage({ slug }: { slug: KitSlug }) {
       <BundleCTA currentSlug={kit.slug} />
       <RelatedKits currentSlug={kit.slug} />
       <BrainStackCTA />
+      <PocketAgentCTA />
       <FormSection
         slug={kit.slug}
         dealHeadline={content?.dealHeadline ?? null}
         dealParagraphs={content?.dealParagraphs ?? null}
       />
-      <PocketAgentCTA />
       <Footer />
     </main>
   );
@@ -53,11 +53,11 @@ function KitInstallBanner() {
   return (
     <div className="border-b border-accent/20 bg-accent/[0.04] px-6 py-3">
       <p className="mx-auto max-w-3xl text-center text-sm leading-snug text-slate-300">
-        These frameworks come pre-installed in{" "}
+        These playbooks come pre-loaded in{" "}
         <Link href={TRIAL_URL} className="font-semibold text-accent underline-offset-4 hover:underline">
           Pocket Agent
         </Link>
-        . The kits teach the patterns; the software runs them for you.
+        . The playbooks teach the patterns; the software runs them for you.
       </p>
     </div>
   );
@@ -69,12 +69,12 @@ function PocketAgentCTA() {
       <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20 text-center">
         <SectionLabel>want it running automatically?</SectionLabel>
         <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
-          Pocket Agent installs this and runs it for you.
+          Want this running without the setup?
         </h2>
         <p className="mt-5 text-lg leading-relaxed text-slate-300">
-          The kit is the pattern. Pocket Agent is the software that runs it —
-          hosted, connected to GitHub, and wired up in under ten minutes. Every
-          kit in this stack ships pre-installed in your dashboard.
+          The playbook teaches the pattern. Pocket Agent runs it — every
+          playbook active from day one, every new capability arriving
+          automatically. Sign up and you&apos;re live in minutes.
         </p>
         <div className="mt-8">
           <Link
@@ -273,10 +273,10 @@ function BundleCTA({ currentSlug }: { currentSlug: KitSlug }) {
           against ${individualTotalUsd} buying them separately.
         </h2>
         <p className="mt-5 text-lg leading-relaxed text-slate-300">
-          Five $15 kits = ${individualTotalUsd}. The full operator stack —
-          Dispatch, Dev-Team Document Set, CLAUDE.md Template Library,
-          Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack — bundled
-          once at ${BUNDLE_PUBLIC_USD}.
+          Five $15 playbooks = ${individualTotalUsd}. All five bundled
+          together — Dispatch, Dev-Team Document Set, CLAUDE.md Template Library,
+          Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack — at
+          ${BUNDLE_PUBLIC_USD}.
         </p>
         <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
           <Link
@@ -363,25 +363,26 @@ function BrainStackCTA() {
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
         <SectionLabel>the rest of the stack</SectionLabel>
         <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-          Two more layers ship into Pocket Agent as modules.
+          Your Pocket Agent gets sharper every week.
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-slate-300">
-          This kit is one piece. Capture Pack and Output Pack modules ship
-          directly into your Pocket Agent dashboard one at a time — you don&apos;t
-          hunt for them, they show up. The catalog is public so you can see what
-          lands next.
+          This playbook is one piece. Pocket Agent captures everything your AI
+          needs and gives back automatically — standup before coffee, brief
+          before every call, customer Q&amp;A in your voice. New capabilities
+          arrive in your account as they go live. You don&apos;t hunt for them
+          — they show up.
         </p>
         <div className="mt-10 grid gap-5 sm:grid-cols-2">
           <BrainStackCard
-            pill="[ capture pack ]"
-            title="Tap once. The brain captures the rest."
-            detail="5 modules — voice, screenshot, share sheet, email, Loom. Ships into your Pocket Agent dashboard. C3 live now."
+            pill="[ capture ]"
+            title="Tap once. Your AI captures the rest."
+            detail="Voice memos, screenshots, share links, emails, Loom recordings — all filed automatically. Nothing dies in your head."
             href="/capture-pack"
           />
           <BrainStackCard
-            pill="[ output pack ]"
-            title="Your brain works while you sleep."
-            detail="8 modules — standup, pre-call brief, customer Q&A in your voice, compete-watch, content from past wins. Ships into Pocket Agent. O7 live now."
+            pill="[ output ]"
+            title="Your AI works while you sleep."
+            detail="Standup before coffee. Brief before every call. Customer Q&A in your voice. Content from past wins. It just runs."
             href="/output-pack"
           />
         </div>

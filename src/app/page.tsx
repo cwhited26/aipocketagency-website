@@ -175,9 +175,9 @@ function PainHooks() {
           ))}
         </ul>
         <p className="mt-8 text-lg leading-relaxed text-slate-300">
-          Pocket Agent solves all of it. One persistent brain — file-based,
-          git-versioned, readable by every agent on the planet. You own it
-          forever. No platform lock-in.
+          Pocket Agent solves all of it. Your AI remembers everything —
+          every decision, every conversation, every piece of context. You
+          own it forever. No platform lock-in.
         </p>
       </div>
     </section>
@@ -195,12 +195,11 @@ function Manifesto() {
           </h2>
           <p className="mt-6 text-lg leading-relaxed text-slate-300 sm:text-xl">
             You shouldn&apos;t have to choose between building real businesses
-            and living your life. Pocket Agent is the operating system I built
-            so I can run multiple software companies from a phone, from a job
-            site, from a hotel, from anywhere. Persistent memory across every
-            agent. The full why behind every what. Agent-agnostic,
-            model-churn-resistant, and built so the work happens when it shows
-            up — not when you&apos;re chained to a desk.
+            and living your life. I built this so I can run multiple software
+            companies from a phone, from a job site, from a hotel, from
+            anywhere. Your AI remembers every decision, every conversation,
+            every task — and picks up exactly where it left off. The work
+            happens when it shows up. Not when you&apos;re chained to a desk.
           </p>
         </div>
         <div className="mt-12 relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-black shadow-2xl">
@@ -222,7 +221,7 @@ function DashboardMock() {
     { label: "Decisions logged", value: "161" },
     { label: "Active products", value: "7" },
     { label: "Commits this week", value: "42" },
-    { label: "Memory files", value: "284" },
+    { label: "Context saved", value: "284" },
   ];
   const recent = [
     {
@@ -306,21 +305,21 @@ function Ladder() {
     {
       n: "1",
       price: "$15 each",
-      label: "Install kits",
-      title: "The 5 operator frameworks",
+      label: "the frameworks",
+      title: "Five playbooks. Instant download.",
       detail:
-        "Dispatch Playbook, Dev-Team Document Set, CLAUDE.md Template Library, Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack. Each one is the exact document set I run on real client builds. Instant download.",
-      cta: "See the kits",
+        "Dispatch Playbook, Dev-Team Document Set, CLAUDE.md Template Library, Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack. These are the exact documents I run on real client builds. Each one is $15. You get what you paid for the moment Stripe confirms.",
+      cta: "See the playbooks",
       href: "/dispatch-playbook",
     },
     {
       n: "2",
-      price: "$15 each as they ship",
-      label: "Capture + Output modules",
-      title: "The pack modules",
+      price: "$15 each as they go live",
+      label: "capture + output",
+      title: "Your AI captures everything. And gives back.",
       detail:
-        "Capture Pack: voice, screenshot, share sheet, email, Loom — every thought hits the brain. Output Pack: standup, pre-call brief, customer Q&A in your voice, compete-watch. Modules ship into Pocket Agent one at a time.",
-      cta: "See what's shipping",
+        "Voice memos, screenshots, emails, Loom recordings — your AI files them without you typing into a CRM. And it gives back: drafts your standup before coffee, briefs you before every call, handles customer Q&A in your voice. New capabilities go live one at a time.",
+      cta: "See what's live",
       href: "/output-pack",
     },
     {
@@ -329,7 +328,7 @@ function Ladder() {
       label: "Pocket Agent",
       title: "The software that runs all of it",
       detail:
-        "Hosted at app.aipocketagency.com. Connect GitHub, start your trial. Every kit pre-installed. Every module shipped directly to your dashboard. The brain lives in your repo — you own it forever. Skool community included.",
+        "Hosted at app.aipocketagency.com. Sign up, and your AI is live in minutes — every playbook loaded, every capability active, Skool community included. Your data stays yours. 14-day free trial.",
       cta: "Start your 14-day free trial",
       href: TRIAL_URL,
       primary: true,
@@ -339,13 +338,14 @@ function Ladder() {
   return (
     <section className="border-b border-white/5 bg-gradient-to-b from-black/40 via-black/20 to-transparent">
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>the offer ladder</SectionLabel>
+        <SectionLabel>how to start</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Four ways in. One destination.
+          Free. $15. $97/mo. Pick your entry point.
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-slate-300">
-          Start wherever makes sense. Every step is a working piece of the same
-          system — and every step points at the same place.
+          Every step is a working piece of the same thing. The free guide shows
+          the system. The $15 playbooks teach the patterns. Pocket Agent runs
+          them — and gets sharper every week.
         </p>
         <ol className="mt-10 space-y-4">
           {steps.map((s) => (
@@ -449,14 +449,14 @@ function Origin() {
             minutes hoping the agents kept things straight.
           </p>
           <p>
-            So I built the brain. File-based, git-versioned, readable by every
-            agent on the planet. Then I wired it to a dashboard so I could see
-            everything at a glance. Then I started using Dispatch — that&apos;s
-            when it all came together. I could spin up as many agents as I
-            needed in parallel, every one of them with the exact context they
-            needed to keep their lane straight. Manus running in one tab.
-            Codex remoted in another. Claude Code in three worktrees at once.
-            All sharing the same brain. None of them stepping on each other.
+            So I built a system. Every decision, every conversation, every
+            piece of context — saved in a way that any agent could read before
+            it touched anything. Then I wired it into a single view so I could
+            see everything at a glance. Then I started using Dispatch — that&apos;s
+            when it all came together. Multiple agents running in parallel,
+            every one of them with the exact context they needed. Manus in one
+            tab. Codex in another. Claude Code running three builds at once.
+            None of them stepping on each other.
           </p>
           <p>
             That&apos;s when I knew this was real. I was onboarding new
@@ -475,8 +475,8 @@ function HowItWorks() {
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
         <SectionLabel>how it works</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Your agent&apos;s context fills up at 40k tokens. Mine doesn&apos;t —
-          because the brain lives in files.
+          Your AI re-explains your whole business every conversation. Mine
+          doesn&apos;t — because it remembers.
         </h2>
         <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
           <p>
@@ -484,47 +484,44 @@ function HowItWorks() {
             your head. Pocket Agent raises that ceiling.
           </p>
           <p>
-            Persistent memory in markdown. Multi-lane agent orchestration.
-            Build one large app or ten in parallel without the working memory
-            of any single agent ever filling up. The agent reads from the
-            brain, decides, writes back. Tomorrow&apos;s agent picks up exactly
-            where today&apos;s left off.
+            Every decision you make, every conversation you have, every
+            project you run — remembered and searchable. Run one project or
+            ten in parallel. Your AI never loses the thread. Tomorrow it picks
+            up exactly where today left off.
           </p>
         </div>
         <div className="mt-10">
           <h3 className="text-xl font-semibold text-slate-100 sm:text-2xl">
-            Two layers run in parallel:
+            Two kinds of memory, running at once:
           </h3>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
               <div className="text-sm font-semibold uppercase tracking-wider text-accent">
-                Intentional
+                What you decide
               </div>
               <p className="mt-3 text-base leading-relaxed text-slate-300">
-                Your conventions, decisions, feature inventories, project
-                state. The stuff you&apos;d write down if you had time. The
-                brain writes it for you, then any agent reads it before it
-                touches anything.
+                Every decision, convention, and project state — written down
+                the moment it happens. Your AI reads all of it before it does
+                anything. No more re-explaining from scratch.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
               <div className="text-sm font-semibold uppercase tracking-wider text-accent">
-                Ambient
+                What happened
               </div>
               <p className="mt-3 text-base leading-relaxed text-slate-300">
-                Every conversation, every commit, every shipped change captured
-                automatically. Searchable a year from now. The full why behind
-                every what.
+                Every conversation and every change captured automatically.
+                Searchable a year from now. The full why behind every what.
               </p>
             </div>
           </div>
         </div>
         <p className="mt-8 text-lg leading-relaxed text-slate-300">
-          Wire it into{" "}
+          Connects to{" "}
           <span className="text-slate-100">
             Drive, Gmail, Slack, Notion, Linear, GitHub, Supabase
           </span>{" "}
-          — anything with an MCP or API.{" "}
+          — anything you&apos;re already using.{" "}
           <span className="text-accent">Your stack, your data.</span>
         </p>
       </div>
@@ -534,14 +531,13 @@ function HowItWorks() {
 
 function Pricing() {
   const included = [
-    "Hosted web app at app.aipocketagency.com",
-    "Connect GitHub and your brain repo is live in minutes",
-    "All 5 install kits pre-loaded (Dispatch, Dev-Team, CLAUDE.md, Discovery→MVP, Wire-Brain)",
-    "Every Capture + Output module ships directly to your dashboard",
-    "Plain-English Decision Query — ask the brain anything, get a cited answer",
-    "Skool community — three live calls per week, build sessions with Chase",
-    "Your brain repo is yours — git-versioned, you own it forever",
-    "Works with Claude, Codex, Cursor, Manus, any MCP-compatible agent",
+    "Hosted at app.aipocketagency.com — sign up and you're live in minutes",
+    "All 5 playbooks active from day one (Dispatch, Dev-Team, CLAUDE.md, Discovery→MVP, Wire-Brain)",
+    "New capabilities arrive automatically as they go live — you don't hunt for them",
+    "Ask your AI anything about past decisions — cited answer in three seconds",
+    "Skool community included — three live calls per week, build sessions with Chase",
+    "Your data stays yours — no platform lock-in",
+    "Works with any AI you're already using",
   ];
   return (
     <section className="border-b border-white/5 bg-gradient-to-b from-accent/[0.04] via-transparent to-transparent">
@@ -601,35 +597,35 @@ function ModulesShipping() {
   return (
     <section className="border-b border-white/5 bg-gradient-to-b from-accent/[0.04] via-transparent to-transparent">
       <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
-        <SectionLabel>shipping into pocket agent</SectionLabel>
+        <SectionLabel>what your pocket agent does</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Two packs. Modules ship into your dashboard one at a time.
+          Your Pocket Agent gets sharper every week.
         </h2>
         <p className="mt-6 max-w-3xl text-lg leading-relaxed text-slate-300">
-          The Capture Pack is the friction-free door — voice, screenshot, share
-          sheet, email, Loom — every thought hits the brain without you typing
-          into a CRM. The Output Pack is what the brain does back — standup
-          before coffee, brief before every call, customer Q&amp;A in your
-          voice, content drafts from past wins.
+          Your Pocket Agent captures everything — voice memos, screenshots,
+          emails, Loom recordings — without you typing anything into a CRM.
+          And it gives back: drafts your standup before coffee, briefs you
+          before every call, handles customer Q&amp;A in your voice, writes
+          content from past wins.
         </p>
         <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-400">
-          Each module flips to live in your Pocket Agent dashboard with a
-          heads-up to subscribers. You don&apos;t hunt for it — it shows up.
+          New capabilities arrive automatically. You don&apos;t hunt for them
+          — they show up in your Pocket Agent.
         </p>
         <div className="mt-10 grid gap-5 sm:grid-cols-2">
           <PackCard
             href="/capture-pack"
-            pill="[ capture pack · 5 modules ]"
-            title="Capture Pack"
-            blurb="Tap once. Brain captures the rest. Voice, screenshot, share sheet, email, Loom."
-            statusLine="1 of 5 live · ships into your dashboard"
+            pill="[ capture ]"
+            title="Tap once. Your AI captures the rest."
+            blurb="Voice memos, screenshots, share links, emails, Loom recordings — all filed automatically. Nothing dies in your head."
+            statusLine="1 live now · more coming"
           />
           <PackCard
             href="/output-pack"
-            pill="[ output pack · 8 modules ]"
-            title="Output Pack"
-            blurb="Your brain works while you sleep. Standup, pre-call brief, customer Q&A, compete-watch, more."
-            statusLine="O7 live · more shipping now"
+            pill="[ output ]"
+            title="Your AI works while you sleep."
+            blurb="Standup before coffee. Brief before every call. Customer Q&A in your voice. Content from past wins. It just runs."
+            statusLine="Decision Query live · more coming"
           />
         </div>
       </div>
@@ -747,9 +743,9 @@ function FinalCTA() {
           $97/mo. 14-day free trial. Skool included.
         </h2>
         <p className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
-          Sign up, connect GitHub, and the brain is running inside Pocket Agent
-          in under ten minutes. Every kit pre-installed. Every module lands in
-          your dashboard as it ships.
+          Sign up and your AI is live in minutes — every playbook loaded, every
+          capability active, Skool community included. New capabilities arrive
+          automatically. You don&apos;t manage it — it just works.
         </p>
         <div className="mt-10 flex w-full max-w-md flex-col items-center gap-4">
           <PrimaryCTA
@@ -803,8 +799,7 @@ function Footer() {
             AI Pocket Agency
           </div>
           <div className="mt-1 text-xs text-slate-500">
-            A Whited Consulting brand · Built by an operator. Used by
-            operators.
+            A Whited Consulting brand · Built by a builder. Run in the field.
           </div>
         </div>
         <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">

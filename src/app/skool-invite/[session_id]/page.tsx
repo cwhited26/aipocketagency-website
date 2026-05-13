@@ -100,12 +100,12 @@ export default async function SkoolInvitePage({
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.04] p-7 shadow-[0_0_60px_-25px_rgba(99,102,241,0.55)] sm:p-9">
             <div className="space-y-3 text-base leading-relaxed text-slate-200">
               <p>
-                Three live calls per week with operators running this in
+                Three live calls per week with builders running this in
                 production.
               </p>
               <p>
                 The kits get refreshed monthly as Claude, Cursor, and Codex
-                ship breaking changes — subscribers get new versions
+                ship breaking changes — members get new versions
                 automatically.
               </p>
               <p>I&apos;m in the room twice a week.</p>

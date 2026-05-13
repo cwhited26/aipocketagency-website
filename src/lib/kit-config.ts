@@ -140,7 +140,7 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     fullName: "The Dispatch Playbook",
     shortName: "Dispatch Playbook",
     blurb:
-      "The operator manual for running parallel Claude Code agents without them stepping on each other.",
+      "The field manual for running parallel Claude Code agents without them stepping on each other.",
     ogAlt: "The Dispatch Playbook — $15 instant download",
     pdfPath: "/dispatch-playbook.pdf",
     deliverySubject: "Your Dispatch Playbook is here",
@@ -149,14 +149,14 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
     marketingContent: {
       heroPill: "[ $15 · instant download ]",
       heroSubhead: "Stop being scared to spawn parallel agents.",
-      problemHeadline: "Most operators using Claude Code never touch Dispatch.",
+      problemHeadline: "Most builders using Claude Code never touch Dispatch.",
       problemParagraphs: [
         "They've heard about it. They know parallel lanes would let them ship 4 things at once instead of waiting on one chat. But the fear is real — agents stepping on each other, branches diverging, half-finished pushes, code they didn't write going to main.",
         "So they stay single-threaded. Watch one agent work. Hit “allow” every 5 minutes. Wait.",
       ],
-      whatsInsideHeadline: "The operator manual I should have had.",
+      whatsInsideHeadline: "The field manual I should have had.",
       whatsInsideIntro:
-        "The Dispatch Playbook is the operator manual I should have had when I started running parallel agents. Eleven sections covering:",
+        "The Dispatch Playbook is the field manual I should have had when I started running parallel agents. Eleven sections covering:",
       whatsInsideItems: [
         { n: 1, title: "Why Dispatch matters (vs single-thread Claude Code)" },
         { n: 2, title: "The “rogue agent” fear and why it’s solvable" },
@@ -199,12 +199,11 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
         { n: 11, title: "What to do when it goes wrong (abort, rollback, recover)" },
       ],
       whatsInsideOutro:
-        "PDF + markdown bundle, written in plain operator voice. No theory. No filler. Just the rules I run my own multi-agent setup on.",
+        "PDF bundle, written in plain voice. No theory. No filler. Just the rules I run my own multi-agent setup on.",
       dealHeadline:
-        "$15. Instant download. First 50 buyers get the live walkthrough.",
+        "$15. Instant download.",
       dealParagraphs: [
-        "$15. Instant download. The moment Stripe confirms payment, the PDF + markdown bundle lands in your inbox. No 2-week wait, no shipping queue, no founder gate-keeping. You bought it, you have it.",
-        "First 50 buyers get an invite to a 30-minute live walkthrough call where I screen-share my actual setup running 6 lanes at once and answer questions.",
+        "$15. Instant download. The moment Stripe confirms payment, the PDF bundle lands in your inbox. No wait, no queue. You bought it, you have it.",
       ],
     },
   },
@@ -480,14 +479,14 @@ export const KIT_CONFIG: Record<KitSlug, KitConfig> = {
       problemHeadline:
         "The brain works alone. It multiplies when you wire it to the tools you actually use.",
       problemParagraphs: [
-        "Most operators with a brain repo never wire it to anything. The docs are scattered. The OAuth flows are confusing. Every MCP has three scope decisions that read identical until one of them locks you out at runtime.",
+        "Most people with a brain set up never wire it to anything. The docs are scattered. The OAuth flows are confusing. Every connection has three scope decisions that read identical until one of them locks you out at runtime.",
         "So the brain sits there — useful for context, useless for action. The Gmail thread the buyer cited stays buried. The Drive folder with the spec stays unread. The Linear ticket gets opened by hand. Every time.",
         "The unlock isn't a smarter brain. The unlock is wiring it to the seven places your work already lives.",
       ],
       whatsInsideHeadline:
         "Seven walkthroughs. Same shape every time.",
       whatsInsideIntro:
-        "Each walkthrough covers four things: the auth flow with the exact scopes you actually need, three working example queries you can copy and run, three gotchas that trip operators on their first wire-up, and one sync pattern that turns the MCP into a brain multiplier instead of a read-only lookup.",
+        "Each walkthrough covers four things: the auth flow with the exact scopes you actually need, three working example queries you can copy and run, three gotchas that trip people on their first wire-up, and one sync pattern that turns the connection into a brain multiplier instead of a read-only lookup.",
       whatsInsideItems: [
         {
           n: 1,
