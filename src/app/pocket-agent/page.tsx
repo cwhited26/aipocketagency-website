@@ -523,13 +523,20 @@ function BOSCallout() {
 function Footer() {
   return (
     <footer className="bg-black/40">
-      <div className="mx-auto max-w-3xl px-6 py-12 text-center">
-        <p className="text-sm leading-relaxed text-slate-400">
-          AI Pocket Agency · Built by a builder. Run in the field.{" "}
-          <Link href="/" className="text-accent transition hover:underline">
-            Back to the homepage
+      <div className="mx-auto max-w-3xl px-6 pt-12 pb-6 text-center">
+        <p className="text-sm leading-relaxed text-slate-500">
+          AI Pocket Agency is the studio behind Pocket Agent, the $15 operator
+          kits, and the Skool community where we build it all in public. We give
+          your business a memory that doesn&apos;t reset every chat.
+        </p>
+        <p className="mt-4 text-sm text-slate-500">
+          <Link href="/about" className="text-slate-400 underline-offset-4 transition hover:text-slate-200 hover:underline">
+            About AI Pocket Agency
           </Link>
-          .
+          {" · "}
+          <Link href="/" className="text-slate-400 underline-offset-4 transition hover:text-slate-200 hover:underline">
+            Homepage
+          </Link>
         </p>
       </div>
       <div className="border-t border-white/5">

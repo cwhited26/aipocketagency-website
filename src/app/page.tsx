@@ -103,7 +103,7 @@ function Hero() {
             className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
             style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
           >
-            [ pocket agent · $97/mo · 14-day free trial ]
+            [ by ai pocket agency ]
           </div>
           <h1 className="text-balance text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
             <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
@@ -845,6 +845,7 @@ function FinalCTA() {
 function Footer() {
   const links: { label: string; href: string; external?: boolean }[] = [
     { label: "Pocket Agent", href: TRIAL_URL },
+    { label: "About", href: "/about" },
     { label: "Whited Consulting", href: "https://whited.consulting", external: true },
     { label: "Buildout Studios", href: BUILDOUT_URL, external: true },
     { label: "AthleteOS", href: "https://athlete-os.com", external: true },
@@ -852,7 +853,14 @@ function Footer() {
   ];
   return (
     <footer className="bg-black/40">
-      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-12 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto max-w-5xl px-6 pt-12 pb-6">
+        <p className="text-sm leading-relaxed text-slate-500">
+          AI Pocket Agency is the studio behind Pocket Agent, the $15 operator
+          kits, and the Skool community where we build it all in public. We give
+          your business a memory that doesn&apos;t reset every chat.
+        </p>
+      </div>
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 pb-12 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-sm font-semibold text-slate-200">
             AI Pocket Agency

@@ -16,14 +16,14 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pocket Agent — The AI brain for your business | AI Pocket Agency",
+  title: "Pocket Agent — by AI Pocket Agency",
   description:
-    "Your AI keeps forgetting everything you tell it. Pocket Agent gives it a brain — persistent memory wired to your GitHub, available to every agent you run. Drafts emails, moves leads, writes estimates. $97/mo, 14-day free trial.",
+    "AI Pocket Agency — home of Pocket Agent. We give your business a memory. $97/mo, 14-day free trial.",
   metadataBase: new URL("https://aipocketagency.com"),
   openGraph: {
-    title: "Pocket Agent — Your AI finally has a brain",
+    title: "Pocket Agent — by AI Pocket Agency",
     description:
-      "Connect your GitHub and every decision you've made is available to every agent you run. Drafts emails, moves leads, writes estimates in your voice. $97/mo, 14-day free trial.",
+      "AI Pocket Agency — home of Pocket Agent. We give your business a memory. $97/mo, 14-day free trial.",
     url: "https://aipocketagency.com",
     siteName: "AI Pocket Agency",
     type: "website",
@@ -38,9 +38,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pocket Agent — Your AI finally has a brain",
+    title: "Pocket Agent — by AI Pocket Agency",
     description:
-      "Your AI keeps forgetting everything. Pocket Agent gives it a brain — persistent memory, available to every agent you run. $97/mo, 14-day free trial.",
+      "AI Pocket Agency — home of Pocket Agent. We give your business a memory. $97/mo, 14-day free trial.",
     images: ["https://aipocketagency.com/og-share.png"],
   },
   icons: {
