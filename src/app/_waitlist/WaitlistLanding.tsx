@@ -40,7 +40,7 @@ function SubscribeCTA() {
           [ pocket agent · $97/mo · 14-day free trial ]
         </div>
         <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
-          All of this is included with your Pocket Agent subscription.
+          All of this comes with Pocket Agent.
         </h2>
         <p className="mt-5 text-lg leading-relaxed text-slate-300">
           Sign up and every capability is active from day one — no separate

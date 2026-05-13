@@ -79,10 +79,10 @@ export default async function SkoolInvitePage({
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-slate-300 sm:text-xl">
               The kits you just bought are the install layer. Pocket Agent is
-              the software that runs them — connected to GitHub, brain live in
-              minutes, every kit pre-installed. Skool community included with
-              your subscription: three live calls per week, build sessions with
-              me, operators running the same playbook.
+              the software that runs them — connected to GitHub, running in
+              minutes, every kit pre-installed. Skool community included —
+              three live calls per week, build sessions with me, builders
+              running the same playbook.
             </p>
           </div>
 
@@ -131,7 +131,7 @@ export default async function SkoolInvitePage({
                 until day 15. Cancel before then and you pay nothing.
               </div>
               <div className="mt-3 text-xs text-slate-500">
-                Cancel anytime. Skool access comes with the subscription.
+                Cancel anytime. Skool access comes with Pocket Agent.
               </div>
             </div>
 

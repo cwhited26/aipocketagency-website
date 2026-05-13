@@ -119,7 +119,7 @@ function OldVsNew() {
   return (
     <section className="border-b border-white/5 bg-black/30">
       <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
-        <SectionLabel>old way vs. new way</SectionLabel>
+        <SectionLabel>what breaks</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           This is the same problem every time.
         </h2>
@@ -133,7 +133,7 @@ function OldVsNew() {
               className="mb-5 text-xs font-semibold uppercase tracking-wider text-red-400"
               style={{ fontFamily: MONO_FONT }}
             >
-              [ the old way ]
+              [ how it breaks ]
             </div>
             <ul className="space-y-3">
               {oldWay.map((item) => (
@@ -290,7 +290,7 @@ function Pricing() {
     "Everything in What it gives back — standup, brief, Q&A, search, content",
     "Plain-English search over every past decision, with the source cited",
     "Skool community included — three live calls per week",
-    "New capabilities arrive automatically — you don't hunt for them",
+    "Pocket Agent gets sharper every week — you don't lift a finger",
     "Your data stays yours — no platform lock-in",
   ];
   return (
@@ -365,8 +365,8 @@ function FinalCTA() {
           $97/mo. 14-day free trial. Your data stays yours.
         </h2>
         <p className="mt-6 text-balance text-lg leading-relaxed text-slate-300">
-          Sign up and your AI is live in minutes — every capability active,
-          Skool community included. New capabilities arrive automatically.
+          Sign up and your AI is running — every capability active,
+          Skool community included. Pocket Agent gets sharper every week.
         </p>
         <div className="mt-10 flex flex-col items-center gap-4">
           <Link

@@ -29,7 +29,7 @@ export const CAPTURE_PACK: WaitlistBundle = {
   catalogLabel: "what your ai captures",
   catalogHeadline: "Five ways your AI remembers things for you.",
   catalogIntro:
-    "Friction equals forgotten. Remove the friction, the memory compounds. Each capability goes live in your Pocket Agent one at a time — every capture lands in the same place, organized automatically, searchable forever.",
+    "Friction equals forgotten. Remove the friction, the memory compounds. Every capture lands in the same place, organized automatically, searchable forever.",
   modules: [
     {
       code: "C1",
@@ -63,10 +63,10 @@ export const CAPTURE_PACK: WaitlistBundle = {
     },
   ],
   pricingLabel: "how it works",
-  pricingHeadline: "Your Pocket Agent gets sharper every week. $97/mo includes everything as it arrives.",
+  pricingHeadline: "Your Pocket Agent does the work. $97/mo includes everything.",
   pricingParagraphs: [
     "A VA who could transcribe your voice, categorize your screenshots, parse your emails, fetch Loom transcripts, and remember every Facebook save would cost you $2,000–4,000 a month. Your Pocket Agent does all of it.",
-    "New capabilities also sell as standalone $15 PDFs when they go live, if you want just that piece. Pocket Agent members get every new capability as it arrives — no separate purchase, no separate setup. It just shows up.",
+    "The capture tools also sell as standalone $15 PDFs. Pocket Agent members get everything included — no separate purchase, no separate setup.",
   ],
 };
 
@@ -133,9 +133,9 @@ export const OUTPUT_PACK: WaitlistBundle = {
   ],
   pricingLabel: "how it works",
   pricingHeadline:
-    "Your Pocket Agent gets sharper every week. $97/mo includes everything as it arrives.",
+    "Your Pocket Agent does the work. $97/mo includes everything.",
   pricingParagraphs: [
     "An EA + a junior marketer + a sales analyst + a content writer doing all of this — badly — would cost you $8,000–$15,000 a month. Your Pocket Agent does it.",
-    "New capabilities also sell as standalone $15 PDFs when they go live. Pocket Agent members get every new capability as it arrives — no separate purchase, no separate setup.",
+    "The output tools also sell as standalone $15 PDFs. Pocket Agent members get everything included — no separate purchase, no separate setup.",
   ],
 };

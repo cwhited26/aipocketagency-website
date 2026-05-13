@@ -77,7 +77,7 @@ export default function BundlePage() {
 
       <section className="border-b border-white/5 bg-black/30">
         <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20">
-          <SectionLabel>what&apos;s in the bundle</SectionLabel>
+          <SectionLabel>what&apos;s inside</SectionLabel>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
             Five kits. One zip. Same artifacts I run on every client build.
           </h2>
@@ -117,7 +117,7 @@ export default function BundlePage() {
         <div className="absolute inset-0 bg-hero-glow" aria-hidden />
         <div className="relative mx-auto max-w-xl px-6 py-20 sm:py-24">
           <div className="text-center">
-            <SectionLabel>the bundle deal</SectionLabel>
+            <SectionLabel>how to get it</SectionLabel>
             <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl">
               ${BUNDLE_PUBLIC_USD} for the full stack. Save ${savingUsd}{" "}
               against buying each one separately.
@@ -158,15 +158,15 @@ export default function BundlePage() {
 
       <section className="border-b border-white/5 bg-gradient-to-b from-accent/[0.04] via-transparent to-transparent">
         <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20 text-center">
-          <SectionLabel>the kits teach the patterns</SectionLabel>
+          <SectionLabel>want it running automatically?</SectionLabel>
           <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
             Pocket Agent runs them.
           </h2>
           <p className="mt-5 text-lg leading-relaxed text-slate-300">
             The bundle teaches the patterns. Pocket Agent is the hosted software
             that keeps everything running — connected to your tools, every
-            playbook in one place, new capabilities added automatically as they
-            go live. $97/mo, 14-day free trial.
+            playbook in one place, every capability active from day one.
+            $97/mo, 14-day free trial.
           </p>
           <div className="mt-8">
             <Link

@@ -203,14 +203,14 @@ function OldVsNew() {
   return (
     <section className="border-b border-white/5">
       <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
-        <SectionLabel>old way vs. new way</SectionLabel>
+        <SectionLabel>what breaks</SectionLabel>
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
           <div className="rounded-2xl border border-red-500/20 bg-red-500/[0.03] p-6 sm:p-7">
             <div
               className="mb-5 text-xs font-semibold uppercase tracking-wider text-red-400"
               style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
             >
-              [ the old way ]
+              [ how it breaks ]
             </div>
             <ul className="space-y-3">
               {oldWay.map((item) => (
@@ -384,11 +384,11 @@ function Ladder() {
     },
     {
       n: "2",
-      price: "$15 each as they go live",
+      price: "$15 each",
       label: "capture + output",
       title: "Your AI captures everything. And gives back.",
       detail:
-        "Voice memos, screenshots, emails, Loom recordings — your AI files them without you typing into a CRM. And it gives back: drafts your standup before coffee, briefs you before every call, handles customer Q&A in your voice. New capabilities go live one at a time.",
+        "Voice memos, screenshots, emails, Loom recordings — your AI files them without you typing into a CRM. And it gives back: drafts your standup before coffee, briefs you before every call, handles customer Q&A in your voice.",
       cta: "See what's live",
       href: "/output-pack",
     },
@@ -602,7 +602,7 @@ function HowItWorks() {
 function Pricing() {
   const included = [
     "All 5 playbooks active from day one (Dispatch, Dev-Team, CLAUDE.md, Discovery→MVP, Wire-Brain)",
-    "New capabilities arrive automatically as they go live — you don't hunt for them",
+    "Pocket Agent gets sharper every week — you don't lift a finger",
     "Ask your AI anything about past decisions — cited answer in three seconds",
     "Skool community included — three live calls per week, build sessions with Chase",
     "Your data stays yours — no platform lock-in",
@@ -678,8 +678,7 @@ function ModulesShipping() {
           content from past wins.
         </p>
         <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-400">
-          New capabilities arrive automatically. You don&apos;t hunt for them
-          — they show up in your Pocket Agent.
+          Pocket Agent gets sharper every week. You don&apos;t lift a finger.
         </p>
         <div className="mt-10 grid gap-5 sm:grid-cols-2">
           <PackCard

@@ -73,8 +73,7 @@ function PocketAgentCTA() {
         </h2>
         <p className="mt-5 text-lg leading-relaxed text-slate-300">
           The playbook teaches the pattern. Pocket Agent runs it — every
-          playbook active from day one, every new capability arriving
-          automatically. Sign up and you&apos;re live in minutes.
+          playbook active from day one. Sign up and you&apos;re running.
         </p>
         <div className="mt-8">
           <Link
@@ -234,7 +233,7 @@ function FormSection({
       <div className="absolute inset-0 bg-hero-glow" aria-hidden />
       <div className="relative mx-auto max-w-xl px-6 py-20 sm:py-24">
         <div className="text-center">
-          <SectionLabel>the deal</SectionLabel>
+          <SectionLabel>get it</SectionLabel>
           {dealHeadline ? (
             <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl">
               {dealHeadline}
@@ -267,7 +266,7 @@ function BundleCTA({ currentSlug }: { currentSlug: KitSlug }) {
   return (
     <section className="border-b border-white/5 bg-gradient-to-b from-indigo-500/[0.06] via-transparent to-transparent">
       <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20">
-        <SectionLabel>the bundle</SectionLabel>
+        <SectionLabel>all five kits</SectionLabel>
         <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
           Want all five? Bundle for ${BUNDLE_PUBLIC_USD} — save ${savingUsd}{" "}
           against ${individualTotalUsd} buying them separately.
@@ -310,7 +309,7 @@ function RelatedKits({ currentSlug }: { currentSlug: KitSlug }) {
   return (
     <section className="border-b border-white/5 bg-black/30">
       <div className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
-        <SectionLabel>the other kits</SectionLabel>
+        <SectionLabel>the full set</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           The rest of the stack.
         </h2>
@@ -361,16 +360,15 @@ function BrainStackCTA() {
   return (
     <section className="border-b border-white/5 bg-black/30">
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
-        <SectionLabel>the rest of the stack</SectionLabel>
+        <SectionLabel>pocket agent runs it</SectionLabel>
         <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
           Your Pocket Agent gets sharper every week.
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-slate-300">
           This playbook is one piece. Pocket Agent captures everything your AI
-          needs and gives back automatically — standup before coffee, brief
-          before every call, customer Q&amp;A in your voice. New capabilities
-          arrive in your account as they go live. You don&apos;t hunt for them
-          — they show up.
+          needs and gives back — standup before coffee, brief before every
+          call, customer Q&amp;A in your voice. Pocket Agent gets sharper
+          every week. You don&apos;t lift a finger.
         </p>
         <div className="mt-10 grid gap-5 sm:grid-cols-2">
           <BrainStackCard

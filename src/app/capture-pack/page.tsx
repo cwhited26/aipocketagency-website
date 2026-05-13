@@ -4,7 +4,7 @@ import { CAPTURE_PACK } from "@/app/_waitlist/waitlist-config";
 
 const PAGE_URL = "https://aipocketagency.com/capture-pack";
 const DESCRIPTION =
-  "Tap once. Your AI captures the rest. Five ways — voice, screenshot, share sheet, email, Loom — that turn your phone into a friction-free door into your Pocket Agent. Get notified as each one goes live.";
+  "Tap once. Your AI captures the rest. Five ways — voice, screenshot, share sheet, email, Loom — that turn your phone into a friction-free door into your Pocket Agent. All five included with Pocket Agent.";
 
 export const metadata: Metadata = {
   title: "Capture Pack — AI Pocket Agency",
