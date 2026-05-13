@@ -12,6 +12,7 @@ export default function Page() {
       <Origin />
       <HowItWorks />
       <DevTeamArtifacts />
+      <AmbientBrainStack />
       <WhatItIsNot />
       <WhoItsFor />
       <InsideCTA />
@@ -387,6 +388,92 @@ function DevTeamArtifacts() {
         </div>
       </div>
     </section>
+  );
+}
+
+function AmbientBrainStack() {
+  return (
+    <section className="border-b border-white/5 bg-gradient-to-b from-accent/[0.04] via-transparent to-transparent">
+      <div className="mx-auto max-w-5xl px-6 py-20 sm:py-24">
+        <SectionLabel>what&apos;s coming</SectionLabel>
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          The Ambient Brain stack
+        </h2>
+        <p className="mt-6 max-w-3xl text-lg leading-relaxed text-slate-300">
+          Two packs sit on top of the brain. The Capture Pack is the friction-free
+          door — voice, screenshot, share sheet, email, Loom — every thought hits
+          the brain without you typing into a CRM. The Output Pack is what the
+          brain does back — standup before coffee, brief before every call,
+          customer Q&amp;A in your voice, content drafts from past wins.
+        </p>
+        <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-400">
+          Modules ship one by one. Each one flips to live with a heads-up to the
+          waitlist. C3 Share Sheet → Brain is live tonight.
+        </p>
+        <div className="mt-10 grid gap-5 sm:grid-cols-2">
+          <PackCard
+            href="/capture-pack"
+            pill="[ capture pack · 5 modules ]"
+            title="Capture Pack"
+            blurb="Tap once. Brain captures the rest. Voice, screenshot, share sheet, email, Loom."
+            statusLine="1 of 5 live · 4 coming soon"
+          />
+          <PackCard
+            href="/output-pack"
+            pill="[ output pack · 8 modules ]"
+            title="Output Pack"
+            blurb="Your brain works while you sleep. Standup, pre-call brief, customer Q&A, compete-watch, more."
+            statusLine="0 of 8 live · 8 coming soon"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PackCard({
+  href,
+  pill,
+  title,
+  blurb,
+  statusLine,
+}: {
+  href: string;
+  pill: string;
+  title: string;
+  blurb: string;
+  statusLine: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-accent/60 hover:bg-white/[0.06] hover:shadow-[0_0_40px_-15px_rgba(34,211,238,0.6)] sm:p-7"
+    >
+      <div
+        className="text-xs text-cyan-300/70 sm:text-sm"
+        style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
+      >
+        {pill}
+      </div>
+      <h3 className="mt-3 text-2xl font-semibold text-slate-100">{title}</h3>
+      <p className="mt-3 flex-1 text-base leading-relaxed text-slate-300">
+        {blurb}
+      </p>
+      <div className="mt-5 flex items-center justify-between">
+        <span
+          className="text-xs uppercase tracking-wider text-slate-500"
+          style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
+        >
+          {statusLine}
+        </span>
+        <span className="inline-flex items-center gap-1 text-sm font-semibold text-accent transition group-hover:translate-x-0.5">
+          See the catalog
+          <svg aria-hidden viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor">
+            <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 110-2h8.586L7.05 5.464a1 1 0 010-1.414z" />
+          </svg>
+        </span>
+      </div>
+    </Link>
   );
 }
 

@@ -5,6 +5,13 @@ type ApaLeadRow = {
   phone: string | null;
   source: string;
   status: "new";
+  /**
+   * Set when the lead came in through a "Coming Soon" waitlist surface
+   * (Capture Pack / Output Pack landing pages) rather than a $15 kit
+   * checkout funnel. NULL for every kit-funnel lead. Column added in
+   * wc-admin migration 058_apa_leads_waitlist_for.sql.
+   */
+  waitlist_for?: string | null;
 };
 
 type InsertResult = { ok: true } | { ok: false; status: number; error: string };

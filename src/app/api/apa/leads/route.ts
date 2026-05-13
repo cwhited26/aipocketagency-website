@@ -10,6 +10,19 @@ const UUID_V4_RE =
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEFAULT_SOURCE = "dispatch-playbook";
 
+/**
+ * Valid waitlist bundle slugs. These are NOT $15 kit slugs — they're
+ * the "Coming Soon" bundle landing pages at /capture-pack and
+ * /output-pack. Each module flips to LIVE as it ships; the bundle
+ * waitlist remains the catalog entry point.
+ */
+const WAITLIST_SLUGS = ["capture-pack", "output-pack"] as const;
+type WaitlistSlug = (typeof WAITLIST_SLUGS)[number];
+
+function isWaitlistSlug(value: string): value is WaitlistSlug {
+  return (WAITLIST_SLUGS as readonly string[]).includes(value);
+}
+
 type LeadBody = {
   lead_id?: unknown;
   id?: unknown;
@@ -17,6 +30,7 @@ type LeadBody = {
   email?: unknown;
   phone?: unknown;
   source?: unknown;
+  waitlist_for?: unknown;
 };
 
 function pickTrimmed(...candidates: unknown[]): string {
@@ -36,12 +50,22 @@ function badRequest(message: string) {
 /**
  * Lead capture step 1 of the APA funnel.
  *
- * Inserts the lead row immediately (so wc-admin attribution still tracks
- * abandoners) and returns the URL of the next funnel page — the order-bump
- * interstitial at /[kit-slug]/upgrade-pair/<lead_id>. Stripe is NOT opened
- * here; the buyer makes the pair and bundle decisions first, then the
- * /api/apa/funnel/checkout endpoint mints the Stripe Checkout Session with
- * the right line items.
+ * Two modes:
+ *
+ *   1. **Kit-funnel mode** (default): caller posts a $15 kit slug as
+ *      `source`. Insert the lead, return `next_url` pointing at the
+ *      order-bump interstitial (`/[kit-slug]/upgrade-pair/<lead_id>`).
+ *      Stripe is opened later, after the buyer makes the pair + bundle
+ *      decisions.
+ *
+ *   2. **Waitlist mode**: caller posts `waitlist_for` =
+ *      `'capture-pack' | 'output-pack'`. The Capture Pack and Output
+ *      Pack catalogs are publicly visible while individual modules
+ *      ship; the waitlist collects names for "notify me on launch"
+ *      drips. No Stripe Checkout Session, no order-bump page — just a
+ *      lead row with `waitlist_for` populated, source mirrored to the
+ *      bundle slug. Drip integration is queued separately; for now we
+ *      only store the lead.
  */
 export async function POST(req: Request): Promise<NextResponse> {
   let body: LeadBody;
@@ -55,7 +79,8 @@ export async function POST(req: Request): Promise<NextResponse> {
   const name = pickTrimmed(body.name);
   const email = pickTrimmed(body.email);
   const phoneRaw = pickTrimmed(body.phone);
-  const source = pickTrimmed(body.source) || DEFAULT_SOURCE;
+  const sourceRaw = pickTrimmed(body.source);
+  const waitlistForRaw = pickTrimmed(body.waitlist_for);
 
   if (!UUID_V4_RE.test(leadId)) {
     const preview = leadId ? `${leadId.slice(0, 8)}...` : "(empty)";
@@ -65,7 +90,22 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
   if (!name) return badRequest("Name is required");
   if (!EMAIL_RE.test(email)) return badRequest("Invalid email");
-  if (!isKitSlug(source)) return badRequest(`Unknown kit source: ${source}`);
+
+  const waitlistFor = waitlistForRaw || null;
+  if (waitlistFor && !isWaitlistSlug(waitlistFor)) {
+    return badRequest(`Unknown waitlist bundle: ${waitlistFor}`);
+  }
+
+  let source: string;
+  if (waitlistFor) {
+    source = sourceRaw || waitlistFor;
+    if (!isWaitlistSlug(source) && !isKitSlug(source)) {
+      return badRequest(`Unknown lead source: ${source}`);
+    }
+  } else {
+    source = sourceRaw || DEFAULT_SOURCE;
+    if (!isKitSlug(source)) return badRequest(`Unknown kit source: ${source}`);
+  }
 
   const phone = phoneRaw || null;
 
@@ -76,6 +116,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     phone,
     source,
     status: "new",
+    waitlist_for: waitlistFor,
   });
 
   if (!leadResult.ok) {
@@ -83,6 +124,15 @@ export async function POST(req: Request): Promise<NextResponse> {
       status: leadResult.status,
       error: leadResult.error,
       lead_id: leadId,
+      waitlist_for: waitlistFor,
+    });
+  }
+
+  if (waitlistFor) {
+    return NextResponse.json({
+      lead_id: leadId,
+      waitlist_for: waitlistFor,
+      status: "waitlisted",
     });
   }
 
