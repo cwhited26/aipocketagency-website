@@ -1,6 +1,11 @@
 import Image from "next/image";
+import Link from "next/link";
 import CheckoutForm from "./CheckoutForm";
 import {
+  BUNDLE_PUBLIC_USD,
+  KIT_CONFIG,
+  KIT_RETAIL_USD,
+  KIT_SLUGS,
   getKitConfig,
   type KitMarketingContent,
   type KitSlug,
@@ -38,6 +43,8 @@ export default function KitLandingPage({ slug }: { slug: KitSlug }) {
       />
       {content ? <Problem content={content} /> : null}
       {content ? <WhatsInside content={content} /> : null}
+      <BundleCTA currentSlug={kit.slug} />
+      <RelatedKits currentSlug={kit.slug} />
       <FormSection
         slug={kit.slug}
         dealHeadline={content?.dealHeadline ?? null}
@@ -206,6 +213,102 @@ function FormSection({
         <div className="mx-auto mt-10 max-w-md">
           <CheckoutForm source={slug} />
         </div>
+      </div>
+    </section>
+  );
+}
+
+function BundleCTA({ currentSlug }: { currentSlug: KitSlug }) {
+  const individualTotalUsd = KIT_SLUGS.length * KIT_RETAIL_USD;
+  const savingUsd = individualTotalUsd - BUNDLE_PUBLIC_USD;
+  return (
+    <section className="border-b border-white/5 bg-gradient-to-b from-indigo-500/[0.06] via-transparent to-transparent">
+      <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20">
+        <SectionLabel>the bundle</SectionLabel>
+        <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+          Want all five? Bundle for ${BUNDLE_PUBLIC_USD} — save ${savingUsd}{" "}
+          against ${individualTotalUsd} buying them separately.
+        </h2>
+        <p className="mt-5 text-lg leading-relaxed text-slate-300">
+          Five $15 kits = ${individualTotalUsd}. The full operator stack —
+          Dispatch, Dev-Team Document Set, CLAUDE.md Template Library,
+          Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack — bundled
+          once at ${BUNDLE_PUBLIC_USD}.
+        </p>
+        <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+          <Link
+            href={`/bundle?from=${currentSlug}`}
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] sm:text-base"
+          >
+            <span>Get the bundle — ${BUNDLE_PUBLIC_USD}</span>
+            <svg
+              aria-hidden
+              viewBox="0 0 20 20"
+              className="h-4 w-4"
+              fill="currentColor"
+            >
+              <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 110-2h8.586L7.05 5.464a1 1 0 010-1.414z" />
+            </svg>
+          </Link>
+          <div className="text-xs text-slate-500" style={{ fontFamily: MONO_FONT }}>
+            [ ${BUNDLE_PUBLIC_USD} vs ${individualTotalUsd} separately ·
+            save ${savingUsd} ]
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function RelatedKits({ currentSlug }: { currentSlug: KitSlug }) {
+  const others = KIT_SLUGS.map((s) => KIT_CONFIG[s]).filter(
+    (k) => k.slug !== currentSlug,
+  );
+  return (
+    <section className="border-b border-white/5 bg-black/30">
+      <div className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
+        <SectionLabel>the other kits</SectionLabel>
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          The rest of the stack.
+        </h2>
+        <p className="mt-5 text-lg leading-relaxed text-slate-300">
+          Each kit is ${KIT_RETAIL_USD}. Same shape, same instant download,
+          same refund-on-reply guarantee.
+        </p>
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2">
+          {others.map((k) => (
+            <li key={k.slug}>
+              <Link
+                href={`/${k.slug}`}
+                className="group flex h-full flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-5 transition hover:border-accent/40 hover:bg-white/[0.04] sm:p-6"
+              >
+                <div
+                  className="text-xs text-cyan-300/70"
+                  style={{ fontFamily: MONO_FONT }}
+                >
+                  [ ${KIT_RETAIL_USD} · instant download ]
+                </div>
+                <div className="text-lg font-semibold leading-tight text-slate-100 sm:text-xl">
+                  {k.fullName}
+                </div>
+                <p className="text-sm leading-relaxed text-slate-400 sm:text-base">
+                  {k.blurb}
+                </p>
+                <div className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-accent transition group-hover:gap-2">
+                  Get it for ${KIT_RETAIL_USD}
+                  <svg
+                    aria-hidden
+                    viewBox="0 0 20 20"
+                    className="h-4 w-4"
+                    fill="currentColor"
+                  >
+                    <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 110-2h8.586L7.05 5.464a1 1 0 010-1.414z" />
+                  </svg>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   );
