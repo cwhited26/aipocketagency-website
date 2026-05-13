@@ -29,7 +29,7 @@ export default function WaitlistForm({
   cta,
   successLine,
 }: {
-  waitlistFor: "capture-pack" | "output-pack";
+  waitlistFor: "capture_pack" | "output_pack";
   cta: string;
   successLine: string;
 }) {

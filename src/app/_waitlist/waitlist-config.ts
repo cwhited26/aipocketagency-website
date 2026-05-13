@@ -36,8 +36,12 @@ export type WaitlistModule = {
 };
 
 export type WaitlistBundle = {
-  /** Slug posted to /api/apa/leads as `waitlist_for`. */
-  slug: "capture-pack" | "output-pack";
+  /**
+   * Slug posted to /api/apa/leads as `waitlist_for` (underscore form —
+   * matches the `apa_leads.waitlist_for` column values). Distinct from
+   * the URL path (`/capture-pack`, `/output-pack`) which uses hyphens.
+   */
+  slug: "capture_pack" | "output_pack";
   /** Page title rendered in <title> + hero. */
   pageTitle: string;
   /** Mono "[ ... ]" pill above the hero headline. */
@@ -73,7 +77,7 @@ export type WaitlistBundle = {
 };
 
 export const CAPTURE_PACK: WaitlistBundle = {
-  slug: "capture-pack",
+  slug: "capture_pack",
   pageTitle: "Capture Pack — AI Pocket Agency",
   heroPill: "[ capture pack · waitlist ]",
   heroHeadline: "Tap once. The brain captures the rest.",
@@ -138,7 +142,7 @@ export const CAPTURE_PACK: WaitlistBundle = {
 };
 
 export const OUTPUT_PACK: WaitlistBundle = {
-  slug: "output-pack",
+  slug: "output_pack",
   pageTitle: "Output Pack — AI Pocket Agency",
   heroPill: "[ output pack · waitlist ]",
   heroHeadline: "Your brain works while you sleep.",

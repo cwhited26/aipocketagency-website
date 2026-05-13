@@ -11,12 +11,15 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DEFAULT_SOURCE = "dispatch-playbook";
 
 /**
- * Valid waitlist bundle slugs. These are NOT $15 kit slugs — they're
- * the "Coming Soon" bundle landing pages at /capture-pack and
- * /output-pack. Each module flips to LIVE as it ships; the bundle
- * waitlist remains the catalog entry point.
+ * Valid waitlist bundle slugs (underscore form, matches the
+ * `apa_leads.waitlist_for` column values). These are NOT $15 kit
+ * slugs — they're the "Coming Soon" bundle landing pages at
+ * /capture-pack and /output-pack (URL paths are hyphenated for SEO; the
+ * data values posted are underscored to read clean as a DB column).
+ * Each module flips to LIVE as it ships; the bundle waitlist remains
+ * the catalog entry point.
  */
-const WAITLIST_SLUGS = ["capture-pack", "output-pack"] as const;
+const WAITLIST_SLUGS = ["capture_pack", "output_pack"] as const;
 type WaitlistSlug = (typeof WAITLIST_SLUGS)[number];
 
 function isWaitlistSlug(value: string): value is WaitlistSlug {
@@ -59,7 +62,7 @@ function badRequest(message: string) {
  *      decisions.
  *
  *   2. **Waitlist mode**: caller posts `waitlist_for` =
- *      `'capture-pack' | 'output-pack'`. The Capture Pack and Output
+ *      `'capture_pack' | 'output_pack'`. The Capture Pack and Output
  *      Pack catalogs are publicly visible while individual modules
  *      ship; the waitlist collects names for "notify me on launch"
  *      drips. No Stripe Checkout Session, no order-bump page — just a

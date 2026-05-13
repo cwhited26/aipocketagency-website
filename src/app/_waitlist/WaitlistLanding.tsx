@@ -241,7 +241,7 @@ function FormSection({
   subhead: string;
   cta: string;
   successLine: string;
-  slug: "capture-pack" | "output-pack";
+  slug: "capture_pack" | "output_pack";
 }) {
   return (
     <section
