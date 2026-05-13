@@ -601,7 +601,6 @@ function HowItWorks() {
 
 function Pricing() {
   const included = [
-    "Hosted at app.aipocketagency.com — sign up and you're live in minutes",
     "All 5 playbooks active from day one (Dispatch, Dev-Team, CLAUDE.md, Discovery→MVP, Wire-Brain)",
     "New capabilities arrive automatically as they go live — you don't hunt for them",
     "Ask your AI anything about past decisions — cited answer in three seconds",

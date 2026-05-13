@@ -35,8 +35,8 @@ export default function KitLandingPage({ slug }: { slug: KitSlug }) {
       />
       {content ? <Problem content={content} /> : null}
       {content ? <WhatsInside content={content} /> : null}
-      <BundleCTA currentSlug={kit.slug} />
       <RelatedKits currentSlug={kit.slug} />
+      <BundleCTA currentSlug={kit.slug} />
       <BrainStackCTA />
       <PocketAgentCTA />
       <FormSection
