@@ -16,14 +16,14 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Pocket Agency — Run an AI agency from your pocket",
+  title: "Pocket Agent — The AI brain for your business | AI Pocket Agency",
   description:
-    "Vibe-coding a real SaaS and your agent's context keeps filling up? The AI brain solves it — persistent file-based memory + multi-lane agents so you can build large or parallel apps without hitting the wall. Founding 50 — $47/mo locked for life.",
+    "Your AI keeps forgetting everything you tell it. Pocket Agent gives it a brain — persistent memory wired to your GitHub, available to every agent you run. Drafts emails, moves leads, writes estimates. $97/mo, 14-day free trial.",
   metadataBase: new URL("https://aipocketagency.com"),
   openGraph: {
-    title: "AI Pocket Agency — Built for the wall you just hit",
+    title: "Pocket Agent — Your AI finally has a brain",
     description:
-      "Your agent's context fills up at 40k tokens. The AI brain doesn't — because it lives in files. Build large SaaS apps or run many in parallel without losing memory. Founding 50 — $47/mo locked for life.",
+      "Connect your GitHub and every decision you've made is available to every agent you run. Drafts emails, moves leads, writes estimates in your voice. $97/mo, 14-day free trial.",
     url: "https://aipocketagency.com",
     siteName: "AI Pocket Agency",
     type: "website",
@@ -32,15 +32,15 @@ export const metadata: Metadata = {
         url: "https://aipocketagency.com/og-share.png",
         width: 1200,
         height: 630,
-        alt: "AI Pocket Agency — Run an AI agency from your pocket",
+        alt: "Pocket Agent — AI Pocket Agency",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Pocket Agency — Built for the wall you just hit",
+    title: "Pocket Agent — Your AI finally has a brain",
     description:
-      "Your agent's context fills up at 40k tokens. The AI brain doesn't — because it lives in files. File-based memory + multi-lane agents for builders who refuse to start over.",
+      "Your AI keeps forgetting everything. Pocket Agent gives it a brain — persistent memory, available to every agent you run. $97/mo, 14-day free trial.",
     images: ["https://aipocketagency.com/og-share.png"],
   },
   icons: {
