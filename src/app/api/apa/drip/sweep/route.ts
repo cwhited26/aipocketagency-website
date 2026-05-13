@@ -3,6 +3,7 @@ import {
   fetchAbandonedDripEligibleLeads,
   fetchActiveDripEmails,
   fetchDripEligibleLeads,
+  hasPriorSentEvent,
   insertApaEmailEvent,
   updateLeadSequenceState,
   type AbandonedDripLeadRow,
@@ -140,11 +141,28 @@ function substitute(
   return out;
 }
 
+type SendResult =
+  | { kind: "sent" }
+  | { kind: "skipped"; reason: "already-sent" }
+  | { kind: "error"; reason: string };
+
 async function sendDripToLead(
   lead: DripLeadRow,
   drip: DripEmailRow,
   origin: string,
-): Promise<{ ok: true } | { ok: false; reason: string }> {
+): Promise<SendResult> {
+  // Idempotency floor: hourly cron + partial-fail (sendEmail ok, state-update
+  // fail) could resend on next tick. The sequence-state check inside
+  // nextDripForLead is the fast path; this is the second guard, queried right
+  // before the network send so it catches drift across sweeps.
+  const prior = await hasPriorSentEvent(lead.id, drip.slug);
+  if (!prior.ok) {
+    return { kind: "error", reason: `event-check ${prior.status}: ${prior.error}` };
+  }
+  if (prior.alreadySent) {
+    return { kind: "skipped", reason: "already-sent" };
+  }
+
   const replacements: Record<string, string> = {
     UNSUBSCRIBE_URL: unsubscribeUrl(origin, lead.id),
     RESUME_URL: resumeUrlForLead(lead, origin),
@@ -161,7 +179,7 @@ async function sendDripToLead(
     text,
   });
   if (!send.ok) {
-    return { ok: false, reason: `resend ${send.status}: ${send.error}` };
+    return { kind: "error", reason: `resend ${send.status}: ${send.error}` };
   }
 
   const existingState = lead.email_sequence_state ?? {};
@@ -190,21 +208,26 @@ async function sendDripToLead(
     nextState.last_sent_day = drip.day_offset;
   }
 
-  const updated = await updateLeadSequenceState(lead.id, nextState);
-  if (!updated.ok) {
-    return { ok: false, reason: `state-update ${updated.status}: ${updated.error}` };
-  }
-
+  // Write the email_event BEFORE the state patch. If state patch fails,
+  // the next sweep's hasPriorSentEvent guard catches the duplicate-send risk;
+  // if state patch succeeds and event insert fails, the state still reflects
+  // sent + apa_email_events is the system of record for analytics — manual
+  // backfill is the recovery path.
   const ev = await insertApaEmailEvent({
     leadId: lead.id,
     emailId: drip.slug,
     event: "sent",
   });
   if (!ev.ok) {
-    return { ok: false, reason: `event ${ev.status}: ${ev.error}` };
+    return { kind: "error", reason: `event ${ev.status}: ${ev.error}` };
   }
 
-  return { ok: true };
+  const updated = await updateLeadSequenceState(lead.id, nextState);
+  if (!updated.ok) {
+    return { kind: "error", reason: `state-update ${updated.status}: ${updated.error}` };
+  }
+
+  return { kind: "sent" };
 }
 
 async function runSweep(req: Request): Promise<NextResponse> {
@@ -251,13 +274,22 @@ async function runSweep(req: Request): Promise<NextResponse> {
       continue;
     }
     const result = await sendDripToLead(lead, drip, origin);
-    if (result.ok) {
+    if (result.kind === "sent") {
       report.sent += 1;
       report.details.push({
         lead_id: lead.id,
         track: "purchaser",
         key: drip.day_offset,
         outcome: "sent",
+      });
+    } else if (result.kind === "skipped") {
+      report.skipped += 1;
+      report.details.push({
+        lead_id: lead.id,
+        track: "purchaser",
+        key: drip.day_offset,
+        outcome: "skipped",
+        reason: result.reason,
       });
     } else {
       report.errors += 1;
@@ -285,13 +317,22 @@ async function runSweep(req: Request): Promise<NextResponse> {
       continue;
     }
     const result = await sendDripToLead(lead, drip, origin);
-    if (result.ok) {
+    if (result.kind === "sent") {
       report.sent += 1;
       report.details.push({
         lead_id: lead.id,
         track: "abandoned",
         key: drip.delay_minutes,
         outcome: "sent",
+      });
+    } else if (result.kind === "skipped") {
+      report.skipped += 1;
+      report.details.push({
+        lead_id: lead.id,
+        track: "abandoned",
+        key: drip.delay_minutes,
+        outcome: "skipped",
+        reason: result.reason,
       });
     } else {
       report.errors += 1;

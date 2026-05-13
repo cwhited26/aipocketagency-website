@@ -521,6 +521,44 @@ export async function setLeadDripSubscribed(
   return { ok: true };
 }
 
+type SentEventCheckResult =
+  | { ok: true; alreadySent: boolean }
+  | { ok: false; status: number; error: string };
+
+// Pre-flight idempotency check for the drip sweep. Hourly cron + a partial-fail
+// window (sendEmail succeeds, updateLeadSequenceState fails) could otherwise
+// resend the same drip on the next tick. This query is the second guard;
+// abandoned_sent_minutes / sent_days in lead state is the first.
+export async function hasPriorSentEvent(
+  leadId: string,
+  emailId: string,
+): Promise<SentEventCheckResult> {
+  const env = supabaseEnv();
+  if ("error" in env) {
+    return { ok: false, status: 500, error: env.error };
+  }
+
+  const endpoint =
+    `${env.url.replace(/\/$/, "")}/rest/v1/apa_email_events` +
+    `?select=id&lead_id=eq.${encodeURIComponent(leadId)}` +
+    `&email_id=eq.${encodeURIComponent(emailId)}` +
+    `&event=eq.sent&limit=1`;
+  const res = await fetch(endpoint, {
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  const rows = (await res.json()) as Array<{ id: string }>;
+  return { ok: true, alreadySent: rows.length > 0 };
+}
+
 export async function insertApaEmailEvent(args: EmailEventArgs): Promise<InsertResult> {
   const env = supabaseEnv();
   if ("error" in env) {
