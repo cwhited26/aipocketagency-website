@@ -147,7 +147,7 @@ export const OUTPUT_PACK: WaitlistBundle = {
   heroPill: "[ output pack · waitlist ]",
   heroHeadline: "Your brain works while you sleep.",
   heroSubhead:
-    "Eight modules that turn captured context into action — daily standups, pre-call briefs, customer Q&A in your voice, compete-watch, content from past wins. The operating layer on top of your AI Pocket Agency.",
+    "Eight modules that turn captured context into action — daily standups, pre-call briefs, customer Q&A in your voice, compete-watch, content from past wins. Plain-English Decision Query is live tonight; the rest of the operating layer ships behind it.",
   catalogLabel: "the catalog",
   catalogHeadline: "Eight output modules. Your brain in motion.",
   catalogIntro:
@@ -200,7 +200,9 @@ export const OUTPUT_PACK: WaitlistBundle = {
       title: "Plain-English Decision Query",
       blurb:
         "Ask 'what did we decide about Patrick's PDF cover?' Answer in three seconds with the exact decision log entry and session excerpt cited. The 'I know we figured this out' graveyard dies.",
-      status: "coming-soon",
+      status: "live",
+      liveHref: "/output-pack/decision-query",
+      liveCta: "Install recipe",
     },
     {
       code: "O8",
