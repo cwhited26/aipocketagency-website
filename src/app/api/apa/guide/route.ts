@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const FROM = "Chase Whited <chase@aipocketagency.com>";
-const POCKET_AGENT_URL = "https://aipocketagency.com/pocket-agent";
+const GUIDE_URL =
+  "https://aipocketagency.com/guide/how-i-run-4-businesses-from-my-phone.pdf";
 const START_URL = "https://aipocketagency.com/start";
 
 type GuideBody = { email?: unknown; name?: unknown };
@@ -36,18 +37,19 @@ export async function POST(req: Request): Promise<NextResponse> {
   const greeting = name ? `Hey ${name}` : "Hey there";
 
   const htmlBody = `<p>${greeting},</p>
-<p>You'll get <strong>"How I Run 4 Businesses From My Phone Using an AI Brain"</strong> in your inbox within the next few days — Chase is putting the final polish on it.</p>
-<p>In the meantime, here's where to start: <a href="${POCKET_AGENT_URL}">${POCKET_AGENT_URL}</a></p>
-<p>If you're impatient, kick off your free Pocket Agent trial right now: <a href="${START_URL}">${START_URL}</a></p>
+<p>Here's the guide: <a href="${GUIDE_URL}"><strong>How I Run 4 Businesses From My Phone Using an AI Brain</strong></a></p>
+<p>Direct link if the above doesn't open: ${GUIDE_URL}</p>
+<p>The guide walks through the brain pattern — what it is, how I run TVE, AthleteOS, Buildout Studios, and APA out of it, and where Pocket Agent fits for operators who don't want to configure it themselves.</p>
+<p>If you want to skip ahead to the software: <a href="${START_URL}">${START_URL}</a> — 14-day free trial, no credit card.</p>
 <p>— Chase</p>`;
 
   const textBody = `${greeting},
 
-You'll get "How I Run 4 Businesses From My Phone Using an AI Brain" in your inbox within the next few days — Chase is putting the final polish on it.
+Here's the guide: ${GUIDE_URL}
 
-In the meantime, here's where to start: ${POCKET_AGENT_URL}
+The guide walks through the brain pattern — what it is, how I run TVE, AthleteOS, Buildout Studios, and APA out of it, and where Pocket Agent fits for operators who don't want to configure it themselves.
 
-If you're impatient, kick off your free Pocket Agent trial right now: ${START_URL}
+If you want to skip ahead to the software: ${START_URL} — 14-day free trial, no credit card.
 
 — Chase`;
 
@@ -63,7 +65,7 @@ If you're impatient, kick off your free Pocket Agent trial right now: ${START_UR
     sendEmail({
       from: FROM,
       to: email,
-      subject: "Your AI Pocket Agency guide is on its way",
+      subject: "Your guide is here",
       html: htmlBody,
       text: textBody,
     }),
@@ -83,5 +85,5 @@ If you're impatient, kick off your free Pocket Agent trial right now: ${START_UR
     );
   }
 
-  return NextResponse.json({ ok: true, lead_id: leadId });
+  return NextResponse.json({ ok: true, lead_id: leadId, guide_url: GUIDE_URL });
 }
