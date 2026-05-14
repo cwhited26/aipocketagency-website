@@ -437,6 +437,10 @@ function FAQ() {
       q: "What if I want this built around my exact business?",
       a: "Buildout Studios handles custom builds, websites, and software. Pocket Agent is the starting point. BOS is the custom path.",
     },
+    {
+      q: "Is this another tool for scoping my next AI project?",
+      a: "No. Pocket Agent is the ongoing memory layer for your business. It captures what you send it every day, drafts the work that piles up, surfaces decisions you made months ago. Not a one-time setup tool. You don't \"scope a project and finish\" — you keep using it as long as you keep running the business.",
+    },
   ];
   return (
     <section className="border-b border-white/5 bg-black/30">
