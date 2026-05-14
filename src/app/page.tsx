@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import LeadMagnetForm from "./_lead-magnet/LeadMagnetForm";
 
 const TRIAL_URL = "/start";
 const BUILDOUT_URL = "https://buildoutstudios.com";
@@ -456,7 +457,9 @@ function Ladder() {
               <p className="mt-4 text-base leading-relaxed text-slate-300 sm:text-lg">
                 {s.detail}
               </p>
-              {s.cta && s.href ? (
+              {s.n === "0" ? (
+                <LeadMagnetForm />
+              ) : s.cta && s.href ? (
                 <div className="mt-5">
                   {s.primary ? (
                     <Link

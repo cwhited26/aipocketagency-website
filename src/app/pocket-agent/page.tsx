@@ -419,7 +419,7 @@ function FAQ() {
     },
     {
       q: "What happens when I cancel?",
-      a: "You keep everything. Your data stays yours.",
+      a: "Your data stays yours. Cancel anytime — nothing gets locked away or deleted on our end. You keep everything you've captured, drafted, and saved.",
     },
     {
       q: "Can it send messages without me approving them?",
