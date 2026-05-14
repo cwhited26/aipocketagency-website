@@ -148,7 +148,7 @@ export default function WaitlistForm({
       </button>
 
       <p className="mt-4 text-center text-xs text-slate-500">
-        No spam. No drip sequence. We'll send one email when it's ready.
+        No spam. No drip sequence. We&apos;ll send one email when it&apos;s ready.
       </p>
     </form>
   );
