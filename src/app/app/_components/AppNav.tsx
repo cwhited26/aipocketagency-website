@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { CommandPaletteButton } from "./CommandPalette";
 
 function AgentIcon() {
   return (
@@ -166,6 +167,9 @@ export default function AppNav() {
       </div>
 
       <nav className="flex-1 py-4 px-3 flex flex-col gap-0.5 overflow-y-auto">
+        <div className="mb-2">
+          <CommandPaletteButton />
+        </div>
         <NavItem href="/app/ask" active={isAgent} icon={<AgentIcon />} label="Agent" onClick={close} />
         <NavItem href="/app/brain" active={isBrain} icon={<BrainIcon />} label="Brain" onClick={close} />
         <NavItem href="/app/documents" active={isDocs} icon={<DocsIcon />} label="Documents" onClick={close} />

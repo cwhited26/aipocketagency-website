@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import AppNav from "./_components/AppNav";
+import CommandPalette from "./_components/CommandPalette";
 
 export const metadata = {
   title: "Pocket Agent",
@@ -25,6 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-screen bg-[#05070a] text-slate-100 overflow-hidden">
       <AppNav />
+      <CommandPalette />
       {/* Mobile top bar spacer */}
       <main className="flex-1 min-w-0 overflow-hidden lg:pt-0 pt-12">
         {children}
