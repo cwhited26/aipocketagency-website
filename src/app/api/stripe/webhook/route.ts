@@ -46,6 +46,7 @@ type CheckoutSession = {
   customer: string | null;
   customer_email: string | null;
   payment_intent: string | null;
+  subscription: string | null;
   amount_total: number | null;
   metadata: Record<string, string> | null;
 };
@@ -406,6 +407,69 @@ type StripeInvoice = {
 
 // ─── Pocket Agent subscription handlers ─────────────────────────────────────
 
+async function handlePocketAgentCheckoutCompleted(
+  session: CheckoutSession,
+): Promise<void> {
+  const email = session.metadata?.email ?? session.customer_email;
+  const name = session.metadata?.name ?? null;
+  // client_reference_id carries user_id when the buyer was already signed in;
+  // metadata.user_id is the same value written by the checkout route as a fallback.
+  const userId = session.client_reference_id ?? session.metadata?.user_id ?? null;
+
+  if (!email) {
+    console.error("[stripe/webhook] pocket_agent checkout.session.completed: missing email", {
+      session_id: session.id,
+    });
+    return;
+  }
+  if (!session.customer) {
+    console.error("[stripe/webhook] pocket_agent checkout.session.completed: missing customer", {
+      session_id: session.id,
+    });
+    return;
+  }
+  if (!session.subscription) {
+    console.error(
+      "[stripe/webhook] pocket_agent checkout.session.completed: missing subscription id",
+      { session_id: session.id },
+    );
+    return;
+  }
+
+  // Write the trial row immediately from checkout data so it exists in the DB
+  // before customer.subscription.created arrives. trial_end is approximated
+  // here; the subsequent customer.subscription.created upsert overwrites it
+  // with the accurate timestamp from the Stripe subscription object.
+  const now = new Date();
+  const approxTrialEnd = new Date(now);
+  approxTrialEnd.setDate(approxTrialEnd.getDate() + 14);
+
+  const upsert = await upsertPocketAgentTrial({
+    email,
+    name,
+    userId,
+    stripeCustomerId: session.customer,
+    stripeSubscriptionId: session.subscription,
+    stripeSessionId: session.id,
+    trialStartedAt: now.toISOString(),
+    trialEndsAt: approxTrialEnd.toISOString(),
+  });
+  if (!upsert.ok) {
+    console.error("[stripe/webhook] pocket_agent checkout.session.completed: upsert failed", {
+      session_id: session.id,
+      subscription_id: session.subscription,
+      status: upsert.status,
+      error: upsert.error,
+    });
+  } else {
+    console.info("[stripe/webhook] pocket_agent trial row written from checkout", {
+      session_id: session.id,
+      subscription_id: session.subscription,
+      email,
+    });
+  }
+}
+
 async function handlePocketAgentSubscriptionCreated(
   sub: StripeSubscription,
 ): Promise<void> {
@@ -753,11 +817,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     ) {
       const session = event.data.object as unknown as CheckoutSession;
       if (session.metadata?.source === "pocket_agent") {
-        // Pocket Agent checkout — no digital delivery needed; subscription
-        // lifecycle is handled by customer.subscription.* events.
-        console.info("[stripe/webhook] pocket_agent checkout.session.completed (no-op)", {
-          session_id: session.id,
-        });
+        await handlePocketAgentCheckoutCompleted(session);
       } else {
         await handleCheckoutCompleted(session);
       }

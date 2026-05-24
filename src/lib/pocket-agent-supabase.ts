@@ -70,7 +70,9 @@ export async function upsertPocketAgentTrial(args: {
     row.user_id = args.userId;
   }
 
-  const res = await fetch(endpoint(env), {
+  // on_conflict must reference a column with a UNIQUE constraint; see
+  // migration 005_subscriptions_unique_sub_id.sql.
+  const res = await fetch(`${endpoint(env)}?on_conflict=stripe_subscription_id`, {
     method: "POST",
     headers: {
       apikey: env.key,
