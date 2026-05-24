@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import MagicLinkForm from "./MagicLinkForm";
 
 export default async function LoginPage({
   searchParams,
@@ -22,25 +23,38 @@ export default async function LoginPage({
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Sign in</h1>
           <p className="text-slate-400 text-sm">
-            Connect your GitHub to access your brain.
+            Use email or GitHub to access your brain.
           </p>
         </div>
 
         {searchParams.error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 text-center">
             {searchParams.error === "no_code"
-              ? "OAuth sign-in failed. Please try again."
+              ? "Sign-in failed. Please try again."
               : searchParams.error}
           </div>
         )}
 
-        <Link
-          href="/api/app/auth/github"
-          className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-medium text-slate-100 hover:bg-slate-700 hover:border-slate-600 transition-colors"
-        >
-          <GitHubIcon />
-          Continue with GitHub
-        </Link>
+        <MagicLinkForm />
+
+        <div className="relative flex items-center gap-3">
+          <div className="flex-1 border-t border-slate-800" />
+          <span className="text-xs text-slate-600">or</span>
+          <div className="flex-1 border-t border-slate-800" />
+        </div>
+
+        <div className="space-y-2">
+          <Link
+            href="/api/app/auth/github"
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-medium text-slate-100 hover:bg-slate-700 hover:border-slate-600 transition-colors"
+          >
+            <GitHubIcon />
+            Continue with GitHub
+          </Link>
+          <p className="text-center text-xs text-slate-600">
+            GitHub is required to connect a brain repo.
+          </p>
+        </div>
 
         <p className="text-center text-xs text-slate-600">
           Need a subscription?{" "}
