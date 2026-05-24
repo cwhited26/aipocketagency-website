@@ -17,16 +17,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-[#05070a] text-slate-100">
       {isAuthed && (
-        <nav className="border-b border-slate-800 bg-[#05070a]/90 backdrop-blur sticky top-0 z-10">
-          <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
+        <nav className="border-b border-slate-800 bg-[#05070a]/95 backdrop-blur sticky top-0 z-10">
+          <div className="px-5 h-12 flex items-center justify-between">
             <Link
               href="/app/ask"
               className="text-[#22d3ee] text-sm font-mono tracking-wider font-medium hover:text-white transition-colors"
             >
               Pocket Agent
             </Link>
-            <div className="flex items-center gap-6">
-              <NavLink href="/app/ask">Ask</NavLink>
+            <div className="flex items-center gap-5">
               <NavLink href="/app/skool">Community</NavLink>
               <NavLink href="/app/settings">Settings</NavLink>
             </div>
@@ -40,10 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
 function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link
-      href={href}
-      className="text-sm text-slate-400 hover:text-slate-100 transition-colors"
-    >
+    <Link href={href} className="text-sm text-slate-500 hover:text-slate-100 transition-colors">
       {children}
     </Link>
   );

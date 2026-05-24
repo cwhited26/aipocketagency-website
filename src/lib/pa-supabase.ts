@@ -33,6 +33,36 @@ export async function fetchPaUser(userId: string): Promise<PaResult<PaUser | nul
   return { ok: true, data: rows[0] ?? null };
 }
 
+export async function initPaUser(user: {
+  id: string;
+  github_username: string;
+}): Promise<PaResult<void>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const endpoint = `${env.url}/rest/v1/pocket_agent_users`;
+  const body = {
+    id: user.id,
+    github_username: user.github_username,
+    brain_repo: null,
+    github_token: null,
+    updated_at: new Date().toISOString(),
+  };
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  return { ok: true, data: undefined };
+}
+
 export async function upsertPaUser(user: {
   id: string;
   github_username: string;

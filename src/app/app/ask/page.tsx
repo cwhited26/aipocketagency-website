@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
+import { listConversations } from "@/lib/pa-conversations";
 import { redirect } from "next/navigation";
-import AskClient from "./AskClient";
+import HomeClient from "./HomeClient";
 
 export default async function AskPage() {
   const supabase = createClient();
@@ -14,12 +15,18 @@ export default async function AskPage() {
   const result = await fetchPaUser(user.id);
   const paUser = result.ok ? result.data : null;
 
-  if (!paUser?.brain_repo) redirect("/app/onboarding");
+  // If there's no user record at all, send them through onboarding to create one.
+  if (!paUser) redirect("/app/onboarding");
+
+  // Load recent conversations to pre-populate the sidebar.
+  const convsResult = await listConversations(user.id);
+  const initialConversations = convsResult.ok ? convsResult.data : [];
 
   return (
-    <AskClient
+    <HomeClient
       brainRepo={paUser.brain_repo}
       hasApiKey={!!paUser.anthropic_api_key}
+      initialConversations={initialConversations}
     />
   );
 }
