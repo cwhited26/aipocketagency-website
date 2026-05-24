@@ -120,6 +120,106 @@ body {
               inset 0 0 28px rgba(34, 211, 238, 0.07);
 }
 
+/* ─── Brain markdown viewer ────────────────────────────────────────────────── */
+
+.prose-brain {
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.prose-brain h1,
+.prose-brain h2,
+.prose-brain h3,
+.prose-brain h4 {
+  color: #e2e8f0;
+  font-weight: 600;
+  margin-top: 1.4em;
+  margin-bottom: 0.4em;
+}
+
+.prose-brain h1 { font-size: 1.1rem; }
+.prose-brain h2 { font-size: 1rem; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 0.3em; }
+.prose-brain h3 { font-size: 0.9rem; }
+
+.prose-brain p { margin: 0.75em 0; }
+
+.prose-brain a {
+  color: #22d3ee;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-brain strong { color: #e2e8f0; font-weight: 600; }
+.prose-brain em { color: #94a3b8; }
+
+.prose-brain code {
+  font-family: ui-monospace, monospace;
+  font-size: 0.78em;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #22d3ee;
+}
+
+.prose-brain pre {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  border-radius: 8px;
+  padding: 1em;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.prose-brain pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #94a3b8;
+}
+
+.prose-brain blockquote {
+  border-left: 3px solid rgba(34, 211, 238, 0.3);
+  padding-left: 1em;
+  margin: 0.75em 0;
+  color: #94a3b8;
+}
+
+.prose-brain ul,
+.prose-brain ol {
+  padding-left: 1.4em;
+  margin: 0.5em 0;
+}
+
+.prose-brain li { margin: 0.2em 0; }
+
+.prose-brain hr {
+  border: none;
+  border-top: 1px solid rgba(51, 65, 85, 0.5);
+  margin: 1.2em 0;
+}
+
+.prose-brain table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin: 0.75em 0;
+}
+
+.prose-brain th {
+  text-align: left;
+  font-weight: 600;
+  color: #94a3b8;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+}
+
+.prose-brain td {
+  padding: 5px 10px;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+}
+
 /* radial glow */
 .bg-hero-glow {
   background: radial-gradient(

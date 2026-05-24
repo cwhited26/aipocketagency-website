@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import AlienCore from "../_components/AlienCore";
+import type { ActivityItem } from "@/app/api/app/brain/activity/route";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -229,27 +230,110 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
   );
 }
 
-// ─── Needs You Panel ────────────────────────────────────────────────────────────
+// ─── Activity Feed Panel ────────────────────────────────────────────────────────
 
-function NeedsYouPanel() {
+function relativeActivity(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const h = Math.floor(diff / 3_600_000);
+  if (h < 1) return "just now";
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  return `${Math.floor(d / 7)}w ago`;
+}
+
+function kindDot(kind: ActivityItem["kind"]): string {
+  switch (kind) {
+    case "memory": return "◈";
+    case "upload": return "▲";
+    case "setup": return "◉";
+    case "draft": return "◆";
+    default: return "○";
+  }
+}
+
+function ActivityFeedPanel({ brainRepo }: { brainRepo: string | null }) {
+  const [items, setItems] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!brainRepo) { setLoading(false); return; }
+    fetch("/api/app/brain/activity")
+      .then((r) => (r.ok ? (r.json() as Promise<{ items: ActivityItem[] }>) : Promise.reject()))
+      .then((d) => { setItems(d.items.slice(0, 6)); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [brainRepo]);
+
   return (
     <div className="rounded-xl border border-slate-700/60 bg-slate-900/70 flex flex-col gap-3 p-4 h-full">
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
-          Needs you
+          Recent activity
         </span>
-        <span className="text-[10px] font-mono text-slate-500">0</span>
+        {!brainRepo && (
+          <span className="text-[10px] font-mono text-slate-600">—</span>
+        )}
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center text-center gap-2.5 py-3">
-        <div className="w-8 h-8 rounded-full border border-slate-700 flex items-center justify-center">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M2 6h8M7 3l3 3-3 3" stroke="#64748B" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+
+      {!brainRepo ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-center gap-2.5 py-2">
+          <div className="w-7 h-7 rounded-full border border-slate-700/60 flex items-center justify-center">
+            <span className="text-[8px] text-slate-600">◯</span>
+          </div>
+          <p className="text-[11px] text-slate-500 leading-snug max-w-[130px]">
+            Connect your brain to see activity
+          </p>
         </div>
-        <p className="text-sm text-slate-400 leading-relaxed max-w-[140px]">
-          Connect a tool and I&apos;ll start clearing things
-        </p>
-      </div>
+      ) : loading ? (
+        <div className="flex-1 flex flex-col gap-2 py-1">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-8 bg-slate-800/60 rounded animate-pulse" />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-center gap-2 py-2">
+          <p className="text-[11px] text-slate-500 leading-snug max-w-[140px]">
+            No activity yet — finish setting up your brain to get started.
+          </p>
+          <a href="/app/onboarding" className="text-[10px] font-mono text-[#22d3ee]/60 hover:text-[#22d3ee] transition-colors">
+            Set up brain →
+          </a>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5 flex-1 overflow-hidden">
+          {items.map((item) => (
+            <div key={item.id} className="flex items-start gap-1.5 min-w-0">
+              <span
+                className="shrink-0 text-[7px] mt-1 leading-none"
+                style={{
+                  color:
+                    item.kind === "memory" ? "#22d3ee" :
+                    item.kind === "upload" ? "rgba(34,211,238,0.7)" :
+                    item.kind === "setup" ? "rgba(34,211,238,0.5)" :
+                    "#475569",
+                }}
+              >
+                {kindDot(item.kind)}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] text-slate-300 leading-snug truncate">{item.label}</p>
+                <p className="text-[9px] font-mono text-slate-600 mt-0.5">
+                  {relativeActivity(item.time)}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {items.length > 0 && (
+        <a
+          href="/app/documents"
+          className="text-[10px] font-mono text-[#22d3ee]/50 hover:text-[#22d3ee] transition-colors mt-auto block"
+        >
+          All documents →
+        </a>
+      )}
     </div>
   );
 }
@@ -346,7 +430,7 @@ function HubView({
 
         {/* Status panels */}
         <div className="grid grid-cols-2 gap-3" style={{ minHeight: 200 }}>
-          <NeedsYouPanel />
+          <ActivityFeedPanel brainRepo={brainRepo} />
           <BrainOrganPanel brainRepo={brainRepo} />
         </div>
 
