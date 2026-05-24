@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 import { retrieveCheckoutSession } from "@/lib/stripe-checkout";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +10,6 @@ const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
 const SKOOL_URL = "https://www.skool.com/aipocketagency";
-const APP_URL = "https://app.aipocketagency.com";
 
 export function generateMetadata(): Metadata {
   return {
@@ -61,12 +61,19 @@ export default async function PocketAgentWelcomePage({
     }
   }
 
+  // If the user already has a session, send them straight to the app.
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
+
   const steps = [
-    "Send one voice note describing your business in 30 seconds.",
-    "Add one screenshot of something you want to remember.",
-    "Paste one customer email or sales conversation.",
-    'Ask: "Draft the reply in my voice."',
-    'Ask: "What should I remember before my next call?"',
+    "Sign in with GitHub or your email to create your account.",
+    "Connect your brain repo — a GitHub repo where Pocket Agent stores your memory files.",
+    "Add your Anthropic API key in Settings (it stays on our server, never in your browser).",
+    'Ask your first question: "What are my goals for this quarter?"',
+    "See the answer with cited sources from your own memory files.",
   ];
 
   return (
@@ -83,8 +90,7 @@ export default async function PocketAgentWelcomePage({
 
             <h1 className="mt-6 text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
               <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
-                Your trial is live. Get your first useful answer in the next 10
-                minutes.
+                Your trial is live. Get your first useful answer in 10 minutes.
               </span>
             </h1>
 
@@ -95,8 +101,7 @@ export default async function PocketAgentWelcomePage({
             )}
 
             <p className="mt-5 text-lg leading-relaxed text-slate-300">
-              The first 10 minutes are how you&apos;ll know this is the real
-              thing. Do these five in order:
+              Follow these five steps to get set up:
             </p>
           </div>
 
@@ -120,17 +125,28 @@ export default async function PocketAgentWelcomePage({
           </ol>
 
           <div className="mt-10 flex flex-col gap-4">
-            <a
-              href={APP_URL}
-              className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-accent px-6 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-12px_rgba(34,211,238,0.7)] transition hover:scale-[1.01]"
-            >
-              Open your Pocket Agent →
-            </a>
+            {isLoggedIn ? (
+              <a
+                href="/app/ask"
+                className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-accent px-6 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-12px_rgba(34,211,238,0.7)] transition hover:scale-[1.01]"
+              >
+                Open Pocket Agent →
+              </a>
+            ) : (
+              <a
+                href="/app/login"
+                className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-accent px-6 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-12px_rgba(34,211,238,0.7)] transition hover:scale-[1.01]"
+              >
+                Create your account →
+              </a>
+            )}
             <a
               href={SKOOL_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-6 py-4 text-base font-semibold text-slate-200 transition hover:bg-white/[0.08]"
             >
-              Join the live builds with Chase →
+              Join the Skool community →
             </a>
           </div>
 
