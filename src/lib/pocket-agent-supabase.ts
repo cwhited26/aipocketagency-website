@@ -22,13 +22,18 @@ export type PocketAgentSubscriptionRow = {
 };
 
 function supabaseEnv(): { url: string; key: string } | { error: string } {
-  const url = process.env.POCKET_AGENT_SUPABASE_URL ?? process.env.WC_ADMIN_SUPABASE_URL;
-  const key =
-    process.env.POCKET_AGENT_SUPABASE_SERVICE_KEY ?? process.env.WC_ADMIN_SUPABASE_SERVICE_KEY;
-  if (!url || !key) {
-    return { error: "WC_ADMIN_SUPABASE_URL / WC_ADMIN_SUPABASE_SERVICE_KEY not set" };
-  }
-  return { url, key };
+  const paUrl = process.env.POCKET_AGENT_SUPABASE_URL;
+  const paKey = process.env.POCKET_AGENT_SUPABASE_SERVICE_KEY;
+  if (paUrl && paKey) return { url: paUrl, key: paKey };
+
+  const wcUrl = process.env.WC_ADMIN_SUPABASE_URL;
+  const wcKey = process.env.WC_ADMIN_SUPABASE_SERVICE_KEY;
+  if (wcUrl && wcKey) return { url: wcUrl, key: wcKey };
+
+  return {
+    error:
+      "POCKET_AGENT_SUPABASE_URL + POCKET_AGENT_SUPABASE_SERVICE_KEY (or WC_ADMIN_SUPABASE_* fallback) not set",
+  };
 }
 
 const TABLE = "pocket_agent_subscriptions";
