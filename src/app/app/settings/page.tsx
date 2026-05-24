@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import ApiKeyForm from "./ApiKeyForm";
 
 export default async function SettingsPage() {
@@ -16,16 +15,22 @@ export default async function SettingsPage() {
   const paUser = paResult.ok ? paResult.data : null;
 
   return (
-    <main className="min-h-screen bg-[#05070a] px-4 py-10">
-      <div className="max-w-lg mx-auto space-y-8">
+    <div className="h-full overflow-y-auto bg-[#05070a]">
+      <div className="max-w-lg mx-auto px-6 py-10 space-y-8">
         <div>
-          <div className="text-[#22d3ee] text-xs font-mono tracking-[0.2em] uppercase mb-1">
+          <div className="text-[10px] text-[#22d3ee]/50 font-mono tracking-[0.2em] uppercase mb-1">
             Settings
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Your account</h1>
         </div>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/50 divide-y divide-slate-800">
+        <div
+          className="rounded-xl overflow-hidden divide-y divide-slate-800/60"
+          style={{
+            border: "1px solid rgba(51,65,85,0.5)",
+            background: "rgba(7,13,18,0.5)",
+          }}
+        >
           <SettingsRow label="GitHub username" value={paUser?.github_username || user.email || "—"} />
           <SettingsRow
             label="Brain repo"
@@ -45,24 +50,18 @@ export default async function SettingsPage() {
           />
         </div>
 
-        <div className="flex items-center justify-between pt-2">
-          <Link
-            href="/app/ask"
-            className="text-sm text-slate-500 hover:text-slate-300 underline"
-          >
-            ← Back to ask
-          </Link>
+        <div className="flex justify-end pt-2">
           <form action="/api/app/sign-out" method="POST">
             <button
               type="submit"
-              className="text-sm text-red-400 hover:text-red-300 underline"
+              className="text-sm text-slate-600 hover:text-red-400 transition-colors"
             >
               Sign out
             </button>
           </form>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -88,7 +87,7 @@ function SettingsRow({
           {value}
         </a>
       ) : (
-        <span className="text-sm text-slate-200 text-right truncate max-w-xs">{value}</span>
+        <span className="text-sm text-slate-300 text-right truncate max-w-xs">{value}</span>
       )}
     </div>
   );

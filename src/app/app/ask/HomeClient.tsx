@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import AlienCore from "../_components/AlienCore";
 
-// ─── Brain completeness panel ──────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 type CompletenessArea = {
   key: string;
@@ -17,159 +18,6 @@ type CompletenessData = {
   pct: number;
   areas: CompletenessArea[];
 };
-
-function BrainPanel({ brainRepo }: { brainRepo: string }) {
-  const [data, setData] = useState<CompletenessData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/app/brain/completeness")
-      .then((r) => (r.ok ? (r.json() as Promise<CompletenessData>) : Promise.reject()))
-      .then((d) => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
-
-  const hungry = data && data.pct < 100;
-
-  return (
-    <div
-      className="mb-7 rounded-xl overflow-hidden"
-      style={{
-        border: "1px solid",
-        borderColor: hungry ? "rgba(34,211,238,0.14)" : "rgba(51,65,85,0.8)",
-        background: "rgba(7,13,18,0.7)",
-        animation: "brain-pulse 5s ease-in-out infinite",
-      }}
-    >
-      {/* Header — agent identity */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800/60">
-        <div className="flex items-center gap-2.5">
-          {/* Pulsing entity dot */}
-          <div className="relative flex items-center justify-center" style={{ width: 14, height: 14 }}>
-            <div
-              className="absolute inset-0 rounded-full border border-[#22d3ee]/30"
-              style={{ animation: "halo-out 3.5s ease-out 0.5s infinite" }}
-            />
-            <div
-              className="w-2 h-2 rounded-full animate-pulse"
-              style={{
-                background: "radial-gradient(circle, #22d3ee 0%, rgba(34,211,238,0.4) 100%)",
-                boxShadow: "0 0 4px rgba(34,211,238,0.4)",
-              }}
-            />
-          </div>
-          <span className="text-[10px] font-mono text-slate-400 tracking-[0.18em] uppercase">
-            Agent Brain
-          </span>
-          {data && (
-            <span
-              className="text-[9px] font-mono px-1.5 py-0.5 rounded"
-              style={{
-                color: data.pct >= 100 ? "#22d3ee" : "rgba(34,211,238,0.5)",
-                background: data.pct >= 100 ? "rgba(34,211,238,0.12)" : "rgba(34,211,238,0.05)",
-              }}
-            >
-              {data.pct >= 100 ? "FULLY LOADED" : `${data.pct}% LOADED`}
-            </span>
-          )}
-        </div>
-        <a
-          href="/app/onboarding?update=1"
-          className="text-[10px] font-mono transition-colors"
-          style={{ color: "rgba(34,211,238,0.55)" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#22d3ee")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(34,211,238,0.55)")}
-        >
-          Feed it →
-        </a>
-      </div>
-
-      {loading ? (
-        <div className="px-4 py-3.5 space-y-2.5">
-          <div className="h-1 bg-slate-800 rounded-full animate-pulse" />
-          <div className="grid grid-cols-3 gap-1.5">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-6 bg-slate-800/40 rounded-lg animate-pulse" />
-            ))}
-          </div>
-        </div>
-      ) : data ? (
-        <div className="px-4 py-3 space-y-3">
-          {/* Growth bar */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] font-mono text-slate-600">
-                {data.filled}/{data.total} memory cores active
-              </span>
-            </div>
-            <div className="h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(30,41,59,0.8)" }}>
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${data.pct}%`,
-                  background: "linear-gradient(to right, rgba(34,211,238,0.6), #22d3ee)",
-                  transition: "width 1400ms ease-in-out",
-                  boxShadow: data.pct > 0 ? "0 0 8px rgba(34,211,238,0.4)" : "none",
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Memory node chips */}
-          <div className="grid grid-cols-3 gap-1.5">
-            {data.areas.map((area) => (
-              <div
-                key={area.key}
-                className="flex items-center gap-1.5 text-[10px] px-2 py-1.5 rounded-lg transition-all"
-                style={{
-                  color: area.filled ? "rgba(148,163,184,0.9)" : "rgba(71,85,105,0.7)",
-                  background: area.filled ? "rgba(34,211,238,0.06)" : "transparent",
-                  border: area.filled ? "1px solid rgba(34,211,238,0.12)" : "1px dashed rgba(51,65,85,0.5)",
-                }}
-                title={area.desc}
-              >
-                <span
-                  style={{
-                    color: area.filled ? "#22d3ee" : "rgba(71,85,105,0.5)",
-                    fontSize: 8,
-                    flexShrink: 0,
-                  }}
-                >
-                  {area.filled ? "◈" : "○"}
-                </span>
-                <span className="truncate font-mono" style={{ fontSize: 9 }}>{area.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Hunger signal */}
-          {hungry && (
-            <p className="text-[10px] leading-relaxed" style={{ color: "rgba(71,85,105,0.8)" }}>
-              {data.total - data.filled} core{data.total - data.filled !== 1 ? "s" : ""} dormant
-              {" "}— your agent is hungry for more context.{" "}
-              <a
-                href="/app/onboarding?update=1"
-                className="underline transition-colors"
-                style={{ color: "rgba(34,211,238,0.5)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#22d3ee")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(34,211,238,0.5)")}
-              >
-                Feed it →
-              </a>
-            </p>
-          )}
-        </div>
-      ) : (
-        <div className="px-4 py-3">
-          <p className="text-xs" style={{ color: "rgba(71,85,105,0.8)" }}>
-            Agent connected to{" "}
-            <span className="font-mono" style={{ color: "rgba(100,116,139,0.9)" }}>{brainRepo}</span>
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
 
 type Conversation = {
   id: string;
@@ -200,30 +48,7 @@ type ConversationDetail = {
   messages: Message[];
 };
 
-const CHIPS = [
-  { label: "Research", scaffold: "Research [topic] and summarize what I know about it based on my memory files." },
-  { label: "Summarize", scaffold: "Summarize [topic or project] based on what's in my memory files." },
-  { label: "Draft", scaffold: "Draft [type of content] in my voice based on context from my memory files." },
-  { label: "Analyze", scaffold: "Analyze [situation] using context from my memory files and give me a clear assessment." },
-  { label: "Decide", scaffold: "Help me make a decision about [topic]. Here's what I'm weighing: [options]" },
-];
-
-const SUGGESTIONS = [
-  {
-    title: "Summarize my last 3 decisions",
-    prompt: "Summarize the last 3 decisions I made according to my decision log.",
-  },
-  {
-    title: "What needs my attention today?",
-    prompt:
-      "Based on my current projects and active decisions, what should I focus on today?",
-  },
-  {
-    title: "What did I decide about pricing?",
-    prompt:
-      "What did I decide about pricing? Walk me through the relevant decisions and context from my memory.",
-  },
-];
+// ─── Utilities ─────────────────────────────────────────────────────────────────
 
 function relativeTime(isoString: string): string {
   const diff = Date.now() - new Date(isoString).getTime();
@@ -260,59 +85,476 @@ function toolStepIcon(tool: string): string {
   }
 }
 
-function MaturityBar({ hasBrain }: { hasBrain: boolean }) {
-  const activeLevel = hasBrain ? 1 : 0;
+// ─── Brain Organ Panel ─────────────────────────────────────────────────────────
 
-  const levels = [
-    { n: 1, short: "Knows your business", why: "Feed it context so it stops making you re-explain yourself." },
-    { n: 2, short: "Drafts in your voice", why: "Connect your voice spec and it writes the way you think." },
-    { n: 3, short: "Acts in your tools", why: "Give it access and it does the work — not just the advice." },
-  ];
+function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
+  const [data, setData] = useState<CompletenessData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!brainRepo) {
+      setLoading(false);
+      return;
+    }
+    fetch("/api/app/brain/completeness")
+      .then((r) => (r.ok ? (r.json() as Promise<CompletenessData>) : Promise.reject()))
+      .then((d) => {
+        setData(d);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [brainRepo]);
+
+  if (!brainRepo) {
+    return (
+      <div
+        className="rounded-xl flex flex-col gap-3 p-4 h-full"
+        style={{ border: "1px solid rgba(51,65,85,0.5)", background: "rgba(7,13,18,0.5)" }}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono text-slate-600 tracking-[0.16em] uppercase">Agent Brain</span>
+        </div>
+        <p className="text-xs text-slate-700 leading-relaxed">
+          No brain connected.{" "}
+          <a
+            href="/app/onboarding"
+            className="text-[#22d3ee]/60 hover:text-[#22d3ee] transition-colors underline"
+          >
+            Connect one →
+          </a>
+        </p>
+        <div className="flex flex-col gap-1.5 mt-auto">
+          {["Identity", "Services", "Voice", "Clients", "Decisions", "Projects"].map((label) => (
+            <div
+              key={label}
+              className="flex items-center gap-2 text-[10px] font-mono px-2 py-1 rounded"
+              style={{ color: "rgba(51,65,85,0.6)", border: "1px dashed rgba(51,65,85,0.3)" }}
+            >
+              <span style={{ fontSize: 8 }}>○</span>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="border-b border-slate-800/60 bg-slate-900/30 px-6 py-3">
-      <div className="max-w-2xl mx-auto flex items-center gap-2 overflow-x-auto">
-        {levels.map((l, i) => (
-          <div key={l.n} className="flex items-center shrink-0">
+    <div
+      className="rounded-xl flex flex-col gap-3 p-4 h-full"
+      style={{
+        border: "1px solid rgba(34,211,238,0.1)",
+        background: "rgba(7,13,18,0.7)",
+        animation: "brain-pulse 5s ease-in-out infinite",
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {/* Live dot */}
+          <div className="relative flex items-center justify-center" style={{ width: 12, height: 12 }}>
             <div
-              className={`flex items-center gap-2 ${
-                l.n <= activeLevel ? "text-[#22d3ee]" : "text-slate-600"
-              }`}
-              title={l.why}
-            >
-              <span
-                className={`flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold border shrink-0 ${
-                  l.n <= activeLevel
-                    ? "bg-[#22d3ee]/20 border-[#22d3ee]/60 text-[#22d3ee]"
-                    : "bg-slate-800 border-slate-700 text-slate-600"
-                }`}
-              >
-                {l.n <= activeLevel ? "✓" : l.n}
-              </span>
-              <span
-                className={`text-xs font-medium whitespace-nowrap ${
-                  l.n <= activeLevel
-                    ? "text-[#22d3ee]"
-                    : l.n === activeLevel + 1
-                    ? "text-slate-500"
-                    : "text-slate-700"
-                }`}
-              >
-                {l.n <= activeLevel ? "" : ""}Level {l.n}: {l.short}
-                {l.n > activeLevel && (
-                  <span className="ml-1 text-slate-700 text-[10px]">— coming</span>
-                )}
-              </span>
-            </div>
-            {i < levels.length - 1 && (
-              <span className="mx-3 text-slate-700 text-xs shrink-0">→</span>
-            )}
+              className="absolute inset-0 rounded-full border border-[#22d3ee]/25"
+              style={{ animation: "halo-out 3.5s ease-out 0.5s infinite" }}
+            />
+            <div
+              className="w-1.5 h-1.5 rounded-full animate-pulse"
+              style={{ background: "rgba(34,211,238,0.8)", boxShadow: "0 0 3px rgba(34,211,238,0.4)" }}
+            />
           </div>
-        ))}
+          <span className="text-[10px] font-mono text-slate-500 tracking-[0.16em] uppercase">Agent Brain</span>
+        </div>
+        {data && (
+          <span
+            className="text-[9px] font-mono px-1.5 py-0.5 rounded"
+            style={{
+              color: data.pct >= 100 ? "#22d3ee" : "rgba(34,211,238,0.45)",
+              background: data.pct >= 100 ? "rgba(34,211,238,0.1)" : "rgba(34,211,238,0.04)",
+            }}
+          >
+            {data.pct >= 100 ? "full" : `${data.pct}%`}
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="space-y-2 flex-1">
+          <div className="h-0.5 bg-slate-800 rounded-full animate-pulse" />
+          <div className="grid grid-cols-2 gap-1">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-5 bg-slate-800/50 rounded animate-pulse" />
+            ))}
+          </div>
+        </div>
+      ) : data ? (
+        <>
+          {/* Growth bar */}
+          <div>
+            <div className="h-px rounded-full overflow-hidden" style={{ background: "rgba(30,41,59,0.8)" }}>
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${data.pct}%`,
+                  background: "linear-gradient(to right, rgba(34,211,238,0.5), #22d3ee)",
+                  transition: "width 1400ms ease-in-out",
+                  boxShadow: data.pct > 0 ? "0 0 6px rgba(34,211,238,0.3)" : "none",
+                }}
+              />
+            </div>
+            <p className="text-[9px] font-mono text-slate-700 mt-1">
+              {data.filled}/{data.total} memory cores
+            </p>
+          </div>
+
+          {/* Memory chips */}
+          <div className="grid grid-cols-2 gap-1 flex-1">
+            {data.areas.map((area) => (
+              <div
+                key={area.key}
+                className="flex items-center gap-1.5 text-[9px] px-1.5 py-1 rounded transition-all"
+                style={{
+                  color: area.filled ? "rgba(148,163,184,0.85)" : "rgba(51,65,85,0.6)",
+                  background: area.filled ? "rgba(34,211,238,0.05)" : "transparent",
+                  border: area.filled
+                    ? "1px solid rgba(34,211,238,0.1)"
+                    : "1px dashed rgba(51,65,85,0.4)",
+                }}
+                title={area.desc}
+              >
+                <span style={{ color: area.filled ? "#22d3ee" : "rgba(51,65,85,0.4)", fontSize: 7, flexShrink: 0 }}>
+                  {area.filled ? "◈" : "○"}
+                </span>
+                <span className="truncate font-mono">{area.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {data.pct < 100 && (
+            <a
+              href="/app/onboarding?update=1"
+              className="text-[9px] font-mono transition-colors block"
+              style={{ color: "rgba(34,211,238,0.5)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#22d3ee")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(34,211,238,0.5)")}
+            >
+              Feed it more context →
+            </a>
+          )}
+        </>
+      ) : (
+        <p className="text-xs text-slate-700">
+          <span className="font-mono">{brainRepo}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Needs You Feed ────────────────────────────────────────────────────────────
+
+function NeedsYouPanel() {
+  return (
+    <div
+      className="rounded-xl flex flex-col gap-3 p-4 h-full"
+      style={{ border: "1px solid rgba(51,65,85,0.45)", background: "rgba(7,13,18,0.5)" }}
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-mono text-slate-600 tracking-[0.16em] uppercase">Needs you</span>
+        <span className="text-[9px] font-mono text-slate-700">0</span>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center text-center gap-2 py-4">
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center"
+          style={{ border: "1px solid rgba(51,65,85,0.4)" }}
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6h8M7 3l3 3-3 3" stroke="rgba(71,85,105,0.6)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <p className="text-[10px] text-slate-700 leading-relaxed max-w-[140px]">
+          Connect a tool and I&apos;ll start clearing things
+        </p>
       </div>
     </div>
   );
 }
+
+// ─── Hub View ─────────────────────────────────────────────────────────────────
+
+const CHIPS = [
+  { label: "Research", scaffold: "Research [topic] and summarize what I know about it based on my memory files." },
+  { label: "Summarize", scaffold: "Summarize [topic or project] based on what's in my memory files." },
+  { label: "Draft", scaffold: "Draft [type of content] in my voice based on context from my memory files." },
+  { label: "Analyze", scaffold: "Analyze [situation] using context from my memory files and give me a clear assessment." },
+  { label: "Decide", scaffold: "Help me make a decision about [topic]. Here's what I'm weighing: [options]" },
+];
+
+function HubView({
+  brainRepo,
+  hasApiKey,
+  inputValue,
+  setInputValue,
+  isLoading,
+  handleSubmit,
+  handleKeyDown,
+  textareaRef,
+}: {
+  brainRepo: string | null;
+  hasApiKey: boolean;
+  inputValue: string;
+  setInputValue: (v: string) => void;
+  isLoading: boolean;
+  handleSubmit: () => void;
+  handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  textareaRef: React.RefObject<HTMLTextAreaElement>;
+}) {
+  return (
+    <div
+      className="h-full overflow-y-auto"
+      style={{ animation: "hub-fadein 0.4s ease-out" }}
+    >
+      <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-6">
+
+        {/* Alien core — the centerpiece */}
+        <div className="flex flex-col items-center gap-2">
+          <AlienCore brainRepo={brainRepo} />
+          <div className="flex items-center gap-2">
+            <span
+              className="w-1.5 h-1.5 rounded-full animate-pulse"
+              style={{ background: "rgba(34,211,238,0.7)", boxShadow: "0 0 4px rgba(34,211,238,0.4)" }}
+            />
+            <span className="text-[10px] font-mono text-slate-600 tracking-[0.14em]">
+              {brainRepo ? "online · reading your brain" : "online · waiting for context"}
+            </span>
+          </div>
+        </div>
+
+        {/* Status panels */}
+        <div className="grid grid-cols-2 gap-3" style={{ minHeight: 200 }}>
+          <NeedsYouPanel />
+          <BrainOrganPanel brainRepo={brainRepo} />
+        </div>
+
+        {/* Input */}
+        {!hasApiKey ? (
+          <div
+            className="rounded-xl px-5 py-4 space-y-3"
+            style={{ border: "1px solid rgba(34,211,238,0.15)", background: "rgba(34,211,238,0.04)" }}
+          >
+            <p className="text-sm font-medium text-slate-200">Add your Anthropic API key to start.</p>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Pocket Agent uses your own key — you control the bill, your data stays yours.{" "}
+              <a
+                href="https://console.anthropic.com/settings/keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#22d3ee] hover:underline"
+              >
+                Get a key →
+              </a>
+            </p>
+            <a
+              href="/app/settings"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#22d3ee] px-4 py-2 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors"
+            >
+              Go to Settings
+            </a>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{ border: "1px solid rgba(51,65,85,0.6)", background: "rgba(7,13,18,0.7)" }}
+            >
+              <textarea
+                ref={textareaRef}
+                rows={3}
+                placeholder="What did I decide about pricing? Draft a quote for Johnson. Summarize my current projects."
+                className="w-full bg-transparent px-4 py-3 text-sm text-slate-100 placeholder:text-slate-700 focus:outline-none resize-none"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isLoading}
+              />
+              <div
+                className="flex items-center justify-between px-4 py-2.5"
+                style={{ borderTop: "1px solid rgba(51,65,85,0.4)" }}
+              >
+                <div className="flex gap-1.5 flex-wrap">
+                  {CHIPS.map((chip) => (
+                    <button
+                      key={chip.label}
+                      onClick={() => setInputValue(chip.scaffold)}
+                      className="rounded px-2.5 py-1 text-[10px] font-mono text-slate-600 hover:text-slate-300 hover:bg-slate-800/50 transition-all"
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-[10px] text-slate-700 font-mono">⌘↵</span>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!inputValue.trim() || isLoading}
+                    className="rounded-lg bg-[#22d3ee] px-4 py-1.5 text-xs font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isLoading ? "Working…" : "Ask"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Work surface */}
+        <div>
+          <div className="flex items-center justify-between mb-2.5">
+            <span className="text-[10px] font-mono text-slate-700 tracking-[0.16em] uppercase">
+              What I can do for you
+            </span>
+            <a
+              href="/app/apps"
+              className="text-[10px] font-mono text-slate-600 hover:text-[#22d3ee] transition-colors"
+            >
+              All →
+            </a>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              {
+                href: "/app/apps/quote",
+                label: "Quote / Proposal",
+                desc: "Reads your brain. Drafts a clean quote.",
+              },
+              {
+                href: "/app/apps/email",
+                label: "Email Drafter",
+                desc: "Writes emails that sound like you.",
+              },
+            ].map((app) => (
+              <a
+                key={app.href}
+                href={app.href}
+                className="group rounded-xl px-4 py-3 transition-all"
+                style={{
+                  border: "1px solid rgba(51,65,85,0.45)",
+                  background: "rgba(7,13,18,0.4)",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(51,65,85,0.7)";
+                  (e.currentTarget as HTMLElement).style.background = "rgba(7,13,18,0.7)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(51,65,85,0.45)";
+                  (e.currentTarget as HTMLElement).style.background = "rgba(7,13,18,0.4)";
+                }}
+              >
+                <p className="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">
+                  {app.label}
+                </p>
+                <p className="text-[10px] text-slate-700 mt-0.5 leading-relaxed">{app.desc}</p>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        {/* Guide — level context, woven in quietly */}
+        <div
+          className="rounded-xl px-4 py-3"
+          style={{ border: "1px solid rgba(51,65,85,0.3)", background: "rgba(7,13,18,0.3)" }}
+        >
+          <div className="flex items-center gap-4 overflow-x-auto">
+            {[
+              { n: 1, label: "Knows you", active: Boolean(brainRepo) },
+              { n: 2, label: "Drafts for you", active: false },
+              { n: 3, label: "Acts for you", active: false },
+            ].map((level, i) => (
+              <div key={level.n} className="flex items-center gap-2 shrink-0">
+                <span
+                  className="flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold border shrink-0"
+                  style={{
+                    background: level.active ? "rgba(34,211,238,0.15)" : "rgba(30,41,59,0.5)",
+                    borderColor: level.active ? "rgba(34,211,238,0.5)" : "rgba(51,65,85,0.5)",
+                    color: level.active ? "#22d3ee" : "rgba(71,85,105,0.7)",
+                  }}
+                >
+                  {level.active ? "✓" : level.n}
+                </span>
+                <span
+                  className="text-[10px] font-mono whitespace-nowrap"
+                  style={{ color: level.active ? "rgba(148,163,184,0.7)" : "rgba(51,65,85,0.6)" }}
+                >
+                  {level.label}
+                </span>
+                {i < 2 && (
+                  <span className="text-slate-800 text-xs shrink-0">→</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ─── Conversation Sidebar ─────────────────────────────────────────────────────
+
+function ConvSidebar({
+  conversations,
+  activeConvId,
+  onSelect,
+  onNew,
+}: {
+  conversations: Conversation[];
+  activeConvId: string | null;
+  onSelect: (id: string) => void;
+  onNew: () => void;
+}) {
+  return (
+    <aside
+      className="hidden lg:flex w-[152px] shrink-0 flex-col h-full"
+      style={{ borderRight: "1px solid rgba(30,41,59,0.6)" }}
+    >
+      <div className="px-3 py-3 shrink-0" style={{ borderBottom: "1px solid rgba(30,41,59,0.6)" }}>
+        <button
+          onClick={onNew}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-500 hover:text-slate-200 hover:bg-slate-800/40 transition-all font-mono"
+          style={{ border: "1px solid rgba(51,65,85,0.4)" }}
+        >
+          <span className="text-[#22d3ee] font-bold text-sm leading-none">+</span>
+          New chat
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto py-2 px-2">
+        {conversations.length === 0 ? (
+          <p className="px-3 py-3 text-[10px] font-mono text-slate-700">No threads yet.</p>
+        ) : (
+          conversations.map((conv) => (
+            <button
+              key={conv.id}
+              onClick={() => onSelect(conv.id)}
+              className={`w-full text-left px-2.5 py-2 rounded-lg transition-all mb-0.5 ${
+                activeConvId === conv.id
+                  ? "bg-slate-800/60 text-slate-200"
+                  : "text-slate-600 hover:bg-slate-800/30 hover:text-slate-400"
+              }`}
+            >
+              <div className="truncate text-[10px] font-medium leading-snug">{conv.title}</div>
+              <div className="text-[9px] font-mono text-slate-700 mt-0.5">
+                {relativeTime(conv.updated_at)}
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </aside>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function HomeClient({
   brainRepo,
@@ -328,7 +570,6 @@ export default function HomeClient({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -347,21 +588,17 @@ export default function HomeClient({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  function handleNewConversation() {
+  function goToHub() {
     setActiveConvId(null);
     setInputValue("");
-    setSidebarOpen(false);
-    setTimeout(() => textareaRef.current?.focus(), 50);
+    setTimeout(() => textareaRef.current?.focus(), 80);
   }
 
-  function handleSelectConversation(id: string) {
-    setActiveConvId(id);
-    setSidebarOpen(false);
-  }
-
-  function prefillInput(text: string) {
-    setInputValue(text);
-    setTimeout(() => textareaRef.current?.focus(), 50);
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSubmit();
+    }
   }
 
   async function handleSubmit() {
@@ -403,10 +640,7 @@ export default function HomeClient({
       });
 
       if (!res.ok) {
-        const errData = (await res.json().catch(() => ({}))) as {
-          error?: string;
-          message?: string;
-        };
+        const errData = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
         const errText = errData.message ?? errData.error ?? "Something went wrong. Try again.";
         setMessages((prev) => [
           ...prev.slice(0, -1),
@@ -436,21 +670,14 @@ export default function HomeClient({
 
       if (data.conversationTitle) {
         setConversations((prev) =>
-          prev.map((c) =>
-            c.id === convId ? { ...c, title: data.conversationTitle! } : c,
-          ),
+          prev.map((c) => (c.id === convId ? { ...c, title: data.conversationTitle! } : c)),
         );
       }
 
       setConversations((prev) =>
         prev
-          .map((c) =>
-            c.id === convId ? { ...c, updated_at: new Date().toISOString() } : c,
-          )
-          .sort(
-            (a, b) =>
-              new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
-          ),
+          .map((c) => (c.id === convId ? { ...c, updated_at: new Date().toISOString() } : c))
+          .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
       );
     } catch {
       setMessages((prev) => [
@@ -469,95 +696,49 @@ export default function HomeClient({
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  }
-
-  const hasBrain = Boolean(brainRepo);
   const activeConv = conversations.find((c) => c.id === activeConvId);
 
   return (
-    <div className="h-[calc(100vh-3rem)] flex overflow-hidden bg-[#05070a]">
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black/50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="flex h-full overflow-hidden bg-[#05070a]">
+      {/* Conversation sidebar */}
+      <ConvSidebar
+        conversations={conversations}
+        activeConvId={activeConvId}
+        onSelect={(id) => setActiveConvId(id)}
+        onNew={goToHub}
+      />
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed lg:static inset-y-0 left-0 z-30 w-60 shrink-0 flex flex-col bg-[#070d12] border-r border-slate-800 transform transition-transform duration-200 ease-out ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
-      >
-        <div className="p-3 border-b border-slate-800">
-          <button
-            onClick={handleNewConversation}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-800 text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-colors"
-          >
-            <span className="text-[#22d3ee] font-bold text-base leading-none">+</span>
-            New conversation
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto py-2 px-2">
-          {conversations.length === 0 ? (
-            <p className="px-3 py-3 text-xs text-slate-700">No conversations yet.</p>
-          ) : (
-            conversations.map((conv) => (
-              <button
-                key={conv.id}
-                onClick={() => handleSelectConversation(conv.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors mb-0.5 ${
-                  activeConvId === conv.id
-                    ? "bg-slate-800 text-slate-100"
-                    : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-300"
-                }`}
-              >
-                <div className="truncate text-xs font-medium">{conv.title}</div>
-                <div className="text-[11px] text-slate-700 mt-0.5">
-                  {relativeTime(conv.updated_at)}
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-      </aside>
-
-      {/* Main area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile top bar */}
-        <div className="lg:hidden flex items-center gap-3 px-4 py-2 border-b border-slate-800 shrink-0">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-slate-500 hover:text-slate-100 text-lg leading-none"
-          >
-            ☰
-          </button>
-          <span className="text-sm text-slate-500 truncate">
-            {activeConv ? activeConv.title : "Pocket Agent"}
-          </span>
-        </div>
-
+      {/* Main pane */}
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {activeConvId ? (
-          /* ── Conversation view ── */
-          <div className="flex flex-col h-full min-h-0">
-            <div className="px-5 py-3 border-b border-slate-800 flex items-center gap-3 shrink-0">
+          /* ── Active conversation ─────────────────────────────────────────── */
+          <div className="flex flex-col h-full">
+            {/* Conversation header */}
+            <div
+              className="flex items-center gap-3 px-5 py-3 shrink-0"
+              style={{ borderBottom: "1px solid rgba(30,41,59,0.8)" }}
+            >
               <button
-                onClick={handleNewConversation}
-                className="text-slate-600 hover:text-slate-300 text-sm transition-colors"
+                onClick={goToHub}
+                className="text-slate-600 hover:text-slate-300 text-sm transition-colors font-mono flex items-center gap-1.5"
               >
-                ← Home
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M8 2L4 6l4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Hub
               </button>
-              <span className="text-slate-800">|</span>
-              <span className="text-sm text-slate-500 truncate">{activeConv?.title}</span>
+              <span className="text-slate-800">·</span>
+              <span className="text-sm text-slate-500 truncate">{activeConv?.title ?? "Conversation"}</span>
+              <button
+                onClick={goToHub}
+                className="ml-auto text-xs font-mono text-slate-700 hover:text-[#22d3ee] transition-colors flex items-center gap-1"
+              >
+                + New
+              </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-6 min-h-0">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto px-5 py-6 min-h-0">
               <div className="max-w-2xl mx-auto space-y-6">
                 {messages.map((msg) => {
                   const citations =
@@ -565,30 +746,30 @@ export default function HomeClient({
                       ? (msg.citations ?? parseCitations(msg.content))
                       : [];
                   return (
-                    <div
-                      key={msg.id}
-                      className={msg.role === "user" ? "flex justify-end" : ""}
-                    >
+                    <div key={msg.id} className={msg.role === "user" ? "flex justify-end" : ""}>
                       {msg.role === "user" ? (
-                        <div className="max-w-[82%] bg-[#0d2535] border border-[#1a3d53] rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-slate-100 whitespace-pre-wrap">
+                        <div
+                          className="max-w-[80%] rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-slate-100 whitespace-pre-wrap"
+                          style={{
+                            background: "rgba(13,37,53,0.9)",
+                            border: "1px solid rgba(26,61,83,0.8)",
+                          }}
+                        >
                           {msg.content}
                         </div>
                       ) : (
                         <div className="space-y-2.5 max-w-full">
-                          <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-widest uppercase">
+                          <div className="text-[9px] text-[#22d3ee]/60 font-mono tracking-[0.18em] uppercase">
                             Pocket Agent
                           </div>
-                          {/* Tool steps transcript */}
                           {msg.toolSteps && msg.toolSteps.length > 0 && (
                             <div className="flex flex-col gap-1 py-1">
                               {msg.toolSteps.map((step, i) => (
                                 <div
                                   key={i}
-                                  className="flex items-center gap-1.5 text-[11px] font-mono text-slate-600"
+                                  className="flex items-center gap-1.5 text-[10px] font-mono text-slate-700"
                                 >
-                                  <span className="text-[#22d3ee]/30 shrink-0">
-                                    {toolStepIcon(step.tool)}
-                                  </span>
+                                  <span className="text-[#22d3ee]/25 shrink-0">{toolStepIcon(step.tool)}</span>
                                   {step.label}
                                 </div>
                               ))}
@@ -602,7 +783,11 @@ export default function HomeClient({
                               {citations.map((c, i) => (
                                 <span
                                   key={i}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-800 text-[11px] font-mono text-[#22d3ee]/60"
+                                  className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono"
+                                  style={{
+                                    background: "rgba(30,41,59,0.6)",
+                                    color: "rgba(34,211,238,0.55)",
+                                  }}
                                 >
                                   {c.file}
                                   {c.line ? `:${c.line}` : ""}
@@ -615,9 +800,10 @@ export default function HomeClient({
                     </div>
                   );
                 })}
+
                 {isLoading && (
                   <div className="space-y-2">
-                    <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-widest uppercase">
+                    <div className="text-[9px] text-[#22d3ee]/60 font-mono tracking-[0.18em] uppercase">
                       Pocket Agent
                     </div>
                     <div className="text-sm text-slate-600 animate-pulse">Working…</div>
@@ -627,32 +813,42 @@ export default function HomeClient({
               </div>
             </div>
 
-            {/* Conversation input bar */}
-            <div className="border-t border-slate-800 px-4 py-4 shrink-0">
+            {/* Input */}
+            <div
+              className="px-5 py-4 shrink-0"
+              style={{ borderTop: "1px solid rgba(30,41,59,0.8)" }}
+            >
               <div className="max-w-2xl mx-auto">
                 {!hasApiKey ? (
                   <p className="text-sm text-slate-500 text-center">
                     <a href="/app/settings" className="text-[#22d3ee] hover:underline">
                       Add your Anthropic API key
                     </a>{" "}
-                    to continue this conversation.
+                    to continue.
                   </p>
                 ) : (
                   <div className="flex items-end gap-3">
                     <textarea
                       ref={textareaRef}
                       rows={2}
-                      placeholder="Continue the conversation… (⌘↵ to send)"
-                      className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none resize-none"
+                      placeholder="Continue… (⌘↵ to send)"
+                      className="flex-1 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-700 focus:outline-none resize-none"
+                      style={{
+                        border: "1px solid rgba(51,65,85,0.6)",
+                        background: "rgba(7,13,18,0.7)",
+                      }}
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       onKeyDown={handleKeyDown}
                       disabled={isLoading}
+                      onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(34,211,238,0.35)")}
+                      onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(51,65,85,0.6)")}
                     />
                     <button
                       onClick={handleSubmit}
                       disabled={!inputValue.trim() || isLoading}
-                      className="rounded-xl bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="rounded-xl px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                      style={{ background: "#22d3ee" }}
                     >
                       Send
                     </button>
@@ -662,164 +858,17 @@ export default function HomeClient({
             </div>
           </div>
         ) : (
-          /* ── Home view ── */
-          <div className="flex-1 overflow-y-auto">
-            <MaturityBar hasBrain={hasBrain} />
-
-            <div className="max-w-2xl mx-auto px-6 pt-8 pb-4">
-              {/* Brain panel (when connected) or no-brain banner */}
-              {hasBrain ? (
-                <BrainPanel brainRepo={brainRepo!} />
-              ) : (
-                <div className="mb-7 rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-4 flex items-start gap-3">
-                  <span className="text-amber-400 shrink-0 mt-0.5">⚡</span>
-                  <div>
-                    <p className="text-sm font-medium text-amber-300">No brain connected yet</p>
-                    <p className="text-sm text-slate-400 mt-1 leading-relaxed">
-                      Connect a GitHub repo with your memory files and Pocket Agent will give
-                      answers sourced from your actual business context — no re-explaining
-                      yourself.{" "}
-                      <a href="/app/onboarding" className="text-[#22d3ee] hover:underline">
-                        Connect a brain →
-                      </a>
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="mb-7">
-                <h1 className="text-2xl font-bold text-slate-100">
-                  What can I help you build today?
-                </h1>
-                <p className="text-slate-500 text-sm mt-1.5">
-                  {hasBrain
-                    ? `Sourcing context from ${brainRepo}`
-                    : "A partner that thinks in your context. Connect a brain to unlock it."}
-                </p>
-              </div>
-
-              {!hasApiKey ? (
-                <div className="rounded-xl border border-[#22d3ee]/20 bg-[#22d3ee]/5 px-5 py-5 space-y-3">
-                  <p className="text-sm font-medium text-slate-200">
-                    Add your Anthropic API key to start.
-                  </p>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    Pocket Agent uses your own Anthropic key — you control the bill and your data
-                    stays yours. Get a free key at{" "}
-                    <a
-                      href="https://console.anthropic.com/settings/keys"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#22d3ee] hover:underline"
-                    >
-                      console.anthropic.com
-                    </a>
-                    .
-                  </p>
-                  <a
-                    href="/app/settings"
-                    className="inline-flex items-center gap-2 rounded-lg bg-[#22d3ee] px-4 py-2 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors"
-                  >
-                    Go to Settings →
-                  </a>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-3">
-                    <textarea
-                      ref={textareaRef}
-                      rows={4}
-                      placeholder="What did I decide about pricing? Write a quote for the Johnson reroof and email it to him. Summarize my current projects."
-                      className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none resize-none"
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      disabled={isLoading}
-                    />
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-700">⌘↵ to submit</span>
-                      <button
-                        onClick={handleSubmit}
-                        disabled={!inputValue.trim() || isLoading}
-                        className="rounded-lg bg-[#22d3ee] px-5 py-2 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        {isLoading ? "Working…" : "Ask"}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {CHIPS.map((chip) => (
-                      <button
-                        key={chip.label}
-                        onClick={() => prefillInput(chip.scaffold)}
-                        className="rounded-full border border-slate-800 bg-slate-900 px-4 py-1.5 text-xs text-slate-500 hover:border-[#22d3ee]/40 hover:text-[#22d3ee] transition-colors"
-                      >
-                        {chip.label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="max-w-2xl mx-auto px-6 pb-6">
-              <p className="text-[10px] text-slate-700 font-mono tracking-[0.15em] uppercase mb-3">
-                Suggested for you
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {SUGGESTIONS.map((s) => (
-                  <button
-                    key={s.title}
-                    onClick={() => prefillInput(s.prompt)}
-                    className="text-left rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-4 hover:border-slate-700 hover:bg-slate-900/80 transition-colors group"
-                  >
-                    <p className="text-xs text-slate-400 group-hover:text-slate-200 font-medium leading-relaxed">
-                      {s.title}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="max-w-2xl mx-auto px-6 pb-10">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] text-slate-700 font-mono tracking-[0.15em] uppercase">
-                  Work apps · Level 2
-                </p>
-                <a
-                  href="/app/apps"
-                  className="text-[10px] text-slate-600 hover:text-[#22d3ee] font-mono transition-colors"
-                >
-                  All apps →
-                </a>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <a
-                  href="/app/apps/quote"
-                  className="text-left rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-4 hover:border-slate-700 hover:bg-slate-900/80 transition-colors group block"
-                >
-                  <p className="text-xs text-slate-400 group-hover:text-slate-200 font-medium leading-relaxed">
-                    Quote / Proposal Writer
-                  </p>
-                  <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
-                    Reads your brain. Drafts a clean quote.
-                  </p>
-                </a>
-                <a
-                  href="/app/apps/email"
-                  className="text-left rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-4 hover:border-slate-700 hover:bg-slate-900/80 transition-colors group block"
-                >
-                  <p className="text-xs text-slate-400 group-hover:text-slate-200 font-medium leading-relaxed">
-                    Email Drafter
-                  </p>
-                  <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
-                    Writes emails that sound like you.
-                  </p>
-                </a>
-              </div>
-            </div>
-          </div>
+          /* ── Hub (no active conversation) ───────────────────────────────── */
+          <HubView
+            brainRepo={brainRepo}
+            hasApiKey={hasApiKey}
+            inputValue={inputValue}
+            setInputValue={setInputValue}
+            isLoading={isLoading}
+            handleSubmit={handleSubmit}
+            handleKeyDown={handleKeyDown}
+            textareaRef={textareaRef}
+          />
         )}
       </div>
     </div>

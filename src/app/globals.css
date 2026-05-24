@@ -74,6 +74,26 @@ body {
   50%       { box-shadow: 0 0 0 6px rgba(34,211,238,0), inset 0 0 8px 0 rgba(34,211,238,0.04); }
 }
 
+@keyframes alien-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50%       { transform: scale(1.12); opacity: 1; }
+}
+
+@keyframes node-beacon {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+
+@keyframes tentacle-flow {
+  0%   { stroke-dashoffset: 120; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes hub-fadein {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 /* radial glow */
 .bg-hero-glow {
   background: radial-gradient(

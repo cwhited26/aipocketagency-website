@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import AppNav from "./_components/AppNav";
 
 export const metadata = {
   title: "Pocket Agent",
-  description: "Your AI brain — ask, remember, decide.",
+  description: "Your AI co-founder — built for getting shit done.",
 };
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -14,34 +14,21 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const isAuthed = Boolean(user);
 
-  return (
-    <div className="min-h-screen bg-[#05070a] text-slate-100">
-      {isAuthed && (
-        <nav className="border-b border-slate-800 bg-[#05070a]/95 backdrop-blur sticky top-0 z-10">
-          <div className="px-5 h-12 flex items-center justify-between">
-            <Link
-              href="/app/ask"
-              className="text-[#22d3ee] text-sm font-mono tracking-wider font-medium hover:text-white transition-colors"
-            >
-              Pocket Agent
-            </Link>
-            <div className="flex items-center gap-5">
-              <NavLink href="/app/apps">Work</NavLink>
-              <NavLink href="/app/skool">Community</NavLink>
-              <NavLink href="/app/settings">Settings</NavLink>
-            </div>
-          </div>
-        </nav>
-      )}
-      {children}
-    </div>
-  );
-}
+  if (!isAuthed) {
+    return (
+      <div className="min-h-screen bg-[#05070a] text-slate-100">
+        {children}
+      </div>
+    );
+  }
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <Link href={href} className="text-sm text-slate-500 hover:text-slate-100 transition-colors">
-      {children}
-    </Link>
+    <div className="flex h-screen bg-[#05070a] text-slate-100 overflow-hidden">
+      <AppNav />
+      {/* Mobile top bar spacer */}
+      <main className="flex-1 min-w-0 overflow-hidden lg:pt-0 pt-12">
+        {children}
+      </main>
+    </div>
   );
 }
