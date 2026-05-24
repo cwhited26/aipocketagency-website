@@ -4,6 +4,7 @@ export type PocketAgentStatus = "trial" | "active" | "canceled";
 
 export type PocketAgentSubscriptionRow = {
   id: string;
+  user_id: string | null;
   email: string;
   name: string | null;
   stripe_customer_id: string | null;
@@ -223,4 +224,64 @@ export async function fetchPocketAgentBySubscriptionId(
   }
   const rows = (await res.json()) as PocketAgentSubscriptionRow[];
   return { ok: true, row: rows[0] ?? null };
+}
+
+// Claim an email-matched subscription row for a newly-authenticated user.
+// Called at auth callback so the middleware's user_id check passes on first login.
+export async function linkSubscriptionByEmail(
+  email: string,
+  userId: string,
+): Promise<InsertResult> {
+  const env = supabaseEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  // Only update rows where user_id is not yet set to avoid overwriting.
+  const res = await fetch(
+    endpoint(env, `?email=eq.${encodeURIComponent(email)}&user_id=is.null`),
+    {
+      method: "PATCH",
+      headers: {
+        apikey: env.key,
+        Authorization: `Bearer ${env.key}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ user_id: userId, updated_at: new Date().toISOString() }),
+      cache: "no-store",
+    },
+  );
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  return { ok: true };
+}
+
+type CheckByEmailResult =
+  | { ok: true; hasActive: boolean }
+  | { ok: false; status: number; error: string };
+
+// Email-based subscription check for middleware fallback before user_id is linked.
+export async function checkSubscriptionByEmail(email: string): Promise<CheckByEmailResult> {
+  const env = supabaseEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const res = await fetch(
+    endpoint(
+      env,
+      `?email=eq.${encodeURIComponent(email)}&status=in.(active,trialing)&limit=1`,
+    ),
+    {
+      headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },
+      cache: "no-store",
+    },
+  );
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  const rows = (await res.json()) as unknown[];
+  return { ok: true, hasActive: Array.isArray(rows) && rows.length > 0 };
 }

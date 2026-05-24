@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { linkSubscriptionByEmail } from "@/lib/pocket-agent-supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,6 +38,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(
       new URL(`/app/login?error=${encodeURIComponent(error.message)}`, request.url),
     );
+  }
+
+  // Link any email-matched subscription row to this user_id so the
+  // middleware's user_id check passes on first login (webhook creates the row
+  // before the user has authenticated).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user?.email) {
+    await linkSubscriptionByEmail(user.email, user.id);
   }
 
   return NextResponse.redirect(new URL(next, request.url));
