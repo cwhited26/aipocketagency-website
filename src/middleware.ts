@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_APP_PREFIXES = ["/app/login", "/app/auth"];
+const PUBLIC_APP_PREFIXES = ["/app/login", "/app/auth", "/api/app/auth"];
 
 function isPublicAppPath(pathname: string): boolean {
   return PUBLIC_APP_PREFIXES.some((p) => pathname.startsWith(p));

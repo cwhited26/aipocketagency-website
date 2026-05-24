@@ -17,14 +17,24 @@ export default async function LoginPage({
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-[#05070a] px-4">
       <div className="w-full max-w-sm space-y-8">
-        <div className="text-center space-y-3">
-          <div className="text-[#22d3ee] text-xs font-mono tracking-[0.2em] uppercase">
-            Pocket Agent
+        <div className="space-y-4">
+          <div className="text-center space-y-2">
+            <div className="text-[#22d3ee] text-xs font-mono tracking-[0.2em] uppercase">
+              Pocket Agent
+            </div>
+            <h1 className="text-2xl font-bold text-slate-100">Sign in</h1>
           </div>
-          <h1 className="text-2xl font-bold text-slate-100">Sign in</h1>
-          <p className="text-slate-400 text-sm">
-            Use email or GitHub to access your brain.
-          </p>
+          <div className="space-y-2 text-sm text-slate-400 leading-relaxed">
+            <p>
+              Most AI starts blank. Every conversation, you re-explain your
+              business from scratch. Pocket Agent doesn&apos;t work that way.
+            </p>
+            <p>
+              Your brain repo is a file-based memory your agent reads before it
+              acts — your voice, your decisions, your project state, already in
+              context. Sign in to connect yours.
+            </p>
+          </div>
         </div>
 
         {searchParams.error && (
@@ -56,12 +66,6 @@ export default async function LoginPage({
           </p>
         </div>
 
-        <p className="text-center text-xs text-slate-600">
-          Need a subscription?{" "}
-          <Link href="/pocket-agent" className="text-[#22d3ee] hover:underline">
-            Get started →
-          </Link>
-        </p>
       </div>
     </main>
   );
