@@ -2,16 +2,20 @@
 
 import { useEffect, useState } from "react";
 
+// Viewbox: 300×300, center: (150, 150)
+// Nodes sit on a radius of ~105px from center — well inside the viewbox
+// so labels don't clip even on a 320px wide mobile screen.
+const CX = 150;
+const CY = 150;
+
 type NodeDef = {
   id: string;
   label: string;
   x: number;
   y: number;
   connected: boolean;
-  cx1: number;
-  cy1: number;
-  cx2: number;
-  cy2: number;
+  cx1: number; cy1: number;
+  cx2: number; cy2: number;
   textAnchor: "start" | "middle" | "end";
   labelDx: number;
   labelDy: number;
@@ -19,150 +23,155 @@ type NodeDef = {
   animDuration: string;
 };
 
-const CX = 180;
-const CY = 180;
-
 export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   const hasBrain = Boolean(brainRepo);
-  const brainLabel = brainRepo ? (brainRepo.split("/")[1] ?? "brain") : "Brain";
+  // Keep label short to avoid clipping on narrow screens
+  const brainLabel = brainRepo
+    ? (brainRepo.split("/")[1] ?? "brain").slice(0, 14)
+    : "Brain";
 
+  // Nodes placed at radius ~105px from center (150,150).
+  // Clock positions: Brain=12, Quotes=2, Followups=4:30, Inbox=7:30, Calendar=10
   const nodes: NodeDef[] = [
     {
       id: "brain",
       label: brainLabel,
-      x: 180, y: 24,
+      x: 150, y: 45,
       connected: hasBrain,
-      cx1: 181, cy1: 130, cx2: 180, cy2: 72,
+      cx1: 151, cy1: 115, cx2: 151, cy2: 75,
       textAnchor: "middle", labelDx: 0, labelDy: -10,
       animDelay: "0s", animDuration: "6s",
     },
     {
+      // ~60° clockwise from top
       id: "quotes",
       label: "Quotes",
-      x: 318, y: 84,
+      x: 241, y: 97,
       connected: true,
-      cx1: 228, cy1: 164, cx2: 282, cy2: 114,
-      textAnchor: "start", labelDx: 8, labelDy: 4,
+      cx1: 195, cy1: 140, cx2: 225, cy2: 113,
+      textAnchor: "start", labelDx: 7, labelDy: 4,
       animDelay: "1.2s", animDuration: "7s",
     },
     {
+      // ~135° clockwise from top
       id: "followups",
       label: "Follow-ups",
-      x: 314, y: 278,
+      x: 224, y: 224,
       connected: false,
-      cx1: 248, cy1: 196, cx2: 292, cy2: 244,
-      textAnchor: "start", labelDx: 8, labelDy: 4,
+      cx1: 200, cy1: 180, cx2: 215, cy2: 208,
+      textAnchor: "start", labelDx: 7, labelDy: 4,
       animDelay: "2.4s", animDuration: "8s",
     },
     {
+      // ~225° clockwise from top
       id: "inbox",
       label: "Inbox",
-      x: 46, y: 278,
+      x: 76, y: 224,
       connected: false,
-      cx1: 112, cy1: 196, cx2: 68, cy2: 244,
-      textAnchor: "end", labelDx: -8, labelDy: 4,
+      cx1: 100, cy1: 180, cx2: 85, cy2: 208,
+      textAnchor: "end", labelDx: -7, labelDy: 4,
       animDelay: "1.8s", animDuration: "7.5s",
     },
     {
+      // ~300° clockwise from top (10 o'clock)
       id: "calendar",
-      label: "Calendar",
-      x: 42, y: 84,
+      label: "Cal",
+      x: 59, y: 97,
       connected: false,
-      cx1: 132, cy1: 164, cx2: 78, cy2: 114,
-      textAnchor: "end", labelDx: -8, labelDy: 4,
+      cx1: 105, cy1: 140, cx2: 75, cy2: 113,
+      textAnchor: "end", labelDx: -7, labelDy: 4,
       animDelay: "0.6s", animDuration: "6.5s",
     },
   ];
 
   return (
-    <div
-      className="relative select-none mx-auto"
-      style={{ width: 360, height: 360 }}
-    >
-      {/* Ambient glow — single, very restrained */}
-      <div
-        className="absolute inset-[60px] rounded-full pointer-events-none"
-        style={{
-          background: "radial-gradient(circle, rgba(34,211,238,0.07) 0%, transparent 70%)",
-          filter: "blur(24px)",
-        }}
-      />
-
-      {/* Outer organic ring */}
-      <div
-        className="absolute"
-        style={{
-          inset: 80,
-          animation: "alien-morph 18s ease-in-out infinite reverse",
-          background: "transparent",
-          border: "1px solid rgba(34,211,238,0.07)",
-        }}
-      />
-
-      {/* Core blob */}
-      <div
-        className="absolute"
-        style={{
-          inset: 108,
-          animation: "alien-morph 14s ease-in-out infinite",
-          background:
-            "radial-gradient(ellipse at 42% 40%, rgba(34,211,238,0.18) 0%, rgba(7,13,18,0.96) 64%)",
-          border: "1px solid rgba(34,211,238,0.16)",
-        }}
-      />
-
-      {/* Iris — absolute centered */}
-      {mounted && (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: 30,
-            height: 30,
-            marginTop: -15,
-            marginLeft: -15,
-          }}
-        >
-          {/* Halo ring */}
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{
-              border: "1px solid rgba(34,211,238,0.3)",
-              animation: "halo-out 5s ease-out 1s infinite",
-            }}
-          />
-          {/* Iris fill — this one animates */}
-          <div
-            className="absolute rounded-full"
-            style={{
-              inset: 4,
-              background:
-                "radial-gradient(circle, rgba(34,211,238,0.9) 0%, rgba(34,211,238,0.35) 55%, transparent 100%)",
-              animation: "alien-breathe 6s ease-in-out infinite",
-              transformOrigin: "center",
-            }}
-          />
-          {/* Pupil */}
-          <div
-            className="absolute rounded-full"
-            style={{ inset: 11, background: "#031820" }}
-          />
-        </div>
-      )}
-
-      {/* SVG: tentacles + nodes */}
+    // w-full + max-w → scales down on narrow screens, never wider than 300px
+    <div className="w-full max-w-[300px] mx-auto" style={{ aspectRatio: "1" }}>
+      {/* All rendering is inside one SVG so it scales perfectly at any width */}
       <svg
-        className="absolute inset-0 pointer-events-none"
-        viewBox="0 0 360 360"
-        style={{ width: "100%", height: "100%" }}
+        viewBox="0 0 300 300"
+        className="w-full h-full overflow-visible"
+        aria-hidden="true"
       >
+        <defs>
+          <radialGradient id="coreGrad" cx="42%" cy="40%" r="55%">
+            <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.22" />
+            <stop offset="65%" stopColor="#070d12" stopOpacity="0.97" />
+          </radialGradient>
+          <radialGradient id="outerGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="#070d12" stopOpacity="0" />
+          </radialGradient>
+          <filter id="irisGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Ambient glow — very faint */}
+        <circle cx={CX} cy={CY} r="115" fill="url(#outerGrad)" />
+
+        {/* Outer organic ring — animates via CSS */}
+        <ellipse
+          cx={CX} cy={CY} rx="88" ry="88"
+          fill="none"
+          stroke="rgba(34,211,238,0.07)"
+          strokeWidth="1"
+          style={{ animation: "alien-morph 18s ease-in-out infinite reverse" }}
+        />
+
+        {/* Core blob — the main animated shape */}
+        <ellipse
+          cx={CX} cy={CY} rx="62" ry="62"
+          fill="url(#coreGrad)"
+          stroke="rgba(34,211,238,0.22)"
+          strokeWidth="1"
+          style={{ animation: "alien-morph 14s ease-in-out infinite" }}
+        />
+
+        {/* Iris — only after mount to avoid hydration mismatch */}
+        {mounted && (
+          <g filter="url(#irisGlow)">
+            {/* Halo ring */}
+            <circle
+              cx={CX} cy={CY} r="16"
+              fill="none"
+              stroke="rgba(34,211,238,0.35)"
+              strokeWidth="0.75"
+              style={{ animation: "halo-out 5s ease-out 1s infinite" }}
+            />
+            {/* Iris fill */}
+            <circle
+              cx={CX} cy={CY} r="10"
+              fill="rgba(34,211,238,0.0)"
+              style={{ animation: "alien-breathe 6s ease-in-out infinite", transformOrigin: `${CX}px ${CY}px` }}
+            >
+              <animate
+                attributeName="r"
+                values="9;11;9"
+                dur="6s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="fill"
+                values="rgba(34,211,238,0.75);rgba(34,211,238,0.95);rgba(34,211,238,0.75)"
+                dur="6s"
+                repeatCount="indefinite"
+              />
+            </circle>
+            {/* Pupil */}
+            <circle cx={CX} cy={CY} r="4.5" fill="#031820" />
+          </g>
+        )}
+
+        {/* Tentacles + nodes */}
         {nodes.map((node) => {
           const pathD = `M ${CX} ${CY} C ${node.cx1} ${node.cy1} ${node.cx2} ${node.cy2} ${node.x} ${node.y}`;
           return (
@@ -170,19 +179,13 @@ export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
               {/* Tentacle */}
               <path
                 d={pathD}
-                stroke={
-                  node.connected
-                    ? "rgba(34,211,238,0.22)"
-                    : "rgba(51,65,85,0.18)"
-                }
+                stroke={node.connected ? "rgba(34,211,238,0.28)" : "rgba(71,85,105,0.22)"}
                 strokeWidth={node.connected ? 1 : 0.75}
                 fill="none"
                 strokeDasharray={node.connected ? "5 7" : "2 9"}
                 style={
                   node.connected
-                    ? {
-                        animation: `tendril-pulse ${node.animDuration} ease-in-out ${node.animDelay} infinite`,
-                      }
+                    ? { animation: `tendril-pulse ${node.animDuration} ease-in-out ${node.animDelay} infinite` }
                     : {}
                 }
               />
@@ -192,16 +195,10 @@ export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
                 cx={node.x}
                 cy={node.y}
                 r={node.connected ? 4 : 3}
-                fill={
-                  node.connected
-                    ? "rgba(34,211,238,0.75)"
-                    : "rgba(51,65,85,0.55)"
-                }
+                fill={node.connected ? "rgba(34,211,238,0.85)" : "rgba(71,85,105,0.5)"}
                 style={
                   node.connected
-                    ? {
-                        animation: `node-beacon ${node.animDuration} ease-in-out ${node.animDelay} infinite`,
-                      }
+                    ? { animation: `node-beacon ${node.animDuration} ease-in-out ${node.animDelay} infinite` }
                     : {}
                 }
               />
@@ -212,14 +209,10 @@ export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
                 y={node.y + node.labelDy}
                 textAnchor={node.textAnchor}
                 dominantBaseline="middle"
-                fill={
-                  node.connected
-                    ? "rgba(148,163,184,0.75)"
-                    : "rgba(71,85,105,0.5)"
-                }
+                fill={node.connected ? "rgba(203,213,225,0.85)" : "rgba(100,116,139,0.65)"}
                 fontSize="9"
                 fontFamily="ui-monospace, 'Cascadia Code', monospace"
-                letterSpacing="0.06em"
+                letterSpacing="0.04em"
               >
                 {node.label}
               </text>
@@ -227,8 +220,8 @@ export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
           );
         })}
 
-        {/* Center dot */}
-        <circle cx={CX} cy={CY} r="2.5" fill="rgba(34,211,238,0.4)" />
+        {/* Center anchor dot */}
+        <circle cx={CX} cy={CY} r="2" fill="rgba(34,211,238,0.5)" />
       </svg>
     </div>
   );

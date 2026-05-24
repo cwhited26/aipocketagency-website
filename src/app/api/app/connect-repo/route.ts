@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { upsertPaUser } from "@/lib/pa-supabase";
+import { upsertPaUser, fetchPaUser } from "@/lib/pa-supabase";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -31,11 +31,16 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Grab the GitHub OAuth token from the session
+  // provider_token is available right after OAuth; after session refresh it's dropped.
+  // Fall back to the stored token from a "Connect GitHub" flow.
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const providerToken = session?.provider_token ?? null;
+  let providerToken = session?.provider_token ?? null;
+  if (!providerToken) {
+    const paResult = await fetchPaUser(user.id);
+    providerToken = paResult.ok && paResult.data ? paResult.data.github_token : null;
+  }
 
   // Fetch GitHub username (fail open — use email prefix if unavailable)
   let githubUsername = user.user_metadata?.user_name as string | undefined;

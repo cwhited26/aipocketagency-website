@@ -26,6 +26,7 @@ export default async function AskPage() {
     <HomeClient
       brainRepo={paUser.brain_repo}
       hasApiKey={!!paUser.anthropic_api_key}
+      hasGithubToken={!!paUser.github_token}
       initialConversations={initialConversations}
     />
   );

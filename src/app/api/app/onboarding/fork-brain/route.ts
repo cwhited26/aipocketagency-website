@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { upsertPaUser } from "@/lib/pa-supabase";
+import { upsertPaUser, fetchPaUser } from "@/lib/pa-supabase";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -49,12 +49,18 @@ export async function POST(req: Request): Promise<NextResponse> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const token = session?.provider_token ?? null;
+  // provider_token lives in the session only right after OAuth; after refresh it's gone.
+  // Fall back to the token stored in pocket_agent_users from a previous "Connect GitHub" flow.
+  let token = session?.provider_token ?? null;
+  if (!token) {
+    const paResult = await fetchPaUser(user.id);
+    token = paResult.ok && paResult.data ? paResult.data.github_token : null;
+  }
   if (!token) {
     return NextResponse.json(
       {
         error:
-          "GitHub connection required to create a brain repo. Sign out and sign back in with GitHub.",
+          "GitHub connection required. Go to Settings → Connect GitHub, then come back here.",
       },
       { status: 403 },
     );

@@ -112,13 +112,13 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
         style={{ border: "1px solid rgba(51,65,85,0.5)", background: "rgba(7,13,18,0.5)" }}
       >
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-slate-600 tracking-[0.16em] uppercase">Agent Brain</span>
+          <span className="text-[10px] font-mono text-slate-400 tracking-[0.16em] uppercase">Agent Brain</span>
         </div>
-        <p className="text-xs text-slate-700 leading-relaxed">
+        <p className="text-xs text-slate-400 leading-relaxed">
           No brain connected.{" "}
           <a
             href="/app/onboarding"
-            className="text-[#22d3ee]/60 hover:text-[#22d3ee] transition-colors underline"
+            className="text-[#22d3ee]/80 hover:text-[#22d3ee] transition-colors underline"
           >
             Connect one →
           </a>
@@ -128,7 +128,7 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
             <div
               key={label}
               className="flex items-center gap-2 text-[10px] font-mono px-2 py-1 rounded"
-              style={{ color: "rgba(51,65,85,0.6)", border: "1px dashed rgba(51,65,85,0.3)" }}
+              style={{ color: "rgba(100,116,139,0.7)", border: "1px dashed rgba(51,65,85,0.4)" }}
             >
               <span style={{ fontSize: 8 }}>○</span>
               <span>{label}</span>
@@ -162,7 +162,7 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
               style={{ background: "rgba(34,211,238,0.8)", boxShadow: "0 0 3px rgba(34,211,238,0.4)" }}
             />
           </div>
-          <span className="text-[10px] font-mono text-slate-500 tracking-[0.16em] uppercase">Agent Brain</span>
+          <span className="text-[10px] font-mono text-slate-400 tracking-[0.16em] uppercase">Agent Brain</span>
         </div>
         {data && (
           <span
@@ -213,11 +213,11 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
                 key={area.key}
                 className="flex items-center gap-1.5 text-[9px] px-1.5 py-1 rounded transition-all"
                 style={{
-                  color: area.filled ? "rgba(148,163,184,0.85)" : "rgba(51,65,85,0.6)",
-                  background: area.filled ? "rgba(34,211,238,0.05)" : "transparent",
+                  color: area.filled ? "rgba(203,213,225,0.9)" : "rgba(100,116,139,0.7)",
+                  background: area.filled ? "rgba(34,211,238,0.06)" : "transparent",
                   border: area.filled
-                    ? "1px solid rgba(34,211,238,0.1)"
-                    : "1px dashed rgba(51,65,85,0.4)",
+                    ? "1px solid rgba(34,211,238,0.12)"
+                    : "1px dashed rgba(51,65,85,0.5)",
                 }}
                 title={area.desc}
               >
@@ -259,8 +259,8 @@ function NeedsYouPanel() {
       style={{ border: "1px solid rgba(51,65,85,0.45)", background: "rgba(7,13,18,0.5)" }}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-mono text-slate-600 tracking-[0.16em] uppercase">Needs you</span>
-        <span className="text-[9px] font-mono text-slate-700">0</span>
+        <span className="text-[10px] font-mono text-slate-400 tracking-[0.16em] uppercase">Needs you</span>
+        <span className="text-[9px] font-mono text-slate-500">0</span>
       </div>
       <div className="flex-1 flex flex-col items-center justify-center text-center gap-2 py-4">
         <div
@@ -292,6 +292,7 @@ const CHIPS = [
 function HubView({
   brainRepo,
   hasApiKey,
+  hasGithubToken,
   inputValue,
   setInputValue,
   isLoading,
@@ -301,6 +302,7 @@ function HubView({
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
+  hasGithubToken: boolean;
   inputValue: string;
   setInputValue: (v: string) => void;
   isLoading: boolean;
@@ -320,14 +322,43 @@ function HubView({
           <AlienCore brainRepo={brainRepo} />
           <div className="flex items-center gap-2">
             <span
-              className="w-1.5 h-1.5 rounded-full animate-pulse"
-              style={{ background: "rgba(34,211,238,0.7)", boxShadow: "0 0 4px rgba(34,211,238,0.4)" }}
+              className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0"
+              style={{ background: "rgba(34,211,238,0.8)", boxShadow: "0 0 4px rgba(34,211,238,0.5)" }}
             />
-            <span className="text-[10px] font-mono text-slate-600 tracking-[0.14em]">
+            <span className="text-[11px] font-mono text-slate-400 tracking-[0.12em]">
               {brainRepo ? "online · reading your brain" : "online · waiting for context"}
             </span>
           </div>
         </div>
+
+        {/* No-brain / no-GitHub nudge */}
+        {!brainRepo && (
+          <div
+            className="rounded-xl px-4 py-3 flex items-center justify-between gap-4"
+            style={{ border: "1px solid rgba(51,65,85,0.45)", background: "rgba(7,13,18,0.5)" }}
+          >
+            <p className="text-xs text-slate-400 leading-relaxed">
+              {hasGithubToken
+                ? "Brain not connected — your agent is flying blind."
+                : "Connect GitHub so your agent can read and write your brain."}
+            </p>
+            {hasGithubToken ? (
+              <a
+                href="/app/onboarding"
+                className="shrink-0 text-[11px] font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors whitespace-nowrap"
+              >
+                Connect brain →
+              </a>
+            ) : (
+              <a
+                href="/api/app/auth/github?next=/app/onboarding"
+                className="shrink-0 text-[11px] font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors whitespace-nowrap"
+              >
+                Connect GitHub →
+              </a>
+            )}
+          </div>
+        )}
 
         {/* Status panels */}
         <div className="grid grid-cols-2 gap-3" style={{ minHeight: 200 }}>
@@ -409,12 +440,12 @@ function HubView({
         {/* Work surface */}
         <div>
           <div className="flex items-center justify-between mb-2.5">
-            <span className="text-[10px] font-mono text-slate-700 tracking-[0.16em] uppercase">
+            <span className="text-[10px] font-mono text-slate-500 tracking-[0.16em] uppercase">
               What I can do for you
             </span>
             <a
               href="/app/apps"
-              className="text-[10px] font-mono text-slate-600 hover:text-[#22d3ee] transition-colors"
+              className="text-[10px] font-mono text-slate-500 hover:text-[#22d3ee] transition-colors"
             >
               All →
             </a>
@@ -559,10 +590,12 @@ function ConvSidebar({
 export default function HomeClient({
   brainRepo,
   hasApiKey,
+  hasGithubToken,
   initialConversations,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
+  hasGithubToken: boolean;
   initialConversations: Conversation[];
 }) {
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
@@ -862,6 +895,7 @@ export default function HomeClient({
           <HubView
             brainRepo={brainRepo}
             hasApiKey={hasApiKey}
+            hasGithubToken={hasGithubToken}
             inputValue={inputValue}
             setInputValue={setInputValue}
             isLoading={isLoading}

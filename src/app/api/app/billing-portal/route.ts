@@ -50,8 +50,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   if (!stripeCustomerId) {
-    // No subscription found — redirect to marketing page
-    return NextResponse.redirect(new URL("/pocket-agent?expired=true", req.url));
+    return NextResponse.redirect(new URL("/app/settings?billing=no_customer", req.url));
   }
 
   const origin = new URL(req.url).origin;
@@ -70,7 +69,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   });
 
   if (!portalRes.ok) {
-    return NextResponse.json({ error: "Failed to create billing portal" }, { status: 502 });
+    return NextResponse.redirect(new URL("/app/settings?billing=portal_error", req.url));
   }
 
   const portal = (await portalRes.json()) as StripePortalSession;

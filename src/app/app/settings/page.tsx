@@ -3,7 +3,11 @@ import { fetchPaUser } from "@/lib/pa-supabase";
 import { redirect } from "next/navigation";
 import ApiKeyForm from "./ApiKeyForm";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: { billing?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -13,6 +17,22 @@ export default async function SettingsPage() {
 
   const paResult = await fetchPaUser(user.id);
   const paUser = paResult.ok ? paResult.data : null;
+
+  const billingParam = searchParams.billing;
+  let billingMessage: { text: string; sub?: string } | null = null;
+  if (billingParam === "no_customer") {
+    billingMessage = {
+      text: "Nothing to manage",
+      sub: "This account was comped or is in trial — there's no Stripe subscription attached yet.",
+    };
+  } else if (billingParam === "portal_error") {
+    billingMessage = {
+      text: "Couldn't open billing portal",
+      sub: "Stripe returned an error. Try again in a moment or contact support.",
+    };
+  }
+
+  const hasGithubToken = !!paUser?.github_token;
 
   return (
     <div className="h-full overflow-y-auto bg-[#05070a]">
@@ -24,6 +44,18 @@ export default async function SettingsPage() {
           <h1 className="text-2xl font-bold text-slate-100">Your account</h1>
         </div>
 
+        {billingMessage && (
+          <div
+            className="rounded-xl px-4 py-3 space-y-1"
+            style={{ border: "1px solid rgba(51,65,85,0.5)", background: "rgba(7,13,18,0.5)" }}
+          >
+            <p className="text-sm font-medium text-slate-300">{billingMessage.text}</p>
+            {billingMessage.sub && (
+              <p className="text-xs text-slate-500 leading-relaxed">{billingMessage.sub}</p>
+            )}
+          </div>
+        )}
+
         <div
           className="rounded-xl overflow-hidden divide-y divide-slate-800/60"
           style={{
@@ -31,7 +63,13 @@ export default async function SettingsPage() {
             background: "rgba(7,13,18,0.5)",
           }}
         >
-          <SettingsRow label="GitHub username" value={paUser?.github_username || user.email || "—"} />
+          <SettingsRow label="Email" value={user.email ?? "—"} />
+          <SettingsRow
+            label="GitHub"
+            value={hasGithubToken ? (paUser?.github_username || "Connected") : "Not connected"}
+            href={hasGithubToken ? undefined : `/api/app/auth/github?next=/app/settings`}
+            linkLabel={hasGithubToken ? undefined : "Connect GitHub →"}
+          />
           <SettingsRow
             label="Brain repo"
             value={paUser?.brain_repo ?? "Not connected"}
@@ -41,7 +79,6 @@ export default async function SettingsPage() {
                 : "/app/onboarding"
             }
           />
-          <SettingsRow label="Email" value={user.email ?? "—"} />
           <ApiKeyForm hasKey={!!paUser?.anthropic_api_key} />
           <SettingsRow
             label="Billing"
@@ -69,26 +106,44 @@ function SettingsRow({
   label,
   value,
   href,
+  linkLabel,
 }: {
   label: string;
   value: string;
   href?: string;
+  linkLabel?: string;
 }) {
+  const externalProps = href?.startsWith("http")
+    ? { target: "_blank" as const, rel: "noopener noreferrer" }
+    : {};
+
   return (
     <div className="px-5 py-4 flex items-center justify-between gap-4">
       <span className="text-sm text-slate-500">{label}</span>
-      {href ? (
-        <a
-          href={href}
-          target={href.startsWith("http") ? "_blank" : undefined}
-          rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
-          className="text-sm text-[#22d3ee] hover:underline text-right truncate max-w-xs"
-        >
-          {value}
-        </a>
-      ) : (
-        <span className="text-sm text-slate-300 text-right truncate max-w-xs">{value}</span>
-      )}
+      <div className="flex items-center gap-3 min-w-0">
+        {/* Value cell: plain text if there's a separate linkLabel, otherwise a link */}
+        {href && !linkLabel ? (
+          <a
+            href={href}
+            {...externalProps}
+            className="text-sm text-[#22d3ee] hover:underline text-right truncate max-w-[200px]"
+          >
+            {value}
+          </a>
+        ) : (
+          <span className="text-sm text-slate-300 text-right truncate max-w-[160px]">{value}</span>
+        )}
+        {/* Separate action link */}
+        {href && linkLabel && (
+          <a
+            href={href}
+            {...externalProps}
+            className="text-xs font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors whitespace-nowrap shrink-0"
+          >
+            {linkLabel}
+          </a>
+        )}
+      </div>
     </div>
   );
 }
