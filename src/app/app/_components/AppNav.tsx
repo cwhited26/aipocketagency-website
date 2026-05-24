@@ -142,7 +142,8 @@ export default function AppNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isAgent = pathname.startsWith("/app/ask");
-  const isBrain = pathname.startsWith("/app/onboarding");
+  const isBrain =
+    pathname.startsWith("/app/brain") || pathname.startsWith("/app/onboarding");
   const isWork = pathname.startsWith("/app/apps");
   const isDocs = pathname.startsWith("/app/documents");
   const isCommunity = pathname.startsWith("/app/skool");
@@ -166,7 +167,7 @@ export default function AppNav() {
 
       <nav className="flex-1 py-4 px-3 flex flex-col gap-0.5 overflow-y-auto">
         <NavItem href="/app/ask" active={isAgent} icon={<AgentIcon />} label="Agent" onClick={close} />
-        <NavItem href="/app/onboarding" active={isBrain} icon={<BrainIcon />} label="Brain" onClick={close} />
+        <NavItem href="/app/brain" active={isBrain} icon={<BrainIcon />} label="Brain" onClick={close} />
         <NavItem href="/app/documents" active={isDocs} icon={<DocsIcon />} label="Documents" onClick={close} />
         <NavItem href="/app/apps" active={isWork} icon={<WorkIcon />} label="Work" onClick={close} />
         <NavItem href="/app/skool" active={isCommunity} icon={<CommunityIcon />} label="Community" onClick={close} />

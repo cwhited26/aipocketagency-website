@@ -1,4 +1,4 @@
-import { buildMemoryBlocks, parseCitations } from "./pa-brain";
+import { buildMemoryBlocks, parseCitations, listMemoryFiles } from "./pa-brain";
 import type { Citation, MemoryBlock } from "./pa-brain";
 
 function formatBlocks(blocks: MemoryBlock[]): string {
@@ -407,4 +407,129 @@ export async function generateEmailDraft(
   const msg = (await res.json()) as AnthropicApiResponse;
   const draft = msg.content.find((c) => c.type === "text")?.text ?? "";
   return { draft, citations: parseCitations(draft), hasBrain: memoryBlocks.length > 0 };
+}
+
+// ─── Weekly Digest ─────────────────────────────────────────────────────────────
+
+export type DigestSection = {
+  heading: string;
+  items: string[];
+};
+
+export type DigestPayload = {
+  learned: DigestSection;
+  pending: DigestSection;
+  suggestions: DigestSection;
+  generatedAt: string;
+  hasBrain: boolean;
+  fileCount: number;
+};
+
+function buildDigestSystemPrompt(memoryBlocks: MemoryBlock[], today: string): string {
+  const hasMemory = memoryBlocks.length > 0;
+  const memorySection = hasMemory
+    ? `BRAIN MEMORY FILES (the operator's knowledge base — everything the agent knows):\n${formatBlocks(memoryBlocks)}\n\n`
+    : `NOTE: This operator's brain is empty — no memory files are connected yet.\n\n`;
+
+  return `You are writing a "weekly read" for an independent business operator. This is a digest of what your AI agent currently knows about their business, what it's waiting on from them, and a couple of suggestions for what to add next.
+
+Today's date: ${today}
+
+${memorySection}YOUR TASK:
+Write three short sections. Each section should have 2-5 bullet items. Be specific — use real names, projects, and context from the memory files. Do not pad. Do not invent things not in the memory.
+
+SECTION 1: "What your agent knows"
+List the most useful pieces of context the agent has learned. Frame each item as a concrete capability: "Knows you serve [X]", "Has your pricing for [Y]", "Understands your process for [Z]". If the brain is empty, say so honestly.
+
+SECTION 2: "What needs your attention"
+List anything in the memory that is flagged as pending, open, unresolved, or waiting for a decision. Include leads that haven't converted, open proposals, projects that are stalled, or questions that need answering. If nothing is pending, say "Nothing flagged as pending right now." as a single item.
+
+SECTION 3: "Worth adding next"
+Based on what's thin or missing from the brain, suggest 2-3 specific things the operator could add to make the agent more useful. Be concrete: "Add your standard pricing for roofing jobs", not "Add more context". If the brain is already well-filled, suggest refinements.
+
+FORMATTING RULES:
+- Each section title exactly as given above.
+- Bullet items only — no prose paragraphs.
+- Each bullet: one concise sentence. Under 20 words.
+- No preamble. Start directly with the first section title.
+- Prefix each section title with a line: "### " followed by the title.`;
+}
+
+type AnthropicDigestResponse = { content: Array<{ type: string; text: string }> };
+
+function parseDigestSections(raw: string): Pick<DigestPayload, "learned" | "pending" | "suggestions"> {
+  const lines = raw.split("\n");
+  const sections: DigestSection[] = [];
+  let current: DigestSection | null = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("### ")) {
+      if (current) sections.push(current);
+      current = { heading: trimmed.slice(4), items: [] };
+    } else if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+      if (current) current.items.push(trimmed.slice(2).trim());
+    } else if (/^\d+\.\s/.test(trimmed) && current) {
+      current.items.push(trimmed.replace(/^\d+\.\s/, "").trim());
+    }
+  }
+  if (current) sections.push(current);
+
+  const learned = sections[0] ?? { heading: "What your agent knows", items: ["Nothing in the brain yet."] };
+  const pending = sections[1] ?? { heading: "What needs your attention", items: ["Nothing flagged as pending right now."] };
+  const suggestions = sections[2] ?? { heading: "Worth adding next", items: ["Add context about your business to get started."] };
+
+  return { learned, pending, suggestions };
+}
+
+export async function generateWeeklyDigest(
+  anthropicApiKey: string,
+  brainRepo: string | null,
+  githubToken: string | null,
+): Promise<DigestPayload> {
+  const memoryBlocks: MemoryBlock[] = brainRepo
+    ? await buildMemoryBlocks(brainRepo, githubToken)
+    : [];
+
+  const fileCount = brainRepo
+    ? (await listMemoryFiles(brainRepo, githubToken)).length
+    : 0;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const system = buildDigestSystemPrompt(memoryBlocks, today);
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": anthropicApiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1200,
+      system,
+      messages: [
+        {
+          role: "user",
+          content: "Generate my weekly read now. Start directly with the first section heading.",
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Anthropic error: ${await res.text()}`);
+  }
+
+  const msg = (await res.json()) as AnthropicDigestResponse;
+  const raw = msg.content.find((c) => c.type === "text")?.text ?? "";
+  const sections = parseDigestSections(raw);
+
+  return {
+    ...sections,
+    generatedAt: new Date().toISOString(),
+    hasBrain: memoryBlocks.length > 0,
+    fileCount,
+  };
 }

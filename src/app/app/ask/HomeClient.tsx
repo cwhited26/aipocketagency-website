@@ -215,11 +215,16 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
             ))}
           </div>
 
-          {data.pct < 100 && (
-            <a href="/app/onboarding?update=1" className="text-[11px] font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors block">
-              Feed it more context →
+          <div className="flex items-center justify-between gap-2 mt-auto">
+            {data.pct < 100 && (
+              <a href="/app/brain" className="text-[11px] font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors">
+                Feed it →
+              </a>
+            )}
+            <a href="/app/brain/digest" className="ml-auto text-[10px] font-mono text-slate-600 hover:text-[#22d3ee]/60 transition-colors whitespace-nowrap">
+              weekly read →
             </a>
-          )}
+          </div>
         </>
       ) : (
         <p className="text-sm text-slate-400">

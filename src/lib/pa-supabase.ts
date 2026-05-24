@@ -171,3 +171,57 @@ export async function checkActiveSubscription(userId: string): Promise<boolean> 
     return true;
   }
 }
+
+// ─── Brain digest cache ────────────────────────────────────────────────────────
+
+export type CachedDigestRow = {
+  brain_digest_json: Record<string, unknown> | null;
+  brain_digest_generated_at: string | null;
+};
+
+export async function fetchCachedDigest(userId: string): Promise<CachedDigestRow | null> {
+  const env = paEnv();
+  if ("error" in env) return null;
+
+  try {
+    const res = await fetch(
+      `${env.url}/rest/v1/pocket_agent_users?id=eq.${encodeURIComponent(userId)}&select=brain_digest_json,brain_digest_generated_at&limit=1`,
+      { headers: { apikey: env.key, Authorization: `Bearer ${env.key}` }, cache: "no-store" },
+    );
+    if (!res.ok) return null;
+    const rows = (await res.json()) as CachedDigestRow[];
+    return rows[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveDigestCache(
+  userId: string,
+  digestJson: Record<string, unknown>,
+): Promise<void> {
+  const env = paEnv();
+  if ("error" in env) return;
+
+  try {
+    await fetch(
+      `${env.url}/rest/v1/pocket_agent_users?id=eq.${encodeURIComponent(userId)}`,
+      {
+        method: "PATCH",
+        headers: {
+          apikey: env.key,
+          Authorization: `Bearer ${env.key}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          brain_digest_json: digestJson,
+          brain_digest_generated_at: new Date().toISOString(),
+        }),
+        cache: "no-store",
+      },
+    );
+  } catch {
+    // Cache write failure is non-fatal
+  }
+}
