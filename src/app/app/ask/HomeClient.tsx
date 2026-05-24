@@ -98,28 +98,21 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
     }
     fetch("/api/app/brain/completeness")
       .then((r) => (r.ok ? (r.json() as Promise<CompletenessData>) : Promise.reject()))
-      .then((d) => {
-        setData(d);
-        setLoading(false);
-      })
+      .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, [brainRepo]);
 
   if (!brainRepo) {
     return (
-      <div
-        className="rounded-xl flex flex-col gap-3 p-4 h-full"
-        style={{ border: "1px solid rgba(51,65,85,0.5)", background: "rgba(7,13,18,0.5)" }}
-      >
+      <div className="rounded-xl border border-slate-700/60 bg-slate-900/70 flex flex-col gap-3 p-4 h-full">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-slate-400 tracking-[0.16em] uppercase">Agent Brain</span>
+          <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
+            Agent Brain
+          </span>
         </div>
-        <p className="text-xs text-slate-400 leading-relaxed">
+        <p className="text-sm text-slate-400 leading-relaxed">
           No brain connected.{" "}
-          <a
-            href="/app/onboarding"
-            className="text-[#22d3ee]/80 hover:text-[#22d3ee] transition-colors underline"
-          >
+          <a href="/app/onboarding" className="text-[#22d3ee] hover:underline">
             Connect one →
           </a>
         </p>
@@ -127,8 +120,7 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
           {["Identity", "Services", "Voice", "Clients", "Decisions", "Projects"].map((label) => (
             <div
               key={label}
-              className="flex items-center gap-2 text-[10px] font-mono px-2 py-1 rounded"
-              style={{ color: "rgba(100,116,139,0.7)", border: "1px dashed rgba(51,65,85,0.4)" }}
+              className="flex items-center gap-2 text-[10px] font-mono px-2 py-1 rounded border border-dashed border-slate-700/60 text-slate-500"
             >
               <span style={{ fontSize: 8 }}>○</span>
               <span>{label}</span>
@@ -141,17 +133,12 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
 
   return (
     <div
-      className="rounded-xl flex flex-col gap-3 p-4 h-full"
-      style={{
-        border: "1px solid rgba(34,211,238,0.1)",
-        background: "rgba(7,13,18,0.7)",
-        animation: "brain-pulse 5s ease-in-out infinite",
-      }}
+      className="rounded-xl border border-slate-700/60 bg-slate-900/70 flex flex-col gap-3 p-4 h-full"
+      style={{ animation: "brain-pulse 5s ease-in-out infinite" }}
     >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {/* Live dot */}
           <div className="relative flex items-center justify-center" style={{ width: 12, height: 12 }}>
             <div
               className="absolute inset-0 rounded-full border border-[#22d3ee]/25"
@@ -159,19 +146,20 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
             />
             <div
               className="w-1.5 h-1.5 rounded-full animate-pulse"
-              style={{ background: "rgba(34,211,238,0.8)", boxShadow: "0 0 3px rgba(34,211,238,0.4)" }}
+              style={{ background: "rgba(34,211,238,0.85)", boxShadow: "0 0 4px rgba(34,211,238,0.5)" }}
             />
           </div>
-          <span className="text-[10px] font-mono text-slate-400 tracking-[0.16em] uppercase">Agent Brain</span>
+          <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
+            Agent Brain
+          </span>
         </div>
         {data && (
-          <span
-            className="text-[9px] font-mono px-1.5 py-0.5 rounded"
+          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded"
             style={{
-              color: data.pct >= 100 ? "#22d3ee" : "rgba(34,211,238,0.45)",
-              background: data.pct >= 100 ? "rgba(34,211,238,0.1)" : "rgba(34,211,238,0.04)",
-            }}
-          >
+              color: data.pct >= 100 ? "#22d3ee" : "rgba(34,211,238,0.6)",
+              background: data.pct >= 100 ? "rgba(34,211,238,0.12)" : "rgba(34,211,238,0.06)",
+              border: "1px solid " + (data.pct >= 100 ? "rgba(34,211,238,0.3)" : "rgba(34,211,238,0.15)"),
+            }}>
             {data.pct >= 100 ? "full" : `${data.pct}%`}
           </span>
         )}
@@ -179,49 +167,46 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
 
       {loading ? (
         <div className="space-y-2 flex-1">
-          <div className="h-0.5 bg-slate-800 rounded-full animate-pulse" />
+          <div className="h-0.5 bg-slate-700 rounded-full animate-pulse" />
           <div className="grid grid-cols-2 gap-1">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-5 bg-slate-800/50 rounded animate-pulse" />
+              <div key={i} className="h-5 bg-slate-800 rounded animate-pulse" />
             ))}
           </div>
         </div>
       ) : data ? (
         <>
-          {/* Growth bar */}
           <div>
-            <div className="h-px rounded-full overflow-hidden" style={{ background: "rgba(30,41,59,0.8)" }}>
+            <div className="h-px rounded-full overflow-hidden bg-slate-800">
               <div
-                className="h-full rounded-full"
+                className="h-full rounded-full transition-[width] duration-[1400ms] ease-in-out"
                 style={{
                   width: `${data.pct}%`,
-                  background: "linear-gradient(to right, rgba(34,211,238,0.5), #22d3ee)",
-                  transition: "width 1400ms ease-in-out",
-                  boxShadow: data.pct > 0 ? "0 0 6px rgba(34,211,238,0.3)" : "none",
+                  background: "linear-gradient(to right, rgba(34,211,238,0.6), #22d3ee)",
+                  boxShadow: data.pct > 0 ? "0 0 6px rgba(34,211,238,0.4)" : "none",
                 }}
               />
             </div>
-            <p className="text-[9px] font-mono text-slate-700 mt-1">
+            <p className="text-[10px] font-mono text-slate-500 mt-1">
               {data.filled}/{data.total} memory cores
             </p>
           </div>
 
-          {/* Memory chips */}
           <div className="grid grid-cols-2 gap-1 flex-1">
             {data.areas.map((area) => (
               <div
                 key={area.key}
-                className="flex items-center gap-1.5 text-[9px] px-1.5 py-1 rounded transition-all"
+                className="flex items-center gap-1.5 text-[10px] px-1.5 py-1 rounded"
                 style={{
-                  color: area.filled ? "rgba(203,213,225,0.9)" : "rgba(100,116,139,0.7)",
-                  background: area.filled ? "rgba(34,211,238,0.06)" : "transparent",
+                  color: area.filled ? "#CBD5E1" : "#64748B",
+                  background: area.filled ? "rgba(34,211,238,0.07)" : "rgba(30,41,59,0.3)",
                   border: area.filled
-                    ? "1px solid rgba(34,211,238,0.12)"
-                    : "1px dashed rgba(51,65,85,0.5)",
+                    ? "1px solid rgba(34,211,238,0.18)"
+                    : "1px dashed rgba(51,65,85,0.6)",
                 }}
                 title={area.desc}
               >
-                <span style={{ color: area.filled ? "#22d3ee" : "rgba(51,65,85,0.4)", fontSize: 7, flexShrink: 0 }}>
+                <span style={{ color: area.filled ? "#22d3ee" : "#475569", fontSize: 7, flexShrink: 0 }}>
                   {area.filled ? "◈" : "○"}
                 </span>
                 <span className="truncate font-mono">{area.label}</span>
@@ -230,48 +215,38 @@ function BrainOrganPanel({ brainRepo }: { brainRepo: string | null }) {
           </div>
 
           {data.pct < 100 && (
-            <a
-              href="/app/onboarding?update=1"
-              className="text-[9px] font-mono transition-colors block"
-              style={{ color: "rgba(34,211,238,0.5)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#22d3ee")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(34,211,238,0.5)")}
-            >
+            <a href="/app/onboarding?update=1" className="text-[11px] font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors block">
               Feed it more context →
             </a>
           )}
         </>
       ) : (
-        <p className="text-xs text-slate-700">
-          <span className="font-mono">{brainRepo}</span>
+        <p className="text-sm text-slate-400">
+          <span className="font-mono text-slate-300">{brainRepo}</span>
         </p>
       )}
     </div>
   );
 }
 
-// ─── Needs You Feed ────────────────────────────────────────────────────────────
+// ─── Needs You Panel ────────────────────────────────────────────────────────────
 
 function NeedsYouPanel() {
   return (
-    <div
-      className="rounded-xl flex flex-col gap-3 p-4 h-full"
-      style={{ border: "1px solid rgba(51,65,85,0.45)", background: "rgba(7,13,18,0.5)" }}
-    >
+    <div className="rounded-xl border border-slate-700/60 bg-slate-900/70 flex flex-col gap-3 p-4 h-full">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-mono text-slate-400 tracking-[0.16em] uppercase">Needs you</span>
-        <span className="text-[9px] font-mono text-slate-500">0</span>
+        <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
+          Needs you
+        </span>
+        <span className="text-[10px] font-mono text-slate-500">0</span>
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center text-center gap-2 py-4">
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center"
-          style={{ border: "1px solid rgba(51,65,85,0.4)" }}
-        >
+      <div className="flex-1 flex flex-col items-center justify-center text-center gap-2.5 py-3">
+        <div className="w-8 h-8 rounded-full border border-slate-700 flex items-center justify-center">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M2 6h8M7 3l3 3-3 3" stroke="rgba(71,85,105,0.6)" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M2 6h8M7 3l3 3-3 3" stroke="#64748B" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <p className="text-[10px] text-slate-700 leading-relaxed max-w-[140px]">
+        <p className="text-sm text-slate-400 leading-relaxed max-w-[140px]">
           Connect a tool and I&apos;ll start clearing things
         </p>
       </div>
@@ -279,7 +254,7 @@ function NeedsYouPanel() {
   );
 }
 
-// ─── Hub View ─────────────────────────────────────────────────────────────────
+// ─── Hub View ──────────────────────────────────────────────────────────────────
 
 const CHIPS = [
   { label: "Research", scaffold: "Research [topic] and summarize what I know about it based on my memory files." },
@@ -311,51 +286,60 @@ function HubView({
   textareaRef: React.RefObject<HTMLTextAreaElement>;
 }) {
   return (
-    <div
-      className="h-full overflow-y-auto"
-      style={{ animation: "hub-fadein 0.4s ease-out" }}
-    >
+    <div className="h-full overflow-y-auto" style={{ animation: "hub-fadein 0.4s ease-out" }}>
       <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-6">
 
-        {/* Alien core — the centerpiece */}
-        <div className="flex flex-col items-center gap-2">
+        {/* Alien — centerpiece */}
+        <div className="flex flex-col items-center gap-3">
           <AlienCore brainRepo={brainRepo} />
           <div className="flex items-center gap-2">
             <span
               className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0"
-              style={{ background: "rgba(34,211,238,0.8)", boxShadow: "0 0 4px rgba(34,211,238,0.5)" }}
+              style={{ background: "rgba(34,211,238,0.9)", boxShadow: "0 0 5px rgba(34,211,238,0.6)" }}
             />
-            <span className="text-[11px] font-mono text-slate-400 tracking-[0.12em]">
+            <span className="text-[12px] font-mono text-slate-300 tracking-[0.1em]">
               {brainRepo ? "online · reading your brain" : "online · waiting for context"}
             </span>
           </div>
         </div>
 
-        {/* No-brain / no-GitHub nudge */}
+        {/* Setup CTA — shown when no brain connected */}
         {!brainRepo && (
-          <div
-            className="rounded-xl px-4 py-3 flex items-center justify-between gap-4"
-            style={{ border: "1px solid rgba(51,65,85,0.45)", background: "rgba(7,13,18,0.5)" }}
-          >
-            <p className="text-xs text-slate-400 leading-relaxed">
-              {hasGithubToken
-                ? "Brain not connected — your agent is flying blind."
-                : "Connect GitHub so your agent can read and write your brain."}
-            </p>
-            {hasGithubToken ? (
-              <a
-                href="/app/onboarding"
-                className="shrink-0 text-[11px] font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors whitespace-nowrap"
-              >
-                Connect brain →
-              </a>
+          <div className={`rounded-xl border px-5 py-4 ${
+            !hasGithubToken
+              ? "border-[#22d3ee]/30 bg-[#22d3ee]/5"
+              : "border-slate-700/60 bg-slate-900/60"
+          }`}>
+            {!hasGithubToken ? (
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-100">Step 1: Connect GitHub</p>
+                  <p className="text-sm text-slate-300 mt-0.5">
+                    Your agent needs GitHub access to read and write your brain.
+                  </p>
+                </div>
+                <a
+                  href="/api/app/auth/github?next=/app/onboarding"
+                  className="shrink-0 inline-flex items-center rounded-lg bg-[#22d3ee] px-4 py-2 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors"
+                >
+                  Connect GitHub →
+                </a>
+              </div>
             ) : (
-              <a
-                href="/api/app/auth/github?next=/app/onboarding"
-                className="shrink-0 text-[11px] font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors whitespace-nowrap"
-              >
-                Connect GitHub →
-              </a>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-100">Step 2: Connect your brain</p>
+                  <p className="text-sm text-slate-300 mt-0.5">
+                    GitHub connected. Create or link your brain repo so the agent knows your business.
+                  </p>
+                </div>
+                <a
+                  href="/app/onboarding"
+                  className="shrink-0 inline-flex items-center rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-700 transition-colors"
+                >
+                  Set up brain →
+                </a>
+              </div>
             )}
           </div>
         )}
@@ -368,12 +352,9 @@ function HubView({
 
         {/* Input */}
         {!hasApiKey ? (
-          <div
-            className="rounded-xl px-5 py-4 space-y-3"
-            style={{ border: "1px solid rgba(34,211,238,0.15)", background: "rgba(34,211,238,0.04)" }}
-          >
-            <p className="text-sm font-medium text-slate-200">Add your Anthropic API key to start.</p>
-            <p className="text-xs text-slate-500 leading-relaxed">
+          <div className="rounded-xl border border-[#22d3ee]/25 bg-[#22d3ee]/5 px-5 py-5 space-y-3">
+            <p className="text-sm font-semibold text-slate-100">Add your Anthropic API key to start.</p>
+            <p className="text-sm text-slate-300 leading-relaxed">
               Pocket Agent uses your own key — you control the bill, your data stays yours.{" "}
               <a
                 href="https://console.anthropic.com/settings/keys"
@@ -386,48 +367,42 @@ function HubView({
             </p>
             <a
               href="/app/settings"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#22d3ee] px-4 py-2 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#22d3ee] px-4 py-2.5 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors"
             >
-              Go to Settings
+              Go to Settings →
             </a>
           </div>
         ) : (
-          <div className="space-y-3">
-            <div
-              className="rounded-xl overflow-hidden"
-              style={{ border: "1px solid rgba(51,65,85,0.6)", background: "rgba(7,13,18,0.7)" }}
-            >
+          <div>
+            <div className="rounded-xl border border-slate-700/80 bg-slate-900/80 overflow-hidden focus-within:border-[#22d3ee]/50 transition-colors">
               <textarea
                 ref={textareaRef}
                 rows={3}
                 placeholder="What did I decide about pricing? Draft a quote for Johnson. Summarize my current projects."
-                className="w-full bg-transparent px-4 py-3 text-sm text-slate-100 placeholder:text-slate-700 focus:outline-none resize-none"
+                className="w-full bg-transparent px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none resize-none"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
               />
-              <div
-                className="flex items-center justify-between px-4 py-2.5"
-                style={{ borderTop: "1px solid rgba(51,65,85,0.4)" }}
-              >
-                <div className="flex gap-1.5 flex-wrap">
+              <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-700/60">
+                <div className="flex gap-1 flex-wrap">
                   {CHIPS.map((chip) => (
                     <button
                       key={chip.label}
                       onClick={() => setInputValue(chip.scaffold)}
-                      className="rounded px-2.5 py-1 text-[10px] font-mono text-slate-600 hover:text-slate-300 hover:bg-slate-800/50 transition-all"
+                      className="rounded px-2.5 py-1 text-[11px] font-mono text-slate-400 hover:text-slate-100 hover:bg-slate-700/60 transition-all"
                     >
                       {chip.label}
                     </button>
                   ))}
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-[10px] text-slate-700 font-mono">⌘↵</span>
+                  <span className="text-[11px] text-slate-500 font-mono">⌘↵</span>
                   <button
                     onClick={handleSubmit}
                     disabled={!inputValue.trim() || isLoading}
-                    className="rounded-lg bg-[#22d3ee] px-4 py-1.5 text-xs font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="rounded-lg bg-[#22d3ee] px-4 py-1.5 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
                     {isLoading ? "Working…" : "Ask"}
                   </button>
@@ -439,61 +414,35 @@ function HubView({
 
         {/* Work surface */}
         <div>
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-[10px] font-mono text-slate-500 tracking-[0.16em] uppercase">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[12px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
               What I can do for you
             </span>
-            <a
-              href="/app/apps"
-              className="text-[10px] font-mono text-slate-500 hover:text-[#22d3ee] transition-colors"
-            >
-              All →
+            <a href="/app/apps" className="text-[12px] font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors">
+              See all →
             </a>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {[
-              {
-                href: "/app/apps/quote",
-                label: "Quote / Proposal",
-                desc: "Reads your brain. Drafts a clean quote.",
-              },
-              {
-                href: "/app/apps/email",
-                label: "Email Drafter",
-                desc: "Writes emails that sound like you.",
-              },
+              { href: "/app/apps/quote", label: "Quote / Proposal", desc: "Reads your brain. Drafts a clean quote." },
+              { href: "/app/apps/email", label: "Email Drafter", desc: "Writes emails that sound like you." },
             ].map((app) => (
               <a
                 key={app.href}
                 href={app.href}
-                className="group rounded-xl px-4 py-3 transition-all"
-                style={{
-                  border: "1px solid rgba(51,65,85,0.45)",
-                  background: "rgba(7,13,18,0.4)",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(51,65,85,0.7)";
-                  (e.currentTarget as HTMLElement).style.background = "rgba(7,13,18,0.7)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(51,65,85,0.45)";
-                  (e.currentTarget as HTMLElement).style.background = "rgba(7,13,18,0.4)";
-                }}
+                className="group block rounded-xl border border-slate-700/60 bg-slate-900/60 px-4 py-3 hover:border-slate-600 hover:bg-slate-900 transition-all"
               >
-                <p className="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">
+                <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100 transition-colors">
                   {app.label}
                 </p>
-                <p className="text-[10px] text-slate-700 mt-0.5 leading-relaxed">{app.desc}</p>
+                <p className="text-[12px] text-slate-400 mt-0.5 leading-relaxed">{app.desc}</p>
               </a>
             ))}
           </div>
         </div>
 
-        {/* Guide — level context, woven in quietly */}
-        <div
-          className="rounded-xl px-4 py-3"
-          style={{ border: "1px solid rgba(51,65,85,0.3)", background: "rgba(7,13,18,0.3)" }}
-        >
+        {/* Level guide — quiet at the bottom */}
+        <div className="rounded-xl border border-slate-800/60 bg-slate-900/30 px-4 py-3">
           <div className="flex items-center gap-4 overflow-x-auto">
             {[
               { n: 1, label: "Knows you", active: Boolean(brainRepo) },
@@ -504,22 +453,20 @@ function HubView({
                 <span
                   className="flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold border shrink-0"
                   style={{
-                    background: level.active ? "rgba(34,211,238,0.15)" : "rgba(30,41,59,0.5)",
-                    borderColor: level.active ? "rgba(34,211,238,0.5)" : "rgba(51,65,85,0.5)",
-                    color: level.active ? "#22d3ee" : "rgba(71,85,105,0.7)",
+                    background: level.active ? "rgba(34,211,238,0.18)" : "rgba(30,41,59,0.6)",
+                    borderColor: level.active ? "rgba(34,211,238,0.55)" : "rgba(51,65,85,0.6)",
+                    color: level.active ? "#22d3ee" : "#64748B",
                   }}
                 >
                   {level.active ? "✓" : level.n}
                 </span>
                 <span
-                  className="text-[10px] font-mono whitespace-nowrap"
-                  style={{ color: level.active ? "rgba(148,163,184,0.7)" : "rgba(51,65,85,0.6)" }}
+                  className="text-[11px] font-mono whitespace-nowrap"
+                  style={{ color: level.active ? "#CBD5E1" : "#64748B" }}
                 >
                   {level.label}
                 </span>
-                {i < 2 && (
-                  <span className="text-slate-800 text-xs shrink-0">→</span>
-                )}
+                {i < 2 && <span className="text-slate-700 text-xs shrink-0">→</span>}
               </div>
             ))}
           </div>
@@ -544,24 +491,19 @@ function ConvSidebar({
   onNew: () => void;
 }) {
   return (
-    <aside
-      className="hidden lg:flex w-[152px] shrink-0 flex-col h-full"
-      style={{ borderRight: "1px solid rgba(30,41,59,0.6)" }}
-    >
-      <div className="px-3 py-3 shrink-0" style={{ borderBottom: "1px solid rgba(30,41,59,0.6)" }}>
+    <aside className="hidden lg:flex w-[152px] shrink-0 flex-col h-full border-r border-slate-800/60">
+      <div className="px-3 py-3 shrink-0 border-b border-slate-800/60">
         <button
           onClick={onNew}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-500 hover:text-slate-200 hover:bg-slate-800/40 transition-all font-mono"
-          style={{ border: "1px solid rgba(51,65,85,0.4)" }}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-slate-300 hover:text-slate-100 hover:bg-slate-800/60 border border-slate-700/60 transition-all font-mono"
         >
-          <span className="text-[#22d3ee] font-bold text-sm leading-none">+</span>
+          <span className="text-[#22d3ee] font-bold text-base leading-none">+</span>
           New chat
         </button>
       </div>
-
       <div className="flex-1 overflow-y-auto py-2 px-2">
         {conversations.length === 0 ? (
-          <p className="px-3 py-3 text-[10px] font-mono text-slate-700">No threads yet.</p>
+          <p className="px-3 py-3 text-[11px] font-mono text-slate-500">No threads yet.</p>
         ) : (
           conversations.map((conv) => (
             <button
@@ -569,12 +511,12 @@ function ConvSidebar({
               onClick={() => onSelect(conv.id)}
               className={`w-full text-left px-2.5 py-2 rounded-lg transition-all mb-0.5 ${
                 activeConvId === conv.id
-                  ? "bg-slate-800/60 text-slate-200"
-                  : "text-slate-600 hover:bg-slate-800/30 hover:text-slate-400"
+                  ? "bg-slate-800 text-slate-100"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
               }`}
             >
-              <div className="truncate text-[10px] font-medium leading-snug">{conv.title}</div>
-              <div className="text-[9px] font-mono text-slate-700 mt-0.5">
+              <div className="truncate text-[11px] font-medium leading-snug">{conv.title}</div>
+              <div className="text-[10px] font-mono text-slate-600 mt-0.5">
                 {relativeTime(conv.updated_at)}
               </div>
             </button>
@@ -607,10 +549,7 @@ export default function HomeClient({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    if (!activeConvId) {
-      setMessages([]);
-      return;
-    }
+    if (!activeConvId) { setMessages([]); return; }
     fetch(`/api/app/conversations/${activeConvId}`)
       .then((r) => (r.ok ? (r.json() as Promise<ConversationDetail>) : Promise.reject()))
       .then((data) => setMessages(data.messages ?? []))
@@ -637,7 +576,6 @@ export default function HomeClient({
   async function handleSubmit() {
     const content = inputValue.trim();
     if (!content || isLoading) return;
-
     setInputValue("");
     setIsLoading(true);
 
@@ -678,13 +616,7 @@ export default function HomeClient({
         setMessages((prev) => [
           ...prev.slice(0, -1),
           { ...tempUserMsg, id: `${tempId}-sent` },
-          {
-            id: `err-${Date.now()}`,
-            conversation_id: convId!,
-            role: "assistant" as const,
-            content: errText,
-            created_at: new Date().toISOString(),
-          },
+          { id: `err-${Date.now()}`, conversation_id: convId!, role: "assistant" as const, content: errText, created_at: new Date().toISOString() },
         ]);
         return;
       }
@@ -695,18 +627,13 @@ export default function HomeClient({
         conversationTitle?: string;
       };
 
-      setMessages((prev) => [
-        ...prev.slice(0, -1),
-        data.userMessage,
-        data.assistantMessage,
-      ]);
+      setMessages((prev) => [...prev.slice(0, -1), data.userMessage, data.assistantMessage]);
 
       if (data.conversationTitle) {
         setConversations((prev) =>
           prev.map((c) => (c.id === convId ? { ...c, title: data.conversationTitle! } : c)),
         );
       }
-
       setConversations((prev) =>
         prev
           .map((c) => (c.id === convId ? { ...c, updated_at: new Date().toISOString() } : c))
@@ -716,13 +643,7 @@ export default function HomeClient({
       setMessages((prev) => [
         ...prev.slice(0, -1),
         { ...tempUserMsg, id: `${tempId}-sent` },
-        {
-          id: `err-${Date.now()}`,
-          conversation_id: activeConvId ?? "",
-          role: "assistant" as const,
-          content: "Network error. Please try again.",
-          created_at: new Date().toISOString(),
-        },
+        { id: `err-${Date.now()}`, conversation_id: activeConvId ?? "", role: "assistant" as const, content: "Network error. Please try again.", created_at: new Date().toISOString() },
       ]);
     } finally {
       setIsLoading(false);
@@ -732,8 +653,7 @@ export default function HomeClient({
   const activeConv = conversations.find((c) => c.id === activeConvId);
 
   return (
-    <div className="flex h-full overflow-hidden bg-[#05070a]">
-      {/* Conversation sidebar */}
+    <div className="flex h-full overflow-hidden bg-[#06080b]">
       <ConvSidebar
         conversations={conversations}
         activeConvId={activeConvId}
@@ -741,36 +661,30 @@ export default function HomeClient({
         onNew={goToHub}
       />
 
-      {/* Main pane */}
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {activeConvId ? (
-          /* ── Active conversation ─────────────────────────────────────────── */
+          /* ── Active conversation ─────────────────────────────────────── */
           <div className="flex flex-col h-full">
-            {/* Conversation header */}
-            <div
-              className="flex items-center gap-3 px-5 py-3 shrink-0"
-              style={{ borderBottom: "1px solid rgba(30,41,59,0.8)" }}
-            >
+            <div className="flex items-center gap-3 px-5 py-3 shrink-0 border-b border-slate-800/60">
               <button
                 onClick={goToHub}
-                className="text-slate-600 hover:text-slate-300 text-sm transition-colors font-mono flex items-center gap-1.5"
+                className="text-slate-400 hover:text-slate-100 text-sm transition-colors font-mono flex items-center gap-1.5"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <path d="M8 2L4 6l4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 Hub
               </button>
-              <span className="text-slate-800">·</span>
-              <span className="text-sm text-slate-500 truncate">{activeConv?.title ?? "Conversation"}</span>
+              <span className="text-slate-700">·</span>
+              <span className="text-sm text-slate-300 truncate">{activeConv?.title ?? "Conversation"}</span>
               <button
                 onClick={goToHub}
-                className="ml-auto text-xs font-mono text-slate-700 hover:text-[#22d3ee] transition-colors flex items-center gap-1"
+                className="ml-auto text-[11px] font-mono text-slate-500 hover:text-[#22d3ee] transition-colors"
               >
                 + New
               </button>
             </div>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto px-5 py-6 min-h-0">
               <div className="max-w-2xl mx-auto space-y-6">
                 {messages.map((msg) => {
@@ -781,28 +695,19 @@ export default function HomeClient({
                   return (
                     <div key={msg.id} className={msg.role === "user" ? "flex justify-end" : ""}>
                       {msg.role === "user" ? (
-                        <div
-                          className="max-w-[80%] rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-slate-100 whitespace-pre-wrap"
-                          style={{
-                            background: "rgba(13,37,53,0.9)",
-                            border: "1px solid rgba(26,61,83,0.8)",
-                          }}
-                        >
+                        <div className="max-w-[80%] rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-slate-100 whitespace-pre-wrap bg-slate-800 border border-slate-700/60">
                           {msg.content}
                         </div>
                       ) : (
                         <div className="space-y-2.5 max-w-full">
-                          <div className="text-[9px] text-[#22d3ee]/60 font-mono tracking-[0.18em] uppercase">
+                          <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-[0.18em] uppercase">
                             Pocket Agent
                           </div>
                           {msg.toolSteps && msg.toolSteps.length > 0 && (
                             <div className="flex flex-col gap-1 py-1">
                               {msg.toolSteps.map((step, i) => (
-                                <div
-                                  key={i}
-                                  className="flex items-center gap-1.5 text-[10px] font-mono text-slate-700"
-                                >
-                                  <span className="text-[#22d3ee]/25 shrink-0">{toolStepIcon(step.tool)}</span>
+                                <div key={i} className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500">
+                                  <span className="text-[#22d3ee]/30 shrink-0">{toolStepIcon(step.tool)}</span>
                                   {step.label}
                                 </div>
                               ))}
@@ -816,14 +721,9 @@ export default function HomeClient({
                               {citations.map((c, i) => (
                                 <span
                                   key={i}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono"
-                                  style={{
-                                    background: "rgba(30,41,59,0.6)",
-                                    color: "rgba(34,211,238,0.55)",
-                                  }}
+                                  className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-800 border border-slate-700/60 text-[#22d3ee]/70"
                                 >
-                                  {c.file}
-                                  {c.line ? `:${c.line}` : ""}
+                                  {c.file}{c.line ? `:${c.line}` : ""}
                                 </span>
                               ))}
                             </div>
@@ -836,27 +736,19 @@ export default function HomeClient({
 
                 {isLoading && (
                   <div className="space-y-2">
-                    <div className="text-[9px] text-[#22d3ee]/60 font-mono tracking-[0.18em] uppercase">
-                      Pocket Agent
-                    </div>
-                    <div className="text-sm text-slate-600 animate-pulse">Working…</div>
+                    <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-[0.18em] uppercase">Pocket Agent</div>
+                    <div className="text-sm text-slate-400 animate-pulse">Working…</div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
             </div>
 
-            {/* Input */}
-            <div
-              className="px-5 py-4 shrink-0"
-              style={{ borderTop: "1px solid rgba(30,41,59,0.8)" }}
-            >
+            <div className="px-5 py-4 shrink-0 border-t border-slate-800/60">
               <div className="max-w-2xl mx-auto">
                 {!hasApiKey ? (
-                  <p className="text-sm text-slate-500 text-center">
-                    <a href="/app/settings" className="text-[#22d3ee] hover:underline">
-                      Add your Anthropic API key
-                    </a>{" "}
+                  <p className="text-sm text-slate-400 text-center">
+                    <a href="/app/settings" className="text-[#22d3ee] hover:underline">Add your Anthropic API key</a>{" "}
                     to continue.
                   </p>
                 ) : (
@@ -865,23 +757,16 @@ export default function HomeClient({
                       ref={textareaRef}
                       rows={2}
                       placeholder="Continue… (⌘↵ to send)"
-                      className="flex-1 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder:text-slate-700 focus:outline-none resize-none"
-                      style={{
-                        border: "1px solid rgba(51,65,85,0.6)",
-                        background: "rgba(7,13,18,0.7)",
-                      }}
+                      className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-[#22d3ee]/50 focus:outline-none resize-none transition-colors"
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
                       onKeyDown={handleKeyDown}
                       disabled={isLoading}
-                      onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(34,211,238,0.35)")}
-                      onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(51,65,85,0.6)")}
                     />
                     <button
                       onClick={handleSubmit}
                       disabled={!inputValue.trim() || isLoading}
-                      className="rounded-xl px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
-                      style={{ background: "#22d3ee" }}
+                      className="rounded-xl bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
                     >
                       Send
                     </button>
@@ -891,7 +776,6 @@ export default function HomeClient({
             </div>
           </div>
         ) : (
-          /* ── Hub (no active conversation) ───────────────────────────────── */
           <HubView
             brainRepo={brainRepo}
             hasApiKey={hasApiKey}
