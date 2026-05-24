@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ async function createPocketAgentCheckout(args: {
   email: string;
   name: string;
   origin: string;
+  userId: string | null;
 }): Promise<CheckoutResult> {
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) {
@@ -42,6 +44,12 @@ async function createPocketAgentCheckout(args: {
   params.set("subscription_data[metadata][source]", "pocket_agent");
   if (args.name) {
     params.set("subscription_data[metadata][name]", args.name);
+  }
+  // When the user is authenticated, embed their id so the webhook can link
+  // the subscription row to their account immediately on creation.
+  if (args.userId) {
+    params.set("client_reference_id", args.userId);
+    params.set("subscription_data[metadata][user_id]", args.userId);
   }
   params.set("metadata[email]", args.email);
   params.set("metadata[source]", "pocket_agent");
@@ -92,8 +100,19 @@ export async function POST(req: Request): Promise<NextResponse> {
     return badRequest("Valid email required");
   }
 
+  // Read auth from session cookie — null when not logged in (still allowed).
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const origin = new URL(req.url).origin;
-  const checkout = await createPocketAgentCheckout({ email, name, origin });
+  const checkout = await createPocketAgentCheckout({
+    email,
+    name,
+    origin,
+    userId: user?.id ?? null,
+  });
 
   if (!checkout.ok) {
     console.error("[pocket-agent/checkout] Stripe session creation failed", {

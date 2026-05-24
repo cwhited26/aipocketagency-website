@@ -69,11 +69,13 @@ export default async function PocketAgentWelcomePage({
   const isLoggedIn = !!user;
 
   const steps = [
-    "Sign in with GitHub or your email to create your account.",
-    "Connect your brain repo — a GitHub repo where Pocket Agent stores your memory files.",
-    "Add your Anthropic API key in Settings (it stays on our server, never in your browser).",
-    'Ask your first question: "What are my goals for this quarter?"',
-    "See the answer with cited sources from your own memory files.",
+    isLoggedIn
+      ? "You're signed in — your account is active."
+      : "Sign in with GitHub or your email to activate your Pocket Agent.",
+    "Build your brain — one click forks the brain template, then six quick questions fill in your business context. Your agent reads this before every answer.",
+    "Add your Anthropic API key in Settings so your agent can think. It stays on our server, never in your browser.",
+    "Try a Work app — use the Quote/Proposal Writer or Email Drafter to get a draft in your voice, from your own files.",
+    "Level 1: your agent knows your business. Level 2: it drafts in your voice. Level 3: it acts in your tools.",
   ];
 
   return (

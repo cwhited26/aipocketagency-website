@@ -411,6 +411,7 @@ async function handlePocketAgentSubscriptionCreated(
 ): Promise<void> {
   const email = sub.metadata?.email ?? null;
   const name = sub.metadata?.name ?? null;
+  const userId = sub.metadata?.user_id ?? null;
   if (!email) {
     console.error("[stripe/webhook] pocket_agent subscription.created missing email metadata", {
       subscription_id: sub.id,
@@ -435,6 +436,7 @@ async function handlePocketAgentSubscriptionCreated(
   const upsert = await upsertPocketAgentTrial({
     email,
     name,
+    userId,
     stripeCustomerId: sub.customer,
     stripeSubscriptionId: sub.id,
     stripeSessionId: null,

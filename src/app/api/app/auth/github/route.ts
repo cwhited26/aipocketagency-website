@@ -4,14 +4,20 @@ import { NextRequest, NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function safePath(raw: string | null): string {
+  if (typeof raw !== "string" || raw === "") return "/app/onboarding";
+  return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/app/onboarding";
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const origin = new URL(request.url).origin;
+  const next = safePath(request.nextUrl.searchParams.get("next"));
   const supabase = createClient();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
     options: {
-      redirectTo: `${origin}/app/auth/callback`,
+      redirectTo: `${origin}/app/auth/callback?next=${encodeURIComponent(next)}`,
       scopes: "repo read:user",
     },
   });

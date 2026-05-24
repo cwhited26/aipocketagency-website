@@ -3,16 +3,23 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import MagicLinkForm from "./MagicLinkForm";
 
+function safePath(raw: string | undefined): string {
+  if (typeof raw !== "string") return "/app/onboarding";
+  return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/app/onboarding";
+}
+
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: { error?: string; next?: string };
 }) {
+  const next = safePath(searchParams.next);
+
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect("/app/onboarding");
+  if (user) redirect(next);
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-[#05070a] px-4">
@@ -45,7 +52,7 @@ export default async function LoginPage({
           </div>
         )}
 
-        <MagicLinkForm />
+        <MagicLinkForm next={next} />
 
         <div className="relative flex items-center gap-3">
           <div className="flex-1 border-t border-slate-800" />
@@ -55,7 +62,7 @@ export default async function LoginPage({
 
         <div className="space-y-2">
           <Link
-            href="/api/app/auth/github"
+            href={`/api/app/auth/github?next=${encodeURIComponent(next)}`}
             className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-sm font-medium text-slate-100 hover:bg-slate-700 hover:border-slate-600 transition-colors"
           >
             <GitHubIcon />

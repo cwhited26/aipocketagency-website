@@ -40,6 +40,7 @@ function endpoint(env: { url: string }, suffix = ""): string {
 export async function upsertPocketAgentTrial(args: {
   email: string;
   name: string | null;
+  userId: string | null;
   stripeCustomerId: string;
   stripeSubscriptionId: string;
   stripeSessionId: string | null;
@@ -49,7 +50,7 @@ export async function upsertPocketAgentTrial(args: {
   const env = supabaseEnv();
   if ("error" in env) return { ok: false, status: 500, error: env.error };
 
-  const row = {
+  const row: Record<string, unknown> = {
     email: args.email,
     name: args.name,
     stripe_customer_id: args.stripeCustomerId,
@@ -60,6 +61,9 @@ export async function upsertPocketAgentTrial(args: {
     trial_ends_at: args.trialEndsAt,
     updated_at: new Date().toISOString(),
   };
+  if (args.userId !== null) {
+    row.user_id = args.userId;
+  }
 
   const res = await fetch(endpoint(env), {
     method: "POST",
@@ -271,7 +275,7 @@ export async function checkSubscriptionByEmail(email: string): Promise<CheckByEm
   const res = await fetch(
     endpoint(
       env,
-      `?email=eq.${encodeURIComponent(email)}&status=in.(active,trialing)&limit=1`,
+      `?email=eq.${encodeURIComponent(email)}&status=in.(active,trial)&limit=1`,
     ),
     {
       headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },

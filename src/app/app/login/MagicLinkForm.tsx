@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function MagicLinkForm() {
+export default function MagicLinkForm({ next }: { next: string }) {
   const [email, setEmail] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -18,7 +18,7 @@ export default function MagicLinkForm() {
       const res = await fetch("/api/app/auth/magic-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmed }),
+        body: JSON.stringify({ email: trimmed, next }),
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {

@@ -6,10 +6,15 @@ export const dynamic = "force-dynamic";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function safePath(raw: unknown): string {
+  if (typeof raw !== "string" || raw === "") return "/app/onboarding";
+  return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/app/onboarding";
+}
+
 export async function POST(req: Request): Promise<NextResponse> {
-  let body: { email?: unknown };
+  let body: { email?: unknown; next?: unknown };
   try {
-    body = (await req.json()) as { email?: unknown };
+    body = (await req.json()) as { email?: unknown; next?: unknown };
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
@@ -19,12 +24,14 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Valid email is required" }, { status: 422 });
   }
 
+  const next = safePath(body.next);
+  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aipocketagency.com";
+
   const supabase = createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      // Existing callback route handles PKCE for both GitHub OAuth and magic link.
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://aipocketagency.com"}/app/auth/callback`,
+      emailRedirectTo: `${siteOrigin}/app/auth/callback?next=${encodeURIComponent(next)}`,
     },
   });
 

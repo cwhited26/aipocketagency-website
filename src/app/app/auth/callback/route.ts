@@ -9,7 +9,9 @@ export const dynamic = "force-dynamic";
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const next = requestUrl.searchParams.get("next") ?? "/app/onboarding";
+  const rawNext = requestUrl.searchParams.get("next") ?? "/app/onboarding";
+  const next =
+    rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/app/onboarding";
 
   if (!code) {
     return NextResponse.redirect(new URL("/app/login?error=no_code", request.url));

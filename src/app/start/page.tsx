@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import StartForm from "./StartForm";
 
 const PAGE_URL = "https://aipocketagency.com/start";
@@ -23,6 +25,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function StartPage() {
-  return <StartForm />;
+export default async function StartPage() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Require login before checkout so the subscription is always tied to a real
+  // account — prevents the email-mismatch orphan that causes the trial loop.
+  if (!user) {
+    redirect("/app/login?next=/start");
+  }
+
+  return <StartForm defaultEmail={user.email ?? ""} />;
 }

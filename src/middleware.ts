@@ -26,7 +26,7 @@ async function checkSubscription(userId: string, email: string | null): Promise<
   // Primary check: by user_id (covers users whose subscription is already linked)
   const byUserId =
     `${url}/rest/v1/${TABLE}` +
-    `?user_id=eq.${encodeURIComponent(userId)}&status=in.(active,trialing)&limit=1`;
+    `?user_id=eq.${encodeURIComponent(userId)}&status=in.(active,trial)&limit=1`;
   try {
     const res = await fetch(byUserId, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
@@ -44,7 +44,7 @@ async function checkSubscription(userId: string, email: string | null): Promise<
   if (!email) return false;
   const byEmail =
     `${url}/rest/v1/${TABLE}` +
-    `?email=eq.${encodeURIComponent(email)}&status=in.(active,trialing)&limit=1`;
+    `?email=eq.${encodeURIComponent(email)}&status=in.(active,trial)&limit=1`;
   try {
     const res = await fetch(byEmail, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
