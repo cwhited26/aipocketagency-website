@@ -9,6 +9,13 @@ type Conversation = {
   updated_at: string;
 };
 
+type Citation = { file: string; line: string };
+
+type ToolStep = {
+  tool: string;
+  label: string;
+};
+
 type Message = {
   id: string;
   conversation_id: string;
@@ -16,9 +23,8 @@ type Message = {
   content: string;
   created_at: string;
   citations?: Citation[];
+  toolSteps?: ToolStep[];
 };
-
-type Citation = { file: string; line: string };
 
 type ConversationDetail = {
   conversation: Conversation;
@@ -73,6 +79,16 @@ function parseCitations(text: string): Citation[] {
     }
   }
   return citations;
+}
+
+function toolStepIcon(tool: string): string {
+  switch (tool) {
+    case "list_brain_files": return "◈";
+    case "read_brain_file": return "◉";
+    case "draft_quote": return "◆";
+    case "draft_email": return "◇";
+    default: return "○";
+  }
 }
 
 function MaturityBar({ hasBrain }: { hasBrain: boolean }) {
@@ -153,8 +169,7 @@ export default function HomeClient({
       return;
     }
     fetch(`/api/app/conversations/${activeConvId}`)
-      .then((r) => (r.ok ? (r.json() as Promise<ConversationDetail>) : Promise.reject())
-      )
+      .then((r) => (r.ok ? (r.json() as Promise<ConversationDetail>) : Promise.reject()))
       .then((data) => setMessages(data.messages ?? []))
       .catch(() => {});
   }, [activeConvId]);
@@ -240,7 +255,7 @@ export default function HomeClient({
 
       const data = (await res.json()) as {
         userMessage: Message;
-        assistantMessage: Message & { citations?: Citation[] };
+        assistantMessage: Message & { citations?: Citation[]; toolSteps?: ToolStep[] };
         conversationTitle?: string;
       };
 
@@ -258,7 +273,6 @@ export default function HomeClient({
         );
       }
 
-      // Touch updated_at on the sidebar item so ordering stays correct
       setConversations((prev) =>
         prev
           .map((c) =>
@@ -395,6 +409,22 @@ export default function HomeClient({
                           <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-widest uppercase">
                             Pocket Agent
                           </div>
+                          {/* Tool steps transcript */}
+                          {msg.toolSteps && msg.toolSteps.length > 0 && (
+                            <div className="flex flex-col gap-1 py-1">
+                              {msg.toolSteps.map((step, i) => (
+                                <div
+                                  key={i}
+                                  className="flex items-center gap-1.5 text-[11px] font-mono text-slate-600"
+                                >
+                                  <span className="text-[#22d3ee]/30 shrink-0">
+                                    {toolStepIcon(step.tool)}
+                                  </span>
+                                  {step.label}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
                             {msg.content}
                           </div>
@@ -421,7 +451,7 @@ export default function HomeClient({
                     <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-widest uppercase">
                       Pocket Agent
                     </div>
-                    <div className="text-sm text-slate-600 animate-pulse">Thinking…</div>
+                    <div className="text-sm text-slate-600 animate-pulse">Working…</div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -528,7 +558,7 @@ export default function HomeClient({
                     <textarea
                       ref={textareaRef}
                       rows={4}
-                      placeholder="What did I decide about pricing? Summarize my current projects. What's my next priority?"
+                      placeholder="What did I decide about pricing? Write a quote for the Johnson reroof and email it to him. Summarize my current projects."
                       className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none resize-none"
                       value={inputValue}
                       onChange={(e) => setInputValue(e.target.value)}
@@ -542,7 +572,7 @@ export default function HomeClient({
                         disabled={!inputValue.trim() || isLoading}
                         className="rounded-lg bg-[#22d3ee] px-5 py-2 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
-                        {isLoading ? "Thinking…" : "Ask"}
+                        {isLoading ? "Working…" : "Ask"}
                       </button>
                     </div>
                   </div>
