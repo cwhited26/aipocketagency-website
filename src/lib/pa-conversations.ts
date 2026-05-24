@@ -19,9 +19,13 @@ type PaResult<T> = { ok: true; data: T } | { ok: false; status: number; error: s
 
 function paEnv(): { url: string; key: string } | { error: string } {
   const url =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.WC_ADMIN_SUPABASE_URL;
+    process.env.POCKET_AGENT_SUPABASE_URL ??
+    process.env.NEXT_PUBLIC_SUPABASE_URL ??
+    process.env.WC_ADMIN_SUPABASE_URL;
   const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.WC_ADMIN_SUPABASE_SERVICE_KEY;
+    process.env.POCKET_AGENT_SUPABASE_SERVICE_KEY ??
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.WC_ADMIN_SUPABASE_SERVICE_KEY;
   if (!url || !key) return { error: "Supabase env vars not set" };
   return { url: url.replace(/\/$/, ""), key };
 }

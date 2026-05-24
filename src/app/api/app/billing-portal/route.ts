@@ -23,10 +23,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   // Look up the Stripe customer ID for this user
   const supabaseUrl = (
-    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.WC_ADMIN_SUPABASE_URL ?? ""
+    process.env.POCKET_AGENT_SUPABASE_URL ??
+    process.env.NEXT_PUBLIC_SUPABASE_URL ??
+    process.env.WC_ADMIN_SUPABASE_URL ??
+    ""
   ).replace(/\/$/, "");
   const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.WC_ADMIN_SUPABASE_SERVICE_KEY ?? "";
+    process.env.POCKET_AGENT_SUPABASE_SERVICE_KEY ??
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.WC_ADMIN_SUPABASE_SERVICE_KEY ??
+    "";
 
   let stripeCustomerId: string | null = null;
   if (supabaseUrl && supabaseKey) {

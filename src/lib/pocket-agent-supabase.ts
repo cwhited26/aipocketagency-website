@@ -22,8 +22,9 @@ export type PocketAgentSubscriptionRow = {
 };
 
 function supabaseEnv(): { url: string; key: string } | { error: string } {
-  const url = process.env.WC_ADMIN_SUPABASE_URL;
-  const key = process.env.WC_ADMIN_SUPABASE_SERVICE_KEY;
+  const url = process.env.POCKET_AGENT_SUPABASE_URL ?? process.env.WC_ADMIN_SUPABASE_URL;
+  const key =
+    process.env.POCKET_AGENT_SUPABASE_SERVICE_KEY ?? process.env.WC_ADMIN_SUPABASE_SERVICE_KEY;
   if (!url || !key) {
     return { error: "WC_ADMIN_SUPABASE_URL / WC_ADMIN_SUPABASE_SERVICE_KEY not set" };
   }

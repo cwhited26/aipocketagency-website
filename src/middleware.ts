@@ -8,13 +8,17 @@ function isPublicAppPath(pathname: string): boolean {
 }
 
 async function checkSubscription(userId: string, email: string | null): Promise<boolean> {
-  const url =
-    (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.WC_ADMIN_SUPABASE_URL ?? "").replace(
-      /\/$/,
-      "",
-    );
+  const url = (
+    process.env.POCKET_AGENT_SUPABASE_URL ??
+    process.env.NEXT_PUBLIC_SUPABASE_URL ??
+    process.env.WC_ADMIN_SUPABASE_URL ??
+    ""
+  ).replace(/\/$/, "");
   const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.WC_ADMIN_SUPABASE_SERVICE_KEY ?? "";
+    process.env.POCKET_AGENT_SUPABASE_SERVICE_KEY ??
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.WC_ADMIN_SUPABASE_SERVICE_KEY ??
+    "";
   if (!url || !key) return true;
 
   const TABLE = "pocket_agent_subscriptions";
