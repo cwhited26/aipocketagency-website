@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 type Step =
   | "create"
+  | "forging"
   | "existing"
   | "q1"
   | "q2"
@@ -14,7 +15,10 @@ type Step =
   | "q4"
   | "q5"
   | "q6"
-  | "committing";
+  | "committing"
+  | "born";
+
+type ForgeStage = "s1" | "s2" | "s3" | "s4" | "done" | "error";
 
 type WizardAnswers = {
   businessName: string;
@@ -28,13 +32,14 @@ type WizardAnswers = {
 
 type GhRepo = { full_name: string; private: boolean };
 
-// ─── Wizard step definitions ──────────────────────────────────────────────────
+// ─── Wizard step definitions ───────────────────────────────────────────────────
 
 type WizardStepDef = {
   id: Step;
   n: number;
   prompt: string;
   helper: string;
+  why: string;
   fields: Array<{
     key: keyof WizardAnswers;
     label: string;
@@ -48,8 +53,8 @@ const WIZARD_STEPS: WizardStepDef[] = [
     id: "q1",
     n: 1,
     prompt: "What's your business called, and what do you actually do?",
-    helper:
-      "Be specific. 'Commercial roofing contractor, Dallas metro' beats 'I run a business.' Your agent reads this before every answer.",
+    helper: "Be specific — 'Commercial roofing contractor, Dallas metro' beats 'I run a business.'",
+    why: "Your agent reads this before every reply. The sharper this context, the less you have to re-explain yourself.",
     fields: [
       {
         key: "businessName",
@@ -70,8 +75,8 @@ const WIZARD_STEPS: WizardStepDef[] = [
     id: "q2",
     n: 2,
     prompt: "Who do you serve — who's your ideal customer?",
-    helper:
-      "Name the person, not the category. 'Single-family homeowners filing an insurance claim, Dallas metro' is better than 'homeowners.'",
+    helper: "Name the person, not the category.",
+    why: "Helps your agent write proposals, frame advice, and qualify opportunities — without you specifying who's involved each time.",
     fields: [
       {
         key: "whoYouServe",
@@ -86,8 +91,8 @@ const WIZARD_STEPS: WizardStepDef[] = [
     id: "q3",
     n: 3,
     prompt: "How do you like to work?",
-    helper:
-      "Communication style, how you make decisions, what your agent should and shouldn't do. This is the voice spec for your AI — the more specific, the better.",
+    helper: "Communication style, decision-making, what your agent should and shouldn't do.",
+    why: "This is the voice spec for your AI. It shapes how your agent drafts, decides, and talks to you. The more specific, the better.",
     fields: [
       {
         key: "howYouWork",
@@ -102,8 +107,8 @@ const WIZARD_STEPS: WizardStepDef[] = [
     id: "q4",
     n: 4,
     prompt: "What are you working on right now?",
-    helper:
-      "List your active projects and priorities. Your agent will know where to focus without you having to say it.",
+    helper: "List your active projects and priorities.",
+    why: "Your agent will know where to focus without you having to say it every time — no context-setting required.",
     fields: [
       {
         key: "currentProjects",
@@ -118,8 +123,8 @@ const WIZARD_STEPS: WizardStepDef[] = [
     id: "q5",
     n: 5,
     prompt: "Any decisions you've made that your agent should know?",
-    helper:
-      "Things you don't want to re-decide — pricing, positioning, tools, processes. Lock them in here.",
+    helper: "Things you don't want to re-decide — pricing, positioning, tools, processes.",
+    why: "Lock them in here. Your agent won't ask you to revisit what's already settled.",
     fields: [
       {
         key: "keyDecisions",
@@ -134,8 +139,8 @@ const WIZARD_STEPS: WizardStepDef[] = [
     id: "q6",
     n: 6,
     prompt: "What tools do you use daily?",
-    helper:
-      "Apps, platforms, software. Anything you want your agent to know is in your stack.",
+    helper: "Apps, platforms, software. Anything you want your agent to know is in your stack.",
+    why: "So your agent can reference the right tools — not suggest ones you're not using.",
     fields: [
       {
         key: "toolsYouUse",
@@ -150,7 +155,30 @@ const WIZARD_STEPS: WizardStepDef[] = [
 
 const WIZARD_STEP_IDS: Step[] = ["q1", "q2", "q3", "q4", "q5", "q6"];
 
-// ─── Shared UI primitives ─────────────────────────────────────────────────────
+// ─── Forge stage config ────────────────────────────────────────────────────────
+
+const FORGE_STAGES: { id: ForgeStage; label: string; subLabel: string }[] = [
+  { id: "s1", label: "Forking brain template", subLabel: "Copying your private brain repo" },
+  { id: "s2", label: "Allocating memory architecture", subLabel: "Structuring your knowledge layers" },
+  { id: "s3", label: "Encoding your context", subLabel: "Writing your business into memory" },
+  { id: "s4", label: "Waking up your agent", subLabel: "Initializing cognitive framework" },
+];
+
+const STAGE_DURATIONS: Partial<Record<ForgeStage, number>> = {
+  s1: 1900,
+  s2: 1900,
+  s3: 1700,
+};
+
+const STAGE_PCT: Partial<Record<ForgeStage, number>> = {
+  s1: 12,
+  s2: 38,
+  s3: 65,
+  s4: 88,
+  done: 100,
+};
+
+// ─── Shared UI primitives ──────────────────────────────────────────────────────
 
 function StepLabel({ text }: { text: string }) {
   return (
@@ -210,22 +238,318 @@ function GhostBtn({
   );
 }
 
-// ─── Create brain step ────────────────────────────────────────────────────────
+function WhyCard({ text }: { text: string }) {
+  return (
+    <div className="rounded-lg border border-[#22d3ee]/15 bg-[#22d3ee]/5 px-3 py-2.5 flex gap-2.5 items-start">
+      <span className="text-[#22d3ee]/70 text-[9px] font-mono tracking-[0.12em] uppercase shrink-0 mt-0.5 pt-px">
+        WHY
+      </span>
+      <p className="text-xs text-slate-400 leading-relaxed">{text}</p>
+    </div>
+  );
+}
+
+function SkipNote({ onSkip, isLast }: { onSkip: () => void; isLast?: boolean }) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <button
+        type="button"
+        onClick={onSkip}
+        className="text-xs text-slate-500 hover:text-slate-300 underline transition-colors"
+      >
+        {isLast ? "Skip — I'll add this later" : "I'll add this later →"}
+      </button>
+      <p className="text-[10px] text-slate-700 text-center max-w-xs">
+        Nothing&apos;s required. Best to do it now — your agent starts useful immediately.
+      </p>
+    </div>
+  );
+}
+
+function WizardProgressBar({ current }: { current: number }) {
+  return (
+    <div className="flex items-center gap-1 mb-6">
+      {[1, 2, 3, 4, 5, 6].map((n) => (
+        <div
+          key={n}
+          className={`h-0.5 flex-1 rounded-full transition-all duration-500 ${
+            n < current
+              ? "bg-[#22d3ee]"
+              : n === current
+              ? "bg-[#22d3ee]/50"
+              : "bg-slate-800"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Neural visual ─────────────────────────────────────────────────────────────
+
+function NeuralVisual({ bright = false }: { bright?: boolean }) {
+  return (
+    <div className="relative w-24 h-24 mx-auto">
+      <div
+        className={`absolute inset-0 rounded-full border ${bright ? "border-[#22d3ee]/30" : "border-[#22d3ee]/12"} animate-ping`}
+        style={{ animationDuration: "3.2s" }}
+      />
+      <div
+        className={`absolute inset-3 rounded-full border ${bright ? "border-[#22d3ee]/50" : "border-[#22d3ee]/20"} animate-ping`}
+        style={{ animationDuration: "2.6s", animationDelay: "0.5s" }}
+      />
+      <div
+        className={`absolute inset-6 rounded-full border-2 ${bright ? "border-[#22d3ee]/80" : "border-[#22d3ee]/40"} animate-pulse`}
+      />
+      <div
+        className={`absolute inset-9 rounded-full ${bright ? "bg-[#22d3ee]/25" : "bg-[#22d3ee]/10"} animate-pulse`}
+      />
+      <div className={`absolute inset-11 rounded-full ${bright ? "bg-[#22d3ee]" : "bg-[#22d3ee]/40"}`} />
+    </div>
+  );
+}
+
+// ─── Forge screen (replaces the instant fork+redirect) ─────────────────────────
+
+function ForgeScreen({
+  repoName,
+  apiPromise,
+  onCreated,
+  onBack,
+}: {
+  repoName: string;
+  apiPromise: Promise<Response>;
+  onCreated: (repo: string) => void;
+  onBack: (error: string) => void;
+}) {
+  const [stage, setStage] = useState<ForgeStage>("s1");
+  const [apiResult, setApiResult] = useState<
+    null | { ok: true; repo: string } | { ok: false; error: string }
+  >(null);
+  const [forgeRepo, setForgeRepo] = useState("");
+  const onCreatedRef = useRef(onCreated);
+  const onBackRef = useRef(onBack);
+  onCreatedRef.current = onCreated;
+  onBackRef.current = onBack;
+
+  // Resolve the API promise (passed in, so no double-invoke risk)
+  useEffect(() => {
+    let active = true;
+    apiPromise
+      .then(async (res) => {
+        if (!active) return;
+        const body = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          repo?: string;
+          error?: string;
+        };
+        if (!res.ok) {
+          setApiResult({
+            ok: false,
+            error: body.error ?? `Failed to create repo (${res.status}). Try again.`,
+          });
+        } else {
+          const repo = body.repo ?? repoName;
+          setForgeRepo(repo);
+          setApiResult({ ok: true, repo });
+        }
+      })
+      .catch(() => {
+        if (!active) setApiResult({ ok: false, error: "Network error. Try again." });
+      });
+    return () => {
+      active = false;
+    };
+  }, [apiPromise, repoName]);
+
+  // Stage timers: s1→s2→s3→s4 with minimum hold durations
+  useEffect(() => {
+    if (stage === "s1") {
+      const t = setTimeout(() => setStage("s2"), STAGE_DURATIONS.s1!);
+      return () => clearTimeout(t);
+    }
+    if (stage === "s2") {
+      const t = setTimeout(() => setStage("s3"), STAGE_DURATIONS.s2!);
+      return () => clearTimeout(t);
+    }
+    if (stage === "s3") {
+      const t = setTimeout(() => setStage("s4"), STAGE_DURATIONS.s3!);
+      return () => clearTimeout(t);
+    }
+  }, [stage]);
+
+  // If API fails during any stage, interrupt to error immediately
+  useEffect(() => {
+    if (apiResult?.ok === false && stage !== "error" && stage !== "done") {
+      setStage("error");
+    }
+  }, [apiResult, stage]);
+
+  // s4: wait for API, then advance to done
+  useEffect(() => {
+    if (stage !== "s4" || apiResult === null) return;
+    if (!apiResult.ok) return;
+    const t = setTimeout(() => setStage("done"), 600);
+    return () => clearTimeout(t);
+  }, [stage, apiResult]);
+
+  // done: transition to wizard after a moment
+  useEffect(() => {
+    if (stage !== "done") return;
+    const t = setTimeout(() => onCreatedRef.current(forgeRepo), 1100);
+    return () => clearTimeout(t);
+  }, [stage, forgeRepo]);
+
+  const stageOrder: ForgeStage[] = ["s1", "s2", "s3", "s4"];
+  const currentIdx = stageOrder.indexOf(stage as ForgeStage);
+  const pct = STAGE_PCT[stage] ?? 0;
+
+  if (stage === "error") {
+    const errMsg =
+      apiResult?.ok === false ? apiResult.error : "Something went wrong. Try again.";
+    return (
+      <div className="space-y-6 text-center py-10">
+        <div className="space-y-2">
+          <div className="text-red-400 text-xs font-mono tracking-[0.2em] uppercase">Forge Failed</div>
+          <h2 className="text-lg font-bold text-slate-100">Brain creation failed</h2>
+          <p className="text-sm text-slate-400 max-w-xs mx-auto">{errMsg}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onBackRef.current(errMsg)}
+          className="text-[#22d3ee] text-sm hover:underline transition-colors"
+        >
+          ← Try again
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 py-4">
+      {/* Header */}
+      <div className="text-center space-y-1">
+        <StepLabel text="POCKET AGENT" />
+        <h1 className="text-xl font-bold text-slate-100">
+          {stage === "done" ? "Your brain is online." : "Forging your second brain…"}
+        </h1>
+        <p className="text-xs text-slate-600">
+          {stage === "done" ? "Entering your second brain…" : `Creating ${repoName}`}
+        </p>
+      </div>
+
+      {/* Neural visual */}
+      <NeuralVisual bright={stage === "done"} />
+
+      {/* Stage list */}
+      <div className="space-y-3">
+        {FORGE_STAGES.map(({ id, label, subLabel }, i) => {
+          const stageIdx = stageOrder.indexOf(id);
+          const isDone = stage === "done" || stageIdx < currentIdx;
+          const isActive = id === stage;
+          const isPending = stageIdx > currentIdx && stage !== "done";
+
+          return (
+            <div
+              key={id}
+              className={`flex items-center gap-3 transition-all duration-500 ${isPending ? "opacity-25" : "opacity-100"}`}
+            >
+              <span
+                className={`flex items-center justify-center w-5 h-5 rounded-full border shrink-0 transition-all duration-300 ${
+                  isDone
+                    ? "border-[#22d3ee] bg-[#22d3ee]/20 text-[#22d3ee]"
+                    : isActive
+                    ? "border-[#22d3ee]/60 bg-[#22d3ee]/10 text-[#22d3ee]/80"
+                    : "border-slate-700 bg-slate-900 text-slate-700"
+                }`}
+              >
+                {isDone ? (
+                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 10 10">
+                    <path
+                      d="M1.5 5l2.5 2.5 4.5-5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : isActive ? (
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                ) : (
+                  <span className="w-1 h-1 rounded-full bg-current" />
+                )}
+              </span>
+
+              <div className="min-w-0">
+                <div
+                  className={`text-sm font-medium transition-colors duration-300 ${
+                    isDone ? "text-[#22d3ee]" : isActive ? "text-slate-200" : "text-slate-600"
+                  }`}
+                >
+                  {label}
+                </div>
+                {isActive && (
+                  <div className="text-[10px] text-slate-600 mt-0.5 font-mono animate-pulse">
+                    {subLabel}
+                  </div>
+                )}
+                {isDone && i < 3 && (
+                  <div className="text-[10px] text-[#22d3ee]/40 mt-0.5 font-mono">done</div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Progress bar */}
+      <div className="space-y-1.5">
+        <div className="h-1 bg-slate-800/80 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-[#22d3ee]/80 to-[#22d3ee] rounded-full"
+            style={{
+              width: `${pct}%`,
+              transition: "width 1400ms ease-in-out",
+            }}
+          />
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-[10px] text-slate-700 font-mono">
+            {stage === "done" ? "COMPLETE" : "INITIALIZING"}
+          </span>
+          <span className="text-[10px] text-[#22d3ee]/60 font-mono">{pct}%</span>
+        </div>
+      </div>
+
+      {stage === "done" && (
+        <div className="text-center py-2">
+          <div className="text-[#22d3ee] text-xs font-mono tracking-[0.25em] uppercase animate-pulse">
+            SYSTEM ONLINE — BRAIN READY
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Create brain step ─────────────────────────────────────────────────────────
 
 function CreateStep({
   hasGitHub,
-  onCreated,
+  onForging,
   onExisting,
   onSkip,
+  initialError = null,
 }: {
   hasGitHub: boolean;
-  onCreated: (repo: string) => void;
+  onForging: (name: string, promise: Promise<Response>) => void;
   onExisting: () => void;
   onSkip: () => void;
+  initialError?: string | null;
 }) {
   const [repoName, setRepoName] = useState("my-pocket-brain");
-  const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(initialError);
+  const [isStarting, setIsStarting] = useState(false);
 
   function handleCreate() {
     const name = repoName.trim();
@@ -240,59 +564,55 @@ function CreateStep({
       return;
     }
     setError(null);
-    startTransition(async () => {
-      const res = await fetch("/api/app/onboarding/fork-brain", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repoName: name }),
-      });
-      const body = (await res.json().catch(() => ({}))) as {
-        ok?: boolean;
-        repo?: string;
-        error?: string;
-      };
-      if (!res.ok) {
-        setError(body.error ?? `Failed to create repo (${res.status}). Try again.`);
-        return;
-      }
-      onCreated(body.repo ?? name);
+    setIsStarting(true);
+
+    // Start the API call immediately — pass the Promise to ForgeScreen
+    const promise = fetch("/api/app/onboarding/fork-brain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ repoName: name }),
     });
+
+    onForging(name, promise);
   }
 
   return (
     <div className="space-y-8">
-      <div className="space-y-2">
+      <div className="space-y-3">
         <StepLabel text="Step 0 — Create your brain" />
-        <h1 className="text-2xl font-bold text-slate-100">Build your brain.</h1>
+        <h1 className="text-2xl font-bold text-slate-100">
+          Build your AI second brain.
+        </h1>
         <p className="text-slate-400 text-sm leading-relaxed">
-          One click creates a private GitHub repo from the brain template — CLAUDE.md, memory
-          files, the full pattern. Then we ask you a few questions to fill it in. Your agent stops
-          making you re-explain yourself the minute this is done.
+          One click forks a private GitHub repo — your agent&apos;s memory, voice spec, and operating
+          rules, all in one place. Then we ask you 6 quick questions to fill it in.
         </p>
+
+        <WhyCard text="Your brain is what makes Pocket Agent actually know your business. Without it, it's just another chatbot. With it, it remembers your context, works in your voice, and stops making you re-explain yourself." />
       </div>
 
       {hasGitHub ? (
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm text-slate-300">Repo name</label>
+            <label className="text-sm text-slate-300 font-medium">Name your brain repo</label>
             <input
               type="text"
               value={repoName}
               onChange={(e) => setRepoName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              onKeyDown={(e) => e.key === "Enter" && !isStarting && handleCreate()}
               className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none font-mono"
               placeholder="my-pocket-brain"
-              disabled={isPending}
+              disabled={isStarting}
             />
             <p className="text-xs text-slate-600">
-              Creates as a private repo in your GitHub account.
+              Creates as a private repo in your GitHub account. You own it forever.
             </p>
           </div>
 
           {error && <ErrorBanner message={error} />}
 
-          <PrimaryBtn onClick={handleCreate} disabled={isPending || !repoName.trim()}>
-            {isPending ? "Creating your brain…" : "Create my brain →"}
+          <PrimaryBtn onClick={handleCreate} disabled={isStarting || !repoName.trim()}>
+            {isStarting ? "Starting forge…" : "Forge my brain →"}
           </PrimaryBtn>
 
           <div className="text-center">
@@ -306,36 +626,33 @@ function CreateStep({
           </div>
         </div>
       ) : (
-        /* Non-GitHub user: show existing repo path */
         <div className="space-y-4">
           <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
             <p className="text-sm text-amber-300 font-medium">GitHub not connected</p>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              Creating a brain repo requires a GitHub connection. If you already have a brain repo,
-              type it below. Or{" "}
-              <a
-                href="/api/app/auth/github"
-                className="text-[#22d3ee] hover:underline"
-              >
-                reconnect GitHub
+              Creating a brain repo requires a GitHub connection.{" "}
+              <a href="/api/app/auth/github" className="text-[#22d3ee] hover:underline">
+                Connect GitHub
               </a>{" "}
-              to create one.
+              to continue, or connect an existing brain repo below.
             </p>
           </div>
           <GhostBtn onClick={onExisting}>Connect an existing brain repo →</GhostBtn>
         </div>
       )}
 
-      <div className="border-t border-slate-800 pt-6">
-        <p className="text-xs text-slate-600 text-center mb-3">Not ready to set up a brain?</p>
-        <GhostBtn onClick={onSkip}>Continue without a brain repo →</GhostBtn>
-        <p className="text-xs text-slate-800 text-center mt-2">You can connect one later from home.</p>
+      <div className="border-t border-slate-800 pt-5">
+        <p className="text-xs text-slate-600 text-center mb-3">Not ready yet?</p>
+        <GhostBtn onClick={onSkip}>Continue without a brain for now →</GhostBtn>
+        <p className="text-[11px] text-slate-700 text-center mt-2">
+          You can connect one from home at any time.
+        </p>
       </div>
     </div>
   );
 }
 
-// ─── Existing repo step (secondary path) ─────────────────────────────────────
+// ─── Existing repo step ────────────────────────────────────────────────────────
 
 function ExistingRepoStep({
   onBack,
@@ -349,7 +666,7 @@ function ExistingRepoStep({
   const [mode, setMode] = useState<"dropdown" | "manual">("dropdown");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
     fetch("/api/app/github/repos")
@@ -372,19 +689,25 @@ function ExistingRepoStep({
       return;
     }
     setError(null);
-    startTransition(async () => {
-      const res = await fetch("/api/app/connect-repo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ repo }),
+    setIsConnecting(true);
+    fetch("/api/app/connect-repo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ repo }),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const b = (await res.json().catch(() => ({}))) as { error?: string };
+          setError(b.error ?? "Failed to connect repo. Try again.");
+          setIsConnecting(false);
+          return;
+        }
+        onConnected();
+      })
+      .catch(() => {
+        setError("Network error. Try again.");
+        setIsConnecting(false);
       });
-      if (!res.ok) {
-        const b = (await res.json().catch(() => ({}))) as { error?: string };
-        setError(b.error ?? "Failed to connect repo. Try again.");
-        return;
-      }
-      onConnected();
-    });
   }
 
   return (
@@ -445,7 +768,7 @@ function ExistingRepoStep({
               value={repoInput}
               onChange={(e) => setRepoInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleConnect()}
-              disabled={isPending}
+              disabled={isConnecting}
             />
             {!loading && repos.length > 0 && (
               <button
@@ -464,15 +787,15 @@ function ExistingRepoStep({
 
         {error && <ErrorBanner message={error} />}
 
-        <PrimaryBtn onClick={handleConnect} disabled={isPending || !repoInput.trim()}>
-          {isPending ? "Connecting…" : "Connect brain →"}
+        <PrimaryBtn onClick={handleConnect} disabled={isConnecting || !repoInput.trim()}>
+          {isConnecting ? "Connecting…" : "Connect brain →"}
         </PrimaryBtn>
       </div>
     </div>
   );
 }
 
-// ─── Wizard question step ─────────────────────────────────────────────────────
+// ─── Wizard question step ──────────────────────────────────────────────────────
 
 function WizardStep({
   step,
@@ -496,12 +819,16 @@ function WizardStep({
   const isLast = step.id === "q6";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      <WizardProgressBar current={step.n} />
+
       <div className="space-y-1.5">
-        <StepLabel text={`Step ${step.n} of 6`} />
+        <StepLabel text={`Question ${step.n} of 6`} />
         <h2 className="text-xl font-bold text-slate-100">{step.prompt}</h2>
         <p className="text-slate-500 text-xs leading-relaxed">{step.helper}</p>
       </div>
+
+      <WhyCard text={step.why} />
 
       <div className="space-y-3">
         {step.fields.map((f, idx) => (
@@ -511,7 +838,15 @@ function WizardStep({
             )}
             {f.multiline ? (
               <textarea
-                ref={idx === 0 ? (el) => { (firstRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el; } : undefined}
+                ref={
+                  idx === 0
+                    ? (el) => {
+                        (
+                          firstRef as React.MutableRefObject<HTMLTextAreaElement | null>
+                        ).current = el;
+                      }
+                    : undefined
+                }
                 rows={4}
                 placeholder={f.placeholder}
                 className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none resize-none"
@@ -520,7 +855,15 @@ function WizardStep({
               />
             ) : (
               <input
-                ref={idx === 0 ? (el) => { (firstRef as React.MutableRefObject<HTMLInputElement | null>).current = el; } : undefined}
+                ref={
+                  idx === 0
+                    ? (el) => {
+                        (
+                          firstRef as React.MutableRefObject<HTMLInputElement | null>
+                        ).current = el;
+                      }
+                    : undefined
+                }
                 type="text"
                 placeholder={f.placeholder}
                 className="w-full rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none"
@@ -532,25 +875,19 @@ function WizardStep({
         ))}
       </div>
 
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         <PrimaryBtn onClick={onNext}>
-          {isLast ? "Finish — build my brain →" : "Next →"}
+          {isLast ? "Build my brain →" : "Next →"}
         </PrimaryBtn>
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={onSkip}
-            className="text-xs text-slate-600 hover:text-slate-400 underline"
-          >
-            {isLast ? "Skip — I'll fill this in later →" : "Skip this question →"}
-          </button>
-        </div>
+        <SkipNote onSkip={onSkip} isLast={isLast} />
       </div>
     </div>
   );
 }
 
-// ─── Committing step ──────────────────────────────────────────────────────────
+// ─── Committing step ───────────────────────────────────────────────────────────
+
+type CommitStage = "checking" | "writing" | "finalizing" | "done" | "error";
 
 function CommittingStep({
   answers,
@@ -561,59 +898,274 @@ function CommittingStep({
   onError: (msg: string) => void;
   onDone: () => void;
 }) {
+  const [commitStage, setCommitStage] = useState<CommitStage>("checking");
   const committed = useRef(false);
+  const onDoneRef = useRef(onDone);
+  const onErrorRef = useRef(onError);
+  onDoneRef.current = onDone;
+  onErrorRef.current = onError;
 
   useEffect(() => {
     if (committed.current) return;
     committed.current = true;
 
-    fetch("/api/app/onboarding/wizard-commit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(answers),
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const b = (await res.json().catch(() => ({}))) as { error?: string };
-          onError(b.error ?? `Failed to build brain (${res.status}). Try again.`);
-          return;
-        }
-        onDone();
-      })
-      .catch(() => onError("Network error building your brain. Try again."));
-  }, [answers, onError, onDone]);
+    const advanceStage = (stage: CommitStage, delay: number) =>
+      new Promise<void>((resolve) => setTimeout(() => { setCommitStage(stage); resolve(); }, delay));
+
+    async function run() {
+      await advanceStage("writing", 900);
+
+      const fetchPromise = fetch("/api/app/onboarding/wizard-commit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(answers),
+      });
+
+      await advanceStage("finalizing", 1600);
+
+      const res = await fetchPromise.catch(() => null);
+      if (!res || !res.ok) {
+        const b = res
+          ? ((await res.json().catch(() => ({}))) as { error?: string })
+          : {};
+        onErrorRef.current(b.error ?? `Failed to build brain${res ? ` (${res.status})` : ""}. Try again.`);
+        return;
+      }
+
+      await advanceStage("done", 400);
+      setTimeout(() => onDoneRef.current(), 800);
+    }
+
+    run().catch(() =>
+      onErrorRef.current("Network error building your brain. Try again."),
+    );
+  }, [answers]);
+
+  const stages: { id: CommitStage; label: string }[] = [
+    { id: "checking", label: "Checking your brain repo" },
+    { id: "writing", label: "Writing memory files" },
+    { id: "finalizing", label: "Committing to GitHub" },
+    { id: "done", label: "Brain is live" },
+  ];
+
+  const stageOrder: CommitStage[] = ["checking", "writing", "finalizing", "done"];
+  const currentIdx = stageOrder.indexOf(commitStage);
 
   return (
-    <div className="space-y-6 text-center py-6">
-      <div className="space-y-2">
-        <div className="text-[#22d3ee] text-xs font-mono tracking-[0.2em] uppercase">
-          Setting up
-        </div>
+    <div className="space-y-8 text-center py-6">
+      <div className="space-y-1">
+        <StepLabel text="Writing to your brain" />
         <h2 className="text-xl font-bold text-slate-100">Building your brain…</h2>
-        <p className="text-slate-500 text-sm">
-          Writing your memory files, committing to your repo.
-        </p>
+        <p className="text-slate-500 text-sm">Encoding your context into memory.</p>
       </div>
-      <div className="flex justify-center">
-        <div className="flex gap-1.5">
-          {[0, 1, 2].map((i) => (
+
+      <NeuralVisual bright={commitStage === "done"} />
+
+      <div className="space-y-2.5 text-left">
+        {stages.map(({ id, label }, i) => {
+          const isDone = stageOrder.indexOf(id) < currentIdx || commitStage === "done";
+          const isActive = id === commitStage && commitStage !== "done";
+          const isPending = stageOrder.indexOf(id) > currentIdx && commitStage !== "done";
+
+          return (
             <div
-              key={i}
-              className="w-2 h-2 rounded-full bg-[#22d3ee]/60 animate-pulse"
-              style={{ animationDelay: `${i * 0.2}s` }}
-            />
-          ))}
-        </div>
+              key={id}
+              className={`flex items-center gap-3 transition-all duration-400 ${isPending ? "opacity-30" : "opacity-100"}`}
+            >
+              <span
+                className={`flex items-center justify-center w-4 h-4 rounded-full border shrink-0 transition-all duration-300 text-[9px] ${
+                  isDone
+                    ? "border-[#22d3ee] bg-[#22d3ee]/20 text-[#22d3ee]"
+                    : isActive
+                    ? "border-[#22d3ee]/50 bg-[#22d3ee]/10 text-[#22d3ee]/70"
+                    : "border-slate-700 bg-slate-900 text-slate-700"
+                }`}
+              >
+                {isDone ? (
+                  <svg className="w-2 h-2" fill="none" viewBox="0 0 10 10">
+                    <path
+                      d="M1.5 5l2.5 2.5 4.5-5"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : isActive ? (
+                  <span className="w-1 h-1 rounded-full bg-current animate-pulse" />
+                ) : (
+                  <span className="w-0.5 h-0.5 rounded-full bg-current" />
+                )}
+              </span>
+              <span
+                className={`text-sm transition-colors duration-300 ${
+                  isDone ? "text-[#22d3ee]" : isActive ? "text-slate-200" : "text-slate-600"
+                }`}
+              >
+                {label}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Brain born screen (post-commit plain-language summary) ────────────────────
 
-export default function OnboardingClient({ hasGitHub }: { hasGitHub: boolean }) {
+function BrainBornScreen({
+  repo,
+  answers,
+  isUpdate,
+  onEnter,
+}: {
+  repo: string;
+  answers: WizardAnswers;
+  isUpdate: boolean;
+  onEnter: () => void;
+}) {
+  const memoryAreas = [
+    {
+      key: "business",
+      label: "Your business",
+      desc: "What you do, who you are",
+      filled: Boolean(answers.businessName.trim() || answers.whatYouDo.trim()),
+    },
+    {
+      key: "customers",
+      label: "Who you serve",
+      desc: "Your ideal customer",
+      filled: Boolean(answers.whoYouServe.trim()),
+    },
+    {
+      key: "style",
+      label: "How you work",
+      desc: "Your voice spec",
+      filled: Boolean(answers.howYouWork.trim()),
+    },
+    {
+      key: "projects",
+      label: "Current projects",
+      desc: "Active priorities",
+      filled: Boolean(answers.currentProjects.trim()),
+    },
+    {
+      key: "decisions",
+      label: "Key decisions",
+      desc: "Locked in, not revisited",
+      filled: Boolean(answers.keyDecisions.trim()),
+    },
+    {
+      key: "tools",
+      label: "Tools & stack",
+      desc: "Your daily software",
+      filled: Boolean(answers.toolsYouUse.trim()),
+    },
+  ];
+
+  const filledCount = memoryAreas.filter((a) => a.filled).length;
+
+  return (
+    <div className="space-y-7 py-3">
+      {/* Success visual */}
+      <div className="text-center space-y-3">
+        <NeuralVisual bright />
+        <div>
+          <div className="text-[#22d3ee] text-[10px] font-mono tracking-[0.25em] uppercase mb-1.5">
+            {isUpdate ? "BRAIN UPDATED" : "SYSTEM ONLINE"}
+          </div>
+          <h1 className="text-2xl font-bold text-slate-100">
+            {isUpdate ? "Your brain is updated." : "Your second brain is live."}
+          </h1>
+          <p className="text-slate-400 text-sm mt-1.5 leading-relaxed max-w-xs mx-auto">
+            Private GitHub repo. It&apos;s yours — not on our servers, not locked to any platform.
+          </p>
+        </div>
+      </div>
+
+      {/* What your agent knows */}
+      <div className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden divide-y divide-slate-800/60">
+        {/* Memory section */}
+        <div className="px-4 py-3.5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#22d3ee]/60" />
+            <span className="text-[10px] font-mono text-slate-500 tracking-[0.15em] uppercase">
+              Memory — what your agent remembers
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5">
+            {memoryAreas.map((area) => (
+              <div
+                key={area.key}
+                className={`flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded-lg ${
+                  area.filled
+                    ? "text-slate-300 bg-slate-800/40"
+                    : "text-slate-600 bg-transparent border border-dashed border-slate-800/50"
+                }`}
+              >
+                <span className={area.filled ? "text-[#22d3ee] text-xs" : "text-slate-700 text-xs"}>
+                  {area.filled ? "✓" : "○"}
+                </span>
+                <span className="truncate">{area.label}</span>
+              </div>
+            ))}
+          </div>
+          {filledCount < 6 && (
+            <p className="text-[10px] text-slate-600 mt-2.5 leading-relaxed">
+              {6 - filledCount} area{6 - filledCount !== 1 ? "s" : ""} empty — you can fill them in from the home screen anytime.
+            </p>
+          )}
+        </div>
+
+        {/* Rules section */}
+        <div className="px-4 py-3.5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+            <span className="text-[10px] font-mono text-slate-500 tracking-[0.15em] uppercase">
+              Rules — how your agent works
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Voice spec, thinking patterns, and operating rules — already loaded. These shape how your agent writes, decides, and communicates.
+          </p>
+        </div>
+
+        {/* Repo section */}
+        <div className="px-4 py-3.5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />
+            <span className="text-[10px] font-mono text-slate-500 tracking-[0.15em] uppercase">
+              Location — your private repo
+            </span>
+          </div>
+          <p className="text-xs font-mono text-[#22d3ee]/70 break-all">{repo}</p>
+          <p className="text-[10px] text-slate-600 mt-1">
+            Private. Yours forever. No vendor lock-in.
+          </p>
+        </div>
+      </div>
+
+      <PrimaryBtn onClick={onEnter}>
+        Enter your brain →
+      </PrimaryBtn>
+    </div>
+  );
+}
+
+// ─── Main component ────────────────────────────────────────────────────────────
+
+export default function OnboardingClient({
+  hasGitHub,
+  updateMode = false,
+  brainRepo = null,
+}: {
+  hasGitHub: boolean;
+  updateMode?: boolean;
+  brainRepo?: string | null;
+}) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("create");
+  const [step, setStep] = useState<Step>(updateMode ? "q1" : "create");
   const [answers, setAnswers] = useState<WizardAnswers>({
     businessName: "",
     whatYouDo: "",
@@ -624,7 +1176,13 @@ export default function OnboardingClient({ hasGitHub }: { hasGitHub: boolean }) 
     toolsYouUse: "",
   });
   const [commitError, setCommitError] = useState<string | null>(null);
-  const [isSkipping, startSkipTransition] = useTransition();
+  const [isSkipping, setIsSkipping] = useState(false);
+
+  // forge state
+  const [forgeRepoName, setForgeRepoName] = useState("");
+  const [forgeApiPromise, setForgeApiPromise] = useState<Promise<Response> | null>(null);
+  const [forgedRepo, setForgedRepo] = useState(brainRepo ?? "");
+  const [forgeBackError, setForgeBackError] = useState<string | null>(null);
 
   function updateAnswer(key: keyof WizardAnswers, value: string) {
     setAnswers((prev) => ({ ...prev, [key]: value }));
@@ -639,31 +1197,43 @@ export default function OnboardingClient({ hasGitHub }: { hasGitHub: boolean }) 
     }
   }
 
-  function handleSkipAll() {
-    startSkipTransition(async () => {
+  const handleSkipAll = useCallback(async () => {
+    if (isSkipping) return;
+    setIsSkipping(true);
+    try {
       await fetch("/api/app/onboarding/skip", { method: "POST" });
+    } finally {
       router.push("/app/ask");
-    });
+    }
+  }, [isSkipping, router]);
+
+  function handleStartForge(name: string, promise: Promise<Response>) {
+    setForgeRepoName(name);
+    setForgeApiPromise(promise);
+    setStep("forging");
   }
 
-  // After create → go to first wizard question
-  function handleBrainCreated(_repo: string) {
+  function handleForgeBack(errorMsg: string) {
+    setForgeBackError(errorMsg);
+    setStep("create");
+  }
+
+  function handleBrainForged(repo: string) {
+    setForgedRepo(repo);
     setStep("q1");
   }
 
-  // Existing repo connected → skip wizard, go to /app/ask
   function handleExistingConnected() {
     router.push("/app/ask");
   }
 
-  // Commit done → go to /app/ask
   function handleCommitDone() {
-    router.push("/app/ask");
+    setStep("born");
   }
 
   function handleCommitError(msg: string) {
     setCommitError(msg);
-    setStep("q6"); // drop back to last step so they can retry
+    setStep("q6");
   }
 
   const wizardStepDef = WIZARD_STEP_IDS.includes(step)
@@ -672,33 +1242,44 @@ export default function OnboardingClient({ hasGitHub }: { hasGitHub: boolean }) 
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-[#05070a] px-4 py-10">
-      <div className="w-full max-w-lg space-y-2">
-        {/* Maturity bar — visible throughout */}
-        <div className="mb-8 flex items-center gap-2 overflow-x-auto pb-1">
-          {[
-            { n: 1, label: "Knows your business" },
-            { n: 2, label: "Drafts in your voice" },
-            { n: 3, label: "Acts in your tools" },
-          ].map((l, i) => (
-            <div key={l.n} className="flex items-center shrink-0">
-              <div className="flex items-center gap-1.5 text-slate-700">
-                <span className="flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold border bg-slate-800 border-slate-700 text-slate-700">
-                  {l.n}
-                </span>
-                <span className="text-[10px] font-medium whitespace-nowrap">{l.label}</span>
-              </div>
-              {i < 2 && <span className="mx-2 text-slate-800 text-[10px]">→</span>}
-            </div>
-          ))}
-        </div>
+      {/* Ambient glow */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 40% at 50% 30%, rgba(34,211,238,0.04) 0%, transparent 70%)",
+        }}
+      />
+
+      <div className="relative w-full max-w-lg">
+        {/* Maturity indicator (collapsed, just branding) */}
+        {(step === "create" || step === "existing") && (
+          <div className="mb-8 flex items-center justify-center gap-1.5 text-slate-700">
+            <div className="w-1 h-1 rounded-full bg-[#22d3ee]/30" />
+            <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-slate-700">
+              Pocket Agent · Brain Setup
+            </span>
+            <div className="w-1 h-1 rounded-full bg-[#22d3ee]/30" />
+          </div>
+        )}
 
         {/* Step content */}
         {step === "create" && (
           <CreateStep
             hasGitHub={hasGitHub}
-            onCreated={handleBrainCreated}
+            onForging={handleStartForge}
             onExisting={() => setStep("existing")}
             onSkip={handleSkipAll}
+            initialError={forgeBackError}
+          />
+        )}
+
+        {step === "forging" && forgeApiPromise && (
+          <ForgeScreen
+            repoName={forgeRepoName}
+            apiPromise={forgeApiPromise}
+            onCreated={handleBrainForged}
+            onBack={handleForgeBack}
           />
         )}
 
@@ -710,13 +1291,13 @@ export default function OnboardingClient({ hasGitHub }: { hasGitHub: boolean }) 
         )}
 
         {wizardStepDef && step !== "committing" && (
-          <>
+          <div className="space-y-4">
             {commitError && (
-              <div className="mb-4">
+              <div className="mb-4 space-y-2">
                 <ErrorBanner message={commitError} />
                 <button
                   type="button"
-                  className="mt-2 text-xs text-slate-500 hover:text-slate-300 underline"
+                  className="text-xs text-slate-500 hover:text-slate-300 underline"
                   onClick={() => {
                     setCommitError(null);
                     setStep("committing");
@@ -738,12 +1319,12 @@ export default function OnboardingClient({ hasGitHub }: { hasGitHub: boolean }) 
                 type="button"
                 onClick={handleSkipAll}
                 disabled={isSkipping}
-                className="w-full text-xs text-slate-700 hover:text-slate-500 py-2"
+                className="w-full text-xs text-slate-700 hover:text-slate-500 py-2 transition-colors"
               >
-                {isSkipping ? "Setting up…" : "I'll fill this in later — skip to the app →"}
+                {isSkipping ? "Setting up…" : "Skip everything — I'll fill this in later →"}
               </button>
             </div>
-          </>
+          </div>
         )}
 
         {step === "committing" && (
@@ -751,6 +1332,15 @@ export default function OnboardingClient({ hasGitHub }: { hasGitHub: boolean }) 
             answers={answers}
             onError={handleCommitError}
             onDone={handleCommitDone}
+          />
+        )}
+
+        {step === "born" && (
+          <BrainBornScreen
+            repo={forgedRepo}
+            answers={answers}
+            isUpdate={updateMode}
+            onEnter={() => router.push("/app/ask")}
           />
         )}
       </div>

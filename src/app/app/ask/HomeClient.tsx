@@ -2,6 +2,124 @@
 
 import { useState, useEffect, useRef } from "react";
 
+// ─── Brain completeness panel ──────────────────────────────────────────────────
+
+type CompletenessArea = {
+  key: string;
+  label: string;
+  desc: string;
+  filled: boolean;
+};
+
+type CompletenessData = {
+  filled: number;
+  total: number;
+  pct: number;
+  areas: CompletenessArea[];
+};
+
+function BrainPanel({ brainRepo }: { brainRepo: string }) {
+  const [data, setData] = useState<CompletenessData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/app/brain/completeness")
+      .then((r) => (r.ok ? (r.json() as Promise<CompletenessData>) : Promise.reject()))
+      .then((d) => {
+        setData(d);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="mb-7 rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
+      {/* Panel header */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800/70">
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#22d3ee] animate-pulse" />
+          <span className="text-[10px] font-mono text-slate-400 tracking-[0.18em] uppercase">
+            Your Brain
+          </span>
+        </div>
+        <a
+          href="/app/onboarding?update=1"
+          className="text-[10px] text-[#22d3ee]/70 hover:text-[#22d3ee] font-mono transition-colors"
+        >
+          + Tell it more →
+        </a>
+      </div>
+
+      {loading ? (
+        <div className="px-4 py-3.5 space-y-3">
+          <div className="h-1.5 bg-slate-800 rounded-full animate-pulse" />
+          <div className="grid grid-cols-3 gap-1.5">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-6 bg-slate-800/60 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        </div>
+      ) : data ? (
+        <div className="px-4 py-3 space-y-3">
+          {/* Progress bar */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] text-slate-500">Brain completeness</span>
+              <span className="text-[11px] font-mono text-[#22d3ee]">{data.pct}%</span>
+            </div>
+            <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#22d3ee]/70 to-[#22d3ee] rounded-full"
+                style={{
+                  width: `${data.pct}%`,
+                  transition: "width 1200ms ease-in-out",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Area chips */}
+          <div className="grid grid-cols-3 gap-1.5">
+            {data.areas.map((area) => (
+              <div
+                key={area.key}
+                className={`flex items-center gap-1.5 text-[10px] px-2 py-1.5 rounded-lg transition-colors ${
+                  area.filled
+                    ? "text-slate-400 bg-slate-800/40"
+                    : "text-slate-600 border border-dashed border-slate-800"
+                }`}
+                title={area.desc}
+              >
+                <span className={area.filled ? "text-[#22d3ee] shrink-0" : "text-slate-700 shrink-0"}>
+                  {area.filled ? "✓" : "○"}
+                </span>
+                <span className="truncate">{area.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {data.pct < 100 && (
+            <p className="text-[10px] text-slate-600 leading-relaxed">
+              {data.total - data.filled} area{data.total - data.filled !== 1 ? "s" : ""} unfilled
+              {" "}— your agent has less to work with.{" "}
+              <a href="/app/onboarding?update=1" className="text-[#22d3ee]/60 hover:text-[#22d3ee] underline">
+                Add more →
+              </a>
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="px-4 py-3">
+          <p className="text-xs text-slate-600">
+            Brain connected:{" "}
+            <span className="font-mono text-slate-500">{brainRepo}</span>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 type Conversation = {
   id: string;
   title: string;
@@ -498,8 +616,10 @@ export default function HomeClient({
             <MaturityBar hasBrain={hasBrain} />
 
             <div className="max-w-2xl mx-auto px-6 pt-8 pb-4">
-              {/* No brain banner */}
-              {!hasBrain && (
+              {/* Brain panel (when connected) or no-brain banner */}
+              {hasBrain ? (
+                <BrainPanel brainRepo={brainRepo!} />
+              ) : (
                 <div className="mb-7 rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-4 flex items-start gap-3">
                   <span className="text-amber-400 shrink-0 mt-0.5">⚡</span>
                   <div>
