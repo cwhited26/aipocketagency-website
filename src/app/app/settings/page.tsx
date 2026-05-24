@@ -1,12 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
+import { fetchUserConnections } from "@/lib/pa-connections";
 import { redirect } from "next/navigation";
 import ApiKeyForm from "./ApiKeyForm";
+import ConnectionsPanel from "./ConnectionsPanel";
 
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: { billing?: string };
+  searchParams: { billing?: string; connection?: string; provider?: string };
 }) {
   const supabase = createClient();
   const {
@@ -15,8 +17,13 @@ export default async function SettingsPage({
 
   if (!user) redirect("/app/login");
 
-  const paResult = await fetchPaUser(user.id);
+  const [paResult, connectionsResult] = await Promise.all([
+    fetchPaUser(user.id),
+    fetchUserConnections(user.id),
+  ]);
   const paUser = paResult.ok ? paResult.data : null;
+  const connections = connectionsResult.ok ? connectionsResult.data : [];
+  const oauthConfigured = Boolean(process.env.GOOGLE_OAUTH_CLIENT_ID);
 
   const billingParam = searchParams.billing;
   let billingMessage: { title: string; body: string } | null = null;
@@ -29,6 +36,28 @@ export default async function SettingsPage({
     billingMessage = {
       title: "Couldn't open billing portal",
       body: "Stripe returned an error. Try again in a moment or contact support.",
+    };
+  }
+
+  const connectionParam = searchParams.connection;
+  let connectionMessage: { title: string; body: string; kind: "success" | "error" } | null = null;
+  if (connectionParam === "connected") {
+    connectionMessage = {
+      title: "Connected",
+      body: "Your account was connected successfully. Your agent can now read from it.",
+      kind: "success",
+    };
+  } else if (connectionParam === "not_configured") {
+    connectionMessage = {
+      title: "Not configured yet",
+      body: "Google connections are being set up — they'll be available soon.",
+      kind: "error",
+    };
+  } else if (connectionParam === "error") {
+    connectionMessage = {
+      title: "Connection failed",
+      body: "Something went wrong. Try again, or contact support if this keeps happening.",
+      kind: "error",
     };
   }
 
@@ -75,6 +104,19 @@ export default async function SettingsPage({
           </div>
         </div>
 
+        {connectionMessage && (
+          <div
+            className={`rounded-xl border px-5 py-4 space-y-1 ${
+              connectionMessage.kind === "success"
+                ? "border-[#22d3ee]/25 bg-[#22d3ee]/5"
+                : "border-slate-700/60 bg-slate-900/50"
+            }`}
+          >
+            <p className="text-sm font-semibold text-slate-100">{connectionMessage.title}</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{connectionMessage.body}</p>
+          </div>
+        )}
+
         {billingMessage && (
           <div className="rounded-xl border border-slate-700/60 bg-slate-900/50 px-5 py-4 space-y-1">
             <p className="text-sm font-semibold text-slate-100">{billingMessage.title}</p>
@@ -93,6 +135,8 @@ export default async function SettingsPage({
           <ApiKeyForm hasKey={!!paUser?.anthropic_api_key} />
           <SettingsRow label="Billing" value="Manage subscription" href="/api/app/billing-portal" />
         </div>
+
+        <ConnectionsPanel connections={connections} oauthConfigured={oauthConfigured} />
 
         <div className="flex justify-end pt-2">
           <form action="/api/app/sign-out" method="POST">
