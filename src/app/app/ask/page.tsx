@@ -16,5 +16,10 @@ export default async function AskPage() {
 
   if (!paUser?.brain_repo) redirect("/app/onboarding");
 
-  return <AskClient brainRepo={paUser.brain_repo} />;
+  return (
+    <AskClient
+      brainRepo={paUser.brain_repo}
+      hasApiKey={!!paUser.anthropic_api_key}
+    />
+  );
 }

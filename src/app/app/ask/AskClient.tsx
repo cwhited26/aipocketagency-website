@@ -5,7 +5,13 @@ import { useState, useRef, useTransition } from "react";
 type Citation = { file: string; line: string };
 type AskResponse = { answer: string; citations: Citation[] };
 
-export default function AskClient({ brainRepo }: { brainRepo: string }) {
+export default function AskClient({
+  brainRepo,
+  hasApiKey,
+}: {
+  brainRepo: string;
+  hasApiKey: boolean;
+}) {
   const [question, setQuestion] = useState("");
   const [result, setResult] = useState<AskResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +44,40 @@ export default function AskClient({ brainRepo }: { brainRepo: string }) {
       const data = (await res.json()) as AskResponse;
       setResult(data);
     });
+  }
+
+  if (!hasApiKey) {
+    return (
+      <div className="min-h-screen bg-[#05070a] flex flex-col items-center justify-center px-4">
+        <div className="max-w-sm w-full space-y-4 text-center">
+          <div className="text-[#22d3ee] text-xs font-mono tracking-[0.2em] uppercase">
+            Setup required
+          </div>
+          <h2 className="text-xl font-bold text-slate-100">Add your Anthropic API key</h2>
+          <p className="text-slate-400 text-sm">
+            Pocket Agent uses your own Anthropic key so your data stays yours and you control
+            the bill.
+          </p>
+          <a
+            href="/app/settings"
+            className="inline-flex w-full items-center justify-center rounded-lg bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors"
+          >
+            Go to Settings →
+          </a>
+          <p className="text-xs text-slate-600">
+            Get a free key at{" "}
+            <a
+              href="https://console.anthropic.com/settings/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#22d3ee] hover:underline"
+            >
+              console.anthropic.com
+            </a>
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (

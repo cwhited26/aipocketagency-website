@@ -3,6 +3,7 @@ export type PaUser = {
   github_username: string;
   brain_repo: string | null;
   github_token: string | null;
+  anthropic_api_key: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -58,6 +59,29 @@ export async function upsertPaUser(user: {
       Prefer: "resolution=merge-duplicates,return=minimal",
     },
     body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  return { ok: true, data: undefined };
+}
+
+export async function upsertPaUserApiKey(
+  userId: string,
+  apiKey: string | null,
+): Promise<PaResult<void>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const endpoint = `${env.url}/rest/v1/pocket_agent_users?id=eq.${encodeURIComponent(userId)}`;
+  const res = await fetch(endpoint, {
+    method: "PATCH",
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({ anthropic_api_key: apiKey, updated_at: new Date().toISOString() }),
     cache: "no-store",
   });
   if (!res.ok) return { ok: false, status: res.status, error: await res.text() };

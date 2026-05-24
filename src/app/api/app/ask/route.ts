@@ -131,7 +131,18 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "No brain repo connected" }, { status: 404 });
   }
 
-  const { brain_repo, github_token } = paResult.data;
+  const { brain_repo, github_token, anthropic_api_key } = paResult.data;
+
+  if (!anthropic_api_key) {
+    return NextResponse.json(
+      {
+        error: "no_api_key",
+        message:
+          "Add your Anthropic API key in Settings to start asking questions.",
+      },
+      { status: 402 },
+    );
+  }
 
   const files = await listMemoryFiles(brain_repo, github_token);
   if (files.length === 0) {
@@ -149,15 +160,10 @@ export async function POST(req: Request): Promise<NextResponse> {
     })),
   );
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY not set" }, { status: 500 });
-  }
-
   const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      "x-api-key": apiKey,
+      "x-api-key": anthropic_api_key,
       "anthropic-version": "2023-06-01",
       "content-type": "application/json",
     },

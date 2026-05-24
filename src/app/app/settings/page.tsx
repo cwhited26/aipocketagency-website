@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import ApiKeyForm from "./ApiKeyForm";
 
 export default async function SettingsPage() {
   const supabase = createClient();
@@ -36,6 +37,7 @@ export default async function SettingsPage() {
             }
           />
           <SettingsRow label="Email" value={user.email ?? "—"} />
+          <ApiKeyForm hasKey={!!paUser?.anthropic_api_key} />
           <SettingsRow
             label="Billing"
             value="Manage subscription"
