@@ -158,10 +158,43 @@ const WIZARD_STEP_IDS: Step[] = ["q1", "q2", "q3", "q4", "q5", "q6"];
 // ─── Forge stage config ────────────────────────────────────────────────────────
 
 const FORGE_STAGES: { id: ForgeStage; label: string; subLabel: string }[] = [
-  { id: "s1", label: "Forking brain template", subLabel: "Copying your private brain repo" },
-  { id: "s2", label: "Allocating memory architecture", subLabel: "Structuring your knowledge layers" },
-  { id: "s3", label: "Encoding your context", subLabel: "Writing your business into memory" },
-  { id: "s4", label: "Waking up your agent", subLabel: "Initializing cognitive framework" },
+  { id: "s1", label: "Probing your repo structure",     subLabel: "Mapping neural entry points" },
+  { id: "s2", label: "Crawling your memory files",       subLabel: "Agent reading file by file" },
+  { id: "s3", label: "Absorbing your business context",  subLabel: "Encoding into long-term memory" },
+  { id: "s4", label: "Your agent is waking up",          subLabel: "Consciousness loading" },
+];
+
+const SCAN_FILES = [
+  "AGENTS.md",
+  "memory/user_about-the-business.md",
+  "memory/user_who-i-serve.md",
+  "memory/feedback_how-i-work.md",
+  "memory/project_current-priorities.md",
+  "memory/project_key-decisions.md",
+  "memory/reference_tools.md",
+  "CLAUDE.md",
+];
+
+// Tendril endpoints in a 300×200 SVG (centre 150, 96)
+const TENDRILS = [
+  { x1: 48,  y1: 20,  cpx: 95,  cpy: 52,  delay: 0    },
+  { x1: 210, y1: 18,  cpx: 175, cpy: 50,  delay: 0.25 },
+  { x1: 266, y1: 88,  cpx: 215, cpy: 90,  delay: 0.1  },
+  { x1: 218, y1: 172, cpx: 188, cpy: 142, delay: 0.35 },
+  { x1: 72,  y1: 178, cpx: 108, cpy: 148, delay: 0.15 },
+  { x1: 34,  y1: 96,  cpx: 88,  cpy: 96,  delay: 0.2  },
+];
+
+// Particles starting offset from centre (matched to tendril tips)
+const PARTICLES: { x: number; y: number; delay: number; dur: number }[] = [
+  { x: -82, y: -60, delay: 0,    dur: 2.2 },
+  { x:  62, y: -68, delay: 0.4,  dur: 2.0 },
+  { x: 100, y:  -4, delay: 0.8,  dur: 2.4 },
+  { x:  68, y:  70, delay: 0.2,  dur: 2.1 },
+  { x: -62, y:  78, delay: 0.6,  dur: 2.3 },
+  { x: -95, y:   2, delay: 1.0,  dur: 2.0 },
+  { x: -48, y: -54, delay: 0.3,  dur: 2.5 },
+  { x:  52, y: -50, delay: 0.7,  dur: 2.2 },
 ];
 
 const STAGE_DURATIONS: Partial<Record<ForgeStage, number>> = {
@@ -285,26 +318,194 @@ function WizardProgressBar({ current }: { current: number }) {
   );
 }
 
-// ─── Neural visual ─────────────────────────────────────────────────────────────
+// ─── Alien entity (central creature — used in born/committing/done) ───────────
 
-function NeuralVisual({ bright = false }: { bright?: boolean }) {
+function AlienEntity({ awake = false }: { awake?: boolean }) {
   return (
-    <div className="relative w-24 h-24 mx-auto">
+    <div className="relative flex items-center justify-center mx-auto" style={{ width: 80, height: 80 }}>
+      {/* Periodic halo expansion */}
       <div
-        className={`absolute inset-0 rounded-full border ${bright ? "border-[#22d3ee]/30" : "border-[#22d3ee]/12"} animate-ping`}
-        style={{ animationDuration: "3.2s" }}
+        className="absolute inset-0 rounded-full border border-[#22d3ee]/20 pointer-events-none"
+        style={{ animation: "halo-out 4s ease-out 1s infinite" }}
       />
       <div
-        className={`absolute inset-3 rounded-full border ${bright ? "border-[#22d3ee]/50" : "border-[#22d3ee]/20"} animate-ping`}
-        style={{ animationDuration: "2.6s", animationDelay: "0.5s" }}
+        className="absolute inset-0 rounded-full border border-[#22d3ee]/10 pointer-events-none"
+        style={{ animation: "halo-out 4s ease-out 2.5s infinite" }}
       />
+      {/* Morphing organic body */}
       <div
-        className={`absolute inset-6 rounded-full border-2 ${bright ? "border-[#22d3ee]/80" : "border-[#22d3ee]/40"} animate-pulse`}
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: awake
+            ? "radial-gradient(circle at 50% 50%, rgba(34,211,238,0.22) 0%, rgba(34,211,238,0.06) 55%, transparent 100%)"
+            : "radial-gradient(circle at 50% 50%, rgba(34,211,238,0.10) 0%, rgba(34,211,238,0.02) 55%, transparent 100%)",
+          boxShadow: awake
+            ? "0 0 28px rgba(34,211,238,0.28), inset 0 0 18px rgba(34,211,238,0.08)"
+            : "0 0 10px rgba(34,211,238,0.10)",
+          animation: "alien-morph 6s ease-in-out infinite",
+          transition: "box-shadow 1.2s ease, background 1.2s ease",
+        }}
       />
-      <div
-        className={`absolute inset-9 rounded-full ${bright ? "bg-[#22d3ee]/25" : "bg-[#22d3ee]/10"} animate-pulse`}
-      />
-      <div className={`absolute inset-11 rounded-full ${bright ? "bg-[#22d3ee]" : "bg-[#22d3ee]/40"}`} />
+      {/* Iris / eye */}
+      <div className="relative z-10 flex items-center justify-center">
+        {awake ? (
+          <div
+            style={{
+              width: 14,
+              height: 14,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, #e2feff 0%, #22d3ee 45%, rgba(34,211,238,0.3) 100%)",
+              boxShadow: "0 0 10px 4px rgba(34,211,238,0.55), 0 0 22px rgba(34,211,238,0.25)",
+              animation: "iris-wake 0.9s ease-out forwards",
+            }}
+          />
+        ) : (
+          <div
+            className="animate-pulse"
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(34,211,238,0.8) 0%, rgba(34,211,238,0.15) 100%)",
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Alien forge visual (tendrils + particles + file scan) ────────────────────
+
+function AlienForgeVisual({ stage }: { stage: ForgeStage | "checking" | "writing" | "finalizing" }) {
+  const [currentFile, setCurrentFile] = useState<string | null>(null);
+  const [fileKey, setFileKey] = useState(0);
+
+  // Map commit stages to forge stages for visual purposes
+  const vs: ForgeStage =
+    stage === "checking"   ? "s1" :
+    stage === "writing"    ? "s2" :
+    stage === "finalizing" ? "s3" :
+    (stage as ForgeStage);
+
+  const isScanning = vs === "s2" || vs === "s3";
+  const isDone     = vs === "done";
+  const isActive   = vs !== "error" && !isDone;
+
+  const stageOrder: ForgeStage[] = ["s1", "s2", "s3", "s4"];
+  const currentIdx = stageOrder.indexOf(vs);
+  const tendrilsRevealed = currentIdx >= 0;
+
+  useEffect(() => {
+    if (!isScanning) { setCurrentFile(null); return; }
+    let i = 0;
+    setCurrentFile(SCAN_FILES[0]);
+    const t = setInterval(() => {
+      i = (i + 1) % SCAN_FILES.length;
+      setCurrentFile(SCAN_FILES[i]);
+      setFileKey((k) => k + 1);
+    }, 680);
+    return () => clearInterval(t);
+  }, [isScanning]);
+
+  return (
+    <div className="relative h-52 w-full flex items-center justify-center overflow-hidden">
+      {/* Horizontal scan sweep */}
+      {isActive && (
+        <div
+          className="absolute inset-x-0 pointer-events-none"
+          style={{
+            height: 1,
+            background:
+              "linear-gradient(to right, transparent 0%, rgba(34,211,238,0.18) 30%, rgba(34,211,238,0.38) 50%, rgba(34,211,238,0.18) 70%, transparent 100%)",
+            animation: "scan-sweep 5s linear infinite",
+          }}
+        />
+      )}
+
+      {/* SVG tendril layer */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        viewBox="0 0 300 200"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {TENDRILS.map((t, i) => (
+          <g key={i}>
+            <path
+              d={`M 150 96 Q ${t.cpx} ${t.cpy} ${t.x1} ${t.y1}`}
+              stroke="#22d3ee"
+              strokeWidth={isDone ? "1" : "0.7"}
+              fill="none"
+              strokeDasharray="140"
+              strokeDashoffset={tendrilsRevealed ? "0" : "140"}
+              style={{
+                transition: `stroke-dashoffset 1.6s ease-out ${t.delay}s`,
+                animation: "tendril-pulse 3s ease-in-out infinite",
+                animationDelay: `${t.delay * 1.8}s`,
+              }}
+            />
+            {tendrilsRevealed && (
+              <circle
+                cx={t.x1}
+                cy={t.y1}
+                r={isScanning ? 2.5 : 1.5}
+                fill="#22d3ee"
+                fillOpacity={isDone ? 0.7 : 0.28}
+                style={{ animation: "tendril-pulse 2.5s ease-in-out infinite", animationDelay: `${t.delay}s` }}
+              />
+            )}
+          </g>
+        ))}
+      </svg>
+
+      {/* Inward-flowing particles */}
+      {(isActive || isDone) &&
+        PARTICLES.map((p, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full pointer-events-none"
+            style={
+              {
+                width: 3,
+                height: 3,
+                top: "50%",
+                left: "50%",
+                marginTop: -1.5,
+                marginLeft: -1.5,
+                background: "radial-gradient(circle, #22d3ee 0%, rgba(34,211,238,0.4) 100%)",
+                "--px": `${p.x}px`,
+                "--py": `${p.y}px`,
+                animation: `particle-in ${p.dur}s ease-in ${p.delay}s infinite`,
+              } as React.CSSProperties
+            }
+          />
+        ))}
+
+      {/* Central entity */}
+      <div className="relative z-10">
+        <AlienEntity awake={isDone} />
+      </div>
+
+      {/* File scan status line */}
+      <div className="absolute bottom-2 left-0 right-0 text-center pointer-events-none" style={{ height: 16 }}>
+        {currentFile ? (
+          <span
+            key={fileKey}
+            className="text-[9px] font-mono text-[#22d3ee]/40 select-none"
+            style={{ animation: "file-flash 0.68s ease-out forwards" }}
+          >
+            ◈ {currentFile}
+          </span>
+        ) : vs === "s1" ? (
+          <span className="text-[9px] font-mono text-slate-700 animate-pulse select-none">
+            probing structure…
+          </span>
+        ) : vs === "s4" ? (
+          <span className="text-[9px] font-mono text-[#22d3ee]/25 animate-pulse select-none">
+            consciousness loading…
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -425,21 +626,29 @@ function ForgeScreen({
     );
   }
 
+  const STAGE_HEADERS: Partial<Record<ForgeStage, string>> = {
+    s1: "Crawling your brain…",
+    s2: "Reading your files…",
+    s3: "Absorbing your context…",
+    s4: "Your agent is waking up…",
+    done: "Your agent is alive.",
+  };
+
   return (
-    <div className="space-y-8 py-4">
+    <div className="space-y-6 py-4">
       {/* Header */}
       <div className="text-center space-y-1">
         <StepLabel text="POCKET AGENT" />
         <h1 className="text-xl font-bold text-slate-100">
-          {stage === "done" ? "Your brain is online." : "Forging your second brain…"}
+          {STAGE_HEADERS[stage] ?? "Forging your second brain…"}
         </h1>
         <p className="text-xs text-slate-600">
           {stage === "done" ? "Entering your second brain…" : `Creating ${repoName}`}
         </p>
       </div>
 
-      {/* Neural visual */}
-      <NeuralVisual bright={stage === "done"} />
+      {/* Alien forge visual */}
+      <AlienForgeVisual stage={stage} />
 
       {/* Stage list */}
       <div className="space-y-3">
@@ -941,25 +1150,34 @@ function CommittingStep({
     );
   }, [answers]);
 
+  const COMMIT_HEADERS: Partial<Record<CommitStage, string>> = {
+    checking:   "Probing your brain repo…",
+    writing:    "Writing your memories…",
+    finalizing: "Your agent is absorbing…",
+    done:       "Your agent knows everything.",
+  };
+
   const stages: { id: CommitStage; label: string }[] = [
-    { id: "checking", label: "Checking your brain repo" },
-    { id: "writing", label: "Writing memory files" },
-    { id: "finalizing", label: "Committing to GitHub" },
-    { id: "done", label: "Brain is live" },
+    { id: "checking",   label: "Probing brain repo"       },
+    { id: "writing",    label: "Writing memory files"     },
+    { id: "finalizing", label: "Absorbing into the agent" },
+    { id: "done",       label: "Context locked in"        },
   ];
 
   const stageOrder: CommitStage[] = ["checking", "writing", "finalizing", "done"];
   const currentIdx = stageOrder.indexOf(commitStage);
 
   return (
-    <div className="space-y-8 text-center py-6">
+    <div className="space-y-6 text-center py-6">
       <div className="space-y-1">
-        <StepLabel text="Writing to your brain" />
-        <h2 className="text-xl font-bold text-slate-100">Building your brain…</h2>
-        <p className="text-slate-500 text-sm">Encoding your context into memory.</p>
+        <StepLabel text="POCKET AGENT" />
+        <h2 className="text-xl font-bold text-slate-100">
+          {COMMIT_HEADERS[commitStage] ?? "Building your brain…"}
+        </h2>
+        <p className="text-slate-600 text-sm">Encoding your context into memory.</p>
       </div>
 
-      <NeuralVisual bright={commitStage === "done"} />
+      <AlienForgeVisual stage={commitStage} />
 
       <div className="space-y-2.5 text-left">
         {stages.map(({ id, label }, i) => {
@@ -1070,13 +1288,13 @@ function BrainBornScreen({
     <div className="space-y-7 py-3">
       {/* Success visual */}
       <div className="text-center space-y-3">
-        <NeuralVisual bright />
+        <AlienEntity awake />
         <div>
           <div className="text-[#22d3ee] text-[10px] font-mono tracking-[0.25em] uppercase mb-1.5">
-            {isUpdate ? "BRAIN UPDATED" : "SYSTEM ONLINE"}
+            {isUpdate ? "AGENT UPDATED" : "AGENT ONLINE"}
           </div>
           <h1 className="text-2xl font-bold text-slate-100">
-            {isUpdate ? "Your brain is updated." : "Your second brain is live."}
+            {isUpdate ? "Your agent absorbed the update." : "Your agent is alive."}
           </h1>
           <p className="text-slate-400 text-sm mt-1.5 leading-relaxed max-w-xs mx-auto">
             Private GitHub repo. It&apos;s yours — not on our servers, not locked to any platform.

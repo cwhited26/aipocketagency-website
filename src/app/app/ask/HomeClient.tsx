@@ -25,94 +25,145 @@ function BrainPanel({ brainRepo }: { brainRepo: string }) {
   useEffect(() => {
     fetch("/api/app/brain/completeness")
       .then((r) => (r.ok ? (r.json() as Promise<CompletenessData>) : Promise.reject()))
-      .then((d) => {
-        setData(d);
-        setLoading(false);
-      })
+      .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
 
+  const hungry = data && data.pct < 100;
+
   return (
-    <div className="mb-7 rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden">
-      {/* Panel header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800/70">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#22d3ee] animate-pulse" />
+    <div
+      className="mb-7 rounded-xl overflow-hidden"
+      style={{
+        border: "1px solid",
+        borderColor: hungry ? "rgba(34,211,238,0.14)" : "rgba(51,65,85,0.8)",
+        background: "rgba(7,13,18,0.7)",
+        animation: "brain-pulse 5s ease-in-out infinite",
+      }}
+    >
+      {/* Header — agent identity */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800/60">
+        <div className="flex items-center gap-2.5">
+          {/* Pulsing entity dot */}
+          <div className="relative flex items-center justify-center" style={{ width: 14, height: 14 }}>
+            <div
+              className="absolute inset-0 rounded-full border border-[#22d3ee]/30"
+              style={{ animation: "halo-out 3.5s ease-out 0.5s infinite" }}
+            />
+            <div
+              className="w-2 h-2 rounded-full animate-pulse"
+              style={{
+                background: "radial-gradient(circle, #22d3ee 0%, rgba(34,211,238,0.4) 100%)",
+                boxShadow: "0 0 4px rgba(34,211,238,0.4)",
+              }}
+            />
+          </div>
           <span className="text-[10px] font-mono text-slate-400 tracking-[0.18em] uppercase">
-            Your Brain
+            Agent Brain
           </span>
+          {data && (
+            <span
+              className="text-[9px] font-mono px-1.5 py-0.5 rounded"
+              style={{
+                color: data.pct >= 100 ? "#22d3ee" : "rgba(34,211,238,0.5)",
+                background: data.pct >= 100 ? "rgba(34,211,238,0.12)" : "rgba(34,211,238,0.05)",
+              }}
+            >
+              {data.pct >= 100 ? "FULLY LOADED" : `${data.pct}% LOADED`}
+            </span>
+          )}
         </div>
         <a
           href="/app/onboarding?update=1"
-          className="text-[10px] text-[#22d3ee]/70 hover:text-[#22d3ee] font-mono transition-colors"
+          className="text-[10px] font-mono transition-colors"
+          style={{ color: "rgba(34,211,238,0.55)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#22d3ee")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(34,211,238,0.55)")}
         >
-          + Tell it more →
+          Feed it →
         </a>
       </div>
 
       {loading ? (
-        <div className="px-4 py-3.5 space-y-3">
-          <div className="h-1.5 bg-slate-800 rounded-full animate-pulse" />
+        <div className="px-4 py-3.5 space-y-2.5">
+          <div className="h-1 bg-slate-800 rounded-full animate-pulse" />
           <div className="grid grid-cols-3 gap-1.5">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="h-6 bg-slate-800/60 rounded-lg animate-pulse" />
+              <div key={i} className="h-6 bg-slate-800/40 rounded-lg animate-pulse" />
             ))}
           </div>
         </div>
       ) : data ? (
         <div className="px-4 py-3 space-y-3">
-          {/* Progress bar */}
+          {/* Growth bar */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-slate-500">Brain completeness</span>
-              <span className="text-[11px] font-mono text-[#22d3ee]">{data.pct}%</span>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] font-mono text-slate-600">
+                {data.filled}/{data.total} memory cores active
+              </span>
             </div>
-            <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+            <div className="h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(30,41,59,0.8)" }}>
               <div
-                className="h-full bg-gradient-to-r from-[#22d3ee]/70 to-[#22d3ee] rounded-full"
+                className="h-full rounded-full"
                 style={{
                   width: `${data.pct}%`,
-                  transition: "width 1200ms ease-in-out",
+                  background: "linear-gradient(to right, rgba(34,211,238,0.6), #22d3ee)",
+                  transition: "width 1400ms ease-in-out",
+                  boxShadow: data.pct > 0 ? "0 0 8px rgba(34,211,238,0.4)" : "none",
                 }}
               />
             </div>
           </div>
 
-          {/* Area chips */}
+          {/* Memory node chips */}
           <div className="grid grid-cols-3 gap-1.5">
             {data.areas.map((area) => (
               <div
                 key={area.key}
-                className={`flex items-center gap-1.5 text-[10px] px-2 py-1.5 rounded-lg transition-colors ${
-                  area.filled
-                    ? "text-slate-400 bg-slate-800/40"
-                    : "text-slate-600 border border-dashed border-slate-800"
-                }`}
+                className="flex items-center gap-1.5 text-[10px] px-2 py-1.5 rounded-lg transition-all"
+                style={{
+                  color: area.filled ? "rgba(148,163,184,0.9)" : "rgba(71,85,105,0.7)",
+                  background: area.filled ? "rgba(34,211,238,0.06)" : "transparent",
+                  border: area.filled ? "1px solid rgba(34,211,238,0.12)" : "1px dashed rgba(51,65,85,0.5)",
+                }}
                 title={area.desc}
               >
-                <span className={area.filled ? "text-[#22d3ee] shrink-0" : "text-slate-700 shrink-0"}>
-                  {area.filled ? "✓" : "○"}
+                <span
+                  style={{
+                    color: area.filled ? "#22d3ee" : "rgba(71,85,105,0.5)",
+                    fontSize: 8,
+                    flexShrink: 0,
+                  }}
+                >
+                  {area.filled ? "◈" : "○"}
                 </span>
-                <span className="truncate">{area.label}</span>
+                <span className="truncate font-mono" style={{ fontSize: 9 }}>{area.label}</span>
               </div>
             ))}
           </div>
 
-          {data.pct < 100 && (
-            <p className="text-[10px] text-slate-600 leading-relaxed">
-              {data.total - data.filled} area{data.total - data.filled !== 1 ? "s" : ""} unfilled
-              {" "}— your agent has less to work with.{" "}
-              <a href="/app/onboarding?update=1" className="text-[#22d3ee]/60 hover:text-[#22d3ee] underline">
-                Add more →
+          {/* Hunger signal */}
+          {hungry && (
+            <p className="text-[10px] leading-relaxed" style={{ color: "rgba(71,85,105,0.8)" }}>
+              {data.total - data.filled} core{data.total - data.filled !== 1 ? "s" : ""} dormant
+              {" "}— your agent is hungry for more context.{" "}
+              <a
+                href="/app/onboarding?update=1"
+                className="underline transition-colors"
+                style={{ color: "rgba(34,211,238,0.5)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#22d3ee")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(34,211,238,0.5)")}
+              >
+                Feed it →
               </a>
             </p>
           )}
         </div>
       ) : (
         <div className="px-4 py-3">
-          <p className="text-xs text-slate-600">
-            Brain connected:{" "}
-            <span className="font-mono text-slate-500">{brainRepo}</span>
+          <p className="text-xs" style={{ color: "rgba(71,85,105,0.8)" }}>
+            Agent connected to{" "}
+            <span className="font-mono" style={{ color: "rgba(100,116,139,0.9)" }}>{brainRepo}</span>
           </p>
         </div>
       )}
