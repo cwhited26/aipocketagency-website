@@ -9,6 +9,7 @@ import {
 } from "@/lib/pa-conversations";
 import { listMemoryFiles, fetchFileContent, parseCitations } from "@/lib/pa-brain";
 import { generateQuoteDraft, generateEmailDraft } from "@/lib/pa-drafts";
+import { createPendingAction } from "@/lib/pa-actions";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -110,6 +111,37 @@ const AGENT_TOOLS: ToolDefinition[] = [
       required: ["recipient", "purpose"],
     },
   },
+  {
+    name: "propose_brain_update",
+    description:
+      "Proposes an update to a file in the user's brain repository. This does NOT execute immediately — it creates a pending approval the user must review and confirm in their Inbox before anything changes. Use this when important information from the conversation should be saved to the brain. Never call this without a clear, specific reason.",
+    input_schema: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description:
+            "The memory file path to update, e.g. memory/project_acme.md. Must start with 'memory/' and end with '.md'.",
+        },
+        mode: {
+          type: "string",
+          description:
+            "'append' to add a new section below existing content, 'replace' to overwrite the entire file.",
+        },
+        content: {
+          type: "string",
+          description:
+            "The content to write. For 'append': the new section to add. For 'replace': the complete new file content including any frontmatter.",
+        },
+        why: {
+          type: "string",
+          description:
+            "Human-readable explanation of why this brain update is proposed. The user sees this before deciding to approve or reject.",
+        },
+      },
+      required: ["path", "mode", "content", "why"],
+    },
+  },
 ];
 
 // ── Zod schemas for tool input validation ────────────────────────────────────
@@ -132,6 +164,13 @@ const draftEmailInputSchema = z.object({
   tone: z.string().max(200).optional().default(""),
 });
 
+const proposeBrainUpdateInputSchema = z.object({
+  path: z.string().regex(/^memory\/[^/]+\.md$/, "path must match memory/*.md"),
+  mode: z.enum(["append", "replace"]),
+  content: z.string().min(1).max(50_000),
+  why: z.string().min(1).max(2000),
+});
+
 // ── Incoming request schema ───────────────────────────────────────────────────
 
 const bodySchema = z.object({
@@ -151,17 +190,26 @@ TOOLS AVAILABLE:
 - read_brain_file: Load the content of a specific file before referencing it
 - draft_quote: Generate a complete professional quote/proposal
 - draft_email: Draft an email in the user's voice
+- propose_brain_update: Propose saving new information to the brain (creates a pending approval — nothing writes until the user approves in their Inbox)
 
 HOW TO WORK:
 - For questions requiring business context, first read the relevant memory files, then answer with citations: [memory/filename.md:line]
 - For quote or email requests, gather necessary details from the conversation then call the appropriate draft tool
+- When the user shares important information (new client details, project decisions, pricing changes, preferences) that should be remembered, call propose_brain_update to stage it for their approval. Tell them you've proposed the update and they can review it in their Inbox
 - Be direct and honest — push back when a question has a better framing. Talk like a partner, not a chatbot
-- Carry context across the conversation; reference what you've already seen`;
+- Carry context across the conversation; reference what you've already seen
+
+BRAIN UPDATE RULES:
+- Only propose updates for genuinely valuable, durable business information — not transient details
+- Always include a clear, honest 'why' so the user understands what they're approving
+- Use mode='append' when adding to an existing topic; 'replace' only when content is stale and should be overwritten entirely
+- Never propose a brain update unless you have read the relevant existing file first (so you know what's already there)`;
 }
 
 // ── Tool executor ─────────────────────────────────────────────────────────────
 
 type AgentToolContext = {
+  userId: string;
   brain_repo: string | null;
   github_token: string | null;
   anthropic_api_key: string;
@@ -229,6 +277,33 @@ async function executeAgentTool(
     }
   }
 
+  if (name === "propose_brain_update") {
+    const parsed = proposeBrainUpdateInputSchema.safeParse(rawInput);
+    if (!parsed.success) return `Invalid input: ${parsed.error.message}`;
+    if (!ctx.brain_repo) {
+      return "No brain repository connected — cannot propose brain updates.";
+    }
+
+    const result = await createPendingAction({
+      userId: ctx.userId,
+      actionType: "update_brain_memory",
+      title: `Update ${parsed.data.path}`,
+      summary: parsed.data.why,
+      payload: {
+        repo: ctx.brain_repo,
+        path: parsed.data.path,
+        mode: parsed.data.mode,
+        content: parsed.data.content,
+      },
+    });
+
+    if (!result.ok) {
+      return `Failed to create proposal: ${result.error}`;
+    }
+
+    return `Proposed — a brain update for ${parsed.data.path} (mode: ${parsed.data.mode}) is now pending in the user's Inbox. Nothing has been written yet. The user must review the proposed content and click Approve before anything changes in their brain.`;
+  }
+
   return `Unknown tool: ${name}`;
 }
 
@@ -242,6 +317,8 @@ function describeToolCall(name: string, input: Record<string, unknown>): string 
       return `Drafted quote for ${typeof input.client === "string" ? input.client : "client"}`;
     case "draft_email":
       return `Drafted email to ${typeof input.recipient === "string" ? input.recipient : "recipient"}`;
+    case "propose_brain_update":
+      return `Proposed brain update: ${typeof input.path === "string" ? input.path : "memory file"} (${typeof input.mode === "string" ? input.mode : "update"})`;
     default:
       return `Called ${name}`;
   }
@@ -328,7 +405,7 @@ export async function POST(
     { role: "user", content },
   ];
 
-  const agentCtx: AgentToolContext = { brain_repo, github_token, anthropic_api_key };
+  const agentCtx: AgentToolContext = { userId: user.id, brain_repo, github_token, anthropic_api_key };
   const systemPrompt = buildAgentSystemPrompt(Boolean(brain_repo));
   const toolSteps: ToolStep[] = [];
 
