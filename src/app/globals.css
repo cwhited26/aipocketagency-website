@@ -94,6 +94,32 @@ body {
   100% { opacity: 1; transform: translateY(0); }
 }
 
+/* ─── Work card glow (cyan, BOS surface-card mechanic) ────────────────────── */
+/* Rest: matches design system slate-900/70 + slate-700/60 border.
+   Hover/active: cyan edge glow that intensifies on touch — :active fires
+   on mobile tap so this works on touch devices without JS event handlers. */
+.glow-card {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.6);
+  border-radius: 12px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.glow-card:hover {
+  background: rgba(15, 23, 42, 0.9);
+  border-color: rgba(34, 211, 238, 0.5);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.12),
+              0 0 24px rgba(34, 211, 238, 0.14),
+              inset 0 0 20px rgba(34, 211, 238, 0.04);
+}
+
+.glow-card:active {
+  border-color: rgba(34, 211, 238, 0.85);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.35),
+              0 0 36px rgba(34, 211, 238, 0.28),
+              inset 0 0 28px rgba(34, 211, 238, 0.07);
+}
+
 /* radial glow */
 .bg-hero-glow {
   background: radial-gradient(

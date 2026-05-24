@@ -140,6 +140,220 @@ export async function generateQuoteDraft(
   return { draft, citations: parseCitations(draft), hasBrain: memoryBlocks.length > 0 };
 }
 
+function buildFollowUpsSystemPrompt(
+  memoryBlocks: MemoryBlock[],
+  context: string,
+): string {
+  const hasMemory = memoryBlocks.length > 0;
+  const memorySection = hasMemory
+    ? `BRAIN MEMORY FILES (your business context — clients, leads, relationships, past decisions):\n${formatBlocks(memoryBlocks)}\n\n`
+    : `NOTE: No brain memory files are connected yet. Provide general follow-up advice from the inputs provided. Add a note explaining that connecting a brain will let the agent surface specific names, deals, and relationships that have gone cold.\n\n`;
+
+  const contextSection = context
+    ? `USER CONTEXT: ${context}\n\n`
+    : "";
+
+  return `You are an AI assistant scanning a business owner's memory for relationships, clients, leads, and deals that may need a follow-up nudge.
+
+${memorySection}${contextSection}YOUR TASK:
+Read the brain memory carefully. Identify 3-5 specific people, clients, leads, or deals that:
+- Haven't been mentioned as recently active or resolved
+- Are in-progress but may have stalled
+- Were mentioned as needing follow-up or a next step
+- Represent open opportunities or unresolved loose ends
+
+For each one, write:
+1. **Name/Deal** — what it is, who it's with
+2. **Why they're on the radar** — what the brain says about them
+3. **Suggested nudge** — a short, direct draft message the operator can send. Write it the way the operator would write — direct, specific, not corporate. No "I hope this finds you well." No filler. Short.
+
+If the brain has a voice spec, draft nudges in that voice. If no voice spec, default to: direct, short, specific — the way a busy operator texts between jobs.
+
+Cite every claim with [memory/filename.md:line].
+
+If there's no brain connected, describe 3 types of follow-up scenarios common to independent operators (clients awaiting a proposal, leads who went quiet, pending payments) and suggest what they'd draft.
+
+FORMAT:
+Use numbered items. Each item: bold name/deal header, one-sentence radar note, then the draft message in a blockquote-style indent. Keep drafts under 5 sentences.`;
+}
+
+function buildDailyBriefSystemPrompt(
+  memoryBlocks: MemoryBlock[],
+): string {
+  const hasMemory = memoryBlocks.length > 0;
+  const memorySection = hasMemory
+    ? `BRAIN MEMORY FILES (your business context — clients, leads, pending items, decisions, knowledge):\n${formatBlocks(memoryBlocks)}\n\n`
+    : `NOTE: No brain memory files are connected yet. Write a useful morning brief based on general independent-operator priorities. Add a clear note explaining that connecting a brain will make future briefs personalized and specific.\n\n`;
+
+  return `You are writing a morning briefing for an independent business operator. This is their agent's daily read — a sharp, useful summary of what's on the radar and what to prioritize today.
+
+${memorySection}YOUR TASK:
+Write a concise morning brief with the following sections. Keep each section tight — 2-5 bullets max. No filler. No fluff. The operator is reading this at 7am before their first call.
+
+SECTIONS:
+1. **On The Radar** — active clients, leads, or deals mentioned in the brain that need attention. For each: name + one-line status + what's needed.
+
+2. **Pending Items** — anything explicitly flagged as pending, waiting for response, or needing action in the brain.
+
+3. **Revenue Opportunity** — any open proposals, leads who could convert, or upsell moments visible in the brain.
+
+4. **One Priority** — based on everything above, the single most important thing the operator should move on today. One sentence. Specific.
+
+VOICE RULES:
+- Terse and direct. Like a trusted advisor who knows your business.
+- Every factual claim cited: [memory/filename.md:line]
+- No greeting. No "Good morning, [Name]." Just start with the brief.
+- If the brain is sparse, note what context would make the brief more useful, then write the best brief you can.`;
+}
+
+export async function generateFollowUpsDraft(
+  params: { context: string },
+  anthropicApiKey: string,
+  brainRepo: string | null,
+  githubToken: string | null,
+): Promise<{ draft: string; citations: Citation[]; hasBrain: boolean }> {
+  const memoryBlocks: MemoryBlock[] = brainRepo
+    ? await buildMemoryBlocks(brainRepo, githubToken)
+    : [];
+
+  const systemPrompt = buildFollowUpsSystemPrompt(memoryBlocks, params.context);
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": anthropicApiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 2500,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content:
+            "Scan the brain and surface the follow-up items now. Start directly with item 1 — no preamble.",
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Anthropic error: ${await res.text()}`);
+  }
+
+  const msg = (await res.json()) as AnthropicApiResponse;
+  const draft = msg.content.find((c) => c.type === "text")?.text ?? "";
+  return { draft, citations: parseCitations(draft), hasBrain: memoryBlocks.length > 0 };
+}
+
+export async function generateDailyBrief(
+  anthropicApiKey: string,
+  brainRepo: string | null,
+  githubToken: string | null,
+): Promise<{ brief: string; citations: Citation[]; hasBrain: boolean }> {
+  const memoryBlocks: MemoryBlock[] = brainRepo
+    ? await buildMemoryBlocks(brainRepo, githubToken)
+    : [];
+
+  const systemPrompt = buildDailyBriefSystemPrompt(memoryBlocks);
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": anthropicApiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1800,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content:
+            "Generate my morning brief now. Start directly with the first section.",
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Anthropic error: ${await res.text()}`);
+  }
+
+  const msg = (await res.json()) as AnthropicApiResponse;
+  const brief = msg.content.find((c) => c.type === "text")?.text ?? "";
+  return { brief, citations: parseCitations(brief), hasBrain: memoryBlocks.length > 0 };
+}
+
+function buildCalendarSystemPrompt(memoryBlocks: MemoryBlock[]): string {
+  const hasMemory = memoryBlocks.length > 0;
+  const memorySection = hasMemory
+    ? `BRAIN MEMORY FILES (your business context — clients, jobs, schedules, deadlines, planned work):\n${formatBlocks(memoryBlocks)}\n\n`
+    : `NOTE: No brain memory files are connected yet. Describe what kinds of upcoming items would normally appear for an independent operator (scheduled jobs, follow-up calls, proposal deadlines, payment dates) and suggest what context to add to the brain to populate this view.\n\n`;
+
+  return `You are scanning a business owner's brain memory for anything date-related, scheduled, or time-sensitive.
+
+${memorySection}YOUR TASK:
+Extract and list every upcoming item, deadline, or time-sensitive thing mentioned in the brain. Include:
+- Scheduled jobs, site visits, or project start dates
+- Calls, meetings, or appointments mentioned
+- Proposal or quote deadlines
+- Follow-up timelines ("follow up next week", "call Thursday")
+- Payment schedules or invoice due dates
+- Anything with a relative or absolute date/time reference
+
+FORMAT: Group by "This Week", "Next Week", and "Further Out" if dates are known. If dates are relative, note them as-is. For each item: one-line description + who/what it's with + source citation [memory/filename.md:line].
+
+If nothing date-related is in the brain, say so clearly and suggest 3 types of context to add (e.g., scheduled jobs, pending follow-up timelines, proposal deadlines) to make this view useful.
+
+Be honest about what you found — do not invent items or approximate vague references as specific dates.`;
+}
+
+export async function generateCalendarScan(
+  anthropicApiKey: string,
+  brainRepo: string | null,
+  githubToken: string | null,
+): Promise<{ brief: string; citations: Citation[]; hasBrain: boolean }> {
+  const memoryBlocks: MemoryBlock[] = brainRepo
+    ? await buildMemoryBlocks(brainRepo, githubToken)
+    : [];
+
+  const systemPrompt = buildCalendarSystemPrompt(memoryBlocks);
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": anthropicApiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1500,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content:
+            "Scan the brain and list all upcoming and time-sensitive items now. Start directly with the results.",
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Anthropic error: ${await res.text()}`);
+  }
+
+  const msg = (await res.json()) as AnthropicApiResponse;
+  const brief = msg.content.find((c) => c.type === "text")?.text ?? "";
+  return { brief, citations: parseCitations(brief), hasBrain: memoryBlocks.length > 0 };
+}
+
 export async function generateEmailDraft(
   params: {
     recipient: string;

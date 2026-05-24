@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 // Viewbox: 300×300, center: (150, 150)
 // Nodes sit on a radius of ~105px from center — well inside the viewbox
@@ -11,6 +12,7 @@ const CY = 150;
 type NodeDef = {
   id: string;
   label: string;
+  href: string;
   x: number;
   y: number;
   connected: boolean;
@@ -25,6 +27,7 @@ type NodeDef = {
 
 export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -40,6 +43,7 @@ export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
     {
       id: "brain",
       label: brainLabel,
+      href: "/app/onboarding",
       x: 150, y: 45,
       connected: hasBrain,
       cx1: 151, cy1: 115, cx2: 151, cy2: 75,
@@ -50,6 +54,7 @@ export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
       // ~60° clockwise from top
       id: "quotes",
       label: "Quotes",
+      href: "/app/apps/quote",
       x: 241, y: 97,
       connected: true,
       cx1: 195, cy1: 140, cx2: 225, cy2: 113,
@@ -60,6 +65,7 @@ export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
       // ~135° clockwise from top
       id: "followups",
       label: "Follow-ups",
+      href: "/app/apps/followups",
       x: 224, y: 224,
       connected: false,
       cx1: 200, cy1: 180, cx2: 215, cy2: 208,
@@ -70,6 +76,7 @@ export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
       // ~225° clockwise from top
       id: "inbox",
       label: "Inbox",
+      href: "/app/apps/inbox",
       x: 76, y: 224,
       connected: false,
       cx1: 100, cy1: 180, cx2: 85, cy2: 208,
@@ -80,6 +87,7 @@ export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
       // ~300° clockwise from top (10 o'clock)
       id: "calendar",
       label: "Cal",
+      href: "/app/apps/calendar",
       x: 59, y: 97,
       connected: false,
       cx1: 105, cy1: 140, cx2: 75, cy2: 113,
@@ -190,32 +198,48 @@ export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
                 }
               />
 
-              {/* Node dot */}
-              <circle
-                cx={node.x}
-                cy={node.y}
-                r={node.connected ? 4 : 3}
-                fill={node.connected ? "rgba(34,211,238,0.85)" : "rgba(71,85,105,0.5)"}
-                style={
-                  node.connected
-                    ? { animation: `node-beacon ${node.animDuration} ease-in-out ${node.animDelay} infinite` }
-                    : {}
-                }
-              />
-
-              {/* Label */}
-              <text
-                x={node.x + node.labelDx}
-                y={node.y + node.labelDy}
-                textAnchor={node.textAnchor}
-                dominantBaseline="middle"
-                fill={node.connected ? "rgba(203,213,225,0.85)" : "rgba(100,116,139,0.65)"}
-                fontSize="9"
-                fontFamily="ui-monospace, 'Cascadia Code', monospace"
-                letterSpacing="0.04em"
+              {/* Clickable node group — navigate to the work surface */}
+              <g
+                onClick={() => router.push(node.href)}
+                style={{ cursor: "pointer" }}
+                role="link"
+                aria-label={`Go to ${node.label}`}
               >
-                {node.label}
-              </text>
+                {/* Invisible hit target */}
+                <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={14}
+                  fill="transparent"
+                />
+
+                {/* Node dot */}
+                <circle
+                  cx={node.x}
+                  cy={node.y}
+                  r={node.connected ? 4 : 3}
+                  fill={node.connected ? "rgba(34,211,238,0.85)" : "rgba(71,85,105,0.5)"}
+                  style={
+                    node.connected
+                      ? { animation: `node-beacon ${node.animDuration} ease-in-out ${node.animDelay} infinite` }
+                      : {}
+                  }
+                />
+
+                {/* Label */}
+                <text
+                  x={node.x + node.labelDx}
+                  y={node.y + node.labelDy}
+                  textAnchor={node.textAnchor}
+                  dominantBaseline="middle"
+                  fill={node.connected ? "rgba(203,213,225,0.85)" : "rgba(100,116,139,0.65)"}
+                  fontSize="9"
+                  fontFamily="ui-monospace, 'Cascadia Code', monospace"
+                  letterSpacing="0.04em"
+                >
+                  {node.label}
+                </text>
+              </g>
             </g>
           );
         })}
