@@ -26,6 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Pocket Agent
             </Link>
             <div className="flex items-center gap-5">
+              <NavLink href="/app/apps">Work</NavLink>
               <NavLink href="/app/skool">Community</NavLink>
               <NavLink href="/app/settings">Settings</NavLink>
             </div>

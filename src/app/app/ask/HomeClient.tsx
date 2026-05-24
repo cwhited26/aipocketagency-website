@@ -562,7 +562,7 @@ export default function HomeClient({
               )}
             </div>
 
-            <div className="max-w-2xl mx-auto px-6 pb-10">
+            <div className="max-w-2xl mx-auto px-6 pb-6">
               <p className="text-[10px] text-slate-700 font-mono tracking-[0.15em] uppercase mb-3">
                 Suggested for you
               </p>
@@ -578,6 +578,44 @@ export default function HomeClient({
                     </p>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div className="max-w-2xl mx-auto px-6 pb-10">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] text-slate-700 font-mono tracking-[0.15em] uppercase">
+                  Work apps · Level 2
+                </p>
+                <a
+                  href="/app/apps"
+                  className="text-[10px] text-slate-600 hover:text-[#22d3ee] font-mono transition-colors"
+                >
+                  All apps →
+                </a>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <a
+                  href="/app/apps/quote"
+                  className="text-left rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-4 hover:border-slate-700 hover:bg-slate-900/80 transition-colors group block"
+                >
+                  <p className="text-xs text-slate-400 group-hover:text-slate-200 font-medium leading-relaxed">
+                    Quote / Proposal Writer
+                  </p>
+                  <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
+                    Reads your brain. Drafts a clean quote.
+                  </p>
+                </a>
+                <a
+                  href="/app/apps/email"
+                  className="text-left rounded-xl border border-slate-800 bg-slate-900/40 px-4 py-4 hover:border-slate-700 hover:bg-slate-900/80 transition-colors group block"
+                >
+                  <p className="text-xs text-slate-400 group-hover:text-slate-200 font-medium leading-relaxed">
+                    Email Drafter
+                  </p>
+                  <p className="text-[11px] text-slate-700 mt-1 leading-relaxed">
+                    Writes emails that sound like you.
+                  </p>
+                </a>
               </div>
             </div>
           </div>
