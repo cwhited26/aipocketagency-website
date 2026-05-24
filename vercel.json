@@ -12,5 +12,13 @@
       "has": [{ "type": "host", "value": "app.aipocketagency.com" }],
       "destination": "/app/:path*"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.aipocketagent.com" }],
+      "destination": "https://aipocketagent.com/:path*",
+      "permanent": true
+    }
   ]
 }
