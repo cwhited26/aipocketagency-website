@@ -131,6 +131,7 @@ export default function AppNav() {
   const isWork = pathname.startsWith("/app/apps");
   const isCommunity = pathname.startsWith("/app/skool");
   const isSettings = pathname.startsWith("/app/settings");
+  const isCapture = pathname.startsWith("/app/capture");
 
   const close = () => setMobileOpen(false);
 
@@ -155,7 +156,7 @@ export default function AppNav() {
 
         <div className="my-2 border-t border-slate-800/50" />
 
-        <NavItem href="#" active={false} icon={<CaptureIcon />} label="Capture" disabled soon />
+        <NavItem href="/app/capture" active={isCapture} icon={<CaptureIcon />} label="Capture" onClick={close} />
       </nav>
 
       <div className="border-t border-slate-800/50 px-3 py-4 shrink-0">

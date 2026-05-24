@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import FileUploadZone from "../_components/FileUploadZone";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1364,6 +1365,20 @@ function BrainBornScreen({
         </div>
       </div>
 
+      {/* Feed it more — upload files */}
+      <div className="rounded-xl border border-slate-800/60 bg-slate-900/30 px-4 py-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#22d3ee]/40" />
+          <p className="text-[10px] font-mono text-slate-500 tracking-[0.14em] uppercase">
+            Feed it more — upload files
+          </p>
+        </div>
+        <p className="text-xs text-slate-500 leading-relaxed">
+          Drop a business doc, PDF, or photo — the agent reads and absorbs it into your brain right now.
+        </p>
+        <FileUploadZone compact />
+      </div>
+
       <PrimaryBtn onClick={onEnter}>
         Enter your brain →
       </PrimaryBtn>
@@ -1542,6 +1557,14 @@ export default function OnboardingClient({
                 {isSkipping ? "Setting up…" : "Skip everything — I'll fill this in later →"}
               </button>
             </div>
+            {forgedRepo && (
+              <div className="pt-1 space-y-2">
+                <p className="text-[10px] font-mono text-slate-700 tracking-[0.12em] uppercase text-center">
+                  Or drop files directly into your brain
+                </p>
+                <FileUploadZone compact />
+              </div>
+            )}
           </div>
         )}
 
