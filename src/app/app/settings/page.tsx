@@ -3,6 +3,7 @@ import { fetchPaUser } from "@/lib/pa-supabase";
 import { fetchUserConnections } from "@/lib/pa-connections";
 import { redirect } from "next/navigation";
 import ApiKeyForm from "./ApiKeyForm";
+import BrainRepoPanel from "./BrainRepoPanel";
 import ConnectionsPanel from "./ConnectionsPanel";
 
 export default async function SettingsPage({
@@ -127,10 +128,9 @@ export default async function SettingsPage({
         {/* Account details table */}
         <div className="rounded-xl border border-slate-700/60 bg-slate-900/50 overflow-hidden divide-y divide-slate-800/60">
           <SettingsRow label="Email" value={user.email ?? "—"} />
-          <SettingsRow
-            label="Brain repo"
-            value={paUser?.brain_repo ?? "Not connected"}
-            href={paUser?.brain_repo ? `https://github.com/${paUser.brain_repo}` : "/app/onboarding"}
+          <BrainRepoPanel
+            currentRepo={paUser?.brain_repo ?? null}
+            hasGitHub={hasGithubToken}
           />
           <ApiKeyForm hasKey={!!paUser?.anthropic_api_key} />
           <SettingsRow label="Billing" value="Manage subscription" href="/api/app/billing-portal" />
