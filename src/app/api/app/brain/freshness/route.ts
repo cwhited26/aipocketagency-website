@@ -81,6 +81,13 @@ const BRAIN_AREAS: Array<{
     prompt: "What apps, tools, and systems you use day-to-day",
     file: "memory/reference_tools.md",
   },
+  {
+    key: "avatar",
+    label: "Customer Avatar",
+    desc: "Who you sell to — makes every draft sharper",
+    prompt: "Who buys from you, what they want, what they're afraid of, where they spend time",
+    file: "memory/customer-avatar.md",
+  },
 ];
 
 // ─── GitHub helpers ────────────────────────────────────────────────────────────

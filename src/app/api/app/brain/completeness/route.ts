@@ -57,6 +57,12 @@ const EXPECTED_AREAS: Array<Omit<CompletenessArea, "filled"> & { file: string }>
     file: "memory/reference_tools.md",
     desc: "Apps and platforms you use",
   },
+  {
+    key: "avatar",
+    label: "Customer Avatar",
+    file: "memory/customer-avatar.md",
+    desc: "Who you sell to — makes every draft sharper",
+  },
 ];
 
 export async function GET(): Promise<NextResponse> {

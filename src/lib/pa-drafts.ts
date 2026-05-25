@@ -11,6 +11,12 @@ function formatBlocks(blocks: MemoryBlock[]): string {
     .join("\n\n");
 }
 
+function avatarNote(blocks: MemoryBlock[]): string {
+  const hasAvatar = blocks.some((b) => b.path === "memory/customer-avatar.md");
+  if (!hasAvatar) return "";
+  return `\nCUSTOMER AVATAR: A customer-avatar.md is present in the brain. Read it carefully and condition ALL writing on that person — their language, concerns, and goals should be reflected in the output.\n`;
+}
+
 function buildQuoteSystemPrompt(
   memoryBlocks: MemoryBlock[],
   clientName: string,
@@ -21,9 +27,10 @@ function buildQuoteSystemPrompt(
   const memorySection = hasMemory
     ? `BRAIN MEMORY FILES (your business context — services, pricing, voice, past decisions):\n${formatBlocks(memoryBlocks)}\n\n`
     : `NOTE: No brain memory files are connected yet. Draft the best quote you can from the inputs provided. At the end, list 2-3 specific things the user should add to their brain (services offered, standard pricing, terms of service, past client context) to make future quotes sharper and more personalized.\n\n`;
+  const avatarLine = avatarNote(memoryBlocks);
 
   return `You are a skilled quote and proposal writer for an independent operator.
-
+${avatarLine}
 ${memorySection}YOUR TASK:
 Write a clean, professional quote/proposal for the following job. The output should sound like the operator wrote it — direct, specific, no filler — not like a template from a software package.
 
@@ -58,8 +65,10 @@ function buildEmailSystemPrompt(
   const memorySection = hasMemory
     ? `BRAIN MEMORY FILES (the operator's business context, voice, communication style, client history):\n${formatBlocks(memoryBlocks)}\n\n`
     : `NOTE: No brain memory files are connected yet. Draft the best email you can from the inputs provided. At the end, note 2-3 specific things the user should add to their brain (voice spec, client communication patterns, relationship history) to make future email drafts more personalized and on-voice.\n\n`;
+  const avatarLine = avatarNote(memoryBlocks);
 
   return `You are drafting an email on behalf of an independent operator. Your job is to write an email that sounds like THEM — not like a polished PR person, not like ChatGPT, not like a corporate account manager. Like them.
+${avatarLine}
 
 ${memorySection}EMAIL CONTEXT:
 TO: ${recipient}${relationship ? `\nRELATIONSHIP: ${relationship}` : ""}
@@ -148,12 +157,14 @@ function buildFollowUpsSystemPrompt(
   const memorySection = hasMemory
     ? `BRAIN MEMORY FILES (your business context — clients, leads, relationships, past decisions):\n${formatBlocks(memoryBlocks)}\n\n`
     : `NOTE: No brain memory files are connected yet. Provide general follow-up advice from the inputs provided. Add a note explaining that connecting a brain will let the agent surface specific names, deals, and relationships that have gone cold.\n\n`;
+  const avatarLine = avatarNote(memoryBlocks);
 
   const contextSection = context
     ? `USER CONTEXT: ${context}\n\n`
     : "";
 
   return `You are an AI assistant scanning a business owner's memory for relationships, clients, leads, and deals that may need a follow-up nudge.
+${avatarLine}
 
 ${memorySection}${contextSection}YOUR TASK:
 Read the brain memory carefully. Identify 3-5 specific people, clients, leads, or deals that:
@@ -184,8 +195,10 @@ function buildDailyBriefSystemPrompt(
   const memorySection = hasMemory
     ? `BRAIN MEMORY FILES (your business context — clients, leads, pending items, decisions, knowledge):\n${formatBlocks(memoryBlocks)}\n\n`
     : `NOTE: No brain memory files are connected yet. Write a useful morning brief based on general independent-operator priorities. Add a clear note explaining that connecting a brain will make future briefs personalized and specific.\n\n`;
+  const avatarLine = avatarNote(memoryBlocks);
 
   return `You are writing a morning briefing for an independent business operator. This is their agent's daily read — a sharp, useful summary of what's on the radar and what to prioritize today.
+${avatarLine}
 
 ${memorySection}YOUR TASK:
 Write a concise morning brief with the following sections. Keep each section tight — 2-5 bullets max. No filler. No fluff. The operator is reading this at 7am before their first call.

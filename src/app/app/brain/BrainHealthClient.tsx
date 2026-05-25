@@ -23,6 +23,22 @@ function SparkleIcon() {
   );
 }
 
+function CheckCircleIcon({ done }: { done: boolean }) {
+  if (done) {
+    return (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="shrink-0">
+        <circle cx="9" cy="9" r="8.25" fill="rgba(34,211,238,0.12)" stroke="#22d3ee" strokeWidth="1.5" />
+        <path d="M5.5 9l2.5 2.5 4.5-4.5" stroke="#22d3ee" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="shrink-0">
+      <circle cx="9" cy="9" r="8.25" stroke="#334155" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 // ─── Status helpers ────────────────────────────────────────────────────────────
 
 function statusConfig(status: FreshnessStatus): {
@@ -84,6 +100,17 @@ function relativeTime(iso: string | null): string {
 function AreaCard({ area }: { area: FreshnessArea }) {
   const cfg = statusConfig(area.status);
 
+  // Avatar area links to its dedicated form, not capture
+  const ctaHref =
+    area.key === "avatar"
+      ? "/app/brain/avatar"
+      : `/app/capture?area=${area.key}&prompt=${encodeURIComponent(area.prompt)}`;
+
+  const ctaLabel =
+    area.key === "avatar"
+      ? area.status === "empty" ? "Create avatar" : "Edit avatar"
+      : area.status === "empty" ? "Feed this area" : "Feed it more";
+
   return (
     <div
       className="rounded-xl p-4 flex flex-col gap-2.5"
@@ -124,10 +151,10 @@ function AreaCard({ area }: { area: FreshnessArea }) {
         </p>
       )}
 
-      {/* Feed CTA */}
+      {/* CTA */}
       {(area.status === "empty" || area.status === "stale" || area.status === "warn") && (
         <a
-          href={`/app/capture?area=${area.key}&prompt=${encodeURIComponent(area.prompt)}`}
+          href={ctaHref}
           className="inline-flex items-center gap-1.5 self-start text-[11px] font-mono px-2.5 py-1 rounded-lg transition-all"
           style={{
             color: cfg.color,
@@ -136,7 +163,7 @@ function AreaCard({ area }: { area: FreshnessArea }) {
           }}
         >
           <FeedIcon />
-          Feed {area.status === "empty" ? "this area" : "it more"}
+          {ctaLabel}
         </a>
       )}
     </div>
@@ -193,6 +220,198 @@ function ScoreBar({ filled, total, pct }: { filled: number; total: number; pct: 
           ? "getting there. The more you add, the sharper the agent gets."
           : "thin. The agent works best with more context about your business."}
       </p>
+    </div>
+  );
+}
+
+// ─── Brain task list ───────────────────────────────────────────────────────────
+
+type BrainTask = {
+  id: string;
+  label: string;
+  desc: string;
+  points: number;
+  areaKey: string;
+  link: string;
+};
+
+const BRAIN_TASKS: BrainTask[] = [
+  {
+    id: "avatar",
+    label: "Create a Customer Avatar",
+    desc: "The specific person you sell to — makes every draft speak directly to them",
+    points: 25,
+    areaKey: "avatar",
+    link: "/app/brain/avatar",
+  },
+  {
+    id: "business",
+    label: "Describe your business",
+    desc: "What you do, who you serve, and what you charge",
+    points: 20,
+    areaKey: "business",
+    link: "/app/capture?area=business&prompt=Describe+your+business%2C+services%2C+and+pricing",
+  },
+  {
+    id: "customers",
+    label: "Define who you serve",
+    desc: "The types of customers you work with",
+    points: 15,
+    areaKey: "customers",
+    link: "/app/capture?area=customers&prompt=Who+are+your+ideal+customers%3F",
+  },
+  {
+    id: "style",
+    label: "Capture your voice",
+    desc: "How you communicate — so every draft sounds like you",
+    points: 15,
+    areaKey: "style",
+    link: "/app/capture?area=style&prompt=Describe+how+you+communicate+with+customers",
+  },
+  {
+    id: "projects",
+    label: "Add active projects",
+    desc: "What you're working on right now",
+    points: 10,
+    areaKey: "projects",
+    link: "/app/capture?area=projects&prompt=What+are+your+current+active+projects%3F",
+  },
+  {
+    id: "tools",
+    label: "List your tools",
+    desc: "Apps and systems you use day-to-day",
+    points: 10,
+    areaKey: "tools",
+    link: "/app/capture?area=tools&prompt=What+tools+and+apps+do+you+use%3F",
+  },
+  {
+    id: "decisions",
+    label: "Lock in key decisions",
+    desc: "Choices already made so the agent doesn't re-ask",
+    points: 10,
+    areaKey: "decisions",
+    link: "/app/capture?area=decisions&prompt=What+key+business+decisions+have+you+already+made%3F",
+  },
+];
+
+const TOTAL_POINTS = BRAIN_TASKS.reduce((sum, t) => sum + t.points, 0);
+
+function ptsLabel(pts: number): string {
+  const pct = pts / TOTAL_POINTS;
+  if (pct >= 1) return "Brain complete";
+  if (pct >= 0.75) return "Almost sharp";
+  if (pct >= 0.5) return "Building up";
+  if (pct >= 0.25) return "Getting there";
+  return "Just started";
+}
+
+function BrainTaskList({ areas }: { areas: FreshnessArea[] }) {
+  const filledKeys = new Set(areas.filter((a) => a.filled).map((a) => a.key));
+
+  const tasksWithStatus = BRAIN_TASKS.map((t) => ({
+    ...t,
+    done: filledKeys.has(t.areaKey),
+  }));
+
+  const earnedPts = tasksWithStatus
+    .filter((t) => t.done)
+    .reduce((sum, t) => sum + t.points, 0);
+
+  const pct = Math.round((earnedPts / TOTAL_POINTS) * 100);
+  const label = ptsLabel(earnedPts);
+
+  // Pending first, then done
+  const pending = tasksWithStatus.filter((t) => !t.done);
+  const done = tasksWithStatus.filter((t) => t.done);
+
+  const ptsColor =
+    pct >= 100 ? "#22d3ee" :
+    pct >= 75 ? "#34d399" :
+    pct >= 50 ? "#f59e0b" :
+    "#94a3b8";
+
+  return (
+    <div className="rounded-xl border border-slate-700/60 bg-slate-900/70 p-4 flex flex-col gap-3">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
+          Build your brain
+        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className="text-[10px] font-mono px-2 py-0.5 rounded"
+            style={{ color: ptsColor, background: `${ptsColor}15`, border: `1px solid ${ptsColor}30` }}
+          >
+            {label}
+          </span>
+          <span className="text-[11px] font-mono text-slate-400">
+            <span style={{ color: ptsColor }} className="font-semibold">{earnedPts}</span>
+            <span className="text-slate-600"> / {TOTAL_POINTS} pts</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="h-1 rounded-full bg-slate-800 overflow-hidden">
+        <div
+          className="h-full rounded-full transition-[width] duration-[1000ms] ease-out"
+          style={{
+            width: `${pct}%`,
+            background: `linear-gradient(to right, ${ptsColor}70, ${ptsColor})`,
+          }}
+        />
+      </div>
+
+      {/* Tasks */}
+      <div className="flex flex-col gap-0.5 mt-0.5">
+        {pending.map((task) => (
+          <a
+            key={task.id}
+            href={task.link}
+            className="flex items-start gap-3 px-2 py-2.5 rounded-lg hover:bg-slate-800/50 transition-colors group"
+          >
+            <CheckCircleIcon done={false} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-slate-200 group-hover:text-slate-100 transition-colors leading-snug">
+                  {task.label}
+                </span>
+                <span className="text-[10px] font-mono text-[#22d3ee]/60 shrink-0">
+                  +{task.points} pts
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{task.desc}</p>
+            </div>
+            <span className="text-slate-600 group-hover:text-slate-400 transition-colors shrink-0 mt-0.5 text-xs">→</span>
+          </a>
+        ))}
+
+        {done.length > 0 && pending.length > 0 && (
+          <div className="h-px bg-slate-800/60 mx-2 my-1" />
+        )}
+
+        {done.map((task) => (
+          <div key={task.id} className="flex items-start gap-3 px-2 py-2.5 rounded-lg opacity-50">
+            <CheckCircleIcon done={true} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-slate-400 line-through leading-snug">
+                  {task.label}
+                </span>
+                <span className="text-[10px] font-mono text-[#22d3ee]/50 shrink-0">
+                  +{task.points} pts
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {pct >= 100 && (
+        <p className="text-[11px] font-mono text-[#22d3ee]/70 px-2">
+          Your brain is complete. Every draft your agent writes is now conditioned on your full business context.
+        </p>
+      )}
     </div>
   );
 }
@@ -276,10 +495,10 @@ export default function BrainHealthClient({
     <div className="h-full overflow-y-auto">
       <div className="max-w-2xl mx-auto px-5 py-7 flex flex-col gap-5">
 
-        {/* Header */}
-        <div className="flex flex-wrap items-start gap-4">
-          <div className="flex items-center gap-4 flex-1 min-w-0">
-            <Mascot state="brain" size={68} className="shrink-0" />
+        {/* Header — mobile-first: stack on mobile, side-by-side on sm+ */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <Mascot state="brain" size={52} className="shrink-0" />
             <div className="min-w-0">
               <h1 className="text-lg font-semibold text-slate-100">Brain</h1>
               <p className="text-sm text-slate-400 mt-0.5">
@@ -287,11 +506,11 @@ export default function BrainHealthClient({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0 self-start">
+          <div className="flex items-center gap-2 flex-wrap">
             {brainRepo && (
               <a
                 href="/app/brain/digest"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2.5 text-xs font-mono text-slate-300 hover:text-slate-100 hover:bg-slate-700/60 transition-all min-h-[40px]"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2.5 text-xs font-mono text-slate-300 hover:text-slate-100 hover:bg-slate-700/60 transition-all min-h-[40px] whitespace-nowrap"
               >
                 <SparkleIcon />
                 Weekly read
@@ -299,7 +518,7 @@ export default function BrainHealthClient({
             )}
             <a
               href="/app/onboarding?update=1"
-              className="inline-flex items-center rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2.5 text-xs font-mono text-slate-300 hover:text-slate-100 hover:bg-slate-700/60 transition-all min-h-[40px]"
+              className="inline-flex items-center rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2.5 text-xs font-mono text-slate-300 hover:text-slate-100 hover:bg-slate-700/60 transition-all min-h-[40px] whitespace-nowrap"
             >
               Setup wizard
             </a>
@@ -329,6 +548,8 @@ export default function BrainHealthClient({
         ) : data ? (
           <div className="flex flex-col gap-4">
             <ScoreBar filled={data.filled} total={data.total} pct={data.pct} />
+
+            <BrainTaskList areas={data.areas} />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {sortedAreas.map((area) => (
