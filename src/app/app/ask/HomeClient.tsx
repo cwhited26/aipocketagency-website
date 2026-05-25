@@ -451,17 +451,23 @@ function MascotNavHub({
         >
           {nodes.map((node) => (
             <g key={node.id}>
-              {/* Tendril path */}
+              {/* Tendril body stroke — thick dark tube matching creature anatomy */}
               <path
                 d={node.tendrilD}
-                stroke={
-                  node.connected
-                    ? "rgba(34,211,238,0.28)"
-                    : "rgba(71,85,105,0.22)"
-                }
-                strokeWidth={node.connected ? 1 : 0.75}
+                stroke="#1e3a52"
+                strokeWidth={5}
                 fill="none"
-                strokeDasharray={node.connected ? "5 7" : "2 9"}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              {/* Tendril cyan vein */}
+              <path
+                d={node.tendrilD}
+                stroke="#22d3ee"
+                strokeWidth={1.4}
+                fill="none"
+                strokeLinecap="round"
+                opacity={node.connected ? 0.55 : 0.22}
                 style={
                   node.connected
                     ? {
@@ -487,16 +493,22 @@ function MascotNavHub({
                   pointerEvents="all"
                 />
 
-                {/* Visual node dot */}
+                {/* Tip glow halo */}
                 <circle
                   cx={node.svgX}
                   cy={node.svgY}
-                  r={node.connected ? 4 : 3}
-                  fill={
-                    node.connected
-                      ? "rgba(34,211,238,0.85)"
-                      : "rgba(71,85,105,0.5)"
-                  }
+                  r={9}
+                  fill="#22d3ee"
+                  opacity={node.connected ? 0.18 : 0.07}
+                />
+
+                {/* Tip dot */}
+                <circle
+                  cx={node.svgX}
+                  cy={node.svgY}
+                  r={node.connected ? 3.5 : 3}
+                  fill="#5eead4"
+                  opacity={node.connected ? 0.9 : 0.4}
                   style={
                     node.connected
                       ? {
