@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Mascot from "@/components/Mascot";
 import type { FreshnessArea, FreshnessResponse, FreshnessStatus } from "@/app/api/app/brain/freshness/route";
 
 // ─── Icons ─────────────────────────────────────────────────────────────────────
@@ -277,11 +278,14 @@ export default function BrainHealthClient({
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-semibold text-slate-100">Brain</h1>
-            <p className="text-sm text-slate-400 mt-0.5">
-              How well your agent knows your business
-            </p>
+          <div className="flex items-center gap-4">
+            <Mascot state="brain" size={72} className="shrink-0" />
+            <div>
+              <h1 className="text-lg font-semibold text-slate-100">Brain</h1>
+              <p className="text-sm text-slate-400 mt-0.5">
+                How well your agent knows your business
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {brainRepo && (
@@ -306,13 +310,9 @@ export default function BrainHealthClient({
         {!brainRepo ? (
           <NoBrainState hasGithubToken={hasGithubToken} />
         ) : loading ? (
-          <div className="flex flex-col gap-4">
-            <div className="h-20 rounded-xl bg-slate-900/60 border border-slate-700/60 animate-pulse" />
-            <div className="grid grid-cols-2 gap-3">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-28 rounded-xl bg-slate-900/60 border border-slate-700/60 animate-pulse" />
-              ))}
-            </div>
+          <div className="flex flex-col items-center gap-3 py-12">
+            <Mascot state="working" size={88} />
+            <p className="text-[12px] font-mono text-slate-500">reading your brain…</p>
           </div>
         ) : error ? (
           <div className="rounded-xl border border-slate-700/60 bg-slate-900/40 p-6 text-center">

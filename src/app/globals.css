@@ -94,6 +94,21 @@ body {
   100% { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes mascot-float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-7px); }
+}
+
+@keyframes mascot-eye-pulse {
+  0%, 100% { opacity: 0.85; }
+  50%       { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-root { animation: none !important; }
+  .mascot-root * { animation: none !important; }
+}
+
 /* ─── Work card glow (cyan, BOS surface-card mechanic) ────────────────────── */
 /* Rest: matches design system slate-900/70 + slate-700/60 border.
    Hover/active: cyan edge glow that intensifies on touch — :active fires

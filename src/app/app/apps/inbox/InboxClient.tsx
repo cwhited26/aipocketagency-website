@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import Mascot from "@/components/Mascot";
 
 type PendingActionStatus =
   | "pending"
@@ -297,25 +298,26 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
           </div>
 
           {loading ? (
-            <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 px-6 py-8 text-center">
-              <p className="text-slate-500 text-sm">Loading…</p>
+            <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 px-6 py-8 flex flex-col items-center gap-3">
+              <Mascot state="working" size={80} />
+              <p className="text-[12px] font-mono text-slate-500">checking for proposals…</p>
             </div>
           ) : fetchError ? (
             <div className="rounded-xl border border-red-900/40 bg-red-950/20 px-6 py-6">
               <p className="text-red-400 text-sm font-mono">{fetchError}</p>
             </div>
           ) : pending.length === 0 ? (
-            <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 px-6 py-8 text-center">
-              <div className="text-[#22d3ee]/30 font-mono text-xs tracking-[0.2em] uppercase mb-3">
-                Queue
+            <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 px-6 py-8 flex flex-col items-center gap-4">
+              <Mascot state="inbox" size={100} />
+              <div className="text-center max-w-sm">
+                <div className="text-slate-100 text-sm font-medium mb-2">
+                  0 items pending approval
+                </div>
+                <p className="text-slate-500 text-sm leading-relaxed">
+                  Talk to your agent in a conversation. When it decides your brain should be updated,
+                  it proposes the change here for you to review before anything is written.
+                </p>
               </div>
-              <div className="text-slate-100 text-sm font-medium mb-2">
-                0 items pending approval
-              </div>
-              <p className="text-slate-500 text-sm leading-relaxed max-w-sm mx-auto">
-                Talk to your agent in a conversation. When it decides your brain should be updated,
-                it proposes the change here for you to review before anything is written.
-              </p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">

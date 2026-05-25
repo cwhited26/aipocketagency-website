@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import AlienCore from "../_components/AlienCore";
+import Mascot from "@/components/Mascot";
 import type { ActivityItem } from "@/app/api/app/brain/activity/route";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -378,9 +378,11 @@ function HubView({
     <div className="h-full overflow-y-auto" style={{ animation: "hub-fadein 0.4s ease-out" }}>
       <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-6">
 
-        {/* Alien — centerpiece */}
-        <div className="flex flex-col items-center gap-3">
-          <AlienCore brainRepo={brainRepo} />
+        {/* Mascot — centerpiece */}
+        <div className="flex flex-col items-center gap-4">
+          <Mascot state="idle" size={220} />
+
+          {/* Status line */}
           <div className="flex items-center gap-2">
             <span
               className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0"
@@ -389,6 +391,34 @@ function HubView({
             <span className="text-[12px] font-mono text-slate-300 tracking-[0.1em]">
               {brainRepo ? "online · reading your brain" : "online · waiting for context"}
             </span>
+          </div>
+
+          {/* Nav ring — replaces AlienCore radial nodes */}
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {[
+              { href: brainRepo ? "/app/brain" : "/app/onboarding", label: brainRepo ? (brainRepo.split("/")[1] ?? "Brain").slice(0, 14) : "Brain", connected: Boolean(brainRepo) },
+              { href: "/app/apps/quote",     label: "Quotes",      connected: true  },
+              { href: "/app/apps/followups", label: "Follow-ups",  connected: false },
+              { href: "/app/apps/inbox",     label: "Inbox",       connected: false },
+              { href: "/app/apps/calendar",  label: "Calendar",    connected: false },
+            ].map((node) => (
+              <a
+                key={node.href}
+                href={node.href}
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-mono transition-colors"
+                style={{
+                  color: node.connected ? "rgba(203,213,225,0.85)" : "rgba(100,116,139,0.65)",
+                  background: node.connected ? "rgba(34,211,238,0.07)" : "rgba(30,41,59,0.4)",
+                  border: `1px solid ${node.connected ? "rgba(34,211,238,0.2)" : "rgba(51,65,85,0.4)"}`,
+                }}
+              >
+                <span
+                  className="w-1 h-1 rounded-full shrink-0"
+                  style={{ background: node.connected ? "#22d3ee" : "#475569" }}
+                />
+                {node.label}
+              </a>
+            ))}
           </div>
         </div>
 

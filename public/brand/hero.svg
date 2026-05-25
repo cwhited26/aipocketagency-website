@@ -1,0 +1,206 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI Pocket Agent — your second brain, working">
+<defs>
+  <!-- Creature gradients -->
+  <radialGradient id="h-aura" cx="22%" cy="50%" r="32%">
+    <stop offset="0%" stop-color="#0c3a44" stop-opacity="0.55"/>
+    <stop offset="60%" stop-color="#08161c" stop-opacity="0.22"/>
+    <stop offset="100%" stop-color="#06080b" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="h-eyeglow" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.6"/>
+    <stop offset="55%" stop-color="#0e7490" stop-opacity="0.2"/>
+    <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="h-phoneglow" cx="50%" cy="45%" r="55%">
+    <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.14"/>
+    <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="h-centerbloom" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#0c3a44" stop-opacity="0.25"/>
+    <stop offset="100%" stop-color="#06080b" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="h-eyeblur" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="h-softglow" x="-80%" y="-80%" width="260%" height="260%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="12"/>
+  </filter>
+  <!-- Subtle dot grid pattern -->
+  <pattern id="h-dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+    <circle cx="0.5" cy="0.5" r="0.5" fill="rgba(34,211,238,0.07)"/>
+  </pattern>
+</defs>
+
+<!-- Background -->
+<rect width="1200" height="630" fill="#06080b"/>
+
+<!-- Grid overlay -->
+<rect width="1200" height="630" fill="url(#h-dots)" opacity="0.8"/>
+
+<!-- Ambient bloom from creature area -->
+<ellipse cx="260" cy="315" r="340" ry="260" fill="url(#h-aura)"/>
+
+<!-- ──────────────────────────────────────────────────────────────────────────
+     Creature — inlined SVG geometry, scaled to ~400px wide
+     Creature viewBox is 0 0 380 400; here scaled so 380→400 (scale ~1.053)
+     Positioned at x=18, y=40 → creature center ~(228, 226) in hero
+     ────────────────────────────────────────────────────────────────────────── -->
+<svg x="18" y="30" width="410" height="432" viewBox="0 0 380 400" overflow="visible">
+  <defs>
+    <radialGradient id="c-aura" cx="50%" cy="42%" r="58%">
+      <stop offset="0%" stop-color="#0c3a44" stop-opacity="0.6"/>
+      <stop offset="55%" stop-color="#08161c" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#06080b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="c-eyeglow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.6"/>
+      <stop offset="55%" stop-color="#0e7490" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="c-eyeblur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2.8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Aura -->
+  <circle cx="190" cy="172" r="150" fill="url(#c-aura)"/>
+
+  <!-- Body -->
+  <path d="M190 78 C152 78 132 116 132 172 C132 232 152 276 190 290 C228 276 248 232 248 172 C248 116 228 78 190 78 Z"
+    fill="#0b1322" stroke="#1d3151" stroke-width="0.8"/>
+
+  <!-- Shoulder highlight -->
+  <ellipse cx="170" cy="122" rx="19" ry="33" fill="#16263e" opacity="0.45"/>
+
+  <!-- Tendril 0 — far left -->
+  <path d="M 157 287 Q 117 326 78 366" stroke="#16314a" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M 157 287 Q 117 326 78 366" stroke="#22d3ee" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.45"/>
+  <circle cx="78" cy="366" r="7" fill="#22d3ee" opacity="0.18"/>
+  <circle cx="78" cy="366" r="3" fill="#5eead4"/>
+
+  <!-- Tendril 1 — left -->
+  <path d="M 173 290 Q 150 330 128 370" stroke="#16314a" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M 173 290 Q 150 330 128 370" stroke="#22d3ee" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.45"/>
+  <circle cx="128" cy="370" r="7" fill="#22d3ee" opacity="0.18"/>
+  <circle cx="128" cy="370" r="3" fill="#5eead4"/>
+
+  <!-- Tendril 2 — center -->
+  <path d="M 190 293 Q 190 334 190 374" stroke="#16314a" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M 190 293 Q 190 334 190 374" stroke="#22d3ee" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.45"/>
+  <circle cx="190" cy="374" r="7" fill="#22d3ee" opacity="0.18"/>
+  <circle cx="190" cy="374" r="3" fill="#5eead4"/>
+
+  <!-- Tendril 3 — right; extended toward phone in hero context -->
+  <path d="M 207 290 Q 280 310 340 295" stroke="#16314a" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M 207 290 Q 280 310 340 295" stroke="#22d3ee" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.45"/>
+  <circle cx="340" cy="295" r="7" fill="#22d3ee" opacity="0.18"/>
+  <circle cx="340" cy="295" r="3" fill="#5eead4"/>
+
+  <!-- Tendril 4 — far right; extended further right toward phone -->
+  <path d="M 223 287 Q 300 330 370 340" stroke="#16314a" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M 223 287 Q 300 330 370 340" stroke="#22d3ee" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.45"/>
+  <circle cx="370" cy="340" r="7" fill="#22d3ee" opacity="0.18"/>
+  <circle cx="370" cy="340" r="3" fill="#5eead4"/>
+
+  <!-- Eye (no filter needed in static SVG — inline the blur) -->
+  <g filter="url(#c-eyeblur)">
+    <circle cx="190" cy="162" r="46" fill="url(#c-eyeglow)"/>
+    <ellipse cx="190" cy="162" rx="32" ry="29" fill="#04141c"/>
+    <circle cx="190" cy="162" r="21" fill="#0a3d49"/>
+    <circle cx="190" cy="162" r="21" fill="none" stroke="#22d3ee" stroke-width="1.6"/>
+    <circle cx="190" cy="162" r="14" fill="#0e6b80"/>
+    <ellipse cx="190" cy="162" rx="3.4" ry="15" fill="#02080c"/>
+    <ellipse cx="190" cy="162" rx="3.4" ry="15" fill="none" stroke="#5eead4" stroke-width="0.8" opacity="0.7"/>
+    <circle cx="183" cy="153" r="2.4" fill="#d6fbff" opacity="0.85"/>
+  </g>
+
+  <!-- Motes -->
+  <circle cx="148" cy="132" r="6" fill="#22d3ee" opacity="0.14"/>
+  <circle cx="148" cy="132" r="2" fill="#5eead4"/>
+  <circle cx="234" cy="146" r="6" fill="#22d3ee" opacity="0.14"/>
+  <circle cx="234" cy="146" r="2" fill="#5eead4"/>
+  <circle cx="120" cy="204" r="6" fill="#22d3ee" opacity="0.14"/>
+  <circle cx="120" cy="204" r="2" fill="#5eead4"/>
+  <circle cx="258" cy="198" r="6" fill="#22d3ee" opacity="0.14"/>
+  <circle cx="258" cy="198" r="2" fill="#5eead4"/>
+</svg>
+
+<!-- ──────────────────────────────────────────────────────────────────────────
+     Hero tendrils — long extensions from creature reaching toward phone
+     Creature far-right tendrils end at ~(429, 358) and ~(447, 387) in hero coords
+     (x = 18 + 340/380*410 ≈ 385, y = 30 + 295/400*432 ≈ 348)
+     ────────────────────────────────────────────────────────────────────────── -->
+<path d="M 385 348 Q 640 310 880 278" stroke="#16314a" stroke-width="3.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+<path d="M 385 348 Q 640 310 880 278" stroke="#22d3ee" stroke-width="0.9" fill="none" stroke-linecap="round" opacity="0.28"/>
+
+<path d="M 397 387 Q 620 410 875 370" stroke="#16314a" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+<path d="M 397 387 Q 620 410 875 370" stroke="#22d3ee" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.22"/>
+
+<!-- ──────────────────────────────────────────────────────────────────────────
+     Phone silhouette — right center
+     ────────────────────────────────────────────────────────────────────────── -->
+
+<!-- Phone glow bloom behind device -->
+<ellipse cx="900" cy="258" rx="80" ry="100" fill="url(#h-phoneglow)"/>
+
+<!-- Phone body -->
+<rect x="858" y="148" width="84" height="168" rx="14"
+  fill="#0a111e" stroke="#22d3ee" stroke-width="0.7" stroke-opacity="0.55"/>
+
+<!-- Screen -->
+<rect x="867" y="162" width="66" height="130" rx="4"
+  fill="rgba(34,211,238,0.05)" stroke="rgba(34,211,238,0.12)" stroke-width="0.5"/>
+
+<!-- Screen inner glow -->
+<rect x="867" y="162" width="66" height="40" rx="4"
+  fill="rgba(34,211,238,0.04)"/>
+
+<!-- Screen content lines (abstract UI) -->
+<rect x="874" y="171" width="38" height="3.5" rx="1.5" fill="rgba(34,211,238,0.35)"/>
+<rect x="874" y="179" width="52" height="2.5" rx="1.5" fill="rgba(203,213,225,0.18)"/>
+<rect x="874" y="185" width="44" height="2.5" rx="1.5" fill="rgba(203,213,225,0.12)"/>
+<rect x="874" y="197" width="52" height="22" rx="3"
+  fill="rgba(14,107,128,0.25)" stroke="rgba(34,211,238,0.2)" stroke-width="0.5"/>
+<rect x="874" y="225" width="52" height="22" rx="3"
+  fill="rgba(30,41,59,0.4)" stroke="rgba(51,65,85,0.3)" stroke-width="0.5"/>
+<rect x="874" y="253" width="52" height="22" rx="3"
+  fill="rgba(30,41,59,0.4)" stroke="rgba(51,65,85,0.3)" stroke-width="0.5"/>
+
+<!-- Camera notch -->
+<circle cx="900" cy="157" r="2.8" fill="#22d3ee" opacity="0.35"/>
+
+<!-- Home indicator -->
+<rect x="882" y="307" width="36" height="3" rx="1.5" fill="rgba(34,211,238,0.2)"/>
+
+<!-- Tendril tip connections to phone -->
+<circle cx="880" cy="278" r="5" fill="#22d3ee" opacity="0.18"/>
+<circle cx="880" cy="278" r="2.5" fill="#5eead4"/>
+<circle cx="876" cy="370" r="5" fill="#22d3ee" opacity="0.14"/>
+<circle cx="876" cy="370" r="2.5" fill="#5eead4"/>
+
+<!-- ──────────────────────────────────────────────────────────────────────────
+     Headline text — right of creature, below midline
+     Font stack: system UI fonts (safe for SVG)
+     ────────────────────────────────────────────────────────────────────────── -->
+
+<!-- Heading line 1 -->
+<text x="490" y="444"
+  font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"
+  font-size="42" font-weight="700" letter-spacing="-0.5"
+  fill="#f1f5f9">your second brain,</text>
+
+<!-- Heading line 2 — cyan -->
+<text x="490" y="499"
+  font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"
+  font-size="42" font-weight="700" letter-spacing="-0.5"
+  fill="#22d3ee">working.</text>
+
+<!-- Product label -->
+<text x="492" y="530"
+  font-family="'SF Mono', 'Cascadia Code', 'Fira Mono', ui-monospace, monospace"
+  font-size="12" font-weight="400" letter-spacing="0.16em"
+  fill="#475569">AI POCKET AGENT</text>
+
+</svg>

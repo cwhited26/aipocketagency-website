@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FileUploadZone from "../_components/FileUploadZone";
+import Mascot from "@/components/Mascot";
 import type { BrainFile } from "@/app/api/app/brain/files/route";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -229,12 +230,8 @@ function Section({
 
 function EmptyState({ hasGithubToken }: { hasGithubToken: boolean }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center gap-5 py-16 px-6">
-      <div className="w-12 h-12 rounded-full border border-slate-700/60 flex items-center justify-center">
-        <span className="text-slate-600">
-          <DocIcon />
-        </span>
-      </div>
+    <div className="flex flex-col items-center justify-center text-center gap-5 py-10 px-6">
+      <Mascot state="documents" size={120} />
       <div className="space-y-2 max-w-sm">
         <p className="text-base font-semibold text-slate-200">No documents yet</p>
         {!hasGithubToken ? (
@@ -356,9 +353,9 @@ export default function DocumentsClient({
         {!brainRepo ? (
           <EmptyState hasGithubToken={hasGithubToken} />
         ) : loading ? (
-          <div className="flex items-center gap-2 text-sm text-slate-500 py-10 justify-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#22d3ee]/60 animate-pulse" />
-            Loading your documents…
+          <div className="flex flex-col items-center gap-3 py-10">
+            <Mascot state="working" size={80} />
+            <p className="text-[12px] font-mono text-slate-500">loading your documents…</p>
           </div>
         ) : filtered.length === 0 ? (
           search ? (
