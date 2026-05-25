@@ -160,7 +160,11 @@ export default function AppNav() {
           Pocket Agent
         </span>
         {mobileOpen && (
-          <button onClick={close} className="ml-auto text-slate-500 hover:text-slate-200 transition-colors">
+          <button
+            onClick={close}
+            className="ml-auto text-slate-500 hover:text-slate-200 transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Close navigation"
+          >
             <CloseIcon />
           </button>
         )}
@@ -193,7 +197,8 @@ export default function AppNav() {
       <div className="lg:hidden fixed top-0 inset-x-0 z-40 h-12 flex items-center px-4 bg-[#070c11] border-b border-slate-800/60">
         <button
           onClick={() => setMobileOpen(true)}
-          className="text-slate-500 hover:text-slate-200 transition-colors"
+          className="text-slate-500 hover:text-slate-200 transition-colors p-2.5 -ml-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label="Open navigation"
         >
           <HamburgerIcon />
         </button>

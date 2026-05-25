@@ -157,14 +157,14 @@ function PendingCard({
         <button
           onClick={handleApprove}
           disabled={busy !== null}
-          className="flex-1 py-2 px-4 rounded-lg bg-[#22d3ee]/10 hover:bg-[#22d3ee]/20 border border-[#22d3ee]/30 hover:border-[#22d3ee]/60 text-[#22d3ee] text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 py-3 px-4 rounded-lg bg-[#22d3ee]/10 hover:bg-[#22d3ee]/20 border border-[#22d3ee]/30 hover:border-[#22d3ee]/60 text-[#22d3ee] text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
         >
           {busy === "approve" ? "Approving…" : "Approve"}
         </button>
         <button
           onClick={handleReject}
           disabled={busy !== null}
-          className="flex-1 py-2 px-4 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 hover:border-slate-600/60 text-slate-300 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 py-3 px-4 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 hover:border-slate-600/60 text-slate-300 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
         >
           {busy === "reject" ? "Rejecting…" : "Reject"}
         </button>

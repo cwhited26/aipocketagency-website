@@ -277,21 +277,21 @@ export default function BrainHealthClient({
       <div className="max-w-2xl mx-auto px-5 py-7 flex flex-col gap-5">
 
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Mascot state="brain" size={72} className="shrink-0" />
-            <div>
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <Mascot state="brain" size={68} className="shrink-0" />
+            <div className="min-w-0">
               <h1 className="text-lg font-semibold text-slate-100">Brain</h1>
               <p className="text-sm text-slate-400 mt-0.5">
                 How well your agent knows your business
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 self-start">
             {brainRepo && (
               <a
                 href="/app/brain/digest"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2 text-xs font-mono text-slate-300 hover:text-slate-100 hover:bg-slate-700/60 transition-all"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2.5 text-xs font-mono text-slate-300 hover:text-slate-100 hover:bg-slate-700/60 transition-all min-h-[40px]"
               >
                 <SparkleIcon />
                 Weekly read
@@ -299,7 +299,7 @@ export default function BrainHealthClient({
             )}
             <a
               href="/app/onboarding?update=1"
-              className="inline-flex items-center rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2 text-xs font-mono text-slate-300 hover:text-slate-100 hover:bg-slate-700/60 transition-all"
+              className="inline-flex items-center rounded-lg border border-slate-700/60 bg-slate-800/60 px-3 py-2.5 text-xs font-mono text-slate-300 hover:text-slate-100 hover:bg-slate-700/60 transition-all min-h-[40px]"
             >
               Setup wizard
             </a>

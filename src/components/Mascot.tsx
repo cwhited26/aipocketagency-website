@@ -16,6 +16,7 @@ interface MascotProps {
   state?: MascotState;
   size?: number;
   className?: string;
+  noTendrils?: boolean;
 }
 
 // ─── Tendril geometry ─────────────────────────────────────────────────────────
@@ -136,6 +137,7 @@ export default function Mascot({
   state = "idle",
   size = 220,
   className = "",
+  noTendrils = false,
 }: MascotProps) {
   const [mounted, setMounted] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(true);
@@ -159,7 +161,7 @@ export default function Mascot({
   const slitRx = state === "working" ? 1.6 : 3.4;
   const eyeAlpha = state === "empty" ? 0.35 : 1;
   const auraAlpha = state === "empty" ? 0.2 : 1;
-  const showTendrils = state !== "empty";
+  const showTendrils = !noTendrils && state !== "empty";
   const showMotes = state !== "empty";
 
   // Float: idle/brain/documents/inbox — not for working (active) or empty (dormant)

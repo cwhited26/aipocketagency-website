@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Mascot from "@/components/Mascot";
 import type { ActivityItem } from "@/app/api/app/brain/activity/route";
 
@@ -343,6 +344,199 @@ function ActivityFeedPanel({ brainRepo }: { brainRepo: string | null }) {
   );
 }
 
+// ─── Mascot Nav Hub ────────────────────────────────────────────────────────────
+// The creature is the centrepiece. Nav tentacles radiate from the body to 5
+// clickable destination nodes. SVG nav layer sits behind the creature so the
+// body correctly occludes the tendril origins; pointer-events-none on the
+// creature div lets clicks fall through to the nav SVG.
+
+type NavNodeDef = {
+  id: string;
+  label: string;
+  href: string;
+  connected: boolean;
+  svgX: number;
+  svgY: number;
+  tendrilD: string;
+  textAnchor: "start" | "middle" | "end";
+  labelDx: number;
+  labelDy: number;
+  animDelay: string;
+  animDur: string;
+};
+
+function MascotNavHub({
+  brainRepo,
+  size = 260,
+}: {
+  brainRepo: string | null;
+  size?: number;
+}) {
+  const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+  useEffect(() => { setMounted(true); }, []);
+
+  const height = Math.round((size * 400) / 380);
+  const brainLabel = brainRepo
+    ? (brainRepo.split("/")[1] ?? "Brain").slice(0, 14)
+    : "Brain";
+  const brainHref = brainRepo ? "/app/brain" : "/app/onboarding";
+
+  // Node positions match AlienCore's clock layout, adapted to creature
+  // centre (190, 184) in its native 380×400 viewBox.
+  const nodes: NavNodeDef[] = [
+    {
+      id: "brain",
+      label: brainLabel,
+      href: brainHref,
+      connected: Boolean(brainRepo),
+      svgX: 190, svgY: 44,
+      tendrilD: "M 190 184 C 190 138 190 88 190 44",
+      textAnchor: "middle", labelDx: 0, labelDy: -12,
+      animDelay: "0s", animDur: "6s",
+    },
+    {
+      id: "quotes",
+      label: "Quotes",
+      href: "/app/apps/quote",
+      connected: true,
+      svgX: 307, svgY: 112,
+      tendrilD: "M 190 184 C 234 168 278 140 307 112",
+      textAnchor: "start", labelDx: 10, labelDy: 0,
+      animDelay: "1.2s", animDur: "7s",
+    },
+    {
+      id: "followups",
+      label: "Follow-ups",
+      href: "/app/apps/followups",
+      connected: false,
+      svgX: 284, svgY: 265,
+      tendrilD: "M 190 184 C 222 208 258 246 284 265",
+      textAnchor: "start", labelDx: 10, labelDy: 4,
+      animDelay: "2.4s", animDur: "8s",
+    },
+    {
+      id: "inbox",
+      label: "Inbox",
+      href: "/app/apps/inbox",
+      connected: false,
+      svgX: 96, svgY: 265,
+      tendrilD: "M 190 184 C 158 208 122 246 96 265",
+      textAnchor: "end", labelDx: -10, labelDy: 4,
+      animDelay: "1.8s", animDur: "7.5s",
+    },
+    {
+      id: "calendar",
+      label: "Cal",
+      href: "/app/apps/calendar",
+      connected: false,
+      svgX: 73, svgY: 112,
+      tendrilD: "M 190 184 C 146 168 102 140 73 112",
+      textAnchor: "end", labelDx: -10, labelDy: 0,
+      animDelay: "0.6s", animDur: "6.5s",
+    },
+  ];
+
+  return (
+    <div className="relative" style={{ width: size, height }}>
+      {/* Nav layer — rendered behind creature body */}
+      {mounted && (
+        <svg
+          viewBox="0 0 380 400"
+          width={size}
+          height={height}
+          className="absolute inset-0"
+          aria-hidden="true"
+          overflow="visible"
+        >
+          {nodes.map((node) => (
+            <g key={node.id}>
+              {/* Tendril path */}
+              <path
+                d={node.tendrilD}
+                stroke={
+                  node.connected
+                    ? "rgba(34,211,238,0.28)"
+                    : "rgba(71,85,105,0.22)"
+                }
+                strokeWidth={node.connected ? 1 : 0.75}
+                fill="none"
+                strokeDasharray={node.connected ? "5 7" : "2 9"}
+                style={
+                  node.connected
+                    ? {
+                        animation: `tendril-pulse ${node.animDur} ease-in-out ${node.animDelay} infinite`,
+                      }
+                    : {}
+                }
+              />
+
+              {/* Clickable node group */}
+              <g
+                onClick={() => router.push(node.href)}
+                style={{ cursor: "pointer" }}
+                role="link"
+                aria-label={`Go to ${node.label}`}
+              >
+                {/* 44 px invisible hit target (r=22 → diameter 44) */}
+                <circle
+                  cx={node.svgX}
+                  cy={node.svgY}
+                  r="22"
+                  fill="rgba(0,0,0,0.001)"
+                  pointerEvents="all"
+                />
+
+                {/* Visual node dot */}
+                <circle
+                  cx={node.svgX}
+                  cy={node.svgY}
+                  r={node.connected ? 4 : 3}
+                  fill={
+                    node.connected
+                      ? "rgba(34,211,238,0.85)"
+                      : "rgba(71,85,105,0.5)"
+                  }
+                  style={
+                    node.connected
+                      ? {
+                          animation: `node-beacon ${node.animDur} ease-in-out ${node.animDelay} infinite`,
+                        }
+                      : {}
+                  }
+                />
+
+                {/* Label */}
+                <text
+                  x={node.svgX + node.labelDx}
+                  y={node.svgY + node.labelDy}
+                  textAnchor={node.textAnchor}
+                  dominantBaseline="middle"
+                  fill={
+                    node.connected
+                      ? "rgba(203,213,225,0.85)"
+                      : "rgba(100,116,139,0.65)"
+                  }
+                  fontSize="11"
+                  fontFamily="ui-monospace, 'Cascadia Code', monospace"
+                  letterSpacing="0.04em"
+                >
+                  {node.label}
+                </text>
+              </g>
+            </g>
+          ))}
+        </svg>
+      )}
+
+      {/* Creature — above nav layer, pointer-events-none so nav catches clicks */}
+      <div className="absolute inset-0 pointer-events-none">
+        <Mascot state="idle" size={size} noTendrils />
+      </div>
+    </div>
+  );
+}
+
 // ─── Hub View ──────────────────────────────────────────────────────────────────
 
 const CHIPS = [
@@ -376,13 +570,11 @@ function HubView({
 }) {
   return (
     <div className="h-full overflow-y-auto" style={{ animation: "hub-fadein 0.4s ease-out" }}>
-      <div className="max-w-2xl mx-auto px-6 py-8 flex flex-col gap-6">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-6">
 
-        {/* Mascot — centerpiece */}
-        <div className="flex flex-col items-center gap-4">
-          <Mascot state="idle" size={220} />
-
-          {/* Status line */}
+        {/* Mascot + tentacle nav — centrepiece */}
+        <div className="flex flex-col items-center gap-3">
+          <MascotNavHub brainRepo={brainRepo} size={260} />
           <div className="flex items-center gap-2">
             <span
               className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0"
@@ -391,34 +583,6 @@ function HubView({
             <span className="text-[12px] font-mono text-slate-300 tracking-[0.1em]">
               {brainRepo ? "online · reading your brain" : "online · waiting for context"}
             </span>
-          </div>
-
-          {/* Nav ring — replaces AlienCore radial nodes */}
-          <div className="flex flex-wrap items-center justify-center gap-1.5">
-            {[
-              { href: brainRepo ? "/app/brain" : "/app/onboarding", label: brainRepo ? (brainRepo.split("/")[1] ?? "Brain").slice(0, 14) : "Brain", connected: Boolean(brainRepo) },
-              { href: "/app/apps/quote",     label: "Quotes",      connected: true  },
-              { href: "/app/apps/followups", label: "Follow-ups",  connected: false },
-              { href: "/app/apps/inbox",     label: "Inbox",       connected: false },
-              { href: "/app/apps/calendar",  label: "Calendar",    connected: false },
-            ].map((node) => (
-              <a
-                key={node.href}
-                href={node.href}
-                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-mono transition-colors"
-                style={{
-                  color: node.connected ? "rgba(203,213,225,0.85)" : "rgba(100,116,139,0.65)",
-                  background: node.connected ? "rgba(34,211,238,0.07)" : "rgba(30,41,59,0.4)",
-                  border: `1px solid ${node.connected ? "rgba(34,211,238,0.2)" : "rgba(51,65,85,0.4)"}`,
-                }}
-              >
-                <span
-                  className="w-1 h-1 rounded-full shrink-0"
-                  style={{ background: node.connected ? "#22d3ee" : "#475569" }}
-                />
-                {node.label}
-              </a>
-            ))}
           </div>
         </div>
 
@@ -430,7 +594,7 @@ function HubView({
               : "border-slate-700/60 bg-slate-900/60"
           }`}>
             {!hasGithubToken ? (
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-100">Step 1: Connect GitHub</p>
                   <p className="text-sm text-slate-300 mt-0.5">
@@ -439,13 +603,13 @@ function HubView({
                 </div>
                 <a
                   href="/api/app/auth/github?next=/app/onboarding"
-                  className="shrink-0 inline-flex items-center rounded-lg bg-[#22d3ee] px-4 py-2 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors"
+                  className="self-start sm:self-auto shrink-0 inline-flex items-center rounded-lg bg-[#22d3ee] px-4 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors min-h-[44px]"
                 >
                   Connect GitHub →
                 </a>
               </div>
             ) : (
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-slate-100">Step 2: Connect your brain</p>
                   <p className="text-sm text-slate-300 mt-0.5">
@@ -454,7 +618,7 @@ function HubView({
                 </div>
                 <a
                   href="/app/onboarding"
-                  className="shrink-0 inline-flex items-center rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-700 transition-colors"
+                  className="self-start sm:self-auto shrink-0 inline-flex items-center rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-100 hover:bg-slate-700 transition-colors min-h-[44px]"
                 >
                   Set up brain →
                 </a>
@@ -463,8 +627,8 @@ function HubView({
           </div>
         )}
 
-        {/* Status panels */}
-        <div className="grid grid-cols-2 gap-3" style={{ minHeight: 200 }}>
+        {/* Status panels — single col on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <ActivityFeedPanel brainRepo={brainRepo} />
           <BrainOrganPanel brainRepo={brainRepo} />
         </div>
@@ -486,7 +650,7 @@ function HubView({
             </p>
             <a
               href="/app/settings"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#22d3ee] px-4 py-2.5 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg bg-[#22d3ee] px-4 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors min-h-[44px]"
             >
               Go to Settings →
             </a>
@@ -504,24 +668,24 @@ function HubView({
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
               />
-              <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-700/60">
-                <div className="flex gap-1 flex-wrap">
+              <div className="flex items-center justify-between px-3 py-2 border-t border-slate-700/60 gap-2">
+                <div className="flex gap-1 flex-wrap min-w-0">
                   {CHIPS.map((chip) => (
                     <button
                       key={chip.label}
                       onClick={() => setInputValue(chip.scaffold)}
-                      className="rounded px-2.5 py-1 text-[11px] font-mono text-slate-400 hover:text-slate-100 hover:bg-slate-700/60 transition-all"
+                      className="rounded px-2.5 py-2 text-[11px] font-mono text-slate-400 hover:text-slate-100 hover:bg-slate-700/60 transition-all min-h-[36px]"
                     >
                       {chip.label}
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-[11px] text-slate-500 font-mono">⌘↵</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] text-slate-500 font-mono hidden sm:block">⌘↵</span>
                   <button
                     onClick={handleSubmit}
                     disabled={!inputValue.trim() || isLoading}
-                    className="rounded-lg bg-[#22d3ee] px-4 py-1.5 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="rounded-lg bg-[#22d3ee] px-4 py-2.5 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px]"
                   >
                     {isLoading ? "Working…" : "Ask"}
                   </button>
@@ -531,7 +695,7 @@ function HubView({
           </div>
         )}
 
-        {/* Work surface */}
+        {/* Work surface — single col on mobile */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <span className="text-[12px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
@@ -541,7 +705,7 @@ function HubView({
               See all →
             </a>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {[
               { href: "/app/apps/quote", label: "Quote / Proposal", desc: "Reads your brain. Drafts a clean quote." },
               { href: "/app/apps/email", label: "Email Drafter", desc: "Writes emails that sound like you." },
@@ -549,7 +713,7 @@ function HubView({
               <a
                 key={app.href}
                 href={app.href}
-                className="group block rounded-xl border border-slate-700/60 bg-slate-900/60 px-4 py-3 hover:border-slate-600 hover:bg-slate-900 transition-all"
+                className="group block rounded-xl border border-slate-700/60 bg-slate-900/60 px-4 py-4 hover:border-slate-600 hover:bg-slate-900 transition-all min-h-[60px]"
               >
                 <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100 transition-colors">
                   {app.label}
@@ -885,7 +1049,7 @@ export default function HomeClient({
                     <button
                       onClick={handleSubmit}
                       disabled={!inputValue.trim() || isLoading}
-                      className="rounded-xl bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                      className="rounded-xl bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0 min-h-[44px]"
                     >
                       Send
                     </button>
