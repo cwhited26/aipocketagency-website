@@ -138,6 +138,12 @@ export default async function SettingsPage({
 
         <ConnectionsPanel connections={connections} oauthConfigured={oauthConfigured} />
 
+        {/* Product links */}
+        <div className="rounded-xl border border-slate-700/60 bg-slate-900/50 overflow-hidden divide-y divide-slate-800/60">
+          <SettingsRow label="Learn" value="How Pocket Agent works" href="/app/learn" />
+          <SettingsRow label="Changelog" value="What's new" href="/app/changelog" />
+        </div>
+
         <div className="flex justify-end pt-2">
           <form action="/api/app/sign-out" method="POST">
             <button type="submit" className="text-sm text-slate-500 hover:text-red-400 transition-colors">

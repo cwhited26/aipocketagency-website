@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CommandPaletteButton } from "./CommandPalette";
 
 function AgentIcon() {
@@ -76,6 +76,17 @@ function CaptureIcon() {
   );
 }
 
+function TasksIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M5.5 3h7M5.5 7.5h7M5.5 12h7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="2.5" cy="3" r="1" fill="currentColor" />
+      <circle cx="2.5" cy="7.5" r="1" fill="currentColor" />
+      <circle cx="2.5" cy="12" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
 function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -99,10 +110,11 @@ type NavItemProps = {
   label: string;
   disabled?: boolean;
   soon?: boolean;
+  badge?: number;
   onClick?: () => void;
 };
 
-function NavItem({ href, active, icon, label, disabled, soon, onClick }: NavItemProps) {
+function NavItem({ href, active, icon, label, disabled, soon, badge, onClick }: NavItemProps) {
   if (disabled) {
     return (
       <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg opacity-30 cursor-not-allowed select-none">
@@ -131,9 +143,13 @@ function NavItem({ href, active, icon, label, disabled, soon, onClick }: NavItem
         {icon}
       </span>
       <span className="font-medium">{label}</span>
-      {active && (
+      {badge !== undefined && badge > 0 ? (
+        <span className="ml-auto shrink-0 min-w-[18px] h-[18px] rounded-full bg-[#22d3ee]/15 border border-[#22d3ee]/40 text-[#22d3ee] text-[10px] font-mono flex items-center justify-center px-1.5">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : active ? (
         <span className="ml-auto w-[3px] h-4 rounded-full bg-[#22d3ee] opacity-80 shrink-0" />
-      )}
+      ) : null}
     </Link>
   );
 }
@@ -141,6 +157,14 @@ function NavItem({ href, active, icon, label, disabled, soon, onClick }: NavItem
 export default function AppNav() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [taskCount, setTaskCount] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/app/tasks/count")
+      .then((r) => (r.ok ? (r.json() as Promise<{ total: number }>) : Promise.reject()))
+      .then((d) => { setTaskCount(d.total); })
+      .catch(() => { /* badge stays hidden on error */ });
+  }, []);
 
   const isAgent = pathname.startsWith("/app/ask");
   const isBrain =
@@ -150,6 +174,7 @@ export default function AppNav() {
   const isCommunity = pathname.startsWith("/app/skool");
   const isSettings = pathname.startsWith("/app/settings");
   const isCapture = pathname.startsWith("/app/capture");
+  const isTasks = pathname.startsWith("/app/tasks");
 
   const close = () => setMobileOpen(false);
 
@@ -175,6 +200,7 @@ export default function AppNav() {
           <CommandPaletteButton />
         </div>
         <NavItem href="/app/ask" active={isAgent} icon={<AgentIcon />} label="Agent" onClick={close} />
+        <NavItem href="/app/tasks" active={isTasks} icon={<TasksIcon />} label="Tasks" badge={taskCount} onClick={close} />
         <NavItem href="/app/brain" active={isBrain} icon={<BrainIcon />} label="Brain" onClick={close} />
         <NavItem href="/app/documents" active={isDocs} icon={<DocsIcon />} label="Documents" onClick={close} />
         <NavItem href="/app/apps" active={isWork} icon={<WorkIcon />} label="Work" onClick={close} />
