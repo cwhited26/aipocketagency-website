@@ -168,21 +168,37 @@ export default function FeedBrainClient({
               </div>
             )}
 
-            {/* iOS share shortcut promo */}
-            <a
-              href="/app/share-setup"
-              className="flex items-center gap-3 rounded-xl border border-slate-700/40 bg-slate-900/40 px-4 py-3 hover:border-[#22d3ee]/30 hover:bg-slate-900/60 transition-all group"
-            >
-              <span className="text-[#22d3ee]/50 text-sm shrink-0 group-hover:text-[#22d3ee]/80 transition-colors">⇧</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-slate-300 group-hover:text-slate-200 transition-colors">
-                  Add it to your phone&apos;s share sheet
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Share URLs and articles from any app in two taps →
-                </p>
-              </div>
-            </a>
+            {/* iOS share shortcuts */}
+            <div className="flex flex-col gap-2">
+              <a
+                href="/app/share-setup"
+                className="flex items-center gap-3 rounded-xl border border-slate-700/40 bg-slate-900/40 px-4 py-3 hover:border-[#22d3ee]/30 hover:bg-slate-900/60 transition-all group"
+              >
+                <span className="text-[#22d3ee]/50 text-sm shrink-0 group-hover:text-[#22d3ee]/80 transition-colors">⇧</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-300 group-hover:text-slate-200 transition-colors">
+                    Add it to your phone&apos;s share sheet
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Share URLs and articles from any app in two taps →
+                  </p>
+                </div>
+              </a>
+              <a
+                href="/app/brain/inbox"
+                className="flex items-center gap-3 rounded-xl border border-slate-800/50 bg-slate-900/30 px-4 py-3 hover:border-slate-700/60 hover:bg-slate-900/50 transition-all group"
+              >
+                <span className="text-slate-600 text-sm shrink-0 group-hover:text-slate-400 transition-colors">◈</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-400 group-hover:text-slate-300 transition-colors">
+                    View Capture Inbox
+                  </p>
+                  <p className="text-[11px] text-slate-600 mt-0.5">
+                    Browse + remove items shared from iOS →
+                  </p>
+                </div>
+              </a>
+            </div>
 
             {/* What to upload */}
             <div className="rounded-xl border border-slate-800/50 bg-slate-900/30 px-4 py-4">

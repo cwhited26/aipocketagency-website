@@ -309,19 +309,19 @@ export default function ShareSetupClient({
             ))}
           </ol>
 
-          <div className="border-t border-slate-800/60 pt-3 flex flex-col gap-1.5">
+          <div className="border-t border-slate-800/60 pt-3 flex flex-col gap-2">
             <p className="text-[11px] font-mono text-slate-600 uppercase tracking-[0.1em]">
-              Verify in your brain
+              Verify it worked
             </p>
             <a
-              href="/app/documents"
-              className="text-xs text-[#22d3ee] hover:underline font-mono"
+              href="/app/brain/inbox"
+              className="inline-flex items-center gap-1.5 text-xs text-[#22d3ee] hover:underline font-mono min-h-[36px]"
             >
-              Browse documents → memory/inbox.md →
+              View what&apos;s been shared here →
             </a>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Shared items pile up there as markdown bullets. Triage them when you&apos;re ready — move the
-              useful ones into proper memory files, delete the rest.
+              Each shared item appears as a card. Triage when you&apos;re ready — remove
+              what you don&apos;t need, and ask your agent to absorb the rest into memory.
             </p>
           </div>
         </div>

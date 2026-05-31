@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { commitMemoryFile, fetchFileContent } from "@/lib/pa-brain";
+import { appendEntryToRaw } from "@/lib/pa-inbox";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,20 +32,20 @@ function sbEnv(): { url: string; key: string } | { error: string } {
   return { url: url.replace(/\/$/, ""), key };
 }
 
-function sbGet(url: string, key: string, path: string) {
-  return fetch(`${url}/rest/v1/${path}`, {
+function sbGet(sbUrl: string, key: string, path: string) {
+  return fetch(`${sbUrl}/rest/v1/${path}`, {
     headers: { apikey: key, Authorization: `Bearer ${key}` },
     cache: "no-store",
   });
 }
 
 async function lookupShareToken(
-  url: string,
+  sbUrl: string,
   key: string,
   rawToken: string,
 ): Promise<ShareTokenRow | null> {
   const res = await sbGet(
-    url,
+    sbUrl,
     key,
     `pocket_agent_share_tokens?token=eq.${encodeURIComponent(rawToken)}&limit=1`,
   );
@@ -53,9 +54,9 @@ async function lookupShareToken(
   return rows[0] ?? null;
 }
 
-async function touchLastUsed(url: string, key: string, tokenId: string): Promise<void> {
+async function touchLastUsed(sbUrl: string, key: string, tokenId: string): Promise<void> {
   await fetch(
-    `${url}/rest/v1/pocket_agent_share_tokens?id=eq.${encodeURIComponent(tokenId)}`,
+    `${sbUrl}/rest/v1/pocket_agent_share_tokens?id=eq.${encodeURIComponent(tokenId)}`,
     {
       method: "PATCH",
       headers: {
@@ -71,12 +72,12 @@ async function touchLastUsed(url: string, key: string, tokenId: string): Promise
 }
 
 async function fetchPaUserForShare(
-  url: string,
+  sbUrl: string,
   key: string,
   userId: string,
 ): Promise<PaUserRow | null> {
   const res = await sbGet(
-    url,
+    sbUrl,
     key,
     `pocket_agent_users?id=eq.${encodeURIComponent(userId)}&select=brain_repo,github_token&limit=1`,
   );
@@ -94,33 +95,10 @@ const JsonPayloadSchema = z.object({
   sourceUrl: z.string().url().optional(),
 });
 
-type JsonPayload = z.infer<typeof JsonPayloadSchema>;
-
-// ─── Inbox formatting ─────────────────────────────────────────────────────────
-
-function formatInboxEntry(payload: JsonPayload): string {
-  const ts = new Date().toISOString().replace("T", " ").slice(0, 16) + " UTC";
-  const kindLabel = payload.kind;
-  const titleLine = payload.title ? `**${payload.title}**  ` : "";
-  const contentSnip = payload.content.length > 500
-    ? payload.content.slice(0, 500).trimEnd() + "…"
-    : payload.content;
-  const sourceStr = payload.sourceUrl ? `\n  _Source: ${payload.sourceUrl}_` : "";
-  return `- **${ts}** · \`${kindLabel}\` ${titleLine}\n  ${contentSnip}${sourceStr}`;
-}
-
-function buildInboxContent(existing: string, newEntry: string): string {
-  if (!existing.trim()) {
-    return `# Inbox\n\nShared items from your iOS Shortcut — triage or delete when processed.\n\n${newEntry}\n`;
-  }
-  return `${existing.trimEnd()}\n\n${newEntry}\n`;
-}
-
 // ─── POST /api/app/share/inbox ────────────────────────────────────────────────
 // Auth: Authorization: Bearer <share-token> (NOT a user session token)
 // Body: application/json { kind, content, title?, sourceUrl? }
 export async function POST(req: Request): Promise<NextResponse> {
-  // Extract bearer token
   const authHeader = req.headers.get("authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
     return NextResponse.json({ error: "Missing Authorization header" }, { status: 401 });
@@ -135,41 +113,38 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
   }
 
-  // Validate share token
   const tokenRow = await lookupShareToken(env.url, env.key, rawToken);
   if (!tokenRow || tokenRow.revoked_at !== null) {
     return NextResponse.json({ error: "Invalid or revoked token" }, { status: 401 });
   }
 
-  // Parse and validate body (JSON only for now; file support via future multipart extension)
   const contentType = req.headers.get("content-type") ?? "";
-  let payload: JsonPayload;
-  if (contentType.includes("application/json")) {
-    let raw: unknown;
-    try {
-      raw = await req.json();
-    } catch {
-      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-    }
-    const parsed = JsonPayloadSchema.safeParse(raw);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Invalid payload", details: parsed.error.flatten().fieldErrors },
-        { status: 422 },
-      );
-    }
-    payload = parsed.data;
-  } else {
+  if (!contentType.includes("application/json")) {
     return NextResponse.json(
       { error: "Content-Type must be application/json" },
       { status: 415 },
     );
   }
 
-  // Touch last_used_at (non-blocking; fire and don't await to keep latency low)
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const parsed = JsonPayloadSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid payload", details: parsed.error.flatten().fieldErrors },
+      { status: 422 },
+    );
+  }
+  const payload = parsed.data;
+
+  // Non-blocking last_used_at touch
   void touchLastUsed(env.url, env.key, tokenRow.id);
 
-  // Fetch user's brain config
   const paUser = await fetchPaUserForShare(env.url, env.key, tokenRow.user_id);
   if (!paUser || !paUser.brain_repo || !paUser.github_token) {
     return NextResponse.json(
@@ -181,10 +156,8 @@ export async function POST(req: Request): Promise<NextResponse> {
   const { brain_repo: repo, github_token: ghToken } = paUser;
   const inboxPath = "memory/inbox.md";
 
-  // Read existing inbox, append new entry, commit
   const existing = await fetchFileContent(repo, inboxPath, ghToken);
-  const newEntry = formatInboxEntry(payload);
-  const finalContent = buildInboxContent(existing, newEntry);
+  const { content: finalContent, entry } = appendEntryToRaw(existing, payload);
 
   const commitResult = await commitMemoryFile({
     repo,
@@ -192,7 +165,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     path: inboxPath,
     mode: "replace",
     content: finalContent,
-    commitMessage: `Pocket Agent — iOS share inbox: ${payload.kind} from shortcut`,
+    commitMessage: `Pocket Agent — iOS share: ${payload.kind}`,
   });
 
   if (!commitResult.ok) {
@@ -201,6 +174,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   return NextResponse.json({
     ok: true,
+    id: entry.id,
     path: inboxPath,
     sha: commitResult.sha,
   });
