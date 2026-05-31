@@ -87,6 +87,15 @@ function TasksIcon() {
   );
 }
 
+function RoutinesIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M7.5 2v2.5M7.5 10.5V13M2 7.5h2.5M10.5 7.5H13" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="7.5" cy="7.5" r="2.5" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -175,6 +184,7 @@ export default function AppNav() {
   const isSettings = pathname.startsWith("/app/settings");
   const isCapture = pathname.startsWith("/app/capture");
   const isTasks = pathname.startsWith("/app/tasks");
+  const isRoutines = pathname.startsWith("/app/routines");
 
   const close = () => setMobileOpen(false);
 
@@ -204,6 +214,7 @@ export default function AppNav() {
         <NavItem href="/app/brain" active={isBrain} icon={<BrainIcon />} label="Brain" onClick={close} />
         <NavItem href="/app/documents" active={isDocs} icon={<DocsIcon />} label="Documents" onClick={close} />
         <NavItem href="/app/apps" active={isWork} icon={<WorkIcon />} label="Work" onClick={close} />
+        <NavItem href="/app/routines" active={isRoutines} icon={<RoutinesIcon />} label="Routines" onClick={close} />
         <NavItem href="/app/skool" active={isCommunity} icon={<CommunityIcon />} label="Community" onClick={close} />
 
         <div className="my-2 border-t border-slate-800/50" />

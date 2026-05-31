@@ -25,10 +25,12 @@ export type PendingActionStatus =
   | "rejected"
   | "failed";
 
+export type PendingActionType = "update_brain_memory" | "routine_output";
+
 export type PendingAction = {
   id: string;
   user_id: string;
-  action_type: "update_brain_memory";
+  action_type: PendingActionType;
   status: PendingActionStatus;
   title: string;
   summary: string;
@@ -63,7 +65,7 @@ const TABLE = "pocket_agent_pending_actions";
 
 export async function createPendingAction(params: {
   userId: string;
-  actionType: "update_brain_memory";
+  actionType: PendingActionType;
   title: string;
   summary: string;
   payload: Record<string, unknown>;

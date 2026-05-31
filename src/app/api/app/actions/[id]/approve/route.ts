@@ -95,6 +95,16 @@ export async function POST(
     return NextResponse.json({ action: finalResult.ok ? finalResult.data : execResult.data });
   }
 
+  // routine_output — acknowledgement only, no GitHub write required.
+  if (action.action_type === "routine_output") {
+    const finalResult = await updateActionStatus(id, {
+      status: "executed",
+      executed_at: new Date().toISOString(),
+      result: { acknowledged: true },
+    });
+    return NextResponse.json({ action: finalResult.ok ? finalResult.data : execResult.data });
+  }
+
   const unknownErr = `Unknown action_type: ${action.action_type}`;
   await updateActionStatus(id, { status: "failed", error: unknownErr });
   return NextResponse.json({ error: "Unknown action type" }, { status: 422 });

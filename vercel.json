@@ -4,6 +4,10 @@
     {
       "path": "/api/apa/drip/sweep",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/routines",
+      "schedule": "*/15 * * * *"
     }
   ],
   "rewrites": [

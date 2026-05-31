@@ -18,7 +18,7 @@ type PendingActionStatus =
 
 type PendingAction = {
   id: string;
-  action_type: "update_brain_memory";
+  action_type: "update_brain_memory" | "routine_output";
   status: PendingActionStatus;
   title: string;
   summary: string;
@@ -86,11 +86,12 @@ function ApprovalRow({
     }
   }
 
+  const isRoutineOutput = action.action_type === "routine_output";
   const content =
     typeof action.payload?.content === "string" ? action.payload.content : "";
   const path =
     typeof action.payload?.path === "string" ? action.payload.path : "";
-  const preview = content.length > 200 ? content.slice(0, 200) + "…" : content;
+  const preview = content.length > 400 ? content.slice(0, 400) + "…" : content;
 
   return (
     <div className="rounded-xl border border-amber-500/20 bg-slate-900/60 p-4 flex flex-col gap-3">
@@ -105,7 +106,7 @@ function ApprovalRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-0.5">
             <span className="text-[10px] font-mono text-amber-400/70 uppercase tracking-[0.18em]">
-              Agent proposal
+              {isRoutineOutput ? "Routine output" : "Agent proposal"}
             </span>
           </div>
           <p className="text-sm font-semibold text-slate-100 leading-snug">{action.title}</p>
@@ -129,14 +130,14 @@ function ApprovalRow({
           disabled={busy !== null}
           className="flex-1 py-3 px-3 rounded-lg bg-[#22d3ee]/10 hover:bg-[#22d3ee]/20 border border-[#22d3ee]/30 hover:border-[#22d3ee]/60 text-[#22d3ee] text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
         >
-          {busy === "approve" ? "Approving…" : "Approve"}
+          {busy === "approve" ? "…" : isRoutineOutput ? "Read" : "Approve"}
         </button>
         <button
           onClick={() => void handleReject()}
           disabled={busy !== null}
           className="flex-1 py-3 px-3 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-slate-300 text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
         >
-          {busy === "reject" ? "Rejecting…" : "Reject"}
+          {busy === "reject" ? "…" : isRoutineOutput ? "Dismiss" : "Reject"}
         </button>
       </div>
     </div>
