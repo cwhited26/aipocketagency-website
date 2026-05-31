@@ -168,7 +168,9 @@ export async function GET(): Promise<NextResponse> {
   }
 
   const { brain_repo, github_token } = paResult.data;
-  const commits = await fetchCommits(brain_repo, github_token, 20);
+  const [commits] = await Promise.all([
+    fetchCommits(brain_repo, github_token, 20),
+  ]);
 
   const items: ActivityItem[] = commits.map((c) => {
     const { label, sublabel, kind } = translateCommit(c.commit.message);
@@ -180,6 +182,21 @@ export async function GET(): Promise<NextResponse> {
       kind,
     };
   });
+
+  // Synthetic index event — shown when the brain was indexed for the first time
+  const brainIndexedAt = paResult.data.brain_indexed_at;
+  if (brainIndexedAt) {
+    const alreadyHasIndexItem = items.some((i) => i.id === "brain-index-run");
+    if (!alreadyHasIndexItem) {
+      items.unshift({
+        id: "brain-index-run",
+        label: "Brain memory indexed",
+        sublabel: "Existing memory files catalogued from your brain repo",
+        time: brainIndexedAt,
+        kind: "setup",
+      });
+    }
+  }
 
   const response: ActivityResponse = { items };
   return NextResponse.json(response);

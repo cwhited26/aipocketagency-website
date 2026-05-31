@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { fetchFileContent } from "@/lib/pa-brain";
+import { fetchMemoryIndex } from "@/lib/pa-brain-index";
 import { redirect } from "next/navigation";
 import AvatarFormClient from "./AvatarFormClient";
 
@@ -53,14 +54,23 @@ export default async function AvatarPage() {
     redirect("/app/brain");
   }
 
-  const raw = await fetchFileContent(paUser.brain_repo, AVATAR_PATH, paUser.github_token);
+  const [raw, indexEntries] = await Promise.all([
+    fetchFileContent(paUser.brain_repo, AVATAR_PATH, paUser.github_token),
+    fetchMemoryIndex(user.id),
+  ]);
   const initialFields = raw ? parseAvatarMarkdown(raw) : null;
+  const userProfileEntries = indexEntries.filter((e) => e.type === "user");
 
   return (
     <AvatarFormClient
       initialFields={initialFields}
       hasBrain={Boolean(paUser.brain_repo)}
       hasGithubToken={Boolean(paUser.github_token)}
+      userProfileEntries={userProfileEntries.map((e) => ({
+        name: e.name ?? e.path.split("/").pop() ?? e.path,
+        path: e.path,
+        description: e.description,
+      }))}
     />
   );
 }

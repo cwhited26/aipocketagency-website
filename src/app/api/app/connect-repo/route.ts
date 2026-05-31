@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { upsertPaUser, fetchPaUser } from "@/lib/pa-supabase";
+import { indexBrain } from "@/lib/pa-brain-index";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -75,5 +76,17 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  return NextResponse.json({ ok: true, repo });
+  // Fire brain indexer for the newly connected repo.
+  // Errors are non-fatal — connection succeeded regardless.
+  const indexResult = await indexBrain({
+    userId: user.id,
+    repo,
+    token: providerToken,
+  });
+
+  const indexSummary = indexResult.ok
+    ? { indexed: indexResult.result.indexed, errors: indexResult.result.errors.length }
+    : { indexed: 0, errors: 1 };
+
+  return NextResponse.json({ ok: true, repo, index: indexSummary });
 }

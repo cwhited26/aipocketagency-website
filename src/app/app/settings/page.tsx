@@ -131,6 +131,7 @@ export default async function SettingsPage({
           <BrainRepoPanel
             currentRepo={paUser?.brain_repo ?? null}
             hasGitHub={hasGithubToken}
+            lastIndexed={paUser?.brain_indexed_at ?? null}
           />
           <ApiKeyForm hasKey={!!paUser?.anthropic_api_key} />
           <SettingsRow label="Billing" value="Manage subscription" href="/api/app/billing-portal" />

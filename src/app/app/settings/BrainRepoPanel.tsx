@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 
@@ -27,7 +27,17 @@ type Phase = "idle" | "confirm" | "connect" | "fork" | "done";
 type Props = {
   currentRepo: string | null;
   hasGitHub: boolean;
+  lastIndexed?: string | null;
 };
+
+function relativeTime(iso: string): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days === 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
 
 function ErrorBanner({ message }: { message: string }) {
   return (
@@ -37,7 +47,7 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
-export default function BrainRepoPanel({ currentRepo, hasGitHub }: Props) {
+export default function BrainRepoPanel({ currentRepo, hasGitHub, lastIndexed: initialLastIndexed }: Props) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [repos, setRepos] = useState<GhRepo[]>([]);
@@ -47,6 +57,9 @@ export default function BrainRepoPanel({ currentRepo, hasGitHub }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [newRepo, setNewRepo] = useState("");
+  const [indexing, startIndexTransition] = useTransition();
+  const [indexMsg, setIndexMsg] = useState<string | null>(null);
+  const [lastIndexed, setLastIndexed] = useState<string | null>(initialLastIndexed ?? null);
 
   // Fetch repos when entering connect phase
   useEffect(() => {
@@ -149,28 +162,76 @@ export default function BrainRepoPanel({ currentRepo, hasGitHub }: Props) {
     reset();
   }
 
+  function handleReindex() {
+    setIndexMsg(null);
+    startIndexTransition(async () => {
+      try {
+        const res = await fetch("/api/app/brain/index", { method: "POST" });
+        type IndexBody = { ok?: boolean; result?: { indexed: number; skipped: number }; error?: string };
+        const body = (await res.json().catch(() => ({}))) as IndexBody;
+        if (!res.ok || !body.ok) {
+          setIndexMsg(`Error: ${body.error ?? "Re-index failed"}`);
+          return;
+        }
+        const r = body.result;
+        setIndexMsg(
+          `Indexed ${r?.indexed ?? 0} files (${r?.skipped ?? 0} unchanged).`
+        );
+        setLastIndexed(new Date().toISOString());
+        router.refresh();
+      } catch {
+        setIndexMsg("Network error. Try again.");
+      }
+    });
+  }
+
   // ─── idle ──────────────────────────────────────────────────────────────────
 
   if (phase === "idle") {
     return (
-      <div className="px-5 py-4 flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <span className="text-sm text-slate-400">Brain repo</span>
-          {currentRepo ? (
-            <p className="text-xs font-mono text-[#22d3ee]/80 mt-0.5 break-all leading-snug">
-              {currentRepo}
-            </p>
-          ) : (
-            <p className="text-sm text-slate-500 mt-0.5">Not connected</p>
-          )}
+      <div className="px-5 py-4 flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <span className="text-sm text-slate-400">Brain repo</span>
+            {currentRepo ? (
+              <p className="text-xs font-mono text-[#22d3ee]/80 mt-0.5 break-all leading-snug">
+                {currentRepo}
+              </p>
+            ) : (
+              <p className="text-sm text-slate-500 mt-0.5">Not connected</p>
+            )}
+            {lastIndexed && (
+              <p className="text-[10px] font-mono text-slate-600 mt-1">
+                Indexed {relativeTime(lastIndexed)}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setPhase("confirm")}
+            className="shrink-0 min-h-[44px] min-w-[56px] text-xs font-medium text-slate-400 hover:text-[#22d3ee] border border-slate-700/60 hover:border-[#22d3ee]/40 rounded-lg px-3 py-2 transition-colors"
+          >
+            {currentRepo ? "Change" : "Connect"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setPhase("confirm")}
-          className="shrink-0 min-h-[44px] min-w-[56px] text-xs font-medium text-slate-400 hover:text-[#22d3ee] border border-slate-700/60 hover:border-[#22d3ee]/40 rounded-lg px-3 py-2 transition-colors"
-        >
-          {currentRepo ? "Change" : "Connect"}
-        </button>
+
+        {currentRepo && (
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleReindex}
+              disabled={indexing}
+              className="text-[11px] font-mono text-slate-500 hover:text-[#22d3ee] border border-slate-800/60 hover:border-[#22d3ee]/30 rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {indexing ? "Re-indexing…" : "Re-index brain"}
+            </button>
+            {indexMsg && (
+              <span className={`text-[11px] font-mono ${indexMsg.startsWith("Error") ? "text-red-400" : "text-[#22d3ee]/70"}`}>
+                {indexMsg}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     );
   }

@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Mascot from "@/components/Mascot";
 import type { FreshnessArea, FreshnessResponse, FreshnessStatus } from "@/app/api/app/brain/freshness/route";
+import type { BrainIndexResponse } from "@/app/api/app/brain/index/route";
+import type { MemoryIndexRow, MemoryEntryType, RootFile } from "@/lib/pa-brain-index";
 import { BRAIN_TASKS, TOTAL_BRAIN_POINTS } from "@/lib/brain-tasks";
 
 // ─── Icons ─────────────────────────────────────────────────────────────────────
@@ -388,32 +390,182 @@ function NoBrainState({ hasGithubToken }: { hasGithubToken: boolean }) {
   );
 }
 
+// ─── Missing root files banner ─────────────────────────────────────────────────
+
+function MissingRootFilesBanner({ missing }: { missing: string[] }) {
+  if (missing.length === 0) return null;
+  const list = missing.join(", ");
+  return (
+    <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 flex gap-3">
+      <span className="text-amber-400 shrink-0 mt-0.5">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M7 4v3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <circle cx="7" cy="9.5" r="0.7" fill="currentColor" />
+        </svg>
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-semibold text-amber-300">
+          Missing root files: {list}
+        </p>
+        <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+          These are the first files your agents read. Bootstrap them from the template in{" "}
+          <a href="/app/settings" className="text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors underline">
+            Settings → Brain repo
+          </a>
+          .
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Memory index section ───────────────────────────────────────────────────────
+
+const TYPE_ORDER: MemoryEntryType[] = ["user", "feedback", "project", "reference", "unknown"];
+
+const TYPE_LABELS: Record<MemoryEntryType, string> = {
+  user: "About you",
+  feedback: "Working style",
+  project: "Projects & context",
+  reference: "References",
+  unknown: "Other entries",
+};
+
+function MemoryIndexSection({
+  entries,
+  lastIndexed,
+}: {
+  entries: MemoryIndexRow[];
+  lastIndexed: string | null;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (entries.length === 0) return null;
+
+  const grouped = new Map<MemoryEntryType, MemoryIndexRow[]>();
+  for (const e of entries) {
+    const t = e.type as MemoryEntryType;
+    if (!grouped.has(t)) grouped.set(t, []);
+    grouped.get(t)!.push(e);
+  }
+
+  const orderedTypes = TYPE_ORDER.filter((t) => grouped.has(t));
+  const PREVIEW_COUNT = 5;
+  const allEntries = entries;
+  const visible = expanded ? allEntries : allEntries.slice(0, PREVIEW_COUNT);
+  const visibleGrouped = new Map<MemoryEntryType, MemoryIndexRow[]>();
+  for (const e of visible) {
+    const t = e.type as MemoryEntryType;
+    if (!visibleGrouped.has(t)) visibleGrouped.set(t, []);
+    visibleGrouped.get(t)!.push(e);
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-700/60 bg-slate-900/70 p-4 flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
+            Memory index
+          </span>
+          <span className="ml-2 text-[10px] font-mono text-slate-600">
+            {entries.length} files indexed
+          </span>
+        </div>
+        {lastIndexed && (
+          <span className="text-[10px] font-mono text-slate-600 shrink-0">
+            {relativeTime(lastIndexed)}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {orderedTypes
+          .filter((t) => visibleGrouped.has(t))
+          .map((t) => (
+            <div key={t}>
+              <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.16em] mb-1.5">
+                {TYPE_LABELS[t]}
+              </p>
+              <div className="flex flex-col gap-0.5">
+                {(visibleGrouped.get(t) ?? []).map((entry) => (
+                  <a
+                    key={entry.id}
+                    href={`/app/documents?path=${encodeURIComponent(entry.path)}`}
+                    className="flex items-start gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800/50 transition-colors group"
+                  >
+                    <span className="text-slate-600 group-hover:text-slate-500 shrink-0 mt-0.5 text-[10px] font-mono">
+                      ›
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs text-slate-300 group-hover:text-slate-100 transition-colors leading-snug block truncate">
+                        {entry.name ?? entry.path.split("/").pop()}
+                      </span>
+                      {entry.description && (
+                        <span className="text-[10px] text-slate-600 leading-snug block truncate mt-0.5">
+                          {entry.description}
+                        </span>
+                      )}
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          ))}
+      </div>
+
+      {allEntries.length > PREVIEW_COUNT && (
+        <button
+          onClick={() => setExpanded((p) => !p)}
+          className="text-[11px] font-mono text-slate-500 hover:text-slate-300 transition-colors self-start mt-1"
+        >
+          {expanded ? "Show less ↑" : `Show all ${allEntries.length} entries ↓`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export default function BrainHealthClient({
   brainRepo,
   hasGithubToken,
+  lastIndexed: initialLastIndexed,
 }: {
   brainRepo: string | null;
   hasGithubToken: boolean;
+  lastIndexed: string | null;
 }) {
   const [data, setData] = useState<FreshnessResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [indexData, setIndexData] = useState<BrainIndexResponse | null>(null);
+  const [lastIndexed, setLastIndexed] = useState<string | null>(initialLastIndexed);
 
   useEffect(() => {
     if (!brainRepo) {
       setLoading(false);
       return;
     }
-    fetch("/api/app/brain/freshness")
+
+    const freshnessPromise = fetch("/api/app/brain/freshness")
       .then((r) => (r.ok ? (r.json() as Promise<FreshnessResponse>) : Promise.reject(new Error(`${r.status}`))))
-      .then((d) => { setData(d); setLoading(false); })
+      .then((d) => { setData(d); })
       .catch((e: unknown) => {
         const msg = e instanceof Error ? e.message : "Failed to load";
         setError(msg);
-        setLoading(false);
       });
+
+    const indexPromise = fetch("/api/app/brain/index")
+      .then((r) => (r.ok ? (r.json() as Promise<BrainIndexResponse>) : Promise.reject()))
+      .then((d) => {
+        setIndexData(d);
+        if (d.lastIndexed) setLastIndexed(d.lastIndexed);
+      })
+      .catch(() => { /* index is optional — don't block page render */ });
+
+    void Promise.all([freshnessPromise, indexPromise]).then(() => setLoading(false));
   }, [brainRepo]);
 
   // Sort areas: stale first, then warn, then empty, then fresh
@@ -480,6 +632,14 @@ export default function BrainHealthClient({
           </div>
         ) : data ? (
           <div className="flex flex-col gap-4">
+            {/* Missing root files banner — only shown when index has run */}
+            {indexData && (() => {
+              const missing = (indexData.rootFiles as RootFile[])
+                .filter((f) => !f.present)
+                .map((f) => f.name);
+              return <MissingRootFilesBanner missing={missing} />;
+            })()}
+
             <ScoreBar filled={data.filled} total={data.total} pct={data.pct} />
 
             <BrainTaskList areas={data.areas} />
@@ -489,6 +649,14 @@ export default function BrainHealthClient({
                 <AreaCard key={area.key} area={area} />
               ))}
             </div>
+
+            {/* Memory index — existing files in the connected brain */}
+            {indexData && (
+              <MemoryIndexSection
+                entries={indexData.entries}
+                lastIndexed={lastIndexed}
+              />
+            )}
 
             {/* Footer tip */}
             <div className="rounded-xl border border-slate-800/40 bg-slate-900/20 px-4 py-3">

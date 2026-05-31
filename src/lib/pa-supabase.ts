@@ -4,6 +4,8 @@ export type PaUser = {
   brain_repo: string | null;
   github_token: string | null;
   anthropic_api_key: string | null;
+  brain_root_index_json: unknown[] | null;
+  brain_indexed_at: string | null;
   created_at: string;
   updated_at: string;
 };

@@ -65,14 +65,18 @@ const EMPTY_FIELDS: AvatarFields = {
   anythingElse: "",
 };
 
+type ProfileEntry = { name: string; path: string; description: string | null };
+
 export default function AvatarFormClient({
   initialFields,
   hasBrain,
   hasGithubToken,
+  userProfileEntries,
 }: {
   initialFields: Record<string, string> | null;
   hasBrain: boolean;
   hasGithubToken: boolean;
+  userProfileEntries: ProfileEntry[];
 }) {
   const router = useRouter();
   const [fields, setFields] = useState<AvatarFields>({
@@ -84,6 +88,7 @@ export default function AvatarFormClient({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profileBannerDismissed, setProfileBannerDismissed] = useState(false);
 
   const isEdit = initialFields !== null;
 
@@ -167,6 +172,42 @@ export default function AvatarFormClient({
             Define the person you sell to. Your agent uses this to make every draft speak directly to them — better quotes, sharper emails, stronger follow-ups.
           </p>
         </div>
+
+        {/* Profile entries banner */}
+        {!profileBannerDismissed && userProfileEntries.length > 0 && !initialFields && (
+          <div className="rounded-xl border border-[#22d3ee]/20 bg-[#22d3ee]/5 px-4 py-3 flex items-start gap-3">
+            <span className="text-[#22d3ee]/60 shrink-0 mt-0.5">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2" />
+                <path d="M7 5v4M7 4h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-[#22d3ee]/80">
+                Detected {userProfileEntries.length} existing user profile {userProfileEntries.length === 1 ? "entry" : "entries"} in your brain
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                {userProfileEntries.slice(0, 3).map((e) => e.name).join(", ")}
+                {userProfileEntries.length > 3 ? ` +${userProfileEntries.length - 3} more` : ""}. Pull from them or fill in the form below directly.
+              </p>
+              <div className="flex gap-2 mt-2">
+                <a
+                  href="/app/brain"
+                  className="text-[10px] font-mono text-[#22d3ee]/60 hover:text-[#22d3ee] transition-colors underline"
+                >
+                  View in brain →
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setProfileBannerDismissed(true)}
+                  className="text-[10px] font-mono text-slate-600 hover:text-slate-400 transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
