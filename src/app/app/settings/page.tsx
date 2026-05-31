@@ -5,6 +5,52 @@ import { redirect } from "next/navigation";
 import ApiKeyForm from "./ApiKeyForm";
 import BrainRepoPanel from "./BrainRepoPanel";
 import ConnectionsPanel from "./ConnectionsPanel";
+import OnboardingChecklist from "./OnboardingChecklist";
+
+function sbEnv(): { url: string; key: string } | null {
+  const url =
+    process.env.POCKET_AGENT_SUPABASE_URL ??
+    process.env.NEXT_PUBLIC_SUPABASE_URL ??
+    process.env.WC_ADMIN_SUPABASE_URL;
+  const key =
+    process.env.POCKET_AGENT_SUPABASE_SERVICE_KEY ??
+    process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.WC_ADMIN_SUPABASE_SERVICE_KEY;
+  if (!url || !key) return null;
+  return { url: url.replace(/\/$/, ""), key };
+}
+
+async function fetchHasShareToken(userId: string): Promise<boolean> {
+  const env = sbEnv();
+  if (!env) return false;
+  try {
+    const res = await fetch(
+      `${env.url}/rest/v1/pocket_agent_share_tokens?user_id=eq.${encodeURIComponent(userId)}&revoked_at=is.null&limit=1`,
+      { headers: { apikey: env.key, Authorization: `Bearer ${env.key}` }, cache: "no-store" },
+    );
+    if (!res.ok) return false;
+    const rows = (await res.json()) as unknown[];
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchHasRoutines(userId: string): Promise<boolean> {
+  const env = sbEnv();
+  if (!env) return false;
+  try {
+    const res = await fetch(
+      `${env.url}/rest/v1/pocket_agent_routines?user_id=eq.${encodeURIComponent(userId)}&enabled=eq.true&limit=1`,
+      { headers: { apikey: env.key, Authorization: `Bearer ${env.key}` }, cache: "no-store" },
+    );
+    if (!res.ok) return false;
+    const rows = (await res.json()) as unknown[];
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
 
 export default async function SettingsPage({
   searchParams,
@@ -18,9 +64,11 @@ export default async function SettingsPage({
 
   if (!user) redirect("/app/login");
 
-  const [paResult, connectionsResult] = await Promise.all([
+  const [paResult, connectionsResult, hasShareToken, hasRoutines] = await Promise.all([
     fetchPaUser(user.id),
     fetchUserConnections(user.id),
+    fetchHasShareToken(user.id),
+    fetchHasRoutines(user.id),
   ]);
   const paUser = paResult.ok ? paResult.data : null;
   const connections = connectionsResult.ok ? connectionsResult.data : [];
@@ -64,6 +112,7 @@ export default async function SettingsPage({
 
   const hasGithubToken = Boolean(paUser?.github_token);
   const githubUsername = paUser?.github_username;
+  const hasGoogleConnection = connections.some((c) => c.status === "connected");
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">
@@ -74,6 +123,15 @@ export default async function SettingsPage({
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Your account</h1>
         </div>
+
+        <OnboardingChecklist
+          hasGithub={hasGithubToken}
+          brainRepo={paUser?.brain_repo ?? null}
+          hasApiKey={Boolean(paUser?.anthropic_api_key)}
+          hasShareToken={hasShareToken}
+          hasGoogleConnection={hasGoogleConnection}
+          hasRoutines={hasRoutines}
+        />
 
         {/* GitHub connector — always visible, prominent */}
         <div className={`rounded-xl border ${hasGithubToken ? "border-slate-700/60 bg-slate-900/50" : "border-[#22d3ee]/25 bg-[#22d3ee]/5"} px-5 py-4`}>

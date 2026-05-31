@@ -84,6 +84,21 @@ body {
   50%       { opacity: 1; }
 }
 
+@keyframes input-idle-glow {
+  0%, 100% { border-color: rgba(51, 65, 85, 0.8); box-shadow: none; }
+  50%       { border-color: rgba(34, 211, 238, 0.25); box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.06), 0 0 14px rgba(34, 211, 238, 0.08); }
+}
+
+.input-idle {
+  animation: input-idle-glow 4s ease-in-out infinite;
+}
+
+.input-idle:focus-within {
+  animation: none;
+  border-color: rgba(34, 211, 238, 0.7) !important;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.2), 0 0 24px rgba(34, 211, 238, 0.18) !important;
+}
+
 @keyframes tentacle-flow {
   0%   { stroke-dashoffset: 120; }
   100% { stroke-dashoffset: 0; }

@@ -669,12 +669,12 @@ function HubView({
           </div>
         ) : (
           <div>
-            <div className="rounded-xl border border-slate-700/80 bg-slate-900/80 overflow-hidden focus-within:border-[#22d3ee]/50 transition-colors">
+            <div className="input-idle rounded-xl border bg-slate-900/80 overflow-hidden transition-[box-shadow]">
               <textarea
                 ref={textareaRef}
-                rows={3}
-                placeholder="What did I decide about pricing? Draft a quote for Johnson. Summarize my current projects."
-                className="w-full bg-transparent px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none resize-none"
+                rows={5}
+                placeholder="What do you want done?"
+                className="w-full bg-transparent px-5 py-4 text-base text-slate-100 placeholder:text-slate-400 focus:outline-none resize-none leading-relaxed"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}

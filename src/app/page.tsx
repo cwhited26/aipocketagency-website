@@ -9,6 +9,7 @@ const SKOOL_URL = "https://www.skool.com/aipocketagency";
 export default function Page() {
   return (
     <main className="min-h-screen text-slate-100">
+      <SiteHeader />
       <Hero />
       <PainHooks />
       <OldVsNew />
@@ -79,6 +80,27 @@ function SecondaryCTA({
         <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 110-2h8.586L7.05 5.464a1 1 0 010-1.414z" />
       </svg>
     </Link>
+  );
+}
+
+function SiteHeader() {
+  return (
+    <header className="sticky top-0 z-50 border-b border-white/5 bg-[#05070a]/90 backdrop-blur-sm">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+        <span
+          className="text-sm font-semibold text-slate-200 tracking-tight"
+          style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, monospace" }}
+        >
+          [ pocket agent ]
+        </span>
+        <Link
+          href="/app"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#22d3ee] px-4 py-2 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors min-h-[44px]"
+        >
+          Open app →
+        </Link>
+      </div>
+    </header>
   );
 }
 
@@ -889,9 +911,16 @@ function Footer() {
         </ul>
       </div>
       <div className="border-t border-white/5">
-        <div className="mx-auto max-w-5xl px-6 py-4 text-xs text-slate-600">
-          © {new Date().getFullYear()} Whited Consulting. All rights
-          reserved.
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <span className="text-xs text-slate-600">
+            © {new Date().getFullYear()} Whited Consulting. All rights reserved.
+          </span>
+          <Link
+            href="/app"
+            className="text-xs font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors"
+          >
+            Open app →
+          </Link>
         </div>
       </div>
     </footer>

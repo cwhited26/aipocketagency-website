@@ -13,6 +13,7 @@ import {
   markPocketAgentActive,
   markPocketAgentCanceled,
   markPocketAgentTrialEndNotified,
+  markWelcomeEmailSent,
   upsertPocketAgentTrial,
 } from "@/lib/pocket-agent-supabase";
 import { sendEmail } from "@/lib/resend";
@@ -384,6 +385,58 @@ async function deliverBundle(
   }
 }
 
+function welcomeEmailHtml(name: string | null): string {
+  const greeting = name ? `Hey ${name} —` : "Hey —";
+  return `<!doctype html>
+<html><body style="margin:0;padding:24px 16px;background:#0b0b0b;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;">
+<div style="max-width:560px;margin:0 auto;">
+<p>${greeting}</p>
+<p>Your trial just started. Here's what Pocket Agent is: your AI partner that reads your business context, drafts work in your voice, and queues changes for your approval before anything gets committed.</p>
+<p><strong>Three things to do right now:</strong></p>
+<p><strong>1. Connect your brain repo.</strong> Your brain is a GitHub repo where context lives — decisions, voice files, client details. Without it, the agent can't do anything. <a href="${SITE_ORIGIN}/app/onboarding" style="color:#6ee7b7;">Set it up here.</a></p>
+<p><strong>2. Add your Anthropic API key in Settings.</strong> You run on your own key — you control the bill, your data stays yours. <a href="${SITE_ORIGIN}/app/settings" style="color:#6ee7b7;">Go to Settings.</a></p>
+<p><strong>3. Install as a home screen app.</strong><br>
+iOS: open Safari → tap Share → Add to Home Screen<br>
+Android: open Chrome → three-dot menu → Add to Home Screen<br>
+Desktop: look for the install icon in your browser's address bar</p>
+<p><strong>Capture from your phone:</strong> The iOS Shortcut lets you send voice notes, screenshots, and links straight into your brain inbox from anywhere. <a href="${SITE_ORIGIN}/app/share-setup" style="color:#6ee7b7;">Set it up here.</a></p>
+<p><strong>Routines:</strong> Your agent can run on a schedule — daily brief, follow-up sweep, weekly digest. <a href="${SITE_ORIGIN}/app/routines" style="color:#6ee7b7;">Toggle them on here.</a></p>
+<p><a href="${SITE_ORIGIN}/app" style="color:#6ee7b7;">Open the app →</a></p>
+<p style="margin-top:32px;">&mdash; Chase</p>
+</div>
+</body></html>`;
+}
+
+function welcomeEmailText(name: string | null): string {
+  const greeting = name ? `Hey ${name} —` : "Hey —";
+  return `${greeting}
+
+Your trial just started. Here's what Pocket Agent is: your AI partner that reads your business context, drafts work in your voice, and queues changes for your approval before anything gets committed.
+
+Three things to do right now:
+
+1. Connect your brain repo. Your brain is a GitHub repo where context lives — decisions, voice files, client details. Without it, the agent can't do anything.
+${SITE_ORIGIN}/app/onboarding
+
+2. Add your Anthropic API key in Settings. You run on your own key — you control the bill, your data stays yours.
+${SITE_ORIGIN}/app/settings
+
+3. Install as a home screen app.
+   iOS: open Safari → tap Share → Add to Home Screen
+   Android: open Chrome → three-dot menu → Add to Home Screen
+   Desktop: look for the install icon in your browser's address bar
+
+Capture from your phone: The iOS Shortcut lets you send voice notes, screenshots, and links straight into your brain inbox from anywhere.
+${SITE_ORIGIN}/app/share-setup
+
+Routines: Your agent can run on a schedule — daily brief, follow-up sweep, weekly digest.
+${SITE_ORIGIN}/app/routines
+
+Open the app: ${SITE_ORIGIN}/app
+
+— Chase`;
+}
+
 // ─── Pocket Agent subscription types ────────────────────────────────────────
 
 type StripeSubscription = {
@@ -513,13 +566,54 @@ async function handlePocketAgentSubscriptionCreated(
       status: upsert.status,
       error: upsert.error,
     });
-  } else {
-    console.info("[stripe/webhook] pocket_agent trial started", {
+    return;
+  }
+
+  console.info("[stripe/webhook] pocket_agent trial started", {
+    subscription_id: sub.id,
+    email,
+    trial_ends_at: trialEndsAt,
+  });
+
+  // Check if welcome email was already sent (idempotency guard against webhook retries).
+  const existingRow = await fetchPocketAgentBySubscriptionId(sub.id);
+  if (existingRow.ok && existingRow.row?.welcome_email_sent_at) {
+    console.info("[stripe/webhook] pocket_agent welcome email already sent, skipping", {
+      subscription_id: sub.id,
+    });
+    return;
+  }
+
+  const send = await sendEmail({
+    from: FROM,
+    to: email,
+    subject: "You're in.",
+    html: welcomeEmailHtml(name),
+    text: welcomeEmailText(name),
+  });
+
+  if (!send.ok) {
+    console.error("[stripe/webhook] failed to send pocket_agent welcome email", {
       subscription_id: sub.id,
       email,
-      trial_ends_at: trialEndsAt,
+      status: send.status,
+      error: send.error,
+    });
+    return;
+  }
+
+  const mark = await markWelcomeEmailSent(sub.id);
+  if (!mark.ok) {
+    console.error("[stripe/webhook] failed to mark pocket_agent welcome_email_sent", {
+      subscription_id: sub.id,
+      status: mark.status,
+      error: mark.error,
     });
   }
+  console.info("[stripe/webhook] pocket_agent welcome email sent", {
+    subscription_id: sub.id,
+    email,
+  });
 }
 
 async function handlePocketAgentTrialWillEnd(

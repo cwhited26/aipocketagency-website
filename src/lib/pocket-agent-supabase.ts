@@ -14,6 +14,7 @@ export type PocketAgentSubscriptionRow = {
   trial_started_at: string | null;
   trial_ends_at: string | null;
   trial_end_reminder_sent_at: string | null;
+  welcome_email_sent_at: string | null;
   activated_at: string | null;
   canceled_at: string | null;
   email_sequence_state: Record<string, unknown>;
@@ -173,6 +174,37 @@ export async function markPocketAgentTrialEndNotified(
       },
       body: JSON.stringify({
         trial_end_reminder_sent_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }),
+      cache: "no-store",
+    },
+  );
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  return { ok: true };
+}
+
+export async function markWelcomeEmailSent(
+  stripeSubscriptionId: string,
+): Promise<InsertResult> {
+  const env = supabaseEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const res = await fetch(
+    endpoint(env, `?stripe_subscription_id=eq.${encodeURIComponent(stripeSubscriptionId)}`),
+    {
+      method: "PATCH",
+      headers: {
+        apikey: env.key,
+        Authorization: `Bearer ${env.key}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        welcome_email_sent_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }),
       cache: "no-store",
