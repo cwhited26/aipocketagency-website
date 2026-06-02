@@ -90,7 +90,7 @@ function PocketAgentCTA() {
             className="mt-3 text-xs text-slate-500"
             style={{ fontFamily: MONO_FONT }}
           >
-            [ $97/mo after 14 days · cancel anytime ]
+            [ $37/mo after 14 days · cancel anytime ]
           </div>
         </div>
       </div>
@@ -447,7 +447,7 @@ function ManualVsAutomatic() {
             className="mt-3 text-xs text-slate-500"
             style={{ fontFamily: MONO_FONT }}
           >
-            [ $97/mo · 14-day free trial · Skool community included ]
+            [ $37/mo · 14-day free trial · Skool community included ]
           </p>
         </div>
       </div>

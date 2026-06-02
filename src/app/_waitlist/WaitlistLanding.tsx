@@ -37,7 +37,7 @@ function SubscribeCTA() {
           className="mb-4 text-xs text-cyan-300/70 sm:text-sm"
           style={{ fontFamily: MONO_FONT }}
         >
-          [ pocket agent · $97/mo · 14-day free trial ]
+          [ pocket agent · $37/mo · 14-day free trial ]
         </div>
         <h2 className="text-balance text-2xl font-bold tracking-tight sm:text-3xl">
           All of this comes with Pocket Agent.

@@ -175,7 +175,7 @@ export default function BundlePage() {
             The bundle teaches the patterns. Pocket Agent is the hosted software
             that keeps everything running — connected to your tools, every
             playbook in one place, every capability active from day one.
-            $97/mo, 14-day free trial.
+            $37/mo, 14-day free trial.
           </p>
           <div className="mt-8">
             <Link

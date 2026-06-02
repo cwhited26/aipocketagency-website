@@ -640,7 +640,7 @@ async function handlePocketAgentTrialWillEnd(
 <html><body style="margin:0;padding:24px 16px;background:#0b0b0b;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;">
 <div style="max-width:560px;margin:0 auto;">
 <p>Hey${name ? ` ${name}` : ""} —</p>
-<p>Your Pocket Agent free trial ends on <strong>${trialEndDate}</strong>. After that, your card will be charged $97/mo.</p>
+<p>Your Pocket Agent free trial ends on <strong>${trialEndDate}</strong>. After that, your card will be charged $37/mo.</p>
 <p>If you want to cancel before then, you can do it any time from your billing portal. Just reply to this email and I'll send you the link.</p>
 <p>If you're still getting set up, the brain template is at <a href="https://aipocketagency.com" style="color:#6ee7b7;">aipocketagency.com</a> — everything you need is there.</p>
 <p style="margin-top:32px;">&mdash; Chase</p>
@@ -649,7 +649,7 @@ async function handlePocketAgentTrialWillEnd(
 
   const text = `Hey${name ? ` ${name}` : ""} —
 
-Your Pocket Agent free trial ends on ${trialEndDate}. After that, your card will be charged $97/mo.
+Your Pocket Agent free trial ends on ${trialEndDate}. After that, your card will be charged $37/mo.
 
 If you want to cancel before then, you can do it any time from your billing portal. Just reply to this email and I'll send you the link.
 

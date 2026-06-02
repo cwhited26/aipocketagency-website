@@ -57,7 +57,7 @@ export default function StartForm({ defaultEmail = "" }: { defaultEmail?: string
               className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
               style={{ fontFamily: MONO_FONT }}
             >
-              [ pocket agent · $97/mo · 14-day free trial ]
+              [ pocket agent · $37/mo · 14-day free trial ]
             </div>
             <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
               <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
@@ -65,7 +65,7 @@ export default function StartForm({ defaultEmail = "" }: { defaultEmail?: string
               </span>
             </h1>
             <p className="mt-4 text-lg text-slate-300">
-              $97/mo after the trial. Cancel anytime.
+              $37/mo after the trial. Cancel anytime.
             </p>
           </div>
 

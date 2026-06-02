@@ -5,7 +5,7 @@ const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 const PAGE_URL = "https://aipocketagency.com/pocket-agent";
 const DESCRIPTION =
-  "Your business finally has a memory. Pocket Agent captures every decision, drafts emails in your voice, briefs you before every call, and finds old decisions in seconds — with the source. $97/mo, 14-day free trial.";
+  "Your business finally has a memory. Pocket Agent captures every decision, drafts emails in your voice, briefs you before every call, and finds old decisions in seconds — with the source. $37/mo, 14-day free trial.";
 
 export const metadata: Metadata = {
   title: "Pocket Agent — Your business finally has a memory | AI Pocket Agency",
@@ -75,7 +75,7 @@ function Hero() {
             className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
             style={{ fontFamily: MONO_FONT }}
           >
-            [ pocket agent · $97/mo · 14-day free trial ]
+            [ pocket agent · $37/mo · 14-day free trial ]
           </div>
           <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl md:text-6xl">
             <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
@@ -101,7 +101,7 @@ function Hero() {
               className="text-xs text-slate-500"
               style={{ fontFamily: MONO_FONT }}
             >
-              [ $97/mo after trial · your data stays yours ]
+              [ $37/mo after trial · your data stays yours ]
             </div>
           </div>
         </div>
@@ -368,7 +368,7 @@ function Pricing() {
             pocket agent · single tier
           </div>
           <div className="mt-4 flex items-baseline gap-3">
-            <span className="text-5xl font-extrabold text-accent">$97</span>
+            <span className="text-5xl font-extrabold text-accent">$37</span>
             <span className="text-xl text-slate-400">/mo after your 14-day trial</span>
           </div>
           <ul className="mt-8 space-y-3">
@@ -476,7 +476,7 @@ function FinalCTA() {
       <div className="relative mx-auto flex max-w-3xl flex-col items-center px-6 py-24 text-center">
         <SectionLabel>start here</SectionLabel>
         <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl">
-          $97/mo. 14-day free trial. Your data stays yours.
+          $37/mo. 14-day free trial. Your data stays yours.
         </h2>
         <p className="mt-6 text-balance text-lg leading-relaxed text-slate-300">
           Sign up and your AI is running — every capability active, Skool

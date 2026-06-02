@@ -15,7 +15,7 @@ export function generateMetadata(): Metadata {
   return {
     title: "One last thing — Pocket Agent | AI Pocket Agency",
     description:
-      "The software that runs all of this. $97/mo, 14-day free trial, Skool community included.",
+      "The software that runs all of this. $37/mo, 14-day free trial, Skool community included.",
     robots: { index: false, follow: false },
   };
 }
@@ -70,7 +70,7 @@ export default async function SkoolInvitePage({
               className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
               style={{ fontFamily: MONO_FONT }}
             >
-              [ pocket agent · $97/mo · 14-day free trial ]
+              [ pocket agent · $37/mo · 14-day free trial ]
             </div>
             <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
               <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
@@ -120,7 +120,7 @@ export default async function SkoolInvitePage({
               </div>
               <div className="mt-2 flex items-baseline gap-3 text-base">
                 <span className="text-2xl font-extrabold text-accent">
-                  $97/mo
+                  $37/mo
                 </span>
                 <span className="text-sm text-slate-400">
                   Pocket Agent — Skool included
@@ -140,7 +140,7 @@ export default async function SkoolInvitePage({
                 href="/start"
                 className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_50px_-12px_rgba(34,211,238,0.8)] transition hover:scale-[1.01] hover:shadow-[0_0_70px_-8px_rgba(34,211,238,0.95)] sm:text-lg"
               >
-                Start your 14-day free trial — $97/mo →
+                Start your 14-day free trial — $37/mo →
               </a>
               <div className="mt-4 text-center">
                 <Link

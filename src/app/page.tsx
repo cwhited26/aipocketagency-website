@@ -146,7 +146,7 @@ function Hero() {
               className="text-xs text-slate-500"
               style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
             >
-              $97/mo after day 14. Cancel before then and pay $0.
+              $37/mo after day 14. Cancel before then and pay $0.
             </p>
           </div>
         </div>
@@ -218,7 +218,7 @@ function OldVsNew() {
   const newWay = [
     "Your AI remembers every decision you've ever made",
     "Ask in plain English — cited answer in three seconds",
-    "One flat rate: $97/mo. Everything included.",
+    "One flat rate: $37/mo. Everything included.",
     "Drafts your standup, briefs you before every call, handles Q&A in your voice",
     "Your data stays yours — no lock-in, no platform wall",
   ];
@@ -416,7 +416,7 @@ function Ladder() {
     },
     {
       n: "3",
-      price: "$97/mo",
+      price: "$37/mo",
       label: "Pocket Agent",
       title: "The software that runs all of it",
       detail:
@@ -432,7 +432,7 @@ function Ladder() {
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
         <SectionLabel>how to start</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Free. $15. $97/mo. Pick your entry point.
+          Free. $15. $37/mo. Pick your entry point.
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-slate-300">
           Every step is a working piece of the same thing. The free guide shows
@@ -637,7 +637,7 @@ function Pricing() {
       <div className="mx-auto max-w-3xl px-6 py-20 sm:py-24">
         <SectionLabel>pricing</SectionLabel>
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          One tier. $97/mo. 14-day free trial.
+          One tier. $37/mo. 14-day free trial.
         </h2>
         <p className="mt-6 text-lg leading-relaxed text-slate-300">
           Card collected at signup. Nothing charges until day 15. Cancel before
@@ -652,7 +652,7 @@ function Pricing() {
             pocket agent · single tier
           </div>
           <div className="mt-4 flex items-baseline gap-3">
-            <span className="text-5xl font-extrabold text-accent">$97</span>
+            <span className="text-5xl font-extrabold text-accent">$37</span>
             <span className="text-xl text-slate-400">/mo</span>
           </div>
           <div
@@ -832,7 +832,7 @@ function FinalCTA() {
       <div className="relative mx-auto flex max-w-3xl flex-col items-center px-6 py-24 text-center sm:py-28">
         <SectionLabel>start here</SectionLabel>
         <h2 className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl md:text-5xl">
-          $97/mo. 14-day free trial. Your data stays yours.
+          $37/mo. 14-day free trial. Your data stays yours.
         </h2>
         <p className="mt-6 max-w-2xl text-balance text-lg leading-relaxed text-slate-300 sm:text-xl">
           Sign up and your AI is running — every playbook loaded, every
@@ -846,7 +846,7 @@ function FinalCTA() {
             className="text-xs text-slate-500"
             style={{ fontFamily: "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace" }}
           >
-            [ $97/mo after day 14 · cancel before then and pay $0 ]
+            [ $37/mo after day 14 · cancel before then and pay $0 ]
           </p>
         </div>
         <p className="mt-8 text-sm text-slate-500">

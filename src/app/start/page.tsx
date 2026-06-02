@@ -5,7 +5,7 @@ import StartForm from "./StartForm";
 
 const PAGE_URL = "https://aipocketagency.com/start";
 const DESCRIPTION =
-  "Start your 14-day free trial of Pocket Agent. $97/mo after the trial. Cancel anytime.";
+  "Start your 14-day free trial of Pocket Agent. $37/mo after the trial. Cancel anytime.";
 
 export const metadata: Metadata = {
   title: "Start your 14-day free trial — Pocket Agent",

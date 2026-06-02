@@ -63,7 +63,7 @@ export const CAPTURE_PACK: WaitlistBundle = {
     },
   ],
   pricingLabel: "how it works",
-  pricingHeadline: "Your Pocket Agent does the work. $97/mo includes everything.",
+  pricingHeadline: "Your Pocket Agent does the work. $37/mo includes everything.",
   pricingParagraphs: [
     "A VA who could transcribe your voice, categorize your screenshots, parse your emails, fetch Loom transcripts, and remember every Facebook save would cost you $2,000–4,000 a month. Your Pocket Agent does all of it.",
     "The capture tools also sell as standalone $15 PDFs. Pocket Agent members get everything included — no separate purchase, no separate setup.",
@@ -133,7 +133,7 @@ export const OUTPUT_PACK: WaitlistBundle = {
   ],
   pricingLabel: "how it works",
   pricingHeadline:
-    "Your Pocket Agent does the work. $97/mo includes everything.",
+    "Your Pocket Agent does the work. $37/mo includes everything.",
   pricingParagraphs: [
     "An EA + a junior marketer + a sales analyst + a content writer doing all of this — badly — would cost you $8,000–$15,000 a month. Your Pocket Agent does it.",
     "The output tools also sell as standalone $15 PDFs. Pocket Agent members get everything included — no separate purchase, no separate setup.",
