@@ -3,6 +3,7 @@ import { fetchPaUser } from "@/lib/pa-supabase";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { GlowCard } from "../_components/GlowCard";
+import InboxBadge from "../_components/InboxBadge";
 
 type AppDef = {
   href: string;
@@ -149,11 +150,14 @@ export default async function AppsPage() {
             <GlowCard key={app.href} href={app.href} className="px-5 py-5 group">
               <div className="flex items-start justify-between gap-3 mb-2">
                 <h2 className="text-sm font-semibold text-slate-100">{app.label}</h2>
-                <span
-                  className={`shrink-0 text-[10px] font-mono border rounded px-1.5 py-0.5 uppercase tracking-wider ${tagClass(app.tagColor)}`}
-                >
-                  {app.tag}
-                </span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {app.href === "/app/apps/inbox" && <InboxBadge />}
+                  <span
+                    className={`text-[10px] font-mono border rounded px-1.5 py-0.5 uppercase tracking-wider ${tagClass(app.tagColor)}`}
+                  >
+                    {app.tag}
+                  </span>
+                </div>
               </div>
               <p className="text-sm text-slate-400 leading-relaxed">{app.description}</p>
               <div className="mt-3 text-[11px] text-[#22d3ee]/50 group-hover:text-[#22d3ee] transition-colors font-mono">

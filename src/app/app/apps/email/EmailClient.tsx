@@ -67,6 +67,13 @@ export default function EmailClient({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Staging to Inbox
+  const [stageTo, setStageTo] = useState("");
+  const [stageSubject, setStageSubject] = useState("");
+  const [staging, setStaging] = useState(false);
+  const [staged, setStaged] = useState(false);
+  const [stageError, setStageError] = useState<string | null>(null);
+
   useEffect(() => {
     setVoiceSupported(getSpeechRecognitionCtor() !== null);
     return () => {
@@ -153,7 +160,37 @@ export default function EmailClient({
     setDraft(data.draft);
     setCitations(data.citations);
     setHasBrain(data.hasBrain);
+    // Reset staging for the fresh draft; prefill the recipient when we have one.
+    setStaged(false);
+    setStageError(null);
+    setStageTo(mode === "detailed" ? recipient.trim() : "");
+    setStageSubject("");
     setIsLoading(false);
+  }
+
+  async function handleStage() {
+    if (!draft.trim() || staging) return;
+    setStaging(true);
+    setStageError(null);
+    const res = await fetch("/api/app/inbox", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: stageTo.trim(),
+        subject: stageSubject.trim(),
+        body: draft,
+        citations,
+      }),
+    }).catch(() => null);
+
+    if (!res || !res.ok) {
+      const body = (await res?.json().catch(() => ({}))) as { error?: string };
+      setStageError(body?.error ?? "Couldn't stage the draft. Try again.");
+      setStaging(false);
+      return;
+    }
+    setStaged(true);
+    setStaging(false);
   }
 
   async function handleCopy() {
@@ -426,6 +463,56 @@ export default function EmailClient({
                 </div>
               </div>
             )}
+
+            {/* Stage to Inbox — the draft waits for your approval before it sends */}
+            <div className="rounded-xl border border-[#22d3ee]/20 bg-[#22d3ee]/[0.04] px-5 py-4">
+              {staged ? (
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-[#22d3ee]">Staged in your Inbox ✓</p>
+                  <p className="text-sm text-slate-400">
+                    Approve it from the{" "}
+                    <Link href="/app/apps/inbox" className="underline hover:text-[#22d3ee]">
+                      Inbox
+                    </Link>{" "}
+                    to send — nothing goes out until you say so.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs font-medium text-slate-300 mb-3">
+                    Send it to your Inbox to approve before it goes out.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                    <input
+                      type="text"
+                      placeholder="To (email address)"
+                      className={inputClass}
+                      value={stageTo}
+                      onChange={(e) => setStageTo(e.target.value)}
+                      disabled={staging}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Subject (optional)"
+                      className={inputClass}
+                      value={stageSubject}
+                      onChange={(e) => setStageSubject(e.target.value)}
+                      disabled={staging}
+                    />
+                  </div>
+                  {stageError && (
+                    <p className="text-xs text-red-400 mb-2 font-mono">{stageError}</p>
+                  )}
+                  <button
+                    onClick={() => void handleStage()}
+                    disabled={staging || !draft.trim()}
+                    className="w-full min-h-[44px] rounded-lg bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {staging ? "Staging…" : "Send to Inbox for approval"}
+                  </button>
+                </>
+              )}
+            </div>
 
             <p className="text-xs text-slate-700 leading-relaxed">
               Edit freely — it&apos;s a starting point. The voice gets sharper as you feed your brain
