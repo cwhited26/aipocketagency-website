@@ -204,6 +204,66 @@ export async function buildMemoryBlocks(
   );
 }
 
+// Lists .md files in an arbitrary repo directory (e.g. "sessions/inbox").
+// Returns [] for a missing directory (404) — a brain that has never received an
+// iOS share simply has no sessions/inbox folder.
+export async function listDirMarkdownFiles(
+  repo: string,
+  token: string | null,
+  dir: string,
+): Promise<AvailableFile[]> {
+  const hdrs: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "pocket-agent/1.0",
+  };
+  if (token) hdrs.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`https://api.github.com/repos/${repo}/contents/${dir}`, {
+    headers: hdrs,
+    cache: "no-store",
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as unknown;
+  if (!Array.isArray(data)) return [];
+  return (data as GhContentsItem[])
+    .filter((f) => f.type === "file" && f.name.endsWith(".md"))
+    .map((f) => ({ name: f.name, path: f.path }));
+}
+
+// Deletes a single file from the repo via the Contents API. Resolves the file's
+// blob sha itself (the Contents DELETE requires it) so callers only pass a path.
+export async function deleteRepoFile(params: {
+  repo: string;
+  token: string;
+  path: string;
+  commitMessage: string;
+}): Promise<{ ok: true; sha: string } | { ok: false; error: string }> {
+  const { repo, token, path, commitMessage } = params;
+  const hdrs = ghWriteHeaders(token);
+
+  const getRes = await fetch(
+    `https://api.github.com/repos/${repo}/contents/${encodeURI(path)}`,
+    { headers: hdrs, cache: "no-store" },
+  );
+  if (getRes.status === 404) return { ok: false, error: "File not found." };
+  if (!getRes.ok) return { ok: false, error: `Could not read file (${getRes.status}).` };
+  const fileData = (await getRes.json()) as { sha?: string };
+  if (!fileData.sha) return { ok: false, error: "File has no sha." };
+
+  const delRes = await fetch(
+    `https://api.github.com/repos/${repo}/contents/${encodeURI(path)}`,
+    {
+      method: "DELETE",
+      headers: hdrs,
+      body: JSON.stringify({ message: commitMessage, sha: fileData.sha }),
+      cache: "no-store",
+    },
+  );
+  if (!delRes.ok) return { ok: false, error: `Failed to delete file (${delRes.status}).` };
+  const delData = (await delRes.json()) as { commit?: { sha?: string } };
+  return { ok: true, sha: delData.commit?.sha ?? fileData.sha };
+}
+
 export function parseCitations(text: string): Citation[] {
   const re = /\[?(memory\/[^\]:\s]+\.md)(?::(\d+))?\]?/g;
   const seen = new Set<string>();

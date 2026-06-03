@@ -9,6 +9,10 @@ export type InboxEntry = {
   title?: string;
   sourceUrl?: string;
   content: string;
+  // Set when the entry is its own file in the repo (the iOS Working Copy share
+  // path: sessions/inbox/share-*.md) rather than a block inside memory/inbox.md.
+  // Removal of these entries deletes the file at `path` instead of rewriting a block.
+  path?: string;
 };
 
 const ENTRY_START_RE = /^<!-- PA-INBOX (.+) -->$/;
@@ -107,4 +111,96 @@ export function removeEntryFromRaw(existingRaw: string, id: string): string {
   const existing = parseRaw(existingRaw);
   const filtered = existing.filter((e) => e.id !== id);
   return serializeInboxFile(filtered);
+}
+
+// ─── iOS Working Copy share files (sessions/inbox/share-*.md) ──────────────────
+// The native iOS Share Sheet shortcut commits each item directly to the repo as
+// its own file via Working Copy (see automations/brain-inbox-shortcut-recipe.md
+// "Path 1"). That format differs from the API endpoint's PA-INBOX blocks:
+//
+//   ---
+//   source: ios-share-sheet
+//   tag: <free-text title>
+//   captured_at: 2026-06-02-160956
+//   ---
+//
+//   URL: https://...
+//
+//   (No notes — captured from Share Sheet)
+//
+// parseShareSheetFile turns one such file into an InboxEntry so the Capture
+// Inbox can render items captured this way alongside endpoint-captured ones.
+
+const NO_NOTES_RE = /^\(no notes\b/i;
+
+// captured_at is "YYYY-MM-DD-HHMMSS" (sometimes just "YYYY-MM-DD"). Convert to a
+// Date-parseable ISO-ish string; returns null if it doesn't look like a date.
+function capturedAtToIso(raw: string): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:[-T](\d{2})(\d{2})(\d{2}))?/.exec(raw.trim());
+  if (!m) return null;
+  const [, y, mo, d, hh = "00", mm = "00", ss = "00"] = m;
+  return `${y}-${mo}-${d}T${hh}:${mm}:${ss}`;
+}
+
+function parseFrontmatter(raw: string): { fm: Record<string, string>; body: string } {
+  const fm: Record<string, string> = {};
+  if (!raw.startsWith("---")) return { fm, body: raw };
+  const lines = raw.split("\n");
+  let i = 1;
+  for (; i < lines.length; i++) {
+    if (lines[i].trim() === "---") {
+      i++;
+      break;
+    }
+    const m = /^([^:]+):\s*(.*)$/.exec(lines[i]);
+    if (m) fm[m[1].trim()] = m[2].trim();
+  }
+  return { fm, body: lines.slice(i).join("\n") };
+}
+
+export function parseShareSheetFile(path: string, raw: string): InboxEntry | null {
+  if (!raw.trim()) return null;
+  const { fm, body } = parseFrontmatter(raw);
+
+  // Pull a URL out of the body (the shortcut writes "URL: https://...").
+  let sourceUrl: string | undefined;
+  const notes: string[] = [];
+  for (const line of body.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const urlMatch = /^URL:\s*(\S+)/i.exec(trimmed);
+    if (urlMatch && !sourceUrl) {
+      sourceUrl = urlMatch[1];
+      continue;
+    }
+    if (NO_NOTES_RE.test(trimmed)) continue;
+    notes.push(trimmed);
+  }
+
+  const tag = fm.tag?.trim() || undefined;
+  const noteText = notes.join("\n").trim();
+  const content = noteText || sourceUrl || tag || "(shared item)";
+
+  // captured_at → ts; fall back to the date embedded in the filename so the
+  // entry still sorts sensibly even if frontmatter is malformed.
+  const iso =
+    capturedAtToIso(fm.captured_at ?? "") ??
+    capturedAtToIso(path.split("/").pop()?.replace(/^share-/, "") ?? "");
+
+  return {
+    id: path, // file path is the stable, unique id for file-backed entries
+    ts: iso ?? new Date(0).toISOString(),
+    kind: sourceUrl ? "url" : "note",
+    ...(tag ? { title: tag } : {}),
+    ...(sourceUrl ? { sourceUrl } : {}),
+    content,
+    path,
+  };
+}
+
+// Merge endpoint-block entries with file-backed entries, newest first.
+export function mergeInboxEntries(...groups: InboxEntry[][]): InboxEntry[] {
+  return groups
+    .flat()
+    .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
 }

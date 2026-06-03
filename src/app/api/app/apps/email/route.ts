@@ -7,13 +7,21 @@ import { z } from "zod";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const bodySchema = z.object({
+// Quick mode: a single one-line ask the model expands itself.
+// Detailed mode: the operator drives the structured fields.
+const quickSchema = z.object({
+  mode: z.literal("quick"),
+  brief: z.string().min(1).max(2000),
+});
+const detailedSchema = z.object({
+  mode: z.literal("detailed").optional(),
   recipient: z.string().min(1).max(200),
   relationship: z.string().max(500).optional().default(""),
   purpose: z.string().min(1).max(2000),
   keyPoints: z.string().max(3000).optional().default(""),
   tone: z.string().max(200).optional().default(""),
 });
+const bodySchema = z.union([quickSchema, detailedSchema]);
 
 export async function POST(req: Request): Promise<NextResponse> {
   const supabase = createClient();
@@ -34,7 +42,16 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: parsed.error.message }, { status: 422 });
   }
 
-  const { recipient, relationship, purpose, keyPoints, tone } = parsed.data;
+  const draftInput =
+    "brief" in parsed.data
+      ? { recipient: "", relationship: "", purpose: "", keyPoints: "", tone: "", brief: parsed.data.brief }
+      : {
+          recipient: parsed.data.recipient,
+          relationship: parsed.data.relationship,
+          purpose: parsed.data.purpose,
+          keyPoints: parsed.data.keyPoints,
+          tone: parsed.data.tone,
+        };
 
   const paResult = await fetchPaUser(user.id);
   if (!paResult.ok) {
@@ -54,7 +71,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   try {
     const result = await generateEmailDraft(
-      { recipient, relationship, purpose, keyPoints, tone },
+      draftInput,
       paUser.anthropic_api_key,
       paUser.brain_repo,
       paUser.github_token,

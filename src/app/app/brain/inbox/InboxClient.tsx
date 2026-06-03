@@ -143,10 +143,13 @@ export default function InboxClient({
 
   async function handleRemove(id: string) {
     setRemovingId(id);
+    const target = entries.find((e) => e.id === id);
+    // File-backed entries (iOS share) are removed by path; block entries by id.
+    const payload = target?.path ? { path: target.path } : { id };
     const res = await fetch("/api/app/brain/inbox", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
+      body: JSON.stringify(payload),
     });
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     if (!res.ok) {

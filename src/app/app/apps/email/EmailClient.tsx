@@ -1,10 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 type Citation = { file: string; line: string };
 type GenerateResponse = { draft: string; citations: Citation[]; hasBrain: boolean };
+type Mode = "quick" | "detailed";
+
+// ─── Minimal SpeechRecognition typing ───────────────────────────────────────────
+// The DOM lib doesn't ship Web Speech types in this project, so declare just the
+// surface we use. Avoids `any` while staying optional/feature-detected.
+type SpeechResultEvent = {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+};
+interface MinimalSpeechRecognition {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((e: SpeechResultEvent) => void) | null;
+  onerror: ((e: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+type SpeechRecognitionCtor = new () => MinimalSpeechRecognition;
+
+function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+}
+
+const inputClass =
+  "w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none";
 
 export default function EmailClient({
   brainRepo,
@@ -13,11 +44,22 @@ export default function EmailClient({
   brainRepo: string | null;
   hasApiKey: boolean;
 }) {
+  const [mode, setMode] = useState<Mode>("quick");
+
+  // Quick mode
+  const [brief, setBrief] = useState("");
+  const [listening, setListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const recognitionRef = useRef<MinimalSpeechRecognition | null>(null);
+
+  // Detailed mode
   const [recipient, setRecipient] = useState("");
   const [relationship, setRelationship] = useState("");
   const [purpose, setPurpose] = useState("");
   const [keyPoints, setKeyPoints] = useState("");
   const [tone, setTone] = useState("");
+
+  // Output
   const [draft, setDraft] = useState("");
   const [citations, setCitations] = useState<Citation[]>([]);
   const [hasBrain, setHasBrain] = useState(false);
@@ -25,23 +67,69 @@ export default function EmailClient({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    setVoiceSupported(getSpeechRecognitionCtor() !== null);
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
+
+  function toggleListening() {
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const Ctor = getSpeechRecognitionCtor();
+    if (!Ctor) return;
+    const recognition = new Ctor();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.onresult = (e) => {
+      const chunks: string[] = [];
+      for (let i = 0; i < e.results.length; i++) {
+        const alt = e.results[i][0];
+        if (alt?.transcript) chunks.push(alt.transcript);
+      }
+      const text = chunks.join(" ").trim();
+      if (text) setBrief((prev) => (prev ? `${prev.trim()} ${text}` : text));
+    };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+    recognitionRef.current = recognition;
+    setListening(true);
+    recognition.start();
+  }
+
+  const canSubmit =
+    mode === "quick"
+      ? brief.trim().length > 0
+      : recipient.trim().length > 0 && purpose.trim().length > 0;
+
   async function handleGenerate() {
-    if (!recipient.trim() || !purpose.trim() || isLoading) return;
+    if (!canSubmit || isLoading) return;
+    if (listening) recognitionRef.current?.stop();
     setIsLoading(true);
     setError(null);
     setDraft("");
     setCitations([]);
 
+    const payload =
+      mode === "quick"
+        ? { mode: "quick", brief: brief.trim() }
+        : {
+            mode: "detailed",
+            recipient: recipient.trim(),
+            relationship: relationship.trim(),
+            purpose: purpose.trim(),
+            keyPoints: keyPoints.trim(),
+            tone: tone.trim(),
+          };
+
     const res = await fetch("/api/app/apps/email", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        recipient: recipient.trim(),
-        relationship: relationship.trim(),
-        purpose: purpose.trim(),
-        keyPoints: keyPoints.trim(),
-        tone: tone.trim(),
-      }),
+      body: JSON.stringify(payload),
     }).catch(() => null);
 
     if (!res) {
@@ -77,7 +165,7 @@ export default function EmailClient({
 
   if (!hasApiKey) {
     return (
-      <div className="min-h-screen bg-[#05070a] flex flex-col items-center justify-center px-4">
+      <div className="h-full overflow-y-auto bg-[#05070a] flex flex-col items-center justify-center px-4">
         <div className="max-w-sm w-full space-y-4 text-center">
           <div className="text-[#22d3ee] text-xs font-mono tracking-[0.2em] uppercase">
             Setup required
@@ -99,8 +187,12 @@ export default function EmailClient({
   }
 
   return (
-    <div className="min-h-screen bg-[#05070a]">
-      <div className="max-w-2xl mx-auto px-6 py-10">
+    <div className="h-full overflow-y-auto bg-[#05070a]">
+      {/* pb clears the iOS Safari home-indicator so the CTA is never cut off */}
+      <div
+        className="max-w-2xl mx-auto px-6 py-10"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2.5rem)" }}
+      >
         <div className="mb-2">
           <Link
             href="/app/apps"
@@ -110,7 +202,7 @@ export default function EmailClient({
           </Link>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="text-[10px] text-[#22d3ee]/60 font-mono tracking-[0.2em] uppercase mb-2">
             Level 2 · Drafts in your voice
           </div>
@@ -122,108 +214,187 @@ export default function EmailClient({
           </p>
         </div>
 
-        <div className="space-y-4 mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                Who it&apos;s to
-              </label>
-              <input
-                type="text"
-                placeholder="Patrick Johnson"
-                className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">
-                Relationship{" "}
-                <span className="text-slate-600 font-normal">(optional)</span>
-              </label>
-              <input
-                type="text"
-                placeholder="Current client, roofing project"
-                className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none"
-                value={relationship}
-                onChange={(e) => setRelationship(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Purpose of this email
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Follow up after our discovery call. Send them the quote and confirm next steps."
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none resize-none"
-              value={purpose}
-              onChange={(e) => setPurpose(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Key points to cover{" "}
-              <span className="text-slate-600 font-normal">(optional — bullets or phrases)</span>
-            </label>
-            <textarea
-              rows={3}
-              placeholder="Quote attached&#10;Start date: within 2 weeks&#10;Need them to confirm the shingle color from the samples&#10;Call to review together Thursday"
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none resize-none"
-              value={keyPoints}
-              onChange={(e) => setKeyPoints(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Tone note{" "}
-              <span className="text-slate-600 font-normal">(optional — e.g. urgent, casual, formal)</span>
-            </label>
-            <input
-              type="text"
-              placeholder="Keep it casual — we've been texting back and forth all week"
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none"
-              value={tone}
-              onChange={(e) => setTone(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
-
-          <button
-            onClick={handleGenerate}
-            disabled={!recipient.trim() || !purpose.trim() || isLoading}
-            className="w-full rounded-xl bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isLoading ? "Reading brain + drafting…" : "Draft email"}
-          </button>
+        {/* Mode toggle */}
+        <div className="inline-flex rounded-xl border border-slate-700 bg-slate-900 p-1 mb-5">
+          {(["quick", "detailed"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                mode === m
+                  ? "bg-[#22d3ee] text-[#031820]"
+                  : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              {m === "quick" ? "Quick" : "Detailed"}
+            </button>
+          ))}
         </div>
 
+        {mode === "quick" ? (
+          <div className="space-y-3 mb-6">
+            <label className="block text-xs font-medium text-slate-400">
+              Just say what you need
+            </label>
+            <div className="relative">
+              <textarea
+                rows={3}
+                placeholder={
+                  "follow-up to Patrick about the quote and our Thursday call — confirm the start date"
+                }
+                className={`${inputClass} resize-none pr-12`}
+                value={brief}
+                onChange={(e) => setBrief(e.target.value)}
+                disabled={isLoading}
+              />
+              {voiceSupported && (
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  disabled={isLoading}
+                  aria-label={listening ? "Stop dictation" : "Dictate your email ask"}
+                  className={`absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${
+                    listening
+                      ? "border-[#22d3ee] bg-[#22d3ee]/15 text-[#22d3ee] animate-pulse"
+                      : "border-slate-700 text-slate-500 hover:text-[#22d3ee] hover:border-[#22d3ee]/50"
+                  }`}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                    />
+                    <path
+                      d="M5 11a7 7 0 0 0 14 0M12 18v3"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-600 leading-relaxed">
+              One line is enough — who it&apos;s to and what it&apos;s about. Your Pocket Agent fills
+              in the rest from your brain.
+              {listening && <span className="text-[#22d3ee] ml-1">Listening…</span>}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  Who it&apos;s to
+                </label>
+                <input
+                  type="text"
+                  placeholder="Patrick Johnson"
+                  className={inputClass}
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  Relationship <span className="text-slate-600 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Current client, roofing project"
+                  className={inputClass}
+                  value={relationship}
+                  onChange={(e) => setRelationship(e.target.value)}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                Purpose of this email
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Follow up after our discovery call. Send them the quote and confirm next steps."
+                className={`${inputClass} resize-none`}
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                Key points to cover{" "}
+                <span className="text-slate-600 font-normal">(optional — bullets or phrases)</span>
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Quote attached&#10;Start date: within 2 weeks&#10;Need them to confirm the shingle color from the samples&#10;Call to review together Thursday"
+                className={`${inputClass} resize-none`}
+                value={keyPoints}
+                onChange={(e) => setKeyPoints(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                Tone note{" "}
+                <span className="text-slate-600 font-normal">
+                  (optional — e.g. urgent, casual, formal)
+                </span>
+              </label>
+              <input
+                type="text"
+                placeholder="Keep it casual — we've been texting back and forth all week"
+                className={inputClass}
+                value={tone}
+                onChange={(e) => setTone(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={() => void handleGenerate()}
+          disabled={!canSubmit || isLoading}
+          className="w-full rounded-xl bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isLoading ? "Reading brain + drafting…" : "Draft email"}
+        </button>
+
         {error && error !== "no_api_key" && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-400 mb-6">
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-400 mt-6">
             {error}
           </div>
         )}
 
+        {error === "no_api_key" && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-400 mt-6">
+            Add your Anthropic API key in{" "}
+            <Link href="/app/settings" className="underline">
+              Settings
+            </Link>{" "}
+            to draft emails.
+          </div>
+        )}
+
         {draft && (
-          <div className="space-y-4">
+          <div className="space-y-4 mt-6">
             <div className="rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">
               <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800">
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">
                   Draft
-                  {!hasBrain && (
-                    <span className="ml-2 text-amber-500/70">· no brain connected</span>
-                  )}
+                  {!hasBrain && <span className="ml-2 text-amber-500/70">· no brain connected</span>}
                 </span>
                 <button
-                  onClick={handleCopy}
+                  onClick={() => void handleCopy()}
                   className="text-xs text-slate-500 hover:text-[#22d3ee] transition-colors font-mono"
                 >
                   {copied ? "Copied ✓" : "Copy"}

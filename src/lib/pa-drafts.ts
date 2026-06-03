@@ -95,6 +95,51 @@ STRUCTURE:
 Output ONLY the email. No preamble, no "here's the draft:" wrapper. Start with the greeting line.`;
 }
 
+// Quick-draft mode: the operator types/speaks one line ("follow-up to Patrick
+// about the quote and Thursday call") and the model infers recipient,
+// relationship, purpose, key points, and tone itself before drafting — no manual
+// field entry. Same voice rules as the structured path.
+function buildEmailBriefSystemPrompt(memoryBlocks: MemoryBlock[], brief: string): string {
+  const hasMemory = memoryBlocks.length > 0;
+  const memorySection = hasMemory
+    ? `BRAIN MEMORY FILES (the operator's business context, voice, communication style, client history):\n${formatBlocks(memoryBlocks)}\n\n`
+    : `NOTE: No brain memory files are connected yet. Draft the best email you can from the one-line ask. At the end, note 2-3 specific things the user should add to their brain (voice spec, client communication patterns, relationship history) to make future email drafts more personalized and on-voice.\n\n`;
+  const avatarLine = avatarNote(memoryBlocks);
+
+  return `You are drafting an email on behalf of an independent operator. Your job is to write an email that sounds like THEM — not like a polished PR person, not like ChatGPT, not like a corporate account manager. Like them.
+${avatarLine}
+
+${memorySection}THE OPERATOR'S ONE-LINE ASK:
+"${brief}"
+
+FIRST, infer the email's structure from that one line plus anything the brain tells you:
+- WHO it's to (recipient) and your RELATIONSHIP to them — use the brain to resolve names, history, and prior threads.
+- The PURPOSE — what this email needs to accomplish.
+- The KEY POINTS to cover — pull specifics (dates, amounts, project names, next steps) from the ask and the brain.
+- The TONE that fits this recipient and relationship.
+If the ask is ambiguous and the brain doesn't resolve it, make the most reasonable assumption a competent assistant would — do not ask the user questions, just write the email.
+
+VOICE RULES (apply these strictly):
+- Read the brain's voice or communication style notes carefully. Write in that voice exactly.
+- If no voice spec is in the brain, default to: short sentences, direct, specific, no padding. The kind of email a busy operator sends between jobs — not a carefully polished business letter.
+- No "I hope this finds you well." No "circling back." No "just checking in." No "at your earliest convenience."
+- Open with the first name or a single-line greeting that fits the relationship. Not "Hi [Name]," — "Name —" or just the name if that's how they write.
+- Frame the ask in the first sentence. Don't build up to it.
+- Specific > vague. If the brain has context about the recipient, use it. Name the project, the date, the amount, the specific thing they discussed.
+- Close with a single-action CTA. One thing. Not three options.
+- Sign off as the operator does (check the brain for their sign-off pattern; default to "— [FirstName]" if not found).
+- Every factual claim pulled from memory must be cited: [memory/filename.md:line]
+
+STRUCTURE:
+1. Greeting line (one line, no filler)
+2. Purpose/ask — first sentence, direct
+3. Body — key points, specific, short. Bullets if parallel items; prose if one continuous thought.
+4. CTA — one action, one link, one decision
+5. Sign-off
+
+Output ONLY the email. No preamble, no "here's the draft:" wrapper, no restating the fields you inferred. Start with the greeting line.`;
+}
+
 type AnthropicTextBlock = { type: "text"; text: string };
 type AnthropicApiResponse = { content: AnthropicTextBlock[] };
 
@@ -374,6 +419,9 @@ export async function generateEmailDraft(
     purpose: string;
     keyPoints: string;
     tone: string;
+    // When set (Quick mode), the model infers the structured fields from this
+    // one-line ask itself and the recipient/purpose/etc. above are ignored.
+    brief?: string;
   },
   anthropicApiKey: string,
   brainRepo: string | null,
@@ -383,14 +431,16 @@ export async function generateEmailDraft(
     ? await buildMemoryBlocks(brainRepo, githubToken)
     : [];
 
-  const systemPrompt = buildEmailSystemPrompt(
-    memoryBlocks,
-    params.recipient,
-    params.relationship,
-    params.purpose,
-    params.keyPoints,
-    params.tone,
-  );
+  const systemPrompt = params.brief
+    ? buildEmailBriefSystemPrompt(memoryBlocks, params.brief)
+    : buildEmailSystemPrompt(
+        memoryBlocks,
+        params.recipient,
+        params.relationship,
+        params.purpose,
+        params.keyPoints,
+        params.tone,
+      );
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
