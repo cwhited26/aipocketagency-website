@@ -171,6 +171,20 @@ export default function FeedBrainClient({
             {/* iOS share shortcuts */}
             <div className="flex flex-col gap-2">
               <a
+                href="/app/capture/voice"
+                className="flex items-center gap-3 rounded-xl border border-[#22d3ee]/25 bg-[#22d3ee]/5 px-4 py-3 hover:border-[#22d3ee]/40 hover:bg-[#22d3ee]/10 transition-all group"
+              >
+                <span className="text-[#22d3ee]/70 text-sm shrink-0 group-hover:text-[#22d3ee] transition-colors">●</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-200 group-hover:text-white transition-colors">
+                    Record a voice memo
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Talk it out — transcribed and filed into your brain →
+                  </p>
+                </div>
+              </a>
+              <a
                 href="/app/share-setup"
                 className="flex items-center gap-3 rounded-xl border border-slate-700/40 bg-slate-900/40 px-4 py-3 hover:border-[#22d3ee]/30 hover:bg-slate-900/60 transition-all group"
               >

@@ -230,6 +230,35 @@ export async function listDirMarkdownFiles(
     .map((f) => ({ name: f.name, path: f.path }));
 }
 
+// Lists voice-memo files across all date subdirectories of inbox/voice-memos.
+// The recorder files memos under inbox/voice-memos/YYYY-MM-DD/, so this lists the
+// date dirs first, then the .md files inside each. Returns [] when the brain has
+// never received a voice memo (the directory simply doesn't exist).
+export async function listVoiceMemoFiles(
+  repo: string,
+  token: string | null,
+): Promise<AvailableFile[]> {
+  const hdrs: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "pocket-agent/1.0",
+  };
+  if (token) hdrs.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(
+    `https://api.github.com/repos/${repo}/contents/inbox/voice-memos`,
+    { headers: hdrs, cache: "no-store" },
+  );
+  if (!res.ok) return [];
+  const data = (await res.json()) as unknown;
+  if (!Array.isArray(data)) return [];
+  const dateDirs = (data as GhContentsItem[]).filter((f) => f.type === "dir");
+
+  const perDir = await Promise.all(
+    dateDirs.map((d) => listDirMarkdownFiles(repo, token, d.path)),
+  );
+  return perDir.flat();
+}
+
 // Deletes a single file from the repo via the Contents API. Resolves the file's
 // blob sha itself (the Contents DELETE requires it) so callers only pass a path.
 export async function deleteRepoFile(params: {

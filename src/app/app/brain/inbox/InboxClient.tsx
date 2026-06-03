@@ -24,6 +24,8 @@ function kindLabel(kind: InboxKind): string {
       return "note";
     case "text":
       return "text";
+    case "voice":
+      return "voice";
   }
 }
 
@@ -35,6 +37,8 @@ function kindColor(kind: InboxKind): string {
       return "text-violet-400/80 bg-violet-400/8 border-violet-400/20";
     case "text":
       return "text-slate-400 bg-slate-800/60 border-slate-700/40";
+    case "voice":
+      return "text-amber-400/80 bg-amber-400/8 border-amber-400/20";
   }
 }
 

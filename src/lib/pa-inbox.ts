@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 
-export type InboxKind = "text" | "url" | "note";
+export type InboxKind = "text" | "url" | "note" | "voice";
 
 export type InboxEntry = {
   id: string;
@@ -193,6 +193,35 @@ export function parseShareSheetFile(path: string, raw: string): InboxEntry | nul
     kind: sourceUrl ? "url" : "note",
     ...(tag ? { title: tag } : {}),
     ...(sourceUrl ? { sourceUrl } : {}),
+    content,
+    path,
+  };
+}
+
+// ─── Voice memos (inbox/voice-memos/YYYY-MM-DD/<HHMMSS>-<slug>.md) ─────────────
+// Captured by the in-app recorder (see /app/capture/voice). Each memo is its own
+// file with frontmatter { captured_at, source: voice-memo, topic, duration_seconds }
+// followed by the transcript body. parseVoiceMemoFile turns one into an InboxEntry
+// so voice memos render in the Capture Inbox alongside every other capture source.
+export function parseVoiceMemoFile(path: string, raw: string): InboxEntry | null {
+  if (!raw.trim()) return null;
+  const { fm, body } = parseFrontmatter(raw);
+
+  const transcript = body.trim();
+  const topic = fm.topic?.trim() || undefined;
+  const content = transcript || topic || "(empty voice memo)";
+
+  // captured_at is a full ISO timestamp; fall back to the date embedded in the
+  // path so the entry still sorts sensibly if frontmatter is malformed.
+  const iso =
+    capturedAtToIso(fm.captured_at ?? "") ??
+    capturedAtToIso(path.split("/").slice(-2, -1)[0] ?? "");
+
+  return {
+    id: path, // file path is the stable, unique id for file-backed entries
+    ts: iso ?? new Date(0).toISOString(),
+    kind: "voice",
+    ...(topic ? { title: topic } : {}),
     content,
     path,
   };

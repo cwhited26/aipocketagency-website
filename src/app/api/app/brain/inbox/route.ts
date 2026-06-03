@@ -10,10 +10,16 @@ export const dynamic = "force-dynamic";
 
 // An item can be removed one of two ways depending on how it was captured:
 //  • { id }   → a PA-INBOX block inside memory/inbox.md (endpoint capture)
-//  • { path } → a standalone file under sessions/inbox/ (iOS Working Copy share)
+//  • { path } → a standalone file: sessions/inbox/ (iOS Working Copy share) or
+//               inbox/voice-memos/ (in-app voice recorder)
 const RemoveBodySchema = z.union([
   z.object({ id: z.string().uuid("Entry id must be a UUID") }),
-  z.object({ path: z.string().min(1).regex(/^sessions\/inbox\/.+\.md$/, "Invalid inbox file path") }),
+  z.object({
+    path: z
+      .string()
+      .min(1)
+      .regex(/^(sessions\/inbox|inbox\/voice-memos)\/.+\.md$/, "Invalid inbox file path"),
+  }),
 ]);
 
 // POST /api/app/brain/inbox  { id } | { path }
