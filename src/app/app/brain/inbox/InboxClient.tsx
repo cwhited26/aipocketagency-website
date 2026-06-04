@@ -1,13 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { InboxEntry, InboxKind } from "@/lib/pa-inbox";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatTs(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString(undefined, {
+// Items captured without a real date fall back to the Unix epoch (new Date(0)).
+// Treat anything before this as "no capture date" so we render no timestamp pill
+// instead of a confusing "Dec 31, 1969".
+const MIN_VALID_TS = Date.UTC(2000, 0, 1);
+
+function formatTs(iso: string): string | null {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t) || t < MIN_VALID_TS) return null;
+  return new Date(t).toLocaleString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -57,6 +65,7 @@ function InboxRow({
 }) {
   const [removing, setRemoving] = useState(false);
   const [removeErr, setRemoveErr] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   async function handleRemove() {
     if (removing) return;
@@ -71,7 +80,15 @@ function InboxRow({
   }
 
   const displayTitle = entry.title ?? truncate(entry.content, 90);
-  const hasLongContent = entry.content.length > 90 || Boolean(entry.title);
+  // Body text distinct from the title — only when the entry carries a title.
+  const bodyPreview = entry.title ? truncate(entry.content, 280) : null;
+  // Link cards open the URL on tap; note/text/voice cards expand inline to show
+  // the full body — but only when there's hidden content worth a tap.
+  const isUrl = entry.kind === "url";
+  const canExpand =
+    !isUrl && entry.content.length > (entry.title ? 280 : 90);
+
+  const ts = formatTs(entry.ts);
 
   return (
     <div className="rounded-xl border border-slate-700/60 bg-slate-900/70 px-4 py-4 flex flex-col gap-2.5">
@@ -83,7 +100,7 @@ function InboxRow({
           {kindLabel(entry.kind)}
         </span>
         <span className="text-[10px] font-mono text-slate-600 flex-1 min-w-0 truncate">
-          {formatTs(entry.ts)}
+          {ts ?? ""}
         </span>
         <button
           onClick={() => void handleRemove()}
@@ -101,27 +118,57 @@ function InboxRow({
         </button>
       </div>
 
-      {/* Title / content preview */}
-      <p className="text-sm text-slate-200 leading-snug font-medium">
-        {displayTitle}
-      </p>
-
-      {/* Full content if there's a title (title = first line, content = body) */}
-      {hasLongContent && entry.title && (
-        <p className="text-xs text-slate-500 leading-relaxed">
-          {truncate(entry.content, 280)}
-        </p>
+      {/* Title / content — tappable to expand on note/text/voice cards */}
+      {canExpand ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="group text-left w-full flex flex-col gap-2"
+        >
+          <p className="text-sm text-slate-200 leading-snug font-medium break-words">
+            {displayTitle}
+          </p>
+          {expanded ? (
+            <div className="prose-brain text-xs leading-relaxed break-words">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {entry.content}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            bodyPreview && (
+              <p className="text-xs text-slate-500 leading-relaxed break-words">
+                {bodyPreview}
+              </p>
+            )
+          )}
+          <span className="text-[10px] font-mono text-slate-600 group-hover:text-[#22d3ee] transition-colors">
+            {expanded ? "▲ collapse" : "▼ tap to read full note"}
+          </span>
+        </button>
+      ) : (
+        <>
+          <p className="text-sm text-slate-200 leading-snug font-medium break-words">
+            {displayTitle}
+          </p>
+          {bodyPreview && (
+            <p className="text-xs text-slate-500 leading-relaxed break-words">
+              {bodyPreview}
+            </p>
+          )}
+        </>
       )}
 
-      {/* Source URL */}
+      {/* Source URL — break-all so long receipt/query URLs wrap instead of
+          bleeding off the right edge of the card on mobile. */}
       {entry.sourceUrl && (
         <a
           href={entry.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[11px] font-mono text-[#22d3ee]/60 hover:text-[#22d3ee] transition-colors truncate leading-tight min-h-[24px] flex items-center"
+          className="block text-[11px] font-mono text-[#22d3ee]/60 hover:text-[#22d3ee] transition-colors break-all leading-tight py-1"
         >
-          {entry.sourceUrl.replace(/^https?:\/\//, "").slice(0, 70)}
+          {entry.sourceUrl.replace(/^https?:\/\//, "")}
         </a>
       )}
 

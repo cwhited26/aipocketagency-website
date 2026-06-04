@@ -133,6 +133,20 @@ export function removeEntryFromRaw(existingRaw: string, id: string): string {
 
 const NO_NOTES_RE = /^\(no notes\b/i;
 
+// Repo plumbing that can sit inside an inbox directory but is not a capture: a
+// README explaining the folder, a .gitkeep placeholder, etc. These carry no
+// capture date, so without this guard they'd render as epoch-dated ("Dec 31,
+// 1969") items in the Capture Inbox. Skip them only when they also lack any
+// date frontmatter — a genuine note literally named README.md with a
+// captured_at still shows up.
+const PLUMBING_NAME_RE = /^(_?readme\.md|\.gitkeep|\.gitignore)$/i;
+
+function isRepoPlumbingFile(path: string, fm: Record<string, string>): boolean {
+  const name = path.split("/").pop() ?? "";
+  const hasDate = Boolean(fm.captured_at || fm.created_at || fm.date);
+  return PLUMBING_NAME_RE.test(name) && !hasDate;
+}
+
 // captured_at is "YYYY-MM-DD-HHMMSS" (sometimes just "YYYY-MM-DD"). Convert to a
 // Date-parseable ISO-ish string; returns null if it doesn't look like a date.
 function capturedAtToIso(raw: string): string | null {
@@ -161,6 +175,7 @@ function parseFrontmatter(raw: string): { fm: Record<string, string>; body: stri
 export function parseShareSheetFile(path: string, raw: string): InboxEntry | null {
   if (!raw.trim()) return null;
   const { fm, body } = parseFrontmatter(raw);
+  if (isRepoPlumbingFile(path, fm)) return null;
 
   // Pull a URL out of the body (the shortcut writes "URL: https://...").
   let sourceUrl: string | undefined;
@@ -206,6 +221,7 @@ export function parseShareSheetFile(path: string, raw: string): InboxEntry | nul
 export function parseVoiceMemoFile(path: string, raw: string): InboxEntry | null {
   if (!raw.trim()) return null;
   const { fm, body } = parseFrontmatter(raw);
+  if (isRepoPlumbingFile(path, fm)) return null;
 
   const transcript = body.trim();
   const topic = fm.topic?.trim() || undefined;
