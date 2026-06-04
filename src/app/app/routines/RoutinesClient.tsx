@@ -264,8 +264,25 @@ export default function RoutinesClient() {
             <p className="text-[12px] font-mono text-slate-500">loading routines…</p>
           </div>
         ) : fetchErr ? (
-          <div className="rounded-xl border border-red-900/40 bg-red-950/20 px-5 py-4">
-            <p className="text-sm text-red-400 font-mono">{fetchErr}</p>
+          <div className="rounded-xl border border-amber-900/40 bg-amber-950/20 px-5 py-5 flex flex-col items-center gap-3 text-center">
+            <Mascot state="empty" size={64} />
+            <p className="text-sm text-slate-200 font-semibold">Routines configuration error</p>
+            <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
+              Refreshing the page should fix it. If it persists,{" "}
+              <a
+                href="mailto:support@aipocketagency.com"
+                className="text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors"
+              >
+                contact support
+              </a>
+              .
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-1 min-h-[44px] px-5 rounded-lg border border-slate-700 bg-slate-900/70 text-sm text-slate-200 hover:border-[#22d3ee]/50 transition-colors"
+            >
+              Refresh
+            </button>
           </div>
         ) : (
           <div className="flex flex-col gap-3">

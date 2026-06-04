@@ -77,7 +77,13 @@ export async function ensureUserRoutines(userId: string): Promise<PaResult<void>
     next_run_at: computeNextRun(ROUTINE_DEFS[kind].scheduleCron).toISOString(),
   }));
 
-  const res = await fetch(`${env.url}/rest/v1/${TABLE}`, {
+  // on_conflict MUST name the (user_id, kind) unique constraint. Without it,
+  // PostgREST's ignore-duplicates resolution only targets the primary key (id) —
+  // and since each row gets a fresh server-generated id there is never a PK
+  // conflict, so the (user_id, kind) unique constraint throws 23505 on re-seed.
+  // ignore-duplicates → ON CONFLICT DO NOTHING, preserving any user edits
+  // (toggled enabled state, customized next_run_at) on subsequent loads.
+  const res = await fetch(`${env.url}/rest/v1/${TABLE}?on_conflict=user_id,kind`, {
     method: "POST",
     headers: {
       apikey: env.key,

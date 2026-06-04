@@ -12,15 +12,32 @@ export async function GET(): Promise<NextResponse> {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Idempotent — inserts the 3 defaults only if they don't exist yet.
+  // Idempotent — upserts the 3 defaults (ON CONFLICT DO NOTHING) on every load.
   const ensureResult = await ensureUserRoutines(user.id);
   if (!ensureResult.ok) {
-    return NextResponse.json({ error: ensureResult.error }, { status: ensureResult.status });
+    // Never leak raw PostgREST errors to the client; log detail server-side.
+    console.error("[app/routines] ensureUserRoutines failed", {
+      userId: user.id,
+      status: ensureResult.status,
+      error: ensureResult.error,
+    });
+    return NextResponse.json(
+      { error: "Routines configuration error" },
+      { status: 500 },
+    );
   }
 
   const listResult = await listRoutines(user.id);
   if (!listResult.ok) {
-    return NextResponse.json({ error: listResult.error }, { status: listResult.status });
+    console.error("[app/routines] listRoutines failed", {
+      userId: user.id,
+      status: listResult.status,
+      error: listResult.error,
+    });
+    return NextResponse.json(
+      { error: "Routines configuration error" },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ routines: listResult.data });

@@ -98,17 +98,25 @@ async function upsertIndexRows(rows: IndexRowInsert[]): Promise<void> {
   const env = paEnv();
   if ("error" in env) throw new Error(env.error);
 
-  const res = await fetch(`${env.url}/rest/v1/pocket_agent_memory_index`, {
-    method: "POST",
-    headers: {
-      apikey: env.key,
-      Authorization: `Bearer ${env.key}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates,return=minimal",
+  // on_conflict MUST name the (user_id, path) unique constraint. Without it,
+  // PostgREST's merge resolution targets the primary key (id) only — and each
+  // insert row carries a fresh server-generated id, so the (user_id, path)
+  // unique constraint throws 23505 instead of merging. merge-duplicates →
+  // ON CONFLICT DO UPDATE, so a re-index overwrites file_sha / excerpt in place.
+  const res = await fetch(
+    `${env.url}/rest/v1/pocket_agent_memory_index?on_conflict=user_id,path`,
+    {
+      method: "POST",
+      headers: {
+        apikey: env.key,
+        Authorization: `Bearer ${env.key}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify(rows),
+      cache: "no-store",
     },
-    body: JSON.stringify(rows),
-    cache: "no-store",
-  });
+  );
   if (!res.ok) {
     throw new Error(`Index upsert failed (${res.status}): ${await res.text()}`);
   }
