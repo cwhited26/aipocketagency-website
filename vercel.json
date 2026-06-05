@@ -12,6 +12,10 @@
     {
       "path": "/api/cron/gmail-sync",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/personas-digest",
+      "schedule": "0 13 * * 5"
     }
   ],
   "rewrites": [

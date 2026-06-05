@@ -87,6 +87,17 @@ function TasksIcon() {
   );
 }
 
+function PersonasIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <circle cx="5" cy="5" r="2.25" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M1.5 12.5c0-2.2 1.6-3.5 3.5-3.5s3.5 1.3 3.5 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="10.5" cy="4" r="1.6" stroke="currentColor" strokeWidth="1.1" />
+      <path d="M9.5 11c0-1.8 1.2-2.9 3-2.9" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function RoutinesIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
@@ -185,6 +196,7 @@ export default function AppNav() {
   const isCapture = pathname.startsWith("/app/capture");
   const isTasks = pathname.startsWith("/app/tasks");
   const isRoutines = pathname.startsWith("/app/routines");
+  const isPersonas = pathname.startsWith("/app/personas");
 
   const close = () => setMobileOpen(false);
 
@@ -214,6 +226,7 @@ export default function AppNav() {
         <NavItem href="/app/brain" active={isBrain} icon={<BrainIcon />} label="Brain" onClick={close} />
         <NavItem href="/app/documents" active={isDocs} icon={<DocsIcon />} label="Documents" onClick={close} />
         <NavItem href="/app/apps" active={isWork} icon={<WorkIcon />} label="Work" onClick={close} />
+        <NavItem href="/app/personas" active={isPersonas} icon={<PersonasIcon />} label="Personas" onClick={close} />
         <NavItem href="/app/routines" active={isRoutines} icon={<RoutinesIcon />} label="Routines" onClick={close} />
         <NavItem href="/app/skool" active={isCommunity} icon={<CommunityIcon />} label="Community" onClick={close} />
 

@@ -160,6 +160,65 @@ export function partitionReadablePaths(
   return { allowed, blocked };
 }
 
+// ── Persona-zone scoping ──────────────────────────────────────────────────────────
+//
+// A persona chat is scoped to exactly ONE zone (its own `persona-<slug>` knowledge
+// zone). Unlike the owner-private guard above (which blocks everything that isn't
+// `project-shared`), a persona must read its OWN zone and NOTHING else. These helpers
+// enforce that direction: a path is allowed only if it resolves *uniquely* to the
+// persona's zone. Anything that resolves to a different zone, or to no zone, or is
+// ambiguous, is blocked — fail closed.
+
+/**
+ * Throws ContainmentBlockedError unless `path` resolves to exactly `zoneKey`. Used by
+ * the persona chat endpoint to wrap every knowledge-file read so a persona can never
+ * pull a file outside its declared knowledge zone into the LLM context.
+ */
+export function assertPathInZone(
+  path: string,
+  config: ZoneConfig,
+  zoneKey: string,
+): void {
+  const zone = zoneForPath(path, config);
+  if (zone !== zoneKey) {
+    throw new ContainmentBlockedError(normalizePath(path), zone ?? "unzoned");
+  }
+}
+
+/** Filters paths down to those resolving uniquely to `zoneKey`. Never throws. */
+export function filterPathsToZone(
+  paths: string[],
+  config: ZoneConfig,
+  zoneKey: string,
+): { allowed: string[]; blocked: { path: string; zone: string }[] } {
+  const allowed: string[] = [];
+  const blocked: { path: string; zone: string }[] = [];
+  for (const path of paths) {
+    const zone = zoneForPath(path, config);
+    if (zone === zoneKey) allowed.push(path);
+    else blocked.push({ path: normalizePath(path), zone: zone ?? "unzoned" });
+  }
+  return { allowed, blocked };
+}
+
+/** Returns a copy of `config` with `zoneKey` declared (or its patterns replaced). */
+export function withZone(
+  config: ZoneConfig,
+  zoneKey: string,
+  patterns: string[],
+): ZoneConfig {
+  return { zones: { ...config.zones, [zoneKey]: patterns } };
+}
+
+/** Returns a copy of `config` with `zoneKey` removed (no-op if absent). */
+export function withoutZone(config: ZoneConfig, zoneKey: string): ZoneConfig {
+  const next: Record<string, string[]> = {};
+  for (const [k, v] of Object.entries(config.zones)) {
+    if (k !== zoneKey) next[k] = v;
+  }
+  return { zones: next };
+}
+
 // ── Config loading ──────────────────────────────────────────────────────────────
 
 /**
