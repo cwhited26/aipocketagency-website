@@ -10,6 +10,13 @@ import {
 import { listMemoryFiles, fetchFileContent, parseCitations } from "@/lib/pa-brain";
 import { generateQuoteDraft, generateEmailDraft } from "@/lib/pa-drafts";
 import { createPendingAction } from "@/lib/pa-actions";
+import {
+  loadZoneConfig,
+  assertReadAllowed,
+  ContainmentBlockedError,
+  type ZoneConfig,
+} from "@/lib/brain/containment-guard";
+import { tieredPathForNewMemory } from "@/lib/brain/memory-tier";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -165,7 +172,7 @@ const draftEmailInputSchema = z.object({
 });
 
 const proposeBrainUpdateInputSchema = z.object({
-  path: z.string().regex(/^memory\/[^/]+\.md$/, "path must match memory/*.md"),
+  path: z.string().regex(/^memory\/(?:[a-z][a-z0-9-]*\/)?[^/]+\.md$/, "path must match memory/*.md"),
   mode: z.enum(["append", "replace"]),
   content: z.string().min(1).max(50_000),
   why: z.string().min(1).max(2000),
@@ -213,6 +220,7 @@ type AgentToolContext = {
   brain_repo: string | null;
   github_token: string | null;
   anthropic_api_key: string;
+  zoneConfig: ZoneConfig;
 };
 
 async function executeAgentTool(
@@ -231,6 +239,13 @@ async function executeAgentTool(
     const parsed = readBrainFileInputSchema.safeParse(rawInput);
     if (!parsed.success) return `Invalid input: ${parsed.error.message}`;
     if (!ctx.brain_repo) return "No brain repository connected.";
+    // ContainmentGuard: refuse to read user-private files into the agent's context.
+    try {
+      assertReadAllowed(parsed.data.path, ctx.zoneConfig, "agent-read");
+    } catch (err) {
+      if (err instanceof ContainmentBlockedError) return err.userMessage;
+      throw err;
+    }
     const content = await fetchFileContent(ctx.brain_repo, parsed.data.path, ctx.github_token);
     return content || `File not found or empty: ${parsed.data.path}`;
   }
@@ -284,14 +299,30 @@ async function executeAgentTool(
       return "No brain repository connected — cannot propose brain updates.";
     }
 
+    // Memory tiers: route a brand-new flat memory/*.md write into the correct tier
+    // folder (work/knowledge/learning) via the rules engine. Existing files keep
+    // their path so we never move a user's established memories.
+    let writePath = parsed.data.path;
+    let tierNote = "";
+    if (parsed.data.mode === "replace") {
+      const existing = await fetchFileContent(ctx.brain_repo, parsed.data.path, ctx.github_token);
+      if (!existing) {
+        const routed = tieredPathForNewMemory(parsed.data.path, parsed.data.content);
+        if (routed.tier) {
+          writePath = routed.path;
+          tierNote = ` Filed under ${routed.tier} (${routed.reason}).`;
+        }
+      }
+    }
+
     const result = await createPendingAction({
       userId: ctx.userId,
       actionType: "update_brain_memory",
-      title: `Update ${parsed.data.path}`,
+      title: `Update ${writePath}`,
       summary: parsed.data.why,
       payload: {
         repo: ctx.brain_repo,
-        path: parsed.data.path,
+        path: writePath,
         mode: parsed.data.mode,
         content: parsed.data.content,
       },
@@ -301,7 +332,7 @@ async function executeAgentTool(
       return `Failed to create proposal: ${result.error}`;
     }
 
-    return `Proposed — a brain update for ${parsed.data.path} (mode: ${parsed.data.mode}) is now pending in the user's Inbox. Nothing has been written yet. The user must review the proposed content and click Approve before anything changes in their brain.`;
+    return `Proposed — a brain update for ${writePath} (mode: ${parsed.data.mode}) is now pending in the user's Inbox.${tierNote} Nothing has been written yet. The user must review the proposed content and click Approve before anything changes in their brain.`;
   }
 
   return `Unknown tool: ${name}`;
@@ -405,7 +436,18 @@ export async function POST(
     { role: "user", content },
   ];
 
-  const agentCtx: AgentToolContext = { userId: user.id, brain_repo, github_token, anthropic_api_key };
+  // Load the brain's privacy-zone config once per request for the ContainmentGuard.
+  const { config: zoneConfig } = brain_repo
+    ? await loadZoneConfig(brain_repo, github_token)
+    : { config: { zones: {} } as ZoneConfig };
+
+  const agentCtx: AgentToolContext = {
+    userId: user.id,
+    brain_repo,
+    github_token,
+    anthropic_api_key,
+    zoneConfig,
+  };
   const systemPrompt = buildAgentSystemPrompt(Boolean(brain_repo));
   const toolSteps: ToolStep[] = [];
 

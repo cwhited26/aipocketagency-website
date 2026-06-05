@@ -610,6 +610,33 @@ export default function BrainHealthClient({
           </div>
         </div>
 
+        {/* Brain primitives — quick access to North Star, Specs, and Memory tiers */}
+        {brainRepo && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <a
+              href="/app/brain/north-star"
+              className="rounded-xl border border-slate-700/60 bg-slate-900/50 px-3.5 py-3 hover:bg-slate-800/60 hover:border-slate-600/60 transition-all group"
+            >
+              <span className="text-sm font-semibold text-slate-200 group-hover:text-slate-100">North Star</span>
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Mission, goals & beliefs</p>
+            </a>
+            <a
+              href="/app/brain/specs"
+              className="rounded-xl border border-slate-700/60 bg-slate-900/50 px-3.5 py-3 hover:bg-slate-800/60 hover:border-slate-600/60 transition-all group"
+            >
+              <span className="text-sm font-semibold text-slate-200 group-hover:text-slate-100">Specs</span>
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Structured plans for your work</p>
+            </a>
+            <a
+              href="/app/brain/memory"
+              className="rounded-xl border border-slate-700/60 bg-slate-900/50 px-3.5 py-3 hover:bg-slate-800/60 hover:border-slate-600/60 transition-all group"
+            >
+              <span className="text-sm font-semibold text-slate-200 group-hover:text-slate-100">Memory</span>
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">Active work · Knowledge · Patterns</p>
+            </a>
+          </div>
+        )}
+
         {/* Body */}
         {!brainRepo ? (
           <NoBrainState hasGithubToken={hasGithubToken} />

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { buildMemoryBlocks, parseCitations, formatMemoryBlocksForPrompt } from "@/lib/pa-brain";
+import { loadZoneConfig, partitionReadablePaths } from "@/lib/brain/containment-guard";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -67,7 +68,13 @@ export async function POST(req: Request): Promise<NextResponse> {
     );
   }
 
-  const memoryBlocks = await buildMemoryBlocks(brain_repo, github_token);
+  // ContainmentGuard: strip user-private brain paths before they enter LLM context.
+  const { config: zoneConfig } = await loadZoneConfig(brain_repo, github_token);
+  const memoryBlocks = await buildMemoryBlocks(
+    brain_repo,
+    github_token,
+    (paths) => partitionReadablePaths(paths, zoneConfig, "agent-read").allowed,
+  );
   if (memoryBlocks.length === 0) {
     return NextResponse.json({
       answer:

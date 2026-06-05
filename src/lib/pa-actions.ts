@@ -6,9 +6,12 @@ import { z } from "zod";
 
 // ─── Payload schemas ───────────────────────────────────────────────────────────
 
+// Permits an optional single tier subfolder so the memory-tier classifier can route
+// new writes into memory/work, memory/knowledge, or memory/learning while still
+// accepting legacy flat memory/*.md paths.
 export const updateBrainMemoryPayloadSchema = z.object({
   repo: z.string().min(1).max(300),
-  path: z.string().regex(/^memory\/[^/]+\.md$/),
+  path: z.string().regex(/^memory\/(?:[a-z][a-z0-9-]*\/)?[^/]+\.md$/),
   mode: z.enum(["append", "replace"]),
   content: z.string().min(1).max(100_000),
 });
