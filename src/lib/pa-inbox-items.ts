@@ -14,7 +14,7 @@
 // Distinct from pa-inbox.ts, which parses the iOS *Capture* Inbox (PA-INBOX
 // blocks in the brain repo). This file is the action-staging Inbox.
 
-export type InboxKind = "draft" | "decision";
+export type InboxKind = "draft" | "decision" | "email_triage";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {
@@ -125,6 +125,97 @@ export async function listInboxItems(userId: string): Promise<PaListResult> {
   }
   const rows = (await res.json()) as InboxItem[];
   return { ok: true, data: rows };
+}
+
+// ─── Gmail triage dedup (existing thread ids for a user) ──────────────────────
+
+// The cron dedups in application code before inserting: pull the thread ids of
+// every email_triage item already staged for this user (source='gmail') and skip
+// any thread we have seen. The partial unique index (migration 014) is the
+// defense-in-depth backstop against a concurrent double-run.
+export async function fetchGmailTriageThreadIds(
+  userId: string,
+): Promise<PaResult<Set<string>>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const res = await fetch(
+    `${env.url}/rest/v1/${TABLE}?user_id=eq.${encodeURIComponent(userId)}&kind=eq.email_triage&source=eq.gmail&select=payload`,
+    { headers: authHeaders(env.key), cache: "no-store" },
+  );
+  if (!res.ok) {
+    const body = await res.text();
+    if (isMissingTable(res.status, body)) return { ok: true, data: new Set() };
+    return { ok: false, status: res.status, error: body };
+  }
+  const rows = (await res.json()) as { payload?: Record<string, unknown> }[];
+  const ids = new Set<string>();
+  for (const row of rows) {
+    const threadId = row.payload?.threadId;
+    if (typeof threadId === "string") ids.add(threadId);
+  }
+  return { ok: true, data: ids };
+}
+
+// Read a single gmail triage item by thread id (Email Drafter reply prefill).
+export async function fetchGmailTriageByThread(
+  userId: string,
+  threadId: string,
+): Promise<PaResult<InboxItem | null>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const res = await fetch(
+    `${env.url}/rest/v1/${TABLE}` +
+      `?user_id=eq.${encodeURIComponent(userId)}` +
+      `&kind=eq.email_triage` +
+      `&payload->>threadId=eq.${encodeURIComponent(threadId)}` +
+      `&order=created_at.desc&limit=1`,
+    { headers: authHeaders(env.key), cache: "no-store" },
+  );
+  if (!res.ok) {
+    const body = await res.text();
+    if (isMissingTable(res.status, body)) return { ok: true, data: null };
+    return { ok: false, status: res.status, error: body };
+  }
+  const rows = (await res.json()) as InboxItem[];
+  return { ok: true, data: rows[0] ?? null };
+}
+
+// Mark a triage item handled (archived / handed off). Looked up by the gmail
+// thread id since the action route only knows the thread, not our row id.
+export async function resolveGmailTriageByThread(
+  userId: string,
+  threadId: string,
+  resolvedBy: string,
+): Promise<PaResult<number>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const res = await fetch(
+    `${env.url}/rest/v1/${TABLE}` +
+      `?user_id=eq.${encodeURIComponent(userId)}` +
+      `&kind=eq.email_triage` +
+      `&status=eq.pending` +
+      `&payload->>threadId=eq.${encodeURIComponent(threadId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        ...authHeaders(env.key),
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({
+        status: "approved",
+        resolved_at: new Date().toISOString(),
+        resolved_by: resolvedBy,
+      }),
+      cache: "no-store",
+    },
+  );
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as unknown[];
+  return { ok: true, data: Array.isArray(rows) ? rows.length : 0 };
 }
 
 // ─── Count pending (badge) ────────────────────────────────────────────────────

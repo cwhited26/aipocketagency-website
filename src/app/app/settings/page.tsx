@@ -199,6 +199,8 @@ export default async function SettingsPage({
 
         {/* Product links */}
         <div className="rounded-xl border border-slate-700/60 bg-slate-900/50 overflow-hidden divide-y divide-slate-800/60">
+          <SettingsRow label="Connections" value="Gmail → Inbox triage" href="/app/settings/connections" />
+          <SettingsRow label="Privacy zones" value="Control what your agent can read" href="/app/settings/privacy-zones" />
           <SettingsRow label="Learn" value="How Pocket Agent works" href="/app/learn" />
           <SettingsRow label="Changelog" value="What's new" href="/app/changelog" />
         </div>

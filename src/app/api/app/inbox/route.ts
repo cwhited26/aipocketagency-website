@@ -14,8 +14,17 @@ export const dynamic = "force-dynamic";
 // ─── Normalized card shape shared with the Inbox client ───────────────────────
 
 export type InboxCardSystem = "inbox" | "legacy";
-export type InboxCardKind = "draft" | "decision";
+export type InboxCardKind = "draft" | "decision" | "email_triage";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
+
+export type TriageDetail = {
+  threadId: string;
+  from: string;
+  subject: string;
+  snippet: string;
+  url: string;
+  receivedAt: string | null;
+};
 
 export type InboxCard = {
   id: string;
@@ -29,12 +38,14 @@ export type InboxCard = {
   createdAt: string;
   resolvedAt: string | null;
   email: { to: string; subject: string; body: string } | null;
+  triage: TriageDetail | null;
 };
 
 const SOURCE_LABELS: Record<string, string> = {
   "email-drafter": "Email Drafter",
   "voice-memo": "Voice Memo",
   "auto-suggest": "Auto-suggest",
+  gmail: "Gmail",
 };
 
 function previewOf(text: string, max = 180): string {
@@ -46,9 +57,23 @@ function str(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
+function triageOf(item: InboxItem): TriageDetail {
+  const receivedAt = item.payload.receivedAt;
+  return {
+    threadId: str(item.payload.threadId),
+    from: str(item.payload.from),
+    subject: str(item.payload.subject),
+    snippet: str(item.payload.snippet),
+    url: str(item.payload.url),
+    receivedAt: typeof receivedAt === "string" ? receivedAt : null,
+  };
+}
+
 function normalizeInboxItem(item: InboxItem): InboxCard {
   const isEmail = item.kind === "draft" && item.source === "email-drafter";
+  const isTriage = item.kind === "email_triage";
   const body = item.body_md ?? "";
+  const triage = isTriage ? triageOf(item) : null;
   return {
     id: item.id,
     system: "inbox",
@@ -56,7 +81,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
     status: item.status,
     title: item.title,
     source: item.source ? (SOURCE_LABELS[item.source] ?? item.source) : "Agent",
-    preview: previewOf(body || item.title),
+    preview: previewOf(triage ? triage.snippet || item.title : body || item.title),
     bodyMd: body,
     createdAt: item.created_at,
     resolvedAt: item.resolved_at,
@@ -67,6 +92,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
           body: str(item.payload.body) || body,
         }
       : null,
+    triage,
   };
 }
 
@@ -95,6 +121,7 @@ function normalizeLegacyAction(action: PendingAction): InboxCard {
     createdAt: action.created_at,
     resolvedAt: action.decided_at,
     email: null,
+    triage: null,
   };
 }
 

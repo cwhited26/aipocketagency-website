@@ -40,14 +40,16 @@ const inputClass =
 export default function EmailClient({
   brainRepo,
   hasApiKey,
+  initial,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
+  initial?: { mode: Mode; brief: string };
 }) {
-  const [mode, setMode] = useState<Mode>("quick");
+  const [mode, setMode] = useState<Mode>(initial?.mode ?? "quick");
 
   // Quick mode
-  const [brief, setBrief] = useState("");
+  const [brief, setBrief] = useState(initial?.brief ?? "");
   const [listening, setListening] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const recognitionRef = useRef<MinimalSpeechRecognition | null>(null);

@@ -4,11 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
 
+type TriageDetail = {
+  threadId: string;
+  from: string;
+  subject: string;
+  snippet: string;
+  url: string;
+  receivedAt: string | null;
+};
+
 // Mirrors the normalized card from GET /api/app/inbox.
 type InboxCard = {
   id: string;
   system: "inbox" | "legacy";
-  kind: "draft" | "decision";
+  kind: "draft" | "decision" | "email_triage";
   status: "pending" | "approved" | "rejected" | "expired" | "failed";
   title: string;
   source: string;
@@ -17,6 +26,7 @@ type InboxCard = {
   createdAt: string;
   resolvedAt: string | null;
   email: { to: string; subject: string; body: string } | null;
+  triage: TriageDetail | null;
 };
 
 type InboxResponse = { cards: InboxCard[]; provisioned: boolean };
@@ -190,6 +200,119 @@ function DraftCard({
   );
 }
 
+// ─── Email triage card ────────────────────────────────────────────────────────
+
+// Gmail's From header is `"Name" <addr@host>` or a bare address. Show the name
+// when present, else the address.
+function senderLabel(from: string): string {
+  const match = from.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
+  if (match) {
+    const name = match[1].trim();
+    return name || match[2].trim();
+  }
+  return from.trim() || "Unknown sender";
+}
+
+async function postTriageAction(threadId: string, action: "handle" | "archive"): Promise<void> {
+  const res = await fetch("/api/connections/gmail/action", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ threadId, action }),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `Request failed (${res.status})`);
+  }
+}
+
+function TriageCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState<"handle" | "archive" | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const triage = card.triage;
+  if (!triage) return null;
+
+  async function runAction(action: "handle" | "archive") {
+    if (busy) return;
+    setBusy(action);
+    setErr(null);
+    try {
+      await postTriageAction(triage!.threadId, action);
+      onResolved(card.id, "approved");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  const replyHref = `/app/capture/draft?context=email_triage&threadId=${encodeURIComponent(
+    triage.threadId,
+  )}`;
+
+  return (
+    <div className="rounded-2xl border border-[#22d3ee]/15 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-[#22d3ee]/70 uppercase tracking-[0.18em]">
+          Gmail · triage
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">
+          {relativeTime(triage.receivedAt ?? card.createdAt)}
+        </span>
+      </div>
+
+      {/* Tappable header opens the thread in Gmail */}
+      <a
+        href={triage.url || "#"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block group"
+      >
+        <p className="text-[13px] text-slate-400 truncate">{senderLabel(triage.from)}</p>
+        <p className="text-[15px] font-semibold text-slate-100 leading-snug group-hover:text-[#22d3ee] transition-colors">
+          {triage.subject || "(no subject)"}
+        </p>
+        {triage.snippet && (
+          <p className="text-sm text-slate-500 mt-1.5 leading-relaxed line-clamp-2">
+            {triage.snippet}
+          </p>
+        )}
+      </a>
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <div className="mt-4 flex items-center gap-2">
+        <button
+          onClick={() => void runAction("handle")}
+          disabled={busy !== null}
+          className="flex-1 min-h-[44px] py-3 px-3 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-slate-200 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {busy === "handle" ? "…" : "I'll handle"}
+        </button>
+        <Link
+          href={replyHref}
+          className="flex-1 min-h-[44px] flex items-center justify-center py-3 px-3 rounded-xl bg-[#22d3ee] hover:bg-[#06b6d4] text-[#031820] text-sm font-semibold transition-colors text-center"
+        >
+          Draft me a reply
+        </Link>
+        <button
+          onClick={() => void runAction("archive")}
+          disabled={busy !== null}
+          aria-label="Archive thread"
+          className="min-h-[44px] px-4 rounded-xl text-slate-500 text-sm hover:text-slate-300 transition-colors disabled:opacity-50"
+        >
+          {busy === "archive" ? "…" : "Archive"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Decision card ────────────────────────────────────────────────────────────
 
 function DecisionCard({
@@ -331,12 +454,13 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
     );
   }
 
+  const triage = cards.filter((c) => c.kind === "email_triage" && c.status === "pending");
   const drafts = cards.filter((c) => c.kind === "draft" && c.status === "pending");
   const decisions = cards.filter((c) => c.kind === "decision" && c.status === "pending");
   const resolved = cards
     .filter((c) => c.status !== "pending")
     .slice(0, 20);
-  const allClear = drafts.length === 0 && decisions.length === 0;
+  const allClear = triage.length === 0 && drafts.length === 0 && decisions.length === 0;
 
   return (
     <div className="h-full overflow-y-auto bg-[#05070a]">
@@ -375,6 +499,20 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
           </div>
         ) : (
           <>
+            {/* Incoming email to triage */}
+            {triage.length > 0 && (
+              <section className="mb-8">
+                <div className="text-[11px] font-mono text-slate-600 uppercase tracking-wider mb-3">
+                  Email to triage · {triage.length}
+                </div>
+                <div className="flex flex-col gap-3">
+                  {triage.map((card) => (
+                    <TriageCard key={card.id} card={card} onResolved={onResolved} />
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Drafts awaiting approval */}
             {drafts.length > 0 && (
               <section className="mb-8">
@@ -450,14 +588,17 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
           <div className="flex items-start gap-3">
             <div className="w-1.5 h-1.5 rounded-full bg-slate-700 mt-1.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-slate-400">
-                Live email sync arrives with Connections
-              </p>
+              <p className="text-sm font-medium text-slate-400">Live email triage</p>
               <p className="text-sm text-slate-600 mt-1 leading-relaxed">
-                Approving an email draft copies it and opens your mail app to send.{" "}
-                {brainRepo
-                  ? "Once you connect Gmail, your agent will send on approval and pull incoming mail that needs a decision into this queue."
-                  : "Connect your accounts in Settings → Connections to let your agent send on approval and triage incoming mail here."}
+                <Link
+                  href="/app/settings/connections"
+                  className="text-slate-400 underline hover:text-[#22d3ee]"
+                >
+                  Connect Gmail
+                </Link>{" "}
+                and incoming mail lands here every few minutes — handle, reply, or archive in one
+                tap. Approving an email draft still copies it and opens your mail app to send;
+                live send-on-approval is next.
               </p>
             </div>
           </div>

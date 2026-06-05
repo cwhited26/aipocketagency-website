@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
     "pdf:build": "./scripts/build-pdf.sh"
   },
   "dependencies": {
@@ -29,6 +30,7 @@
     "eslint-config-next": "14.2.18",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.4",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "vitest": "^4.1.8"
   }
 }
