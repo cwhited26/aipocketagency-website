@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { signState } from "@/lib/crypto/encrypt";
-import { GMAIL_SCOPES } from "@/lib/gmail";
+import { GMAIL_SCOPES, gmailRedirectUri } from "@/lib/gmail";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 
@@ -27,13 +27,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const origin = new URL(request.url).origin;
-  const callbackUrl = `${origin}/api/connections/gmail/callback`;
+  // Bit-exact match with the callback's token exchange — both derive the
+  // redirect_uri from PA_OAUTH_REDIRECT_BASE, never from the request host.
+  const callbackUrl = gmailRedirectUri();
 
   const state = signState(
     JSON.stringify({
       userId: user.id,
-      callbackUrl,
       nonce: crypto.randomBytes(16).toString("hex"),
       exp: Date.now() + 10 * 60 * 1000, // 10 minutes
     }),

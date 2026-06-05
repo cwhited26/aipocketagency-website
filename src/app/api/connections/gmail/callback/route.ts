@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { verifyState, encrypt, DecryptionError } from "@/lib/crypto/encrypt";
-import { exchangeCodeForTokens, getProfile } from "@/lib/gmail";
+import { exchangeCodeForTokens, getProfile, gmailRedirectUri } from "@/lib/gmail";
 import { upsertGmailConnection } from "@/lib/pa-gmail-connections";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -17,7 +17,6 @@ const SuccessParamsSchema = z.object({
 
 const StatePayloadSchema = z.object({
   userId: z.string().uuid(),
-  callbackUrl: z.string().url(),
   nonce: z.string().min(16),
   exp: z.number().int().positive(),
 });
@@ -72,8 +71,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return pageRedirect(request, "connection=error");
   }
 
-  // Exchange the code for tokens.
-  const tokens = await exchangeCodeForTokens(code, statePayload.callbackUrl);
+  // Exchange the code for tokens. redirect_uri must be a bit-exact match with the
+  // one sent on the auth request — both come from gmailRedirectUri(), not the host.
+  const tokens = await exchangeCodeForTokens(code, gmailRedirectUri());
   if (!tokens.ok) {
     return pageRedirect(
       request,

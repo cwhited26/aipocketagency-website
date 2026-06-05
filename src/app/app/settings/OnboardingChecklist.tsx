@@ -81,7 +81,7 @@ export default function OnboardingChecklist({
       detail: null,
       done: hasGoogleConnection,
       optional: true,
-      href: "/app/settings#connections",
+      href: "/app/settings/connections",
     },
     {
       id: "routines",

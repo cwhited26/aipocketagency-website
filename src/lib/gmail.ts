@@ -29,6 +29,28 @@ export type GmailResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: string; authError: boolean };
 
+// ─── OAuth redirect_uri (single source of truth) ───────────────────────────────
+// Google rejects the flow with "Error 400: redirect_uri_mismatch" unless the
+// redirect_uri on the auth request (start route) and the token exchange (callback
+// route) are a bit-exact match for an Authorized redirect URI in the GCP OAuth
+// client. NEVER derive this from the request host: the prod deploy also answers on
+// the apex domain and *.vercel.app aliases, none of which are registered. Both
+// routes call gmailRedirectUri() so the value is identical on each call.
+const DEFAULT_OAUTH_REDIRECT_BASE = "https://app.aipocketagency.com";
+
+/**
+ * The OAuth callback URL, built verbatim from PA_OAUTH_REDIRECT_BASE (read at
+ * request time). Set this env to a registered origin: https://app.aipocketagency.com
+ * in prod, http://localhost:3000 for local dev.
+ */
+export function gmailRedirectUri(): string {
+  const base = (process.env.PA_OAUTH_REDIRECT_BASE ?? DEFAULT_OAUTH_REDIRECT_BASE).replace(
+    /\/+$/,
+    "",
+  );
+  return `${base}/api/connections/gmail/callback`;
+}
+
 // 401, or an OAuth body carrying invalid_grant, means the refresh token is dead —
 // the caller should flip the connection to status='error' rather than retry.
 function isAuthFailure(status: number, body: string): boolean {

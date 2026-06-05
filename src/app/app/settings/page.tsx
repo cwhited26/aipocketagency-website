@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
-import { fetchUserConnections } from "@/lib/pa-connections";
+import { fetchGmailConnectionPublic } from "@/lib/pa-gmail-connections";
 import { redirect } from "next/navigation";
 import ApiKeyForm from "./ApiKeyForm";
 import BrainRepoPanel from "./BrainRepoPanel";
-import ConnectionsPanel from "./ConnectionsPanel";
 import OnboardingChecklist from "./OnboardingChecklist";
 
 function sbEnv(): { url: string; key: string } | null {
@@ -64,15 +63,13 @@ export default async function SettingsPage({
 
   if (!user) redirect("/app/login");
 
-  const [paResult, connectionsResult, hasShareToken, hasRoutines] = await Promise.all([
+  const [paResult, gmailConnectionResult, hasShareToken, hasRoutines] = await Promise.all([
     fetchPaUser(user.id),
-    fetchUserConnections(user.id),
+    fetchGmailConnectionPublic(user.id),
     fetchHasShareToken(user.id),
     fetchHasRoutines(user.id),
   ]);
   const paUser = paResult.ok ? paResult.data : null;
-  const connections = connectionsResult.ok ? connectionsResult.data : [];
-  const oauthConfigured = Boolean(process.env.GOOGLE_OAUTH_CLIENT_ID);
 
   const billingParam = searchParams.billing;
   let billingMessage: { title: string; body: string } | null = null;
@@ -112,7 +109,8 @@ export default async function SettingsPage({
 
   const hasGithubToken = Boolean(paUser?.github_token);
   const githubUsername = paUser?.github_username;
-  const hasGoogleConnection = connections.some((c) => c.status === "connected");
+  const hasGoogleConnection =
+    gmailConnectionResult.ok && gmailConnectionResult.data?.status === "active";
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">
@@ -194,8 +192,6 @@ export default async function SettingsPage({
           <ApiKeyForm hasKey={!!paUser?.anthropic_api_key} />
           <SettingsRow label="Billing" value="Manage subscription" href="/api/app/billing-portal" />
         </div>
-
-        <ConnectionsPanel connections={connections} oauthConfigured={oauthConfigured} />
 
         {/* Product links */}
         <div className="rounded-xl border border-slate-700/60 bg-slate-900/50 overflow-hidden divide-y divide-slate-800/60">
