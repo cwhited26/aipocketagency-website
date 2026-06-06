@@ -5,16 +5,23 @@
 // not-found; routes wrap calls in try/catch and translate to HTTP responses.
 
 import type {
+  LeadSource,
+  LeadStatus,
   PersonaConversationRow,
+  PersonaLeadRow,
   PersonaMessageRow,
+  PersonaMode,
   PersonaRow,
   PersonaSeatRow,
   PersonaShareTokenRow,
   PersonaSpecRow,
   PersonaStatus,
   PersonaUsageMonthlyRow,
+  PersonaWidgetConfigRow,
+  RateLimitScope,
   SeatRole,
   ToneKey,
+  WidgetConfigUpdate,
 } from "./types";
 
 export class PersonaDbError extends Error {
@@ -129,6 +136,7 @@ export async function updatePersona(
     name: string;
     tone: ToneKey;
     status: PersonaStatus;
+    mode: PersonaMode;
     current_spec_version: string;
     updated_at: string;
   }>,
@@ -251,14 +259,27 @@ export async function insertShareToken(row: {
   persona_id: string;
   seat_id: string | null;
   expires_at: string | null;
+  mode?: PersonaMode;
 }): Promise<PersonaShareTokenRow> {
+  const { mode = "internal_team", ...rest_ } = row;
   const rows = await rest<PersonaShareTokenRow[]>("persona_share_tokens", {
     method: "POST",
     prefer: "return=representation",
-    body: { ...row, mode: "internal_team" },
+    body: { ...rest_, mode },
   });
   if (!rows[0]) throw new PersonaDbError("Share token insert returned no row");
   return rows[0];
+}
+
+/** The persona's current live (seat-less) public/widget token, if any. */
+export async function fetchLivePublicToken(
+  personaId: string,
+  mode: PersonaMode,
+): Promise<PersonaShareTokenRow | null> {
+  const rows = await rest<PersonaShareTokenRow[]>(
+    `persona_share_tokens?persona_id=eq.${enc(personaId)}&mode=eq.${enc(mode)}&seat_id=is.null&revoked_at=is.null&order=created_at.desc&limit=1`,
+  );
+  return rows[0] ?? null;
 }
 
 export async function fetchShareToken(token: string): Promise<PersonaShareTokenRow | null> {
@@ -422,4 +443,113 @@ export async function fetchOwnerEmail(businessId: string): Promise<string | null
     `pocket_agent_subscriptions?user_id=eq.${enc(businessId)}&order=updated_at.desc&select=email&limit=1`,
   );
   return rows[0]?.email ?? null;
+}
+
+// ── persona_rate_limits (Wave 2) ────────────────────────────────────────────────────────
+
+/** Atomic increment-and-return of one rate-limit window (RPC from migration 016). */
+export async function incrementRateLimit(params: {
+  personaId: string;
+  scope: RateLimitScope;
+  ip: string;
+  sessionId: string;
+  windowStart: string;
+}): Promise<number> {
+  const count = await rest<number>("rpc/persona_rate_limit_hit", {
+    method: "POST",
+    body: {
+      p_persona_id: params.personaId,
+      p_scope: params.scope,
+      p_ip: params.ip,
+      p_session: params.sessionId,
+      p_window_start: params.windowStart,
+    },
+  });
+  return typeof count === "number" ? count : 0;
+}
+
+// ── persona_usage_monthly cap-notify (Wave 2) ───────────────────────────────────────────
+
+/**
+ * Flips a monthly cap-notification threshold (50/80/100) exactly once and reports whether
+ * THIS call did it (RPC from migration 016) — so the owner email fires a single time per
+ * threshold per month even under concurrent requests.
+ */
+export async function markCapNotified(
+  personaId: string,
+  month: string,
+  threshold: 50 | 80 | 100,
+): Promise<boolean> {
+  const fired = await rest<boolean>("rpc/mark_persona_cap_notified", {
+    method: "POST",
+    body: { p_persona_id: personaId, p_month: month, p_threshold: threshold },
+  });
+  return fired === true;
+}
+
+// ── persona_leads (Wave 2) ──────────────────────────────────────────────────────────────
+
+export async function insertLead(row: {
+  persona_id: string;
+  email: string | null;
+  phone: string | null;
+  name: string | null;
+  conversation_id: string | null;
+  source: LeadSource;
+}): Promise<PersonaLeadRow> {
+  const rows = await rest<PersonaLeadRow[]>("persona_leads", {
+    method: "POST",
+    prefer: "return=representation",
+    body: { ...row, status: "new" },
+  });
+  if (!rows[0]) throw new PersonaDbError("Lead insert returned no row");
+  return rows[0];
+}
+
+export async function listLeads(personaId: string, limit = 200): Promise<PersonaLeadRow[]> {
+  return rest<PersonaLeadRow[]>(
+    `persona_leads?persona_id=eq.${enc(personaId)}&order=created_at.desc&limit=${limit}`,
+  );
+}
+
+export async function fetchLead(id: string): Promise<PersonaLeadRow | null> {
+  const rows = await rest<PersonaLeadRow[]>(`persona_leads?id=eq.${enc(id)}&limit=1`);
+  return rows[0] ?? null;
+}
+
+export async function updateLeadStatus(
+  id: string,
+  status: LeadStatus,
+): Promise<PersonaLeadRow | null> {
+  const rows = await rest<PersonaLeadRow[]>(`persona_leads?id=eq.${enc(id)}`, {
+    method: "PATCH",
+    prefer: "return=representation",
+    body: { status },
+  });
+  return rows[0] ?? null;
+}
+
+// ── persona_widget_config (Wave 2) ──────────────────────────────────────────────────────
+
+export async function fetchWidgetConfig(
+  personaId: string,
+): Promise<PersonaWidgetConfigRow | null> {
+  const rows = await rest<PersonaWidgetConfigRow[]>(
+    `persona_widget_config?persona_id=eq.${enc(personaId)}&limit=1`,
+  );
+  return rows[0] ?? null;
+}
+
+/** Upserts a persona's widget config (PK = persona_id), merging the provided patch. */
+export async function upsertWidgetConfig(
+  personaId: string,
+  patch: WidgetConfigUpdate,
+): Promise<PersonaWidgetConfigRow> {
+  const rows = await rest<PersonaWidgetConfigRow[]>("persona_widget_config?on_conflict=persona_id", {
+    method: "POST",
+    prefer: "return=representation,resolution=merge-duplicates",
+    body: { persona_id: personaId, ...patch, updated_at: new Date().toISOString() },
+  });
+  if (!rows[0]) throw new PersonaDbError("Widget config upsert returned no row");
+  return rows[0];
 }

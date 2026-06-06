@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 // ─── Normalized card shape shared with the Inbox client ───────────────────────
 
 export type InboxCardSystem = "inbox" | "legacy";
-export type InboxCardKind = "draft" | "decision" | "email_triage";
+export type InboxCardKind = "draft" | "decision" | "email_triage" | "persona_lead";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {

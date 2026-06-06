@@ -3,14 +3,32 @@ import { z } from "zod";
 import { requireOwnedPersona, resolveOwner } from "@/lib/personas/owner";
 import {
   fetchCurrentSpec,
+  fetchLivePublicToken,
   fetchUsageMonthly,
+  insertShareToken,
   listSeats,
   PersonaDbError,
+  revokeAllPersonaTokens,
   updatePersona,
+  upsertWidgetConfig,
 } from "@/lib/personas/db";
-import { getCurrentTier, monthKey, TIER_LIMITS } from "@/lib/personas/tier-caps";
+import {
+  evaluateCanUseMode,
+  getCurrentTier,
+  monthKey,
+  TIER_LIMITS,
+} from "@/lib/personas/tier-caps";
 import { parsePersonaSpecMarkdown } from "@/lib/personas/spec";
-import { personaNameSchema, toneSchema, PERSONA_STATUSES } from "@/lib/personas/types";
+import {
+  modeSchema,
+  personaNameSchema,
+  toneSchema,
+  isPublicMode,
+  PERSONA_STATUSES,
+} from "@/lib/personas/types";
+import { generateShareToken } from "@/lib/personas/tokens";
+import { publicModesEnabled, PUBLIC_MODES_COMING_SOON } from "@/lib/personas/feature-flags";
+import { publicChatUrlForToken } from "@/lib/personas/links";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,6 +55,13 @@ export async function GET(_req: Request, { params }: Params): Promise<NextRespon
     const messageCap = limits.messagesPerMonthPerPersona;
     const messagesThisMonth = usage?.message_count ?? 0;
 
+    // For public/widget personas, surface the live public link so the owner can copy it.
+    let publicLink: string | null = null;
+    if (isPublicMode(persona.mode)) {
+      const liveToken = await fetchLivePublicToken(persona.id, persona.mode);
+      if (liveToken) publicLink = publicChatUrlForToken(liveToken.token);
+    }
+
     return NextResponse.json({
       persona,
       spec: spec
@@ -49,6 +74,8 @@ export async function GET(_req: Request, { params }: Params): Promise<NextRespon
         capReached: messageCap !== null && messagesThisMonth >= messageCap,
       },
       tier,
+      publicModesEnabled: publicModesEnabled(),
+      publicLink,
     });
   } catch (e) {
     const status = e instanceof PersonaDbError ? e.status : 500;
@@ -61,10 +88,16 @@ const patchSchema = z
     name: personaNameSchema.optional(),
     tone: toneSchema.optional(),
     status: z.enum(PERSONA_STATUSES).optional(),
+    mode: modeSchema.optional(),
   })
-  .refine((v) => v.name !== undefined || v.tone !== undefined || v.status !== undefined, {
-    message: "Nothing to update",
-  });
+  .refine(
+    (v) =>
+      v.name !== undefined ||
+      v.tone !== undefined ||
+      v.status !== undefined ||
+      v.mode !== undefined,
+    { message: "Nothing to update" },
+  );
 
 export async function PATCH(req: Request, { params }: Params): Promise<NextResponse> {
   const owner = await resolveOwner();
@@ -84,9 +117,45 @@ export async function PATCH(req: Request, { params }: Params): Promise<NextRespo
   try {
     const owned = await requireOwnedPersona(params.id, owner.ctx.userId);
     if (!owned.ok) return NextResponse.json({ error: owned.error }, { status: owned.status });
+    const { persona } = owned;
 
-    const updated = await updatePersona(params.id, parsed.data);
-    return NextResponse.json({ persona: updated });
+    const { mode, ...rest } = parsed.data;
+
+    // A mode change reissues the share token: the old token(s) are revoked and a fresh one
+    // of the correct kind is minted, so an old link never works under a new mode.
+    let newPublicLink: string | null = null;
+    if (mode && mode !== persona.mode) {
+      // Public + widget modes are gated behind the adversarial-testing flag.
+      if (isPublicMode(mode) && !publicModesEnabled()) {
+        return NextResponse.json(
+          { error: PUBLIC_MODES_COMING_SOON, comingSoon: true },
+          { status: 503 },
+        );
+      }
+      const tier = await getCurrentTier(owner.ctx.userId);
+      const allowed = evaluateCanUseMode(tier, mode);
+      if (!allowed.ok) {
+        return NextResponse.json({ error: allowed.reason, capped: true }, { status: 403 });
+      }
+
+      await revokeAllPersonaTokens(persona.id);
+      const token = generateShareToken();
+      await insertShareToken({
+        token,
+        persona_id: persona.id,
+        seat_id: null,
+        expires_at: null,
+        mode,
+      });
+      if (mode === "widget") {
+        // Ensure a config row exists so the loader + embed page resolve immediately.
+        await upsertWidgetConfig(persona.id, {});
+      }
+      if (isPublicMode(mode)) newPublicLink = publicChatUrlForToken(token);
+    }
+
+    const updated = await updatePersona(params.id, { ...rest, ...(mode ? { mode } : {}) });
+    return NextResponse.json({ persona: updated, publicLink: newPublicLink });
   } catch (e) {
     const status = e instanceof PersonaDbError ? e.status : 500;
     return NextResponse.json({ error: errMsg(e) }, { status });

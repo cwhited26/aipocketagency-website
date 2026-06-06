@@ -12,10 +12,32 @@ function baseUrl(): string {
   return raw.replace(/\/$/, "");
 }
 
+/** The apex origin persona public surfaces are served from. */
+export function personasBaseUrl(): string {
+  return baseUrl();
+}
+
 export function chatUrlForToken(token: string): string {
   return `${baseUrl()}/persona/${encodeURIComponent(token)}`;
 }
 
 export function acceptUrlForToken(token: string): string {
   return `${baseUrl()}/personas/accept/${encodeURIComponent(token)}`;
+}
+
+// ── Wave 2 (public link + widget) ─────────────────────────────────────────────────────
+
+/** The anonymous public-chat surface for a Mode B / Mode C token. */
+export function publicChatUrlForToken(token: string): string {
+  return `${baseUrl()}/public-persona/${encodeURIComponent(token)}`;
+}
+
+/** The widget loader script URL (served at /widget/<token>.js). */
+export function widgetScriptUrlForToken(token: string): string {
+  return `${baseUrl()}/widget/${encodeURIComponent(token)}.js`;
+}
+
+/** The 1-line embed snippet an owner pastes onto their site (SPEC v3 §9 Mode C). */
+export function widgetSnippetForToken(token: string): string {
+  return `<script src="${widgetScriptUrlForToken(token)}" async></script>`;
 }

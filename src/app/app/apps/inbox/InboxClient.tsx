@@ -17,7 +17,7 @@ type TriageDetail = {
 type InboxCard = {
   id: string;
   system: "inbox" | "legacy";
-  kind: "draft" | "decision" | "email_triage";
+  kind: "draft" | "decision" | "email_triage" | "persona_lead";
   status: "pending" | "approved" | "rejected" | "expired" | "failed";
   title: string;
   source: string;

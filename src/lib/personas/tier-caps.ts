@@ -16,6 +16,7 @@ import {
   fetchSubscriptionStatus,
   fetchUsageMonthly,
 } from "./db";
+import type { PersonaMode } from "./types";
 
 export const TIERS = [
   "starter",
@@ -127,6 +128,67 @@ export function evaluateCanSendMessage(
     };
   }
   return { ok: true, reason: "" };
+}
+
+// ── Mode availability per tier (Wave 2, SPEC v3 §10) ────────────────────────────────
+
+// Base sharing modes each tier ships with (before a la carte add-ons). Public + widget
+// are gated above Pro for margin protection.
+export const TIER_MODES: Record<Tier, PersonaMode[]> = {
+  starter: [],
+  pro: ["internal_team"],
+  pro_plus: ["internal_team", "public_link"], // 1 public persona included
+  studio: ["internal_team", "public_link", "widget"],
+  studio_plus: ["internal_team", "public_link", "widget"],
+  enterprise: ["internal_team", "public_link", "widget"],
+};
+
+// A la carte add-ons (SPEC v3 §10) for Pro / Pro+ owners who want a single public or
+// widget persona without jumping to Studio. Add-on entitlements are not yet tracked in
+// the DB (no Stripe price→entitlement mapping this lane), so canUseMode takes an optional
+// explicit add-on set; the UI surfaces these as upgrade CTAs.
+export const ADDONS = {
+  public_persona: { mode: "public_link" as PersonaMode, priceMonthly: 19, label: "+1 public persona" },
+  widget_persona: { mode: "widget" as PersonaMode, priceMonthly: 29, label: "+1 widget persona" },
+} as const;
+export type AddonKey = keyof typeof ADDONS;
+
+/** Tiers that may remove the "Built with Pocket Agent" badge (white-label). */
+export function badgeRemovableForTier(tier: Tier): boolean {
+  return tier === "studio" || tier === "studio_plus" || tier === "enterprise";
+}
+
+/** Pure: can this tier (plus any purchased add-ons) publish a persona in `mode`? */
+export function evaluateCanUseMode(
+  tier: Tier,
+  mode: PersonaMode,
+  addons: AddonKey[] = [],
+): CapDecision {
+  if (TIER_MODES[tier].includes(mode)) return { ok: true, reason: "" };
+  if (addons.some((k) => ADDONS[k].mode === mode)) return { ok: true, reason: "" };
+  if (mode === "public_link") {
+    return {
+      ok: false,
+      reason:
+        "Public links are a Studio feature. Upgrade to Studio, or add a single public persona to your plan (+$19/mo).",
+    };
+  }
+  if (mode === "widget") {
+    return {
+      ok: false,
+      reason:
+        "The website widget is a Studio feature. Upgrade to Studio, or add a single widget persona to your plan (+$29/mo).",
+    };
+  }
+  return { ok: false, reason: "This sharing mode isn't available on your plan." };
+}
+
+export async function canUseMode(
+  businessId: string,
+  mode: PersonaMode,
+): Promise<CapDecision> {
+  const tier = await getCurrentTier(businessId);
+  return evaluateCanUseMode(tier, mode);
 }
 
 /** Maps a subscription status + env override to a tier. Pure for testability. */

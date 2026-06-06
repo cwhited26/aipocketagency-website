@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { PERSONA_SECTIONS } from "@/lib/personas/spec";
-import type { PersonaRow, PersonaStatus } from "@/lib/personas/types";
+import {
+  PERSONA_MODE_LABELS,
+  PERSONA_MODES,
+  type PersonaMode,
+  type PersonaRow,
+  type PersonaStatus,
+} from "@/lib/personas/types";
 
 type SpecPayload = { id: string; version: number; fields: Record<string, string>; createdAt: string };
 type SeatView = {
@@ -20,9 +26,11 @@ type Bundle = {
   seats: SeatView[];
   usage: { messagesThisMonth: number; messageCap: number | null; capReached: boolean };
   tier: string;
+  publicModesEnabled: boolean;
+  publicLink: string | null;
 };
 
-const TABS = ["Overview", "Spec", "Knowledge", "Team", "Conversations", "Settings"] as const;
+const TABS = ["Overview", "Spec", "Knowledge", "Team", "Conversations", "Leads", "Settings"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function PersonaDetailClient({ personaId }: { personaId: string }) {
@@ -85,8 +93,9 @@ export default function PersonaDetailClient({ personaId }: { personaId: string }
           {tab === "Knowledge" && <KnowledgeTab personaId={personaId} />}
           {tab === "Team" && <TeamTab personaId={personaId} seats={bundle.seats} onChange={reload} />}
           {tab === "Conversations" && <ConversationsTab personaId={personaId} />}
+          {tab === "Leads" && <LeadsTab personaId={personaId} />}
           {tab === "Settings" && (
-            <SettingsTab personaId={personaId} persona={persona} onChange={reload} />
+            <SettingsTab personaId={personaId} bundle={bundle} onChange={reload} />
           )}
         </div>
       </div>
@@ -530,16 +539,89 @@ function ConversationsTab({ personaId }: { personaId: string }) {
   );
 }
 
+// ── Leads (Wave 2 owner queue) ──────────────────────────────────────────────────────────
+type LeadView = {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  name: string | null;
+  source: string;
+  status: string;
+  created_at: string;
+};
+const LEAD_STATUS_OPTIONS = ["new", "contacted", "qualified", "junk"] as const;
+function LeadsTab({ personaId }: { personaId: string }) {
+  const [leads, setLeads] = useState<LeadView[] | null>(null);
+
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/personas/${personaId}/leads`);
+    if (res.ok) setLeads(((await res.json()) as { leads: LeadView[] }).leads);
+    else setLeads([]);
+  }, [personaId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function setStatus(leadId: string, status: string) {
+    const res = await fetch(`/api/personas/${personaId}/leads`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ leadId, status }),
+    });
+    if (res.ok) load();
+  }
+
+  if (!leads) return <p className="text-sm text-slate-500">Loading…</p>;
+  if (leads.length === 0)
+    return (
+      <p className="text-sm text-slate-500">
+        No leads captured yet. Leads from your public link or widget land here (and in your
+        Pocket Agent inbox).
+      </p>
+    );
+
+  return (
+    <ul className="space-y-2">
+      {leads.map((l) => (
+        <li key={l.id} className="rounded-lg border border-slate-800 bg-slate-900/40 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm text-slate-200 truncate">{l.name || l.email || l.phone || "Visitor"}</div>
+              <div className="text-[11px] text-slate-500 truncate">
+                {[l.email, l.phone].filter(Boolean).join(" · ") || "no contact captured"} · {l.source} ·{" "}
+                {new Date(l.created_at).toLocaleDateString()}
+              </div>
+            </div>
+            <select
+              value={l.status}
+              onChange={(e) => setStatus(l.id, e.target.value)}
+              className="shrink-0 rounded-md bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-slate-200 outline-none focus:border-[#22d3ee]"
+            >
+              {LEAD_STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 // ── Settings ──────────────────────────────────────────────────────────────────────────
 function SettingsTab({
   personaId,
-  persona,
+  bundle,
   onChange,
 }: {
   personaId: string;
-  persona: PersonaRow;
+  bundle: Bundle;
   onChange: () => void;
 }) {
+  const { persona } = bundle;
   const [msg, setMsg] = useState<string | null>(null);
 
   async function patch(status: PersonaStatus) {
@@ -566,6 +648,12 @@ function SettingsTab({
   return (
     <div className="space-y-4 text-sm">
       {msg && <p className="text-xs text-[#22d3ee]">{msg}</p>}
+
+      <ModeSection personaId={personaId} bundle={bundle} onChange={onChange} />
+      {persona.mode === "widget" && bundle.publicModesEnabled && (
+        <WidgetConfigForm personaId={personaId} tier={bundle.tier} />
+      )}
+
       <SettingRow
         title={persona.status === "paused" ? "Resume persona" : "Pause persona"}
         desc="Paused personas refuse new messages from your team."
@@ -603,6 +691,305 @@ function SettingsTab({
         }
       />
     </div>
+  );
+}
+
+// ── Mode toggle (Wave 2) ────────────────────────────────────────────────────────────────
+function ModeSection({
+  personaId,
+  bundle,
+  onChange,
+}: {
+  personaId: string;
+  bundle: Bundle;
+  onChange: () => void;
+}) {
+  const { persona, publicModesEnabled, publicLink } = bundle;
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function setMode(mode: PersonaMode) {
+    if (mode === persona.mode || busy) return;
+    setBusy(true);
+    setNote(null);
+    const res = await fetch(`/api/personas/${personaId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode }),
+    });
+    setBusy(false);
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      setNote(body.error ?? "Couldn't change mode.");
+      return;
+    }
+    setNote("Mode changed — your old share link was revoked and a new one issued.");
+    onChange();
+  }
+
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-4 space-y-3">
+      <div>
+        <div className="text-slate-200">Sharing mode</div>
+        <div className="text-xs text-slate-500 mt-0.5">
+          How this persona is shared. Changing it revokes the current link and issues a new one.
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {PERSONA_MODES.map((m) => {
+          const isPublic = m === "public_link" || m === "widget";
+          const locked = isPublic && !publicModesEnabled;
+          const selected = persona.mode === m;
+          return (
+            <label
+              key={m}
+              className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 ${
+                selected ? "border-[#22d3ee] bg-[#22d3ee]/5" : "border-slate-800"
+              } ${locked ? "opacity-60" : "cursor-pointer hover:border-slate-700"}`}
+            >
+              <input
+                type="radio"
+                name="persona-mode"
+                checked={selected}
+                disabled={locked || busy}
+                onChange={() => setMode(m)}
+                className="mt-0.5 accent-[#22d3ee]"
+              />
+              <span className="min-w-0">
+                <span className="text-sm text-slate-200">{PERSONA_MODE_LABELS[m]}</span>
+                {locked && (
+                  <span className="block text-[11px] text-amber-400/80 mt-0.5">
+                    Coming soon — public + widget modes go live after adversarial testing.
+                  </span>
+                )}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+
+      {note && <p className="text-xs text-[#22d3ee]">{note}</p>}
+
+      {(persona.mode === "public_link" || persona.mode === "widget") && publicLink && (
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            readOnly
+            value={publicLink}
+            className="flex-1 rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs text-slate-300 outline-none"
+          />
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(publicLink).catch(() => {});
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            }}
+            className="shrink-0 text-xs rounded-md border border-slate-700 text-slate-300 px-3 py-1.5 hover:bg-slate-800"
+          >
+            {copied ? "Copied" : "Copy link"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Widget config form (Mode C) ─────────────────────────────────────────────────────────
+type WidgetConfig = {
+  allowed_origins: string[];
+  greeting_text: string;
+  bubble_color: string;
+  bubble_position: "bottom-right" | "bottom-left";
+  lead_capture_timing: "pre_chat" | "mid_conversation" | "post_conversation" | "off";
+  lead_capture_enabled: boolean;
+  off_topic_message: string | null;
+  badge_removed: boolean;
+};
+function WidgetConfigForm({ personaId, tier }: { personaId: string; tier: string }) {
+  const [cfg, setCfg] = useState<WidgetConfig | null>(null);
+  const [snippet, setSnippet] = useState<string | null>(null);
+  const [badgeRemovable, setBadgeRemovable] = useState(false);
+  const [originsText, setOriginsText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/personas/${personaId}/widget-config`);
+    if (!res.ok) return;
+    const body = (await res.json()) as {
+      config: WidgetConfig;
+      badgeRemovable: boolean;
+      snippet: string | null;
+    };
+    setCfg(body.config);
+    setBadgeRemovable(body.badgeRemovable);
+    setSnippet(body.snippet);
+    setOriginsText((body.config.allowed_origins ?? []).join("\n"));
+  }, [personaId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function save() {
+    if (!cfg) return;
+    setSaving(true);
+    setMsg(null);
+    const allowed_origins = originsText
+      .split(/[\n,]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const res = await fetch(`/api/personas/${personaId}/widget-config`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...cfg, allowed_origins }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      setMsg((await res.json().catch(() => ({}))).error ?? "Save failed");
+      return;
+    }
+    setMsg("Saved.");
+    load();
+  }
+
+  if (!cfg) return <p className="text-xs text-slate-500">Loading widget config…</p>;
+
+  return (
+    <div className="rounded-lg border border-slate-800 bg-slate-900/40 p-4 space-y-3">
+      <div className="text-slate-200">Website widget</div>
+
+      {snippet && (
+        <div>
+          <span className="text-xs text-slate-500">Embed snippet (paste before &lt;/body&gt;)</span>
+          <textarea
+            readOnly
+            value={snippet}
+            rows={2}
+            className="mt-1 w-full rounded-md bg-slate-950 border border-slate-700 px-2 py-1.5 text-[11px] font-mono text-slate-300 outline-none"
+          />
+        </div>
+      )}
+
+      <div>
+        <span className="text-xs text-slate-500">Allowed domains (one per line)</span>
+        <textarea
+          value={originsText}
+          onChange={(e) => setOriginsText(e.target.value)}
+          rows={3}
+          placeholder="https://yourdomain.com"
+          className="mt-1 w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-[#22d3ee]"
+        />
+        <span className="text-[11px] text-slate-600">
+          The widget only runs on these domains. Empty = the widget won&apos;t load anywhere.
+        </span>
+      </div>
+
+      <TextRow label="Greeting" value={cfg.greeting_text} onChange={(v) => setCfg({ ...cfg, greeting_text: v })} />
+
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="text-xs text-slate-500">Bubble color</span>
+          <input
+            value={cfg.bubble_color}
+            onChange={(e) => setCfg({ ...cfg, bubble_color: e.target.value })}
+            className="mt-1 w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-[#22d3ee]"
+          />
+        </label>
+        <label className="block">
+          <span className="text-xs text-slate-500">Position</span>
+          <select
+            value={cfg.bubble_position}
+            onChange={(e) => setCfg({ ...cfg, bubble_position: e.target.value as WidgetConfig["bubble_position"] })}
+            className="mt-1 w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-[#22d3ee]"
+          >
+            <option value="bottom-right">Bottom right</option>
+            <option value="bottom-left">Bottom left</option>
+          </select>
+        </label>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="text-xs text-slate-500">Lead capture</span>
+          <select
+            value={cfg.lead_capture_timing}
+            onChange={(e) =>
+              setCfg({ ...cfg, lead_capture_timing: e.target.value as WidgetConfig["lead_capture_timing"] })
+            }
+            className="mt-1 w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-[#22d3ee]"
+          >
+            <option value="pre_chat">Pre-chat form</option>
+            <option value="mid_conversation">Mid-conversation</option>
+            <option value="post_conversation">Post-conversation</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 mt-5">
+          <input
+            type="checkbox"
+            checked={cfg.lead_capture_enabled}
+            onChange={(e) => setCfg({ ...cfg, lead_capture_enabled: e.target.checked })}
+            className="accent-[#22d3ee]"
+          />
+          <span className="text-xs text-slate-400">Capture leads</span>
+        </label>
+      </div>
+
+      <TextRow
+        label="Off-topic message (optional)"
+        value={cfg.off_topic_message ?? ""}
+        onChange={(v) => setCfg({ ...cfg, off_topic_message: v || null })}
+      />
+
+      <label className={`flex items-center gap-2 ${badgeRemovable ? "" : "opacity-60"}`}>
+        <input
+          type="checkbox"
+          checked={cfg.badge_removed}
+          disabled={!badgeRemovable}
+          onChange={(e) => setCfg({ ...cfg, badge_removed: e.target.checked })}
+          className="accent-[#22d3ee]"
+        />
+        <span className="text-xs text-slate-400">
+          Remove &quot;Built with Pocket Agent&quot; badge
+          {!badgeRemovable && <span className="text-amber-400/80"> (Studio plan)</span>}
+        </span>
+      </label>
+
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          onClick={save}
+          disabled={saving}
+          className="text-xs rounded-md bg-[#22d3ee] text-[#06222a] font-semibold px-3 py-1.5 disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save widget config"}
+        </button>
+        {msg && <span className="text-xs text-[#22d3ee]">{msg}</span>}
+        <span className="text-[11px] text-slate-600">{tier} plan</span>
+      </div>
+    </div>
+  );
+}
+
+function TextRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs text-slate-500">{label}</span>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs text-slate-200 outline-none focus:border-[#22d3ee]"
+      />
+    </label>
   );
 }
 

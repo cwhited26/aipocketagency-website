@@ -30,3 +30,7 @@ yarn-error.log*
 # vercel
 .vercel
 .env*.local
+
+# Claude Code local state + Supabase CLI temp
+.claude/
+supabase/.temp/
