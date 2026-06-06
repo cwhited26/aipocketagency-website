@@ -67,6 +67,58 @@ export function getTierFromStripePriceId(priceId: string): Tier {
   return PRICE_TO_TIER[priceId] ?? "starter";
 }
 
+// ── Checkout-side tier → price mapping (PA-ORCH-10 provisioning fix) ──────────────────
+//
+// Every SMB tier except Enterprise has a Stripe price. Enterprise is a "talk to sales"
+// mailto with no price, so it can never be checked out — hence PaidTier excludes it.
+export type PaidTier = Exclude<Tier, "enterprise">;
+
+// Reverse of PRICE_TO_TIER so the /start checkout route can resolve a price from the
+// ?tier= param. Derived from the same source of truth so the two stay in lock-step — a
+// price added to PRICE_TO_TIER is automatically routable here (asserted in tests).
+export const TIER_TO_PRICE: Record<PaidTier, string> = Object.fromEntries(
+  Object.entries(PRICE_TO_TIER).map(([priceId, tier]) => [tier, priceId]),
+) as Record<PaidTier, string>;
+
+// Monthly USD price per paid tier — data, used to show the right number on the /start
+// trial form when a buyer arrives via /start?tier=pro etc. (Marketing copy lives on the
+// /pricing page; this is just the figure so the form doesn't always say "$37/mo".)
+export const TIER_PRICE_USD_MONTHLY: Record<PaidTier, number> = {
+  starter: 37,
+  pro: 97,
+  pro_plus: 149,
+  studio: 297,
+  studio_plus: 497,
+};
+
+/**
+ * Validate a raw `?tier=` checkout param against the known SMB ladder. Anything
+ * missing, unknown, or `enterprise` (no Stripe price) falls back to `starter` so the
+ * trial flow can never wedge on a bad param. Pure for testability.
+ */
+export function resolveCheckoutTier(raw: string | null | undefined): PaidTier {
+  if (typeof raw === "string" && isTier(raw) && raw !== "enterprise") return raw;
+  return "starter";
+}
+
+/**
+ * Decide which SMB tier to provision for a subscription. The active price ID is the
+ * source of truth (covers payment-link subscriptions too); `metadata.tier` — stamped by
+ * the /start?tier= checkout flow — is a validated fallback for the rare case a price ID
+ * isn't in the map yet. Returns null when the subscription carries no SMB tier at all
+ * (e.g. an add-on-only subscription), which the webhook treats as "not a tier write".
+ */
+export function resolveProvisionTier(args: {
+  priceIds: readonly string[];
+  metadataTier?: string | null;
+}): Tier | null {
+  const fromPrice = highestTierFromPriceIds(args.priceIds);
+  if (fromPrice) return fromPrice;
+  const m = args.metadataTier;
+  if (typeof m === "string" && isTier(m) && m !== "enterprise") return m;
+  return null;
+}
+
 /**
  * Given the set of active price IDs on a subscription (a subscription can carry
  * multiple line items), return the highest SMB tier among them, or null if none of

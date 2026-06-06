@@ -6,11 +6,27 @@ import Link from "next/link";
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
-export default function StartForm({ defaultEmail = "" }: { defaultEmail?: string }) {
+// Display props are resolved server-side from the validated ?tier= param (see
+// start/page.tsx) and passed as primitives so this client component never imports the
+// server-side tier-caps module. `tier` is the only value sent to the checkout API.
+export default function StartForm({
+  defaultEmail = "",
+  tier = "starter",
+  tierLabel = "Starter",
+  priceUsd = 37,
+}: {
+  defaultEmail?: string;
+  tier?: string;
+  tierLabel?: string;
+  priceUsd?: number;
+}) {
   const [email, setEmail] = useState(defaultEmail);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  const isStarter = tier === "starter";
+  const priceLine = `$${priceUsd}/mo after the trial. Cancel anytime.`;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,7 +36,7 @@ export default function StartForm({ defaultEmail = "" }: { defaultEmail?: string
       const res = await fetch("/api/pocket-agent/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name }),
+        body: JSON.stringify({ email, name, tier }),
       });
       if (res.status === 502 || res.status === 503) {
         setError(
@@ -57,16 +73,15 @@ export default function StartForm({ defaultEmail = "" }: { defaultEmail?: string
               className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
               style={{ fontFamily: MONO_FONT }}
             >
-              [ pocket agent · $37/mo · 14-day free trial ]
+              [ pocket agent{isStarter ? "" : ` ${tierLabel.toLowerCase()}`} · $
+              {priceUsd}/mo · 14-day free trial ]
             </div>
             <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
               <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
                 Start your 14-day free trial
               </span>
             </h1>
-            <p className="mt-4 text-lg text-slate-300">
-              $37/mo after the trial. Cancel anytime.
-            </p>
+            <p className="mt-4 text-lg text-slate-300">{priceLine}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-10 space-y-4">

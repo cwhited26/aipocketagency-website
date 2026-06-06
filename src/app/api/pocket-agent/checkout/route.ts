@@ -1,15 +1,28 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { resolveCheckoutTier, type PaidTier } from "@/lib/personas/tier-caps";
+import {
+  buildPocketAgentCheckoutParams,
+  priceIdForCheckout,
+} from "@/lib/pocket-agent-checkout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-type BodyShape = {
-  email?: unknown;
-  name?: unknown;
-};
+// Zod boundary: validate the POST body. `tier` is the SMB ladder param routed from the
+// /pricing CTAs (/start?tier=pro …). It's intentionally permissive here (z.string) —
+// resolveCheckoutTier does the real validation and defaults to 'starter'.
+const BodySchema = z.object({
+  email: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() : v),
+    z.string().email(),
+  ),
+  name: z
+    .preprocess((v) => (typeof v === "string" ? v.trim() : v), z.string())
+    .optional(),
+  tier: z.string().optional(),
+});
 
 type CheckoutResult =
   | { ok: true; url: string; sessionId: string }
@@ -22,6 +35,7 @@ function badRequest(message: string) {
 async function createPocketAgentCheckout(args: {
   email: string;
   name: string;
+  tier: PaidTier;
   origin: string;
   userId: string | null;
 }): Promise<CheckoutResult> {
@@ -29,38 +43,23 @@ async function createPocketAgentCheckout(args: {
   if (!secret) {
     return { ok: false, status: 500, error: "STRIPE_SECRET_KEY not set" };
   }
-  const priceId = process.env.STRIPE_POCKET_AGENT_PRICE_ID;
+  const priceId = priceIdForCheckout(args.tier);
   if (!priceId) {
-    return { ok: false, status: 500, error: "STRIPE_POCKET_AGENT_PRICE_ID not set" };
+    return {
+      ok: false,
+      status: 500,
+      error: `No Stripe price configured for tier '${args.tier}'`,
+    };
   }
 
-  const params = new URLSearchParams();
-  params.set("mode", "subscription");
-  params.set("customer_email", args.email);
-  params.set("line_items[0][price]", priceId);
-  params.set("line_items[0][quantity]", "1");
-  params.set("subscription_data[trial_period_days]", "14");
-  params.set("subscription_data[metadata][email]", args.email);
-  params.set("subscription_data[metadata][source]", "pocket_agent");
-  if (args.name) {
-    params.set("subscription_data[metadata][name]", args.name);
-  }
-  // When the user is authenticated, embed their id so the webhook can link
-  // the subscription row to their account immediately on creation.
-  if (args.userId) {
-    params.set("client_reference_id", args.userId);
-    params.set("subscription_data[metadata][user_id]", args.userId);
-  }
-  params.set("metadata[email]", args.email);
-  params.set("metadata[source]", "pocket_agent");
-  if (args.name) {
-    params.set("metadata[name]", args.name);
-  }
-  params.set(
-    "success_url",
-    `${args.origin}/pocket-agent/welcome?session_id={CHECKOUT_SESSION_ID}`,
-  );
-  params.set("cancel_url", `${args.origin}/pocket-agent`);
+  const params = buildPocketAgentCheckoutParams({
+    email: args.email,
+    name: args.name,
+    tier: args.tier,
+    priceId,
+    origin: args.origin,
+    userId: args.userId,
+  });
 
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",
@@ -86,19 +85,21 @@ async function createPocketAgentCheckout(args: {
 }
 
 export async function POST(req: Request): Promise<NextResponse> {
-  let body: BodyShape;
+  let raw: unknown;
   try {
-    body = (await req.json()) as BodyShape;
+    raw = await req.json();
   } catch {
     return badRequest("Invalid JSON");
   }
 
-  const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-  const name = typeof body.name === "string" ? body.name.trim() : "";
-
-  if (!email || !EMAIL_RE.test(email)) {
+  const parsed = BodySchema.safeParse(raw);
+  if (!parsed.success) {
     return badRequest("Valid email required");
   }
+
+  const email = parsed.data.email;
+  const name = parsed.data.name ?? "";
+  const tier = resolveCheckoutTier(parsed.data.tier);
 
   // Read auth from session cookie — null when not logged in (still allowed).
   const supabase = createClient();
@@ -110,12 +111,14 @@ export async function POST(req: Request): Promise<NextResponse> {
   const checkout = await createPocketAgentCheckout({
     email,
     name,
+    tier,
     origin,
     userId: user?.id ?? null,
   });
 
   if (!checkout.ok) {
     console.error("[pocket-agent/checkout] Stripe session creation failed", {
+      tier,
       status: checkout.status,
       error: checkout.error,
     });

@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import {
+  resolveCheckoutTier,
+  TIER_LABELS,
+  TIER_PRICE_USD_MONTHLY,
+} from "@/lib/personas/tier-caps";
 import StartForm from "./StartForm";
 
 const PAGE_URL = "https://aipocketagency.com/start";
@@ -25,17 +30,34 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function StartPage() {
+export default async function StartPage({
+  searchParams,
+}: {
+  searchParams: { tier?: string };
+}) {
+  // ?tier= is routed in from the /pricing CTAs. Validate against the SMB ladder;
+  // anything unknown/missing/enterprise falls back to 'starter'.
+  const tier = resolveCheckoutTier(searchParams.tier);
+
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   // Require login before checkout so the subscription is always tied to a real
-  // account — prevents the email-mismatch orphan that causes the trial loop.
+  // account — prevents the email-mismatch orphan that causes the trial loop. Preserve
+  // the chosen tier across the login round-trip so a paid buyer lands back on their tier.
   if (!user) {
-    redirect("/app/login?next=/start");
+    const next = tier === "starter" ? "/start" : `/start?tier=${tier}`;
+    redirect(`/app/login?next=${encodeURIComponent(next)}`);
   }
 
-  return <StartForm defaultEmail={user.email ?? ""} />;
+  return (
+    <StartForm
+      defaultEmail={user.email ?? ""}
+      tier={tier}
+      tierLabel={TIER_LABELS[tier]}
+      priceUsd={TIER_PRICE_USD_MONTHLY[tier]}
+    />
+  );
 }

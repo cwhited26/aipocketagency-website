@@ -33,20 +33,17 @@ type Tier = {
   body: string;
   unlocks: string[];
   featured?: boolean;
-  // `href`: where the CTA points. `external` opens in a new tab (Stripe payment links
-  // + mailto); the Starter trial keeps the in-app /start checkout flow.
+  // `href`: where the CTA points. Paid tiers route to the in-app /start?tier= checkout
+  // (internal link); `external` opens a new tab and is only used for the Enterprise mailto.
   cta: { label: string; href: string; external?: boolean };
 };
 
-// Stripe LIVE-mode hosted payment links for the paid SMB tiers (PA-ORCH-10). Starter
-// keeps the /start trial-checkout flow; Enterprise is a "talk to sales" mailto. These
-// are the buyer-facing side of the price IDs mapped in lib/personas/tier-caps.ts.
-const PAY_LINKS = {
-  pro: "https://buy.stripe.com/fZu6oIbQNcYOfRHbRigQE0d",
-  pro_plus: "https://buy.stripe.com/14A8wQ1c92kacFv9JagQE0e",
-  studio: "https://buy.stripe.com/fZueVe085gb05d3g7ygQE0f",
-  studio_plus: "https://buy.stripe.com/7sY5kEg73bUK48ZcVmgQE0g",
-} as const;
+// All paid SMB tiers route through the in-app /start?tier= checkout so the same
+// provisioning path stamps source=pocket_agent + user_id + tier into
+// pocket_agent_subscriptions BEFORE Stripe checkout (closes the payment-link metadata
+// gap from a152c5b). The raw Stripe payment links still exist in Stripe as a manual
+// backup but are no longer linked from the marketing site. Enterprise is a "talk to
+// sales" mailto with no Stripe price.
 const ENTERPRISE_MAILTO =
   "mailto:chase@tnvex.com?subject=Pocket%20Agent%20Enterprise%20inquiry";
 
@@ -82,7 +79,7 @@ const TIERS: Tier[] = [
       "Specialists your team can ask (sales, front desk, onboarding)",
       "You approve anything before it goes out",
     ],
-    cta: { label: "Get Pro", href: PAY_LINKS.pro, external: true },
+    cta: { label: "Get Pro", href: "/start?tier=pro" },
   },
   {
     name: "Pro+",
@@ -97,7 +94,7 @@ const TIERS: Tier[] = [
       "More specialists for more roles",
       "Your first customer-facing agent (private link)",
     ],
-    cta: { label: "Get Pro+", href: PAY_LINKS.pro_plus, external: true },
+    cta: { label: "Get Pro+", href: "/start?tier=pro_plus" },
   },
   {
     name: "Studio",
@@ -113,7 +110,7 @@ const TIERS: Tier[] = [
       "Public agents for as many roles as the business needs",
       "White-label — your name, not ours",
     ],
-    cta: { label: "Get Studio", href: PAY_LINKS.studio, external: true },
+    cta: { label: "Get Studio", href: "/start?tier=studio" },
   },
   {
     name: "Studio+",
@@ -128,7 +125,7 @@ const TIERS: Tier[] = [
       "Specialists for a full team's worth of roles",
       "Your own subdomain for the agents you ship",
     ],
-    cta: { label: "Get Studio+", href: PAY_LINKS.studio_plus, external: true },
+    cta: { label: "Get Studio+", href: "/start?tier=studio_plus" },
   },
   {
     name: "Enterprise",

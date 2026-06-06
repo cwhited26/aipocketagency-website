@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   TIER_LIMITS,
   PRICE_TO_TIER,
+  TIER_TO_PRICE,
+  TIER_PRICE_USD_MONTHLY,
   ADDON_PRICE_IDS,
   evaluateCanCreatePersona,
   evaluateCanInviteSeat,
@@ -9,6 +11,8 @@ import {
   getTierFromStripePriceId,
   getAddonFromStripePriceId,
   highestTierFromPriceIds,
+  resolveCheckoutTier,
+  resolveProvisionTier,
   tierFromSubscription,
   tierRank,
   monthKey,
@@ -142,6 +146,100 @@ describe("highestTierFromPriceIds", () => {
     expect(
       highestTierFromPriceIds([ADDON_PRICE_IDS.sync, "price_1TfRbIJ6S5nx9HK5sucoD8sB"]),
     ).toBe("pro");
+  });
+});
+
+describe("TIER_TO_PRICE (checkout-side reverse mapping)", () => {
+  it("is the exact inverse of PRICE_TO_TIER", () => {
+    for (const [priceId, tier] of Object.entries(PRICE_TO_TIER)) {
+      expect(TIER_TO_PRICE[tier as keyof typeof TIER_TO_PRICE]).toBe(priceId);
+    }
+  });
+  it("covers every paid tier (5 tiers, no enterprise)", () => {
+    expect(Object.keys(TIER_TO_PRICE).sort()).toEqual(
+      ["pro", "pro_plus", "starter", "studio", "studio_plus"].sort(),
+    );
+    expect(TIER_TO_PRICE).not.toHaveProperty("enterprise");
+  });
+  it("routes each paid tier to its live Stripe price ID", () => {
+    expect(TIER_TO_PRICE.starter).toBe("price_1TdyfmJ6S5nx9HK5EeAZQEPj");
+    expect(TIER_TO_PRICE.pro).toBe("price_1TfRbIJ6S5nx9HK5sucoD8sB");
+    expect(TIER_TO_PRICE.pro_plus).toBe("price_1TfRbJJ6S5nx9HK5ldFrZv5o");
+    expect(TIER_TO_PRICE.studio).toBe("price_1TfRbKJ6S5nx9HK5g3U1yYOK");
+    expect(TIER_TO_PRICE.studio_plus).toBe("price_1TfRbLJ6S5nx9HK54VQ2nc0m");
+  });
+});
+
+describe("TIER_PRICE_USD_MONTHLY", () => {
+  it("encodes the PA-ORCH-10 SMB ladder figures", () => {
+    expect(TIER_PRICE_USD_MONTHLY.starter).toBe(37);
+    expect(TIER_PRICE_USD_MONTHLY.pro).toBe(97);
+    expect(TIER_PRICE_USD_MONTHLY.pro_plus).toBe(149);
+    expect(TIER_PRICE_USD_MONTHLY.studio).toBe(297);
+    expect(TIER_PRICE_USD_MONTHLY.studio_plus).toBe(497);
+  });
+});
+
+describe("resolveCheckoutTier (?tier= param validation)", () => {
+  it("accepts every paid tier verbatim", () => {
+    expect(resolveCheckoutTier("starter")).toBe("starter");
+    expect(resolveCheckoutTier("pro")).toBe("pro");
+    expect(resolveCheckoutTier("pro_plus")).toBe("pro_plus");
+    expect(resolveCheckoutTier("studio")).toBe("studio");
+    expect(resolveCheckoutTier("studio_plus")).toBe("studio_plus");
+  });
+  it("falls back to starter on missing/unknown/empty params", () => {
+    expect(resolveCheckoutTier(null)).toBe("starter");
+    expect(resolveCheckoutTier(undefined)).toBe("starter");
+    expect(resolveCheckoutTier("")).toBe("starter");
+    expect(resolveCheckoutTier("free")).toBe("starter");
+    expect(resolveCheckoutTier("PRO")).toBe("starter"); // case-sensitive
+  });
+  it("treats enterprise (no Stripe price) as not-checkout-able → starter", () => {
+    expect(resolveCheckoutTier("enterprise")).toBe("starter");
+  });
+});
+
+describe("resolveProvisionTier (webhook tier resolution)", () => {
+  it("derives the tier from the active price ID (source of truth)", () => {
+    expect(
+      resolveProvisionTier({ priceIds: ["price_1TfRbIJ6S5nx9HK5sucoD8sB"] }),
+    ).toBe("pro");
+  });
+  it("picks the highest tier when prices are stacked", () => {
+    expect(
+      resolveProvisionTier({
+        priceIds: [
+          "price_1TfRbIJ6S5nx9HK5sucoD8sB", // pro
+          "price_1TfRbKJ6S5nx9HK5g3U1yYOK", // studio
+        ],
+      }),
+    ).toBe("studio");
+  });
+  it("falls back to a valid metadata.tier when the price isn't mapped", () => {
+    expect(
+      resolveProvisionTier({ priceIds: ["price_unmapped"], metadataTier: "studio_plus" }),
+    ).toBe("studio_plus");
+  });
+  it("prefers the price-derived tier over metadata when both are present", () => {
+    expect(
+      resolveProvisionTier({
+        priceIds: ["price_1TfRbKJ6S5nx9HK5g3U1yYOK"], // studio
+        metadataTier: "pro",
+      }),
+    ).toBe("studio");
+  });
+  it("returns null for add-on-only subscriptions with no SMB price or metadata", () => {
+    expect(resolveProvisionTier({ priceIds: [ADDON_PRICE_IDS.sync] })).toBeNull();
+    expect(resolveProvisionTier({ priceIds: [] })).toBeNull();
+  });
+  it("ignores an invalid or enterprise metadata.tier", () => {
+    expect(
+      resolveProvisionTier({ priceIds: ["price_unmapped"], metadataTier: "bogus" }),
+    ).toBeNull();
+    expect(
+      resolveProvisionTier({ priceIds: ["price_unmapped"], metadataTier: "enterprise" }),
+    ).toBeNull();
   });
 });
 
