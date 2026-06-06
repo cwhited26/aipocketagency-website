@@ -6,7 +6,6 @@ const nextConfig = {
       { source: "/capture-pack", destination: "/pocket-agent", permanent: true },
       { source: "/output-pack", destination: "/pocket-agent", permanent: true },
       { source: "/output-pack/:slug*", destination: "/pocket-agent", permanent: true },
-      { source: "/pricing", destination: "/pocket-agent#pricing", permanent: true },
     ];
   },
 };
