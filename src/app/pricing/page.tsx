@@ -33,8 +33,22 @@ type Tier = {
   body: string;
   unlocks: string[];
   featured?: boolean;
-  cta: { label: string; href: string };
+  // `href`: where the CTA points. `external` opens in a new tab (Stripe payment links
+  // + mailto); the Starter trial keeps the in-app /start checkout flow.
+  cta: { label: string; href: string; external?: boolean };
 };
+
+// Stripe LIVE-mode hosted payment links for the paid SMB tiers (PA-ORCH-10). Starter
+// keeps the /start trial-checkout flow; Enterprise is a "talk to sales" mailto. These
+// are the buyer-facing side of the price IDs mapped in lib/personas/tier-caps.ts.
+const PAY_LINKS = {
+  pro: "https://buy.stripe.com/fZu6oIbQNcYOfRHbRigQE0d",
+  pro_plus: "https://buy.stripe.com/14A8wQ1c92kacFv9JagQE0e",
+  studio: "https://buy.stripe.com/fZueVe085gb05d3g7ygQE0f",
+  studio_plus: "https://buy.stripe.com/7sY5kEg73bUK48ZcVmgQE0g",
+} as const;
+const ENTERPRISE_MAILTO =
+  "mailto:chase@tnvex.com?subject=Pocket%20Agent%20Enterprise%20inquiry";
 
 const TIERS: Tier[] = [
   {
@@ -68,7 +82,7 @@ const TIERS: Tier[] = [
       "Specialists your team can ask (sales, front desk, onboarding)",
       "You approve anything before it goes out",
     ],
-    cta: { label: "Start free for 14 days", href: "/start" },
+    cta: { label: "Get Pro", href: PAY_LINKS.pro, external: true },
   },
   {
     name: "Pro+",
@@ -83,7 +97,7 @@ const TIERS: Tier[] = [
       "More specialists for more roles",
       "Your first customer-facing agent (private link)",
     ],
-    cta: { label: "Start free for 14 days", href: "/start" },
+    cta: { label: "Get Pro+", href: PAY_LINKS.pro_plus, external: true },
   },
   {
     name: "Studio",
@@ -99,7 +113,7 @@ const TIERS: Tier[] = [
       "Public agents for as many roles as the business needs",
       "White-label — your name, not ours",
     ],
-    cta: { label: "Start free for 14 days", href: "/start" },
+    cta: { label: "Get Studio", href: PAY_LINKS.studio, external: true },
   },
   {
     name: "Studio+",
@@ -114,7 +128,7 @@ const TIERS: Tier[] = [
       "Specialists for a full team's worth of roles",
       "Your own subdomain for the agents you ship",
     ],
-    cta: { label: "Start free for 14 days", href: "/start" },
+    cta: { label: "Get Studio+", href: PAY_LINKS.studio_plus, external: true },
   },
   {
     name: "Enterprise",
@@ -128,7 +142,7 @@ const TIERS: Tier[] = [
       "Custom connections and limits",
       "Hands-on setup with the team",
     ],
-    cta: { label: "Get in touch", href: "mailto:chase@whited.consulting?subject=Pocket%20Agent%20Enterprise" },
+    cta: { label: "Talk to sales", href: ENTERPRISE_MAILTO, external: true },
   },
 ];
 
@@ -172,6 +186,14 @@ export default function PricingPage() {
   );
 }
 
+function ctaClass(featured?: boolean): string {
+  return `inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition hover:scale-[1.02] ${
+    featured
+      ? "bg-accent text-accent-foreground shadow-[0_0_40px_-12px_rgba(34,211,238,0.7)]"
+      : "border border-accent/50 bg-accent/[0.04] text-accent hover:bg-accent/[0.08]"
+  }`;
+}
+
 function TierCard({ tier }: { tier: Tier }) {
   return (
     <div
@@ -206,16 +228,20 @@ function TierCard({ tier }: { tier: Tier }) {
         ))}
       </ul>
       <div className="mt-7 pt-1">
-        <Link
-          href={tier.cta.href}
-          className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition hover:scale-[1.02] ${
-            tier.featured
-              ? "bg-accent text-accent-foreground shadow-[0_0_40px_-12px_rgba(34,211,238,0.7)]"
-              : "border border-accent/50 bg-accent/[0.04] text-accent hover:bg-accent/[0.08]"
-          }`}
-        >
-          {tier.cta.label}
-        </Link>
+        {tier.cta.external ? (
+          <a
+            href={tier.cta.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={ctaClass(tier.featured)}
+          >
+            {tier.cta.label}
+          </a>
+        ) : (
+          <Link href={tier.cta.href} className={ctaClass(tier.featured)}>
+            {tier.cta.label}
+          </Link>
+        )}
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import {
   countLiveSeatsForPersona,
   fetchPersona,
   fetchSubscriptionStatus,
+  fetchSubscriptionTier,
   fetchUsageMonthly,
 } from "./db";
 import type { PersonaMode } from "./types";
@@ -30,6 +31,75 @@ export type Tier = (typeof TIERS)[number];
 
 export function isTier(value: string): value is Tier {
   return (TIERS as readonly string[]).includes(value);
+}
+
+/** Rank a tier for "highest wins" comparisons (starter=0 … enterprise=5). */
+export function tierRank(tier: Tier): number {
+  return TIERS.indexOf(tier);
+}
+
+// ── Stripe LIVE-mode price → tier mapping (PA-ORCH-10 unified SMB ladder) ────────────
+//
+// Source of truth for the SMB subscription tier a paid Stripe price grants. The
+// Stripe webhook (src/app/api/stripe/webhook/route.ts) extracts the active price ID
+// from a customer.subscription.* event and runs it through getTierFromStripePriceId to
+// decide what tier to write to the customer's pocket_agent_subscriptions row.
+//
+// Kept as an exported, typed Record so the mapping is grep-able and unit-tested. Enterprise
+// has no Stripe price (it's a "talk to sales" mailto), so it never appears here. The dev
+// GTM add-ons (PA Sync / PA Publish, SPEC v4 Wave 3) are orthogonal yearly products — they
+// are NOT SMB tiers, so they live in ADDON_PRICE_IDS below, not here.
+export const PRICE_TO_TIER: Record<string, Tier> = {
+  // Starter $37/mo — pre-existing, also referenced via STRIPE_POCKET_AGENT_PRICE_ID.
+  price_1TdyfmJ6S5nx9HK5EeAZQEPj: "starter",
+  // Pro $97/mo
+  price_1TfRbIJ6S5nx9HK5sucoD8sB: "pro",
+  // Pro+ $149/mo
+  price_1TfRbJJ6S5nx9HK5ldFrZv5o: "pro_plus",
+  // Studio $297/mo
+  price_1TfRbKJ6S5nx9HK5g3U1yYOK: "studio",
+  // Studio+ $497/mo
+  price_1TfRbLJ6S5nx9HK54VQ2nc0m: "studio_plus",
+};
+
+/** Map a Stripe price ID to its SMB tier. Unknown prices default to 'starter'. */
+export function getTierFromStripePriceId(priceId: string): Tier {
+  return PRICE_TO_TIER[priceId] ?? "starter";
+}
+
+/**
+ * Given the set of active price IDs on a subscription (a subscription can carry
+ * multiple line items), return the highest SMB tier among them, or null if none of
+ * the prices are SMB-ladder prices. Used by the webhook to pick the primary tier when
+ * a customer stacks line items, and to ignore add-on-only subscriptions for tier writes.
+ */
+export function highestTierFromPriceIds(priceIds: readonly string[]): Tier | null {
+  let best: Tier | null = null;
+  for (const id of priceIds) {
+    const tier = PRICE_TO_TIER[id];
+    if (!tier) continue;
+    if (best === null || tierRank(tier) > tierRank(best)) best = tier;
+  }
+  return best;
+}
+
+// ── Dev GTM add-on prices (SPEC v4 Wave 3) — orthogonal to the SMB tier ──────────────
+//
+// PA Sync ($96/yr) and PA Publish ($200/yr) are sold separately (today on getpa.dev).
+// A customer can hold one of these alongside any SMB tier; the webhook treats them as
+// boolean add-on flags on the subscription row and never lets them overwrite the SMB tier.
+export const ADDON_PRICE_IDS = {
+  sync: "price_1TfRmxJ6S5nx9HK5SoqFHdOY",
+  publish: "price_1TfRmyJ6S5nx9HK5R9uxFpgd",
+} as const;
+export type AddonProduct = keyof typeof ADDON_PRICE_IDS;
+
+/** Map a Stripe price ID to a dev add-on product, or null if it isn't one. */
+export function getAddonFromStripePriceId(priceId: string): AddonProduct | null {
+  for (const key of Object.keys(ADDON_PRICE_IDS) as AddonProduct[]) {
+    if (ADDON_PRICE_IDS[key] === priceId) return key;
+  }
+  return null;
 }
 
 export type TierLimits = {
@@ -205,6 +275,12 @@ export function tierFromSubscription(
 // ── Async wrappers (DB-backed) ──────────────────────────────────────────────────────
 
 export async function getCurrentTier(businessId: string): Promise<Tier> {
+  // Prefer the explicit tier written by the Stripe webhook (PA-ORCH-10). It's a
+  // best-effort read that returns null if the column isn't present yet (pre-migration
+  // 020) or no tier has been provisioned — in which case we fall back to the legacy
+  // status→pro mapping so behavior is unchanged until the column is populated.
+  const tier = await fetchSubscriptionTier(businessId);
+  if (tier && isTier(tier)) return tier;
   const status = await fetchSubscriptionStatus(businessId);
   return tierFromSubscription(status, process.env.PA_PERSONAS_DEFAULT_TIER ?? null);
 }

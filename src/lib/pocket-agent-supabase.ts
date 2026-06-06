@@ -11,6 +11,11 @@ export type PocketAgentSubscriptionRow = {
   stripe_subscription_id: string | null;
   stripe_session_id: string | null;
   status: PocketAgentStatus;
+  // SMB ladder tier + dev add-on flags (migration 020). `tier` is null until the
+  // Stripe webhook provisions one from the active price ID.
+  tier: string | null;
+  addon_sync: boolean;
+  addon_publish: boolean;
   trial_started_at: string | null;
   trial_ends_at: string | null;
   trial_end_reminder_sent_at: string | null;
@@ -113,6 +118,77 @@ export async function markPocketAgentActive(
         activated_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }),
+      cache: "no-store",
+    },
+  );
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  return { ok: true };
+}
+
+/**
+ * Write the SMB ladder tier (PA-ORCH-10) onto a subscription row, keyed by Stripe
+ * subscription id. Set `tier` to null when the subscription is canceled so the read
+ * path falls back to the status-based mapping instead of returning a stale paid tier.
+ */
+export async function markPocketAgentTier(
+  stripeSubscriptionId: string,
+  tier: string | null,
+): Promise<InsertResult> {
+  const env = supabaseEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const res = await fetch(
+    endpoint(env, `?stripe_subscription_id=eq.${encodeURIComponent(stripeSubscriptionId)}`),
+    {
+      method: "PATCH",
+      headers: {
+        apikey: env.key,
+        Authorization: `Bearer ${env.key}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ tier, updated_at: new Date().toISOString() }),
+      cache: "no-store",
+    },
+  );
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  return { ok: true };
+}
+
+/**
+ * Toggle a dev add-on flag (PA Sync / PA Publish, SPEC v4 Wave 3) on every
+ * subscription row for a customer. Add-ons are sold as separate subscriptions whose
+ * own id won't match the customer's SMB row, so we key by stripe_customer_id and let
+ * the flag ride on the primary row(s). Orthogonal to `tier` — never touches it.
+ */
+export async function setPocketAgentAddonByCustomer(args: {
+  stripeCustomerId: string;
+  addon: "sync" | "publish";
+  enabled: boolean;
+}): Promise<InsertResult> {
+  const env = supabaseEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const column = args.addon === "sync" ? "addon_sync" : "addon_publish";
+  const res = await fetch(
+    endpoint(env, `?stripe_customer_id=eq.${encodeURIComponent(args.stripeCustomerId)}`),
+    {
+      method: "PATCH",
+      headers: {
+        apikey: env.key,
+        Authorization: `Bearer ${env.key}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ [column]: args.enabled, updated_at: new Date().toISOString() }),
       cache: "no-store",
     },
   );

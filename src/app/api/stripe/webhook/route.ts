@@ -12,10 +12,16 @@ import {
   fetchPocketAgentBySubscriptionId,
   markPocketAgentActive,
   markPocketAgentCanceled,
+  markPocketAgentTier,
   markPocketAgentTrialEndNotified,
   markWelcomeEmailSent,
+  setPocketAgentAddonByCustomer,
   upsertPocketAgentTrial,
 } from "@/lib/pocket-agent-supabase";
+import {
+  getAddonFromStripePriceId,
+  highestTierFromPriceIds,
+} from "@/lib/personas/tier-caps";
 import { sendEmail } from "@/lib/resend";
 import {
   getKitConfig,
@@ -439,6 +445,10 @@ Open the app: ${SITE_ORIGIN}/app
 
 // ─── Pocket Agent subscription types ────────────────────────────────────────
 
+type StripeSubscriptionItem = {
+  price: { id: string } | null;
+};
+
 type StripeSubscription = {
   id: string;
   customer: string | null;
@@ -446,7 +456,16 @@ type StripeSubscription = {
   trial_start: number | null;
   trial_end: number | null;
   metadata: Record<string, string> | null;
+  items?: { data?: StripeSubscriptionItem[] } | null;
 };
+
+/** Pull the active price IDs off a Stripe subscription's line items. */
+function extractPriceIds(sub: StripeSubscription): string[] {
+  const items = sub.items?.data ?? [];
+  return items
+    .map((it) => it.price?.id)
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+}
 
 type StripeInvoice = {
   id: string;
@@ -616,6 +635,119 @@ async function handlePocketAgentSubscriptionCreated(
   });
 }
 
+/**
+ * Resolve the SMB tier (and any dev add-ons) from a subscription's active prices and
+ * persist them (PA-ORCH-10 + SPEC v4 Wave 3). Called on customer.subscription.created
+ * and .updated. Three independent classifications per subscription:
+ *
+ *  1. SMB ladder price  → write the highest tier to the row (keyed by subscription id).
+ *  2. Dev add-on price  → set the orthogonal addon flag (keyed by customer id). Never
+ *                         touches `tier`, so an add-on subscription can't clobber the
+ *                         primary tier.
+ *  3. Neither           → ignore (not a PA-priced subscription).
+ *
+ * Tier transitions are logged ("upgraded from pro to studio") so plan moves are auditable.
+ */
+async function applyPocketAgentTierFromSubscription(
+  sub: StripeSubscription,
+  trigger: "created" | "updated",
+): Promise<void> {
+  const priceIds = extractPriceIds(sub);
+  if (priceIds.length === 0) {
+    console.warn("[stripe/webhook] subscription has no line-item prices; cannot resolve tier", {
+      subscription_id: sub.id,
+      trigger,
+    });
+    return;
+  }
+
+  // (2) Dev add-ons — set flags by customer, independent of the SMB tier.
+  if (sub.customer) {
+    for (const priceId of priceIds) {
+      const addon = getAddonFromStripePriceId(priceId);
+      if (!addon) continue;
+      const set = await setPocketAgentAddonByCustomer({
+        stripeCustomerId: sub.customer,
+        addon,
+        enabled: true,
+      });
+      if (!set.ok) {
+        console.error("[stripe/webhook] failed to set pocket_agent add-on flag", {
+          subscription_id: sub.id,
+          customer: sub.customer,
+          addon,
+          status: set.status,
+          error: set.error,
+        });
+      } else {
+        console.info("[stripe/webhook] pocket_agent add-on enabled", {
+          subscription_id: sub.id,
+          customer: sub.customer,
+          addon,
+          trigger,
+        });
+      }
+    }
+  }
+
+  // (1) SMB ladder tier — highest tier among the subscription's prices wins.
+  const tier = highestTierFromPriceIds(priceIds);
+  if (!tier) {
+    // Add-on-only subscription (or a non-PA price). Nothing more to do.
+    return;
+  }
+
+  const lookup = await fetchPocketAgentBySubscriptionId(sub.id);
+  if (!lookup.ok) {
+    console.error("[stripe/webhook] tier write: subscription lookup failed", {
+      subscription_id: sub.id,
+      status: lookup.status,
+      error: lookup.error,
+    });
+    return;
+  }
+  if (!lookup.row) {
+    // BLOCKER surface: a paid SMB subscription exists in Stripe but has no
+    // pocket_agent_subscriptions row to attach the tier to. This happens when a
+    // payment-link purchase creates a subscription without source=pocket_agent
+    // metadata and no prior /start checkout row. Payment is collected but the tier
+    // (and account) is not provisioned. Logged loudly so it's caught in prod logs.
+    console.error(
+      "[stripe/webhook] PA SMB subscription has no pocket_agent_subscriptions row — payment collected but tier NOT provisioned (payment-link metadata gap)",
+      {
+        subscription_id: sub.id,
+        customer: sub.customer,
+        resolved_tier: tier,
+        trigger,
+      },
+    );
+    return;
+  }
+
+  const prevTier = lookup.row.tier;
+  if (prevTier === tier) return; // No-op transition (e.g. unrelated update event).
+
+  const mark = await markPocketAgentTier(sub.id, tier);
+  if (!mark.ok) {
+    console.error("[stripe/webhook] failed to write pocket_agent tier", {
+      subscription_id: sub.id,
+      from: prevTier ?? "(none)",
+      to: tier,
+      status: mark.status,
+      error: mark.error,
+    });
+    return;
+  }
+  console.info("[stripe/webhook] pocket_agent tier transition", {
+    subscription_id: sub.id,
+    customer: sub.customer,
+    email: lookup.row.email,
+    from: prevTier ?? "(none)",
+    to: tier,
+    trigger,
+  });
+}
+
 async function handlePocketAgentTrialWillEnd(
   sub: StripeSubscription,
 ): Promise<void> {
@@ -750,6 +882,40 @@ async function handlePocketAgentSubscriptionDeleted(
     });
     return;
   }
+
+  // Clear the SMB tier on cancel so getCurrentTier falls back to the status-based
+  // mapping ('starter') instead of returning the now-defunct paid tier. Best-effort.
+  const cleared = await markPocketAgentTier(sub.id, null);
+  if (!cleared.ok) {
+    console.error("[stripe/webhook] failed to clear pocket_agent tier on cancel", {
+      subscription_id: sub.id,
+      status: cleared.status,
+      error: cleared.error,
+    });
+  }
+
+  // If the canceled subscription was a dev add-on, clear its flag for the customer.
+  if (sub.customer) {
+    for (const priceId of extractPriceIds(sub)) {
+      const addon = getAddonFromStripePriceId(priceId);
+      if (!addon) continue;
+      const unset = await setPocketAgentAddonByCustomer({
+        stripeCustomerId: sub.customer,
+        addon,
+        enabled: false,
+      });
+      if (!unset.ok) {
+        console.error("[stripe/webhook] failed to clear pocket_agent add-on on cancel", {
+          subscription_id: sub.id,
+          customer: sub.customer,
+          addon,
+          status: unset.status,
+          error: unset.error,
+        });
+      }
+    }
+  }
+
   console.info("[stripe/webhook] pocket_agent marked canceled", {
     subscription_id: sub.id,
     email: lookup.row.email,
@@ -927,6 +1093,13 @@ export async function POST(req: Request): Promise<NextResponse> {
       if (sub.metadata?.source === "pocket_agent") {
         await handlePocketAgentSubscriptionCreated(sub);
       }
+      // Tier write is keyed off the price ID (not metadata), so it also covers
+      // payment-link subscriptions that lack source=pocket_agent metadata — as long
+      // as a pocket_agent_subscriptions row exists for them (see blocker logging).
+      await applyPocketAgentTierFromSubscription(sub, "created");
+    } else if (event.type === "customer.subscription.updated") {
+      const sub = event.data.object as unknown as StripeSubscription;
+      await applyPocketAgentTierFromSubscription(sub, "updated");
     } else if (event.type === "customer.subscription.trial_will_end") {
       const sub = event.data.object as unknown as StripeSubscription;
       if (sub.metadata?.source === "pocket_agent") {

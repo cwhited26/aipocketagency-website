@@ -437,6 +437,23 @@ export async function fetchSubscriptionStatus(businessId: string): Promise<strin
   return rows[0]?.status ?? null;
 }
 
+/**
+ * Best-effort read of the SMB tier the Stripe webhook stamped on the subscription row
+ * (PA-ORCH-10, migration 020). Resilient by design: if the `tier` column doesn't exist
+ * yet (pre-migration) or any read error occurs, returns null so getCurrentTier falls
+ * back to the legacy status→pro mapping instead of throwing and breaking persona caps.
+ */
+export async function fetchSubscriptionTier(businessId: string): Promise<string | null> {
+  try {
+    const rows = await rest<{ tier: string | null }[]>(
+      `pocket_agent_subscriptions?user_id=eq.${enc(businessId)}&order=updated_at.desc&select=tier&limit=1`,
+    );
+    return rows[0]?.tier ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Best-effort owner email for the weekly digest (from their subscription row). */
 export async function fetchOwnerEmail(businessId: string): Promise<string | null> {
   const rows = await rest<{ email: string | null }[]>(
