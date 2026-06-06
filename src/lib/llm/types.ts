@@ -6,6 +6,8 @@ export const LLM_PROVIDERS = [
   "anthropic",
   "openai",
   "groq",
+  // grok = xAI's LLM (e.g. grok-4.3). Distinct from groq above (fast-inference hardware).
+  "grok",
   "custom_openai_compatible",
 ] as const;
 export type LlmProvider = (typeof LLM_PROVIDERS)[number];
@@ -19,6 +21,7 @@ export const PROVIDER_LABELS: Record<LlmProvider, string> = {
   anthropic: "Anthropic (BYO)",
   openai: "OpenAI (BYO)",
   groq: "Groq (BYO)",
+  grok: "xAI Grok (BYO)",
   custom_openai_compatible: "Local or custom (OpenAI-compatible)",
 };
 
@@ -34,6 +37,9 @@ export const PREMIUM_TIER_MODELS = [
   "claude-opus-4-7",
   "gpt-4o",
   "gpt-4.1",
+  // xAI Grok flagship: grok-4.3 is the current top SKU; grok-4-latest is its rolling alias.
+  "grok-4.3",
+  "grok-4-latest",
 ] as const;
 
 /** True when `model` is in the premium-tier allowlist (case-insensitive exact match). */

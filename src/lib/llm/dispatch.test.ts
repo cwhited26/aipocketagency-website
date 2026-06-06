@@ -124,6 +124,20 @@ describe("dispatch routing", () => {
     expect(cr.ok && cr.provider).toBe("custom_openai_compatible");
   });
 
+  it("routes to xAI Grok (≠ Groq) and treats grok-4.3 as premium-tier", async () => {
+    const deps = makeDeps({
+      row: settings({ provider: "grok", model_id: "grok-4.3", encrypted_api_key: "xai-key" }),
+      adapters: { grok: okAdapter("GROK"), groq: okAdapter("GROQ"), pa_managed: okAdapter("MANAGED") },
+    });
+    const r = await completeLlm(base, deps);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.provider).toBe("grok"); // NOT "groq" — distinct vendors
+      expect(r.text).toBe("GROK");
+      expect(r.qualityWarning).toBe(false); // grok-4.3 is premium-tier
+    }
+  });
+
   it("flags qualityWarning for a non-premium-tier BYO model", async () => {
     const deps = makeDeps({
       row: settings({ provider: "anthropic", model_id: "claude-haiku-4-5", encrypted_api_key: "sk-ant" }),
@@ -143,6 +157,24 @@ describe("dispatch fallback", () => {
     const deps = makeDeps({
       row: settings({ provider: "openai", model_id: "gpt-4o", encrypted_api_key: "bad" }),
       adapters: { openai: failAdapter(401), pa_managed: okAdapter("MANAGED") },
+      markError,
+    });
+    const r = await completeLlm(base, deps);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.provider).toBe("pa_managed");
+      expect(r.text).toBe("MANAGED");
+      expect(r.usedFallback).toBe(true);
+      expect(r.fallbackReason).toMatch(/401/);
+    }
+    expect(markError).toHaveBeenCalledWith("u1", "401");
+  });
+
+  it("falls back to PA-managed on a 401 from the Grok provider and marks the error", async () => {
+    const markError = vi.fn(async () => undefined);
+    const deps = makeDeps({
+      row: settings({ provider: "grok", model_id: "grok-4.3", encrypted_api_key: "bad-xai" }),
+      adapters: { grok: failAdapter(401), pa_managed: okAdapter("MANAGED") },
       markError,
     });
     const r = await completeLlm(base, deps);

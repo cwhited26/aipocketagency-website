@@ -44,9 +44,9 @@ export default async function LlmProviderPage() {
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Bring your own model</h1>
           <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-            PA runs on PA-managed Claude by default. Point it at your own Anthropic, OpenAI, Groq, or
-            any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM) and every agent + persona call
-            routes through your model instead.
+            PA runs on PA-managed Claude by default. Point it at your own Anthropic, OpenAI, Groq,
+            xAI Grok, or any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM) and every agent +
+            persona call routes through your model instead.
           </p>
         </div>
 

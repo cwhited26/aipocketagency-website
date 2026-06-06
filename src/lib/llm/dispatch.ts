@@ -31,6 +31,7 @@ import { decryptProviderKey } from "@/lib/crypto/provider-key";
 import { anthropicAdapter } from "./providers/anthropic";
 import { openaiAdapter } from "./providers/openai";
 import { groqAdapter } from "./providers/groq";
+import { grokAdapter } from "./providers/grok";
 import { customOpenAiCompatibleAdapter } from "./providers/custom_openai_compatible";
 
 const DEFAULT_MAX_TOKENS = 2048;
@@ -41,6 +42,8 @@ export function adapterFor(provider: LlmProvider): ProviderAdapter {
       return openaiAdapter;
     case "groq":
       return groqAdapter;
+    case "grok":
+      return grokAdapter;
     case "custom_openai_compatible":
       return customOpenAiCompatibleAdapter;
     case "anthropic":

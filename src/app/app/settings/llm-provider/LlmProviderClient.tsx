@@ -8,7 +8,8 @@ const PROVIDERS = [
   { key: "pa_managed", label: "PA-managed Claude", blurb: "Default. We run it. Nothing to configure.", byo: false, custom: false },
   { key: "anthropic", label: "Anthropic (BYO)", blurb: "Your Anthropic key — Sonnet / Opus / Haiku.", byo: true, custom: false },
   { key: "openai", label: "OpenAI (BYO)", blurb: "Your OpenAI key — GPT-4o / GPT-4.1.", byo: true, custom: false },
-  { key: "groq", label: "Groq (BYO)", blurb: "Your Groq key — fast open models.", byo: true, custom: false },
+  { key: "groq", label: "Groq (BYO)", blurb: "Fast-inference hardware for open models (≠ Grok). Your Groq key.", byo: true, custom: false },
+  { key: "grok", label: "xAI Grok (BYO)", blurb: "xAI's LLM — Grok flagship (grok-4.3). Not Groq. Your xAI key.", byo: true, custom: false },
   { key: "custom_openai_compatible", label: "Local or custom", blurb: "Ollama / LM Studio / vLLM / any OpenAI-compatible URL.", byo: true, custom: true },
 ] as const;
 
@@ -16,7 +17,7 @@ type ProviderKey = (typeof PROVIDERS)[number]["key"];
 
 // Premium-tier allowlist mirror (lib/llm/types.ts PREMIUM_TIER_MODELS) for an instant
 // client-side quality-bar banner.
-const PREMIUM_MODELS = ["claude-sonnet-4-6", "claude-opus-4-6", "claude-opus-4-7", "gpt-4o", "gpt-4.1"];
+const PREMIUM_MODELS = ["claude-sonnet-4-6", "claude-opus-4-6", "claude-opus-4-7", "gpt-4o", "gpt-4.1", "grok-4.3", "grok-4-latest"];
 const QUALITY_WARNING =
   "PA's behavior is calibrated for top-tier models — smaller/older models may produce lower-quality persona responses.";
 
@@ -264,7 +265,7 @@ export default function LlmProviderClient({ initial }: { initial: InitialSetting
             ) : (
               <input
                 type="text"
-                placeholder="e.g. claude-sonnet-4-6 / gpt-4.1 / llama-3.3-70b"
+                placeholder="e.g. claude-sonnet-4-6 / gpt-4.1 / grok-4.3 / llama-3.3-70b"
                 value={model}
                 onChange={(e) => {
                   setModel(e.target.value);
