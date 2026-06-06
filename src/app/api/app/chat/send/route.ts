@@ -5,8 +5,18 @@ import { SendMessageSchema, type ChatMessage } from "@/lib/chat/types";
 import { parseIntent } from "@/lib/chat/filters";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { commitMemoryFile } from "@/lib/pa-brain";
+import { orchestratorEnabled } from "@/lib/orchestrator/feature-flag";
+import { dispatchUserGoal } from "@/lib/orchestrator/dispatcher";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+
+// Wave A generic reply — used when the orchestrator is off, a goal is a simple lookup, or a
+// dispatch attempt degrades. Kept verbatim so default behaviour is unchanged with the flag off.
+const WAVE_A_REPLY =
+  "Got it — logged to your chat. I can: save to memory (\"add to memory: …\"), " +
+  "answer through a persona (\"ask my <persona>: …\"), capture voice (/capture voice), and " +
+  "upload files (/upload). Full task execution — spawning sub-agents to do the work — arrives " +
+  "with v5 Wave B.";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,18 +61,13 @@ export async function POST(req: Request): Promise<NextResponse> {
       out.push(...(await handleMemory(user.id, intent.content)));
     } else if (intent.kind === "persona") {
       out.push(...(await handlePersona(user.id, intent.personaQuery, intent.question)));
+    } else if (orchestratorEnabled()) {
+      // PA v5 Wave B: route a generic message to the dispatcher. Simple lookups + a disabled /
+      // misconfigured runtime fall back to the Wave A reply, so chat never breaks.
+      out.push(...(await handleOrchestratorGoal(user.id, content, out[0]?.id ?? null)));
     } else {
       out.push(
-        await insertMessage({
-          userId: user.id,
-          role: "assistant",
-          content:
-            "Got it — logged to your chat. In Wave A I can: save to memory (\"add to memory: …\"), " +
-            "answer through a persona (\"ask my <persona>: …\"), capture voice (/capture voice), and " +
-            "upload files (/upload). Full task execution — spawning sub-agents to do the work — arrives " +
-            "with v5 Wave B.",
-          filterTags: ["general"],
-        }),
+        await insertMessage({ userId: user.id, role: "assistant", content: WAVE_A_REPLY, filterTags: ["general"] }),
       );
     }
 
@@ -74,6 +79,60 @@ export async function POST(req: Request): Promise<NextResponse> {
     const status = e instanceof ChatDbError ? e.status : 500;
     return NextResponse.json({ error: "Could not process message", messages: out }, { status });
   }
+}
+
+// ── Generic message → orchestrator dispatch (Wave B) ─────────────────────────────────────
+// Maps a DispatchOutcome onto chat rows: a dispatched run renders a sub_agent_activity card in
+// the /tasks view; capped/simple/disabled render an assistant message. Any thrown error (e.g.
+// the orchestrator tables aren't migrated yet) degrades to the Wave A reply — chat never 500s
+// on a half-configured orchestrator.
+async function handleOrchestratorGoal(
+  userId: string,
+  goal: string,
+  originatingMessageId: string | null,
+): Promise<ChatMessage[]> {
+  let outcome;
+  try {
+    outcome = await dispatchUserGoal({ businessId: userId, goal, originatingMessageId });
+  } catch {
+    return [
+      await insertMessage({ userId, role: "assistant", content: WAVE_A_REPLY, filterTags: ["general"] }),
+    ];
+  }
+
+  if (outcome.kind === "dispatched") {
+    const msgs: ChatMessage[] = [];
+    msgs.push(
+      await insertMessage({
+        userId,
+        role: "inline_card",
+        cardKind: "sub_agent_activity",
+        cardPayload: {
+          label: outcome.scaffold.project,
+          phase: "observe",
+          note: outcome.reason,
+        },
+        filterTags: ["tasks"],
+      }),
+    );
+    if (!outcome.dispatched) {
+      msgs.push(
+        await insertMessage({ userId, role: "assistant", content: outcome.reason, filterTags: ["tasks"] }),
+      );
+    }
+    return msgs;
+  }
+
+  if (outcome.kind === "capped") {
+    return [
+      await insertMessage({ userId, role: "assistant", content: outcome.reason, filterTags: ["general"] }),
+    ];
+  }
+
+  // simple | disabled → Wave A behaviour (answer inline / generic reply).
+  return [
+    await insertMessage({ userId, role: "assistant", content: WAVE_A_REPLY, filterTags: ["general"] }),
+  ];
 }
 
 // ── Memory intent → commit to brain + memory_write card ──────────────────────────────────

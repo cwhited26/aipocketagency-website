@@ -1,10 +1,12 @@
 "use client";
 
-// SubAgentActivityCard — Wave B PLACEHOLDER. The schema (card_kind='sub_agent_activity')
-// and payload contract are live so Wave B's dispatcher can stream real sub-agent phase
-// progress into the chat without a migration. Until then this renders a faded preview of
-// the 7-phase Algorithm and a "coming soon" note. No real runtime in Wave A.
+// SubAgentActivityCard — LIVE (PA v5 Wave B). When the orchestrator dispatches a run, the chat
+// send route appends one of these with the plan label + current phase. It renders the 7-phase
+// Algorithm with the active phase lit, plus a link into the Tasks/Inbox surfaces where live
+// progress + approvals land. (The inline card is schema-scoped to label/phase/note — the live,
+// per-run timeline lives at /app/apps/inbox via the orchestrator run API.)
 
+import Link from "next/link";
 import CardShell from "./CardShell";
 import { RailIcon } from "../icons";
 import type { FilterTag, SubAgentActivityPayload } from "@/lib/chat/types";
@@ -22,27 +24,26 @@ export default function SubAgentActivityCard({
   createdAt: string;
   onArchive?: () => void;
 }) {
-  const activePhase = payload.phase ?? "plan";
+  const activePhase = payload.phase ?? "observe";
   return (
     <CardShell
-      title={payload.label ?? "Sub-agent activity"}
-      accent="#64748b"
+      title={payload.label ?? "Sub-agent run"}
+      accent="#22d3ee"
       icon={<RailIcon iconKey="agent" />}
       tag={tag}
       createdAt={createdAt}
       onArchive={onArchive}
-      muted
     >
-      <p className="text-sm text-slate-400">Sub-agent activity (Wave B feature, coming soon)</p>
+      <p className="text-sm text-slate-300">{payload.note ?? "On it — running the task."}</p>
 
-      {/* Faded 7-phase preview */}
-      <div className="mt-3 flex flex-wrap gap-1.5 opacity-50 pointer-events-none select-none">
+      {/* Live 7-phase Algorithm strip */}
+      <div className="mt-3 flex flex-wrap gap-1.5">
         {PHASES.map((p) => (
           <span
             key={p}
             className={`text-[9px] font-mono uppercase tracking-wider rounded px-1.5 py-0.5 border ${
               p === activePhase
-                ? "border-[#22d3ee]/40 text-[#22d3ee]"
+                ? "border-[#22d3ee]/60 text-[#22d3ee] bg-[#22d3ee]/10"
                 : "border-slate-800 text-slate-600"
             }`}
           >
@@ -51,11 +52,12 @@ export default function SubAgentActivityCard({
         ))}
       </div>
 
-      {payload.note && <p className="mt-2 text-xs text-slate-600 italic">{payload.note}</p>}
-
-      <span className="mt-3 inline-block text-[9px] font-mono uppercase tracking-wider text-slate-500 border border-slate-700 rounded px-1.5 py-0.5">
-        Coming with v5 Wave B
-      </span>
+      <Link
+        href="/app/apps/inbox"
+        className="mt-3 inline-block text-[11px] font-mono text-[#22d3ee]/80 hover:text-[#22d3ee] transition-colors"
+      >
+        Track progress + approvals →
+      </Link>
     </CardShell>
   );
 }

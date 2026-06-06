@@ -13,11 +13,17 @@ type TriageDetail = {
   receivedAt: string | null;
 };
 
+type ActionApprovalDetail = {
+  connector: string;
+  action: string;
+  subAgentRunId: string | null;
+};
+
 // Mirrors the normalized card from GET /api/app/inbox.
 type InboxCard = {
   id: string;
   system: "inbox" | "legacy";
-  kind: "draft" | "decision" | "email_triage" | "persona_lead";
+  kind: "draft" | "decision" | "email_triage" | "persona_lead" | "action_approval";
   status: "pending" | "approved" | "rejected" | "expired" | "failed";
   title: string;
   source: string;
@@ -27,6 +33,7 @@ type InboxCard = {
   resolvedAt: string | null;
   email: { to: string; subject: string; body: string } | null;
   triage: TriageDetail | null;
+  action: ActionApprovalDetail | null;
 };
 
 type InboxResponse = { cards: InboxCard[]; provisioned: boolean };
@@ -389,6 +396,154 @@ function DecisionCard({
   );
 }
 
+// ─── Action-approval card (PA v5 Wave B orchestrator) ──────────────────────────
+
+// One-tap Approve / Reject / Edit for a connector write-action a sub-agent staged. Approving
+// fires the runtime's blocked tool call (server-side) and, once an action type clears the
+// trust window, surfaces the auto-approve unlock nudge.
+function ActionApprovalCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState<"approve" | "reject" | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [body, setBody] = useState(card.bodyMd);
+  const [err, setErr] = useState<string | null>(null);
+  const [unlockNote, setUnlockNote] = useState<string | null>(null);
+
+  const connector = card.action?.connector || "connector";
+  const action = card.action?.action || "action";
+
+  async function decide(decision: "approve" | "reject") {
+    setBusy(decision);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/orchestrator/approvals/${card.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision }),
+        cache: "no-store",
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        autoApproveUnlocked?: boolean;
+      };
+      if (!res.ok) throw new Error(data.error ?? `Request failed (${res.status})`);
+      if (decision === "approve" && data.autoApproveUnlocked) {
+        setUnlockNote(
+          `You've approved enough ${connector} · ${action} actions to let Pocket Agent do this on its own. Turn on auto-approve in Settings → Auto-approve.`,
+        );
+      }
+      onResolved(card.id, decision === "approve" ? "approved" : "rejected");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  async function saveEdit() {
+    setErr(null);
+    try {
+      const res = await fetch(`/api/orchestrator/approvals/${card.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision: "edit", payload: { body } }),
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? `Edit failed (${res.status})`);
+      }
+      setEditing(false);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+    }
+  }
+
+  if (unlockNote) {
+    return (
+      <div className="rounded-2xl border border-emerald-500/20 bg-slate-900/60 p-4 sm:p-5">
+        <p className="text-sm text-emerald-300/90 leading-relaxed">{unlockNote}</p>
+        <Link
+          href="/app/settings/auto-approve"
+          className="mt-3 inline-block text-xs font-mono text-[#22d3ee]/80 hover:text-[#22d3ee]"
+        >
+          Manage auto-approve →
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-amber-500/20 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-amber-400/80 uppercase tracking-[0.18em]">
+          {connector} · {action} · needs approval
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
+      </div>
+
+      <p className="text-[15px] font-semibold text-slate-100 leading-snug">{card.title}</p>
+
+      {editing ? (
+        <textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          rows={8}
+          className="mt-3 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-200 leading-relaxed focus:border-[#22d3ee] focus:outline-none resize-y font-mono"
+        />
+      ) : (
+        <pre className="mt-3 text-xs text-slate-400 whitespace-pre-wrap font-mono bg-slate-950/40 rounded-md border border-slate-800/60 px-3 py-2">
+          {body || card.preview}
+        </pre>
+      )}
+
+      <p className="mt-3 text-[11px] text-slate-600 leading-relaxed">
+        Nothing fires until you approve. Pocket Agent stages every external action here first.
+      </p>
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          onClick={() => void decide("approve")}
+          disabled={busy !== null || editing}
+          className="flex-1 min-h-[44px] py-3 px-4 rounded-xl bg-[#22d3ee] hover:bg-[#06b6d4] text-[#031820] text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {busy === "approve" ? "Approving…" : "Approve"}
+        </button>
+        {editing ? (
+          <button
+            onClick={() => void saveEdit()}
+            className="min-h-[44px] px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors"
+          >
+            Save
+          </button>
+        ) : (
+          <button
+            onClick={() => setEditing(true)}
+            disabled={busy !== null}
+            className="min-h-[44px] px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors disabled:opacity-50"
+          >
+            Edit
+          </button>
+        )}
+        <button
+          onClick={() => void decide("reject")}
+          disabled={busy !== null}
+          aria-label="Reject action"
+          className="min-h-[44px] px-4 rounded-xl text-slate-500 text-sm hover:text-slate-300 transition-colors disabled:opacity-50"
+        >
+          {busy === "reject" ? "…" : "Reject"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Resolved row ─────────────────────────────────────────────────────────────
 
 function ResolvedRow({ card }: { card: InboxCard }) {
@@ -455,12 +610,17 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
   }
 
   const triage = cards.filter((c) => c.kind === "email_triage" && c.status === "pending");
+  const actions = cards.filter((c) => c.kind === "action_approval" && c.status === "pending");
   const drafts = cards.filter((c) => c.kind === "draft" && c.status === "pending");
   const decisions = cards.filter((c) => c.kind === "decision" && c.status === "pending");
   const resolved = cards
     .filter((c) => c.status !== "pending")
     .slice(0, 20);
-  const allClear = triage.length === 0 && drafts.length === 0 && decisions.length === 0;
+  const allClear =
+    triage.length === 0 &&
+    actions.length === 0 &&
+    drafts.length === 0 &&
+    decisions.length === 0;
 
   return (
     <div className="h-full overflow-y-auto bg-[#05070a]">
@@ -508,6 +668,20 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
                 <div className="flex flex-col gap-3">
                   {triage.map((card) => (
                     <TriageCard key={card.id} card={card} onResolved={onResolved} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Connector actions awaiting approval (orchestrator) */}
+            {actions.length > 0 && (
+              <section className="mb-8">
+                <div className="text-[11px] font-mono text-slate-600 uppercase tracking-wider mb-3">
+                  Actions awaiting approval · {actions.length}
+                </div>
+                <div className="flex flex-col gap-3">
+                  {actions.map((card) => (
+                    <ActionApprovalCard key={card.id} card={card} onResolved={onResolved} />
                   ))}
                 </div>
               </section>

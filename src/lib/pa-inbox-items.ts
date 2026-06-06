@@ -14,7 +14,14 @@
 // Distinct from pa-inbox.ts, which parses the iOS *Capture* Inbox (PA-INBOX
 // blocks in the brain repo). This file is the action-staging Inbox.
 
-export type InboxKind = "draft" | "decision" | "email_triage" | "persona_lead";
+// 'action_approval' (PA v5 Wave B) stages a connector write-action for one-tap approval; its
+// action-specific detail lives in pa_action_approvals (migration 021).
+export type InboxKind =
+  | "draft"
+  | "decision"
+  | "email_triage"
+  | "persona_lead"
+  | "action_approval";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

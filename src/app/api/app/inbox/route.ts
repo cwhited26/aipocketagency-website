@@ -14,7 +14,12 @@ export const dynamic = "force-dynamic";
 // ─── Normalized card shape shared with the Inbox client ───────────────────────
 
 export type InboxCardSystem = "inbox" | "legacy";
-export type InboxCardKind = "draft" | "decision" | "email_triage" | "persona_lead";
+export type InboxCardKind =
+  | "draft"
+  | "decision"
+  | "email_triage"
+  | "persona_lead"
+  | "action_approval";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -24,6 +29,13 @@ export type TriageDetail = {
   snippet: string;
   url: string;
   receivedAt: string | null;
+};
+
+// PA v5 Wave B: connector write-action staged for one-tap approval (kind='action_approval').
+export type ActionApprovalDetail = {
+  connector: string;
+  action: string;
+  subAgentRunId: string | null;
 };
 
 export type InboxCard = {
@@ -39,6 +51,7 @@ export type InboxCard = {
   resolvedAt: string | null;
   email: { to: string; subject: string; body: string } | null;
   triage: TriageDetail | null;
+  action: ActionApprovalDetail | null;
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -69,11 +82,22 @@ function triageOf(item: InboxItem): TriageDetail {
   };
 }
 
+function actionOf(item: InboxItem): ActionApprovalDetail {
+  const runId = item.payload.subAgentRunId;
+  return {
+    connector: str(item.payload.connector),
+    action: str(item.payload.action),
+    subAgentRunId: typeof runId === "string" ? runId : null,
+  };
+}
+
 function normalizeInboxItem(item: InboxItem): InboxCard {
   const isEmail = item.kind === "draft" && item.source === "email-drafter";
   const isTriage = item.kind === "email_triage";
+  const isAction = item.kind === "action_approval";
   const body = item.body_md ?? "";
   const triage = isTriage ? triageOf(item) : null;
+  const action = isAction ? actionOf(item) : null;
   return {
     id: item.id,
     system: "inbox",
@@ -93,6 +117,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
         }
       : null,
     triage,
+    action,
   };
 }
 
@@ -122,6 +147,7 @@ function normalizeLegacyAction(action: PendingAction): InboxCard {
     resolvedAt: action.decided_at,
     email: null,
     triage: null,
+    action: null,
   };
 }
 

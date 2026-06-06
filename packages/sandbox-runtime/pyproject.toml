@@ -1,0 +1,28 @@
+[project]
+name = "pa-orchestrator-runtime"
+version = "0.1.0"
+description = "Pocket Agent v5 Wave B — sub-agent runtime (7-phase Algorithm) on Modal"
+requires-python = ">=3.13"
+dependencies = [
+    "modal>=0.64",
+    "httpx>=0.27",
+    "pydantic>=2.7",
+    "fastapi[standard]>=0.115",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "mypy>=1.10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+# Modal isn't typed end-to-end; allow its untyped surface without weakening our modules.
+[[tool.mypy.overrides]]
+module = ["modal.*"]
+ignore_missing_imports = true
