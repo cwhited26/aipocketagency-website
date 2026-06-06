@@ -90,7 +90,7 @@ const STEPS = [
   {
     n: "01",
     title: "You ask in plain words",
-    body: "No menus, no fields, no setup weekend. You type what you need the same way you'd text an employee — “follow up on the three open quotes,” “send Patrick the supplement,” “fix the line in my QuickBooks export.”",
+    body: "No menus, no fields, no setup weekend. You type what you need the same way you'd text an employee — “follow up on the three open quotes,” “send the Reyes supplement,” “fix the line in my QuickBooks export.”",
   },
   {
     n: "02",

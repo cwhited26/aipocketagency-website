@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SiteHeader, SiteFooter } from "@/components/marketing/site-nav";
 import { PrimaryCTA, SecondaryCTA, MONO_FONT } from "@/components/marketing/cta";
-import { ChatMock, PersonaSpecMock, ScaffoldMock } from "@/components/marketing/mocks";
+import { BeforeAfter, PersonaSpecMock, ScaffoldMock } from "@/components/marketing/mocks";
 
 const DESCRIPTION =
   "Pocket Agent is the one chat you tell what needs doing — and it does the work. It remembers how your business runs, it's plugged into the tools you already use, and nothing goes out without your okay.";
@@ -87,18 +87,19 @@ function Hero() {
 }
 
 function TrustBar() {
-  const items = [
-    "Run every day inside Tennessee Valley Exteriors",
-    "Built on by Fresh Page Home Improvement",
-    "A Whited Consulting product",
-  ];
+  const names = ["Tennessee Valley Exteriors", "Whited Consulting", "AthleteOS"];
   return (
-    <div className="mx-auto mt-14 flex max-w-3xl flex-col items-center gap-3 border-t border-white/5 pt-8 sm:flex-row sm:justify-center sm:gap-6">
-      {items.map((t) => (
-        <span key={t} className="text-xs text-slate-500 sm:text-[13px]">
-          {t}
-        </span>
-      ))}
+    <div className="mx-auto mt-14 max-w-3xl border-t border-white/5 pt-8 text-center">
+      <p className="text-xs uppercase tracking-wider text-slate-500">
+        Run every day across the businesses Chase runs himself
+      </p>
+      <div className="mt-3 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-6">
+        {names.map((n) => (
+          <span key={n} className="text-sm text-slate-400">
+            {n}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -106,27 +107,25 @@ function TrustBar() {
 function SeeItWork() {
   return (
     <section className="border-b border-white/5 bg-black/30">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 sm:py-24 lg:grid-cols-[0.9fr_1.1fr]">
-        <div>
+      <div className="mx-auto max-w-6xl px-6 py-20 sm:py-24">
+        <div className="max-w-2xl">
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            You type it like you&apos;d say it. It goes and does it.
+            Here&apos;s the same 7am, with and without it.
           </h2>
-          <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
-            <p>
-              No menus to learn. No twelve tabs. You tell Pocket Agent what you
-              need in the same plain words you&apos;d use texting an employee —
-              and it figures out the steps, pulls from what it already knows
-              about your business, and uses your own tools to get it done.
-            </p>
-            <p>
-              The part that matters: it shows you the work before it happens.
-              You read the email, glance at the invoice, and tap{" "}
-              <span className="text-slate-100">send</span> — or change it. The
-              agent does the chasing. You make the call.
-            </p>
-          </div>
+          <p className="mt-5 text-lg leading-relaxed text-slate-400">
+            A rep needs the supplement template. One version of that morning ends
+            with the wrong scope signed. The other ends with you tapping approve
+            over coffee.
+          </p>
         </div>
-        <ChatMock />
+        <div className="mt-12">
+          <BeforeAfter />
+        </div>
+        <p className="mt-6 max-w-3xl text-sm leading-relaxed text-slate-500">
+          That second column is how Patrick at Fresh Page Home Improvement, a
+          Pocket Agent customer, uses it to brief his reps in the field. Styled
+          example — swapped for real screen captures as the feature ships.
+        </p>
       </div>
     </section>
   );
@@ -239,10 +238,11 @@ function FounderLetter() {
           </p>
           <p>
             The breaking point wasn&apos;t dramatic. It was a Tuesday. Tennessee
-            Valley Exteriors needed a supplement sent to a homeowner. Patrick at
-            Fresh Page Home Improvement was waiting on a change to his site.
-            AthleteOS was sitting half-finished because I never got an hour to
-            myself. Every one of those was an hour of me re-explaining where
+            Valley Exteriors needed a supplement sent to a homeowner. A client —
+            Patrick, who runs Fresh Page Home Improvement — was waiting on me to
+            ship something. AthleteOS was sitting half-finished because I never
+            got an hour to myself. Every one of those was an hour of me
+            re-explaining where
             things stood to whatever tool I&apos;d opened. The tools were smart.
             They just forgot me the second I closed the tab.
           </p>
@@ -286,7 +286,7 @@ const FEATURES = [
   },
   {
     title: "The plan before the work",
-    body: "Give it something real — “follow up on the three open quotes and send Patrick his proposal” — and it lays out the steps before it touches anything. You see the plan, change what you want, and approve it. Then it works against a plan you signed off on, not a black box.",
+    body: "Give it something real — “follow up on the three open quotes and send the Reyes proposal” — and it lays out the steps before it touches anything. You see the plan, change what you want, and approve it. Then it works against a plan you signed off on, not a black box.",
   },
   {
     title: "Connected to the tools you already use",

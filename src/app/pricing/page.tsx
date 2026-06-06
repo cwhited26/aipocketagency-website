@@ -41,7 +41,7 @@ const TIERS: Tier[] = [
     name: "Starter",
     price: "$37",
     cadence: "/mo",
-    tagline: "The brain.",
+    tagline: "You want a chat that remembers what you teach it.",
     body:
       "Pocket Agent remembers how your business runs and drafts the work — the daily brief, the email in your voice, the customer reply with the source attached, the decision you made three months ago found in seconds. One operator: you. This is the notebook that finally doesn't forget.",
     unlocks: [
@@ -57,7 +57,7 @@ const TIERS: Tier[] = [
     name: "Pro",
     price: "$97",
     cadence: "/mo",
-    tagline: "The operator turns on.",
+    tagline: "You want to delegate the parts you keep doing by hand.",
     featured: true,
     body:
       "This is where it stops being a notebook and starts doing the work. Tell it what needs doing and it runs the steps across your tools — drafts the email and sends it, stages the invoice, sets the appointment — with your okay on anything that leaves the building. And you can build specialists your team asks instead of asking you.",
@@ -74,7 +74,7 @@ const TIERS: Tier[] = [
     name: "Pro+",
     price: "$149",
     cadence: "/mo",
-    tagline: "More room to run.",
+    tagline: "You want your team asking the bot instead of you.",
     body:
       "More tools it can act on, more specialists, and your first agent you can put in front of customers on a private link. For when one team and one inbox stopped being the whole picture.",
     unlocks: [
@@ -89,7 +89,7 @@ const TIERS: Tier[] = [
     name: "Studio",
     price: "$297",
     cadence: "/mo",
-    tagline: "Your name on it.",
+    tagline: "You want Pocket Agent on your website, working while you sleep.",
     body:
       "Every tool connected, an agent embedded on your own website catching leads while you sleep, and your branding instead of ours. For the business with a site, a team, and more work than one person can shepherd.",
     unlocks: [
@@ -105,7 +105,7 @@ const TIERS: Tier[] = [
     name: "Studio+",
     price: "$497",
     cadence: "/mo",
-    tagline: "Run them all.",
+    tagline: "You want every part of your business running through one chat.",
     body:
       "For owners running more than one site or a growing team — every specialist, every connection, room to run them all at once. The ceiling before custom.",
     unlocks: [
@@ -119,7 +119,7 @@ const TIERS: Tier[] = [
   {
     name: "Enterprise",
     price: "Let's talk",
-    tagline: "Past the ceiling.",
+    tagline: "You want a private deployment, your data on your terms.",
     body:
       "Private setup, dedicated infrastructure, as much as your operation needs. If you're already past Studio+, we'll build the plan around you.",
     unlocks: [
@@ -195,8 +195,8 @@ function TierCard({ tier }: { tier: Tier }) {
         <span className="text-4xl font-extrabold text-slate-100">{tier.price}</span>
         {tier.cadence ? <span className="text-base text-slate-500">{tier.cadence}</span> : null}
       </div>
-      <div className="mt-1 text-sm font-medium text-slate-300">{tier.tagline}</div>
-      <p className="mt-4 text-sm leading-relaxed text-slate-400">{tier.body}</p>
+      <p className="mt-4 text-[15px] font-semibold leading-snug text-slate-100">{tier.tagline}</p>
+      <p className="mt-3 text-sm leading-relaxed text-slate-400">{tier.body}</p>
       <ul className="mt-6 space-y-2.5">
         {tier.unlocks.map((u) => (
           <li key={u} className="flex items-start gap-2.5 text-sm text-slate-300">
