@@ -12,8 +12,8 @@ const MESSAGES: Record<string, { title: string; body: string; kind: "success" | 
     kind: "success",
   },
   not_configured: {
-    title: "Not configured yet",
-    body: "Gmail connections are being set up — they'll be available soon.",
+    title: "Gmail sign-in unavailable",
+    body: "Gmail connections are live, but this workspace's Google sign-in isn't enabled. Contact support and we'll switch it on.",
     kind: "error",
   },
   error: {
@@ -36,7 +36,6 @@ export default async function ConnectionsPage({
 
   const gmailResult = await fetchGmailConnectionPublic(user.id);
   const gmail = gmailResult.ok ? gmailResult.data : null;
-  const oauthConfigured = Boolean(process.env.GMAIL_OAUTH_CLIENT_ID);
 
   const message = searchParams.connection ? MESSAGES[searchParams.connection] ?? null : null;
 
@@ -76,10 +75,7 @@ export default async function ConnectionsPage({
           </div>
         )}
 
-        <GmailConnectionCard
-          connection={gmail}
-          oauthConfigured={oauthConfigured}
-        />
+        <GmailConnectionCard connection={gmail} />
 
         <p className="text-xs text-slate-600 leading-relaxed">
           Gmail access lets your agent read incoming mail and archive a thread when you tap

@@ -19,6 +19,23 @@ export class OrchestratorDbError extends Error {
     this.name = "OrchestratorDbError";
     this.status = status;
   }
+
+  /**
+   * True when the failure is "the orchestrator schema (migration 021) isn't provisioned in
+   * this Supabase project yet" — PostgREST answers an unknown relation with 404 + PGRST205
+   * ("Could not find the table … in the schema cache"). Wave B ships dark behind
+   * PA_ORCHESTRATOR_ENABLED and the table can legitimately not exist yet, so callers that
+   * surface owner-facing settings treat this as "nothing staged" rather than a hard 500.
+   */
+  get schemaNotProvisioned(): boolean {
+    if (this.status !== 404) return false;
+    const m = this.message.toLowerCase();
+    return (
+      m.includes("pgrst205") ||
+      m.includes("could not find the table") ||
+      m.includes("does not exist")
+    );
+  }
 }
 
 function env(): { url: string; key: string } {

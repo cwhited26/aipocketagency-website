@@ -34,6 +34,8 @@ type InboxCard = {
   email: { to: string; subject: string; body: string } | null;
   triage: TriageDetail | null;
   action: ActionApprovalDetail | null;
+  sourceSurface: string | null;
+  threadId: string | null;
 };
 
 type InboxResponse = { cards: InboxCard[]; provisioned: boolean };
@@ -92,20 +94,18 @@ function DraftCard({
     setBusy("approve");
     setErr(null);
     try {
-      const res = await fetch(approveEndpoint(card), { method: "POST", cache: "no-store" });
+      // For email drafts, send the (possibly edited) recipient / subject / body so
+      // the server sends the final version live via the Gmail connector — AS the user,
+      // threaded into the original conversation, no external mail-app hand-off.
+      const init: RequestInit = { method: "POST", cache: "no-store" };
+      if (isEmail) {
+        init.headers = { "Content-Type": "application/json" };
+        init.body = JSON.stringify({ to: to.trim(), subject: subject.trim(), body });
+      }
+      const res = await fetch(approveEndpoint(card), init);
       if (!res.ok) {
         const b = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(b.error ?? `Approve failed (${res.status})`);
-      }
-      if (isEmail) {
-        // Hand the send back to the user: copy the (possibly edited) body and
-        // open their mail client pre-filled. Live Gmail send arrives with Connections.
-        await navigator.clipboard.writeText(body).catch(() => {});
-        const query = new URLSearchParams();
-        if (subject.trim()) query.set("subject", subject.trim());
-        if (body.trim()) query.set("body", body);
-        const qs = query.toString();
-        window.location.href = `mailto:${encodeURIComponent(to.trim())}${qs ? `?${qs}` : ""}`;
       }
       onResolved(card.id, "approved");
     } catch (e) {
@@ -172,8 +172,8 @@ function DraftCard({
 
       {isEmail && (
         <p className="mt-3 text-[11px] text-slate-600 leading-relaxed">
-          Approving copies the email and opens your mail app to send — it doesn&apos;t send on its
-          own.
+          Approving sends this reply from your Gmail — threaded into the original conversation and
+          saved to your Sent folder.
         </p>
       )}
 
@@ -233,15 +233,47 @@ async function postTriageAction(threadId: string, action: "handle" | "archive"):
   }
 }
 
+// Pull the bare address out of a Gmail From header (`"Name" <addr>` or `addr`).
+function addressOf(from: string): string {
+  const match = from.match(/<([^>]+)>/);
+  return (match ? match[1] : from).trim();
+}
+
+function replySubject(subject: string): string {
+  const s = subject.trim();
+  if (!s) return "Re:";
+  return /^re:/i.test(s) ? s : `Re: ${s}`;
+}
+
+// The brief handed to the Email Drafter for an in-Inbox reply — mirrors what the
+// old /app/capture/draft hop built server-side, now built right where the user is.
+function buildReplyBrief(triage: TriageDetail): string {
+  const sender = senderLabel(triage.from);
+  const parts = [
+    `Reply to ${sender}${triage.subject ? ` about "${triage.subject}"` : ""}.`,
+    triage.snippet ? `Their message: "${triage.snippet}"` : "",
+    "Acknowledge, answer their question, and propose a clear next step.",
+  ];
+  return parts.filter(Boolean).join(" ");
+}
+
 function TriageCard({
   card,
+  replyDraft,
   onResolved,
+  onDraftStaged,
 }: {
   card: InboxCard;
+  // A reply drafted from within the Inbox for this thread, rendered inline below
+  // (source_surface='inbox'). Null until the user taps "Draft me a reply".
+  replyDraft: InboxCard | null;
   onResolved: (id: string, status: "approved" | "rejected") => void;
+  onDraftStaged: (card: InboxCard) => void;
 }) {
   const [busy, setBusy] = useState<"handle" | "archive" | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [drafting, setDrafting] = useState(false);
+  const [draftErr, setDraftErr] = useState<string | null>(null);
   const triage = card.triage;
   if (!triage) return null;
 
@@ -258,9 +290,77 @@ function TriageCard({
     }
   }
 
-  const replyHref = `/app/capture/draft?context=email_triage&threadId=${encodeURIComponent(
-    triage.threadId,
-  )}`;
+  // Draft the reply right here in the Inbox: generate with the Email Drafter, then
+  // stage it tagged source_surface='inbox' so it renders inline on this thread
+  // (never buried in the generic drafts list). No navigation, no scroll-hunting.
+  async function draftReply() {
+    if (drafting || replyDraft) return;
+    setDrafting(true);
+    setDraftErr(null);
+    try {
+      const genRes = await fetch("/api/app/apps/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "quick", brief: buildReplyBrief(triage!) }),
+        cache: "no-store",
+      });
+      if (!genRes.ok) {
+        const b = (await genRes.json().catch(() => ({}))) as { error?: string; message?: string };
+        throw new Error(
+          b.error === "no_api_key"
+            ? "Add your Anthropic API key in Settings to draft replies."
+            : b.message ?? b.error ?? `Couldn't draft a reply (${genRes.status})`,
+        );
+      }
+      const gen = (await genRes.json()) as {
+        draft: string;
+        citations: { file: string; line: string }[];
+      };
+
+      const to = addressOf(triage!.from);
+      const subject = replySubject(triage!.subject);
+      const stageRes = await fetch("/api/app/inbox", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to,
+          subject,
+          body: gen.draft,
+          citations: gen.citations,
+          threadId: triage!.threadId,
+          sourceSurface: "inbox",
+        }),
+        cache: "no-store",
+      });
+      if (!stageRes.ok) {
+        const b = (await stageRes.json().catch(() => ({}))) as { error?: string };
+        throw new Error(b.error ?? `Couldn't stage the reply (${stageRes.status})`);
+      }
+      const { item } = (await stageRes.json()) as { item: { id: string; created_at: string } };
+
+      onDraftStaged({
+        id: item.id,
+        system: "inbox",
+        kind: "draft",
+        status: "pending",
+        title: subject || `Email to ${to}`,
+        source: "Email Drafter",
+        preview: gen.draft.replace(/\s+/g, " ").trim().slice(0, 180),
+        bodyMd: gen.draft,
+        createdAt: item.created_at,
+        resolvedAt: null,
+        email: { to, subject, body: gen.draft },
+        triage: null,
+        action: null,
+        sourceSurface: "inbox",
+        threadId: triage!.threadId,
+      });
+    } catch (e) {
+      setDraftErr(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setDrafting(false);
+    }
+  }
 
   return (
     <div className="rounded-2xl border border-[#22d3ee]/15 bg-slate-900/60 p-4 sm:p-5">
@@ -301,12 +401,13 @@ function TriageCard({
         >
           {busy === "handle" ? "…" : "I'll handle"}
         </button>
-        <Link
-          href={replyHref}
-          className="flex-1 min-h-[44px] flex items-center justify-center py-3 px-3 rounded-xl bg-[#22d3ee] hover:bg-[#06b6d4] text-[#031820] text-sm font-semibold transition-colors text-center"
+        <button
+          onClick={() => void draftReply()}
+          disabled={busy !== null || drafting || replyDraft !== null}
+          className="flex-1 min-h-[44px] py-3 px-3 rounded-xl bg-[#22d3ee] hover:bg-[#06b6d4] text-[#031820] text-sm font-semibold transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Draft me a reply
-        </Link>
+          {drafting ? "Drafting…" : replyDraft ? "Reply drafted ↓" : "Draft me a reply"}
+        </button>
         <button
           onClick={() => void runAction("archive")}
           disabled={busy !== null}
@@ -316,6 +417,18 @@ function TriageCard({
           {busy === "archive" ? "…" : "Archive"}
         </button>
       </div>
+
+      {draftErr && <p className="mt-3 text-xs text-red-400 font-mono">{draftErr}</p>}
+
+      {/* The reply drafted from here approves inline — never re-staged to the bottom of the Inbox. */}
+      {replyDraft && (
+        <div className="mt-4 border-t border-slate-800/60 pt-4">
+          <p className="text-[10px] font-mono text-[#22d3ee]/70 uppercase tracking-[0.18em] mb-2">
+            Your drafted reply
+          </p>
+          <DraftCard card={replyDraft} onResolved={onResolved} />
+        </div>
+      )}
     </div>
   );
 }
@@ -609,10 +722,41 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
     );
   }
 
+  // A reply just drafted from within the Inbox: drop it in so its TriageCard
+  // renders it inline immediately, no refetch and no scroll.
+  function onDraftStaged(card: InboxCard) {
+    setCards((prev) => [card, ...prev]);
+  }
+
   const triage = cards.filter((c) => c.kind === "email_triage" && c.status === "pending");
   const actions = cards.filter((c) => c.kind === "action_approval" && c.status === "pending");
-  const drafts = cards.filter((c) => c.kind === "draft" && c.status === "pending");
   const decisions = cards.filter((c) => c.kind === "decision" && c.status === "pending");
+
+  // Replies drafted from within the Inbox (source_surface='inbox') render inline on
+  // their originating triage thread instead of in the generic drafts list. Map them
+  // by thread for the still-pending triage cards; anything orphaned (its thread was
+  // already resolved) falls back to the generic drafts list so it never vanishes.
+  const pendingTriageThreadIds = new Set(
+    triage.map((c) => c.triage?.threadId).filter((t): t is string => Boolean(t)),
+  );
+  const inlineReplyByThread = new Map<string, InboxCard>();
+  for (const c of cards) {
+    if (
+      c.kind === "draft" &&
+      c.status === "pending" &&
+      c.sourceSurface === "inbox" &&
+      c.threadId &&
+      pendingTriageThreadIds.has(c.threadId)
+    ) {
+      inlineReplyByThread.set(c.threadId, c);
+    }
+  }
+  const drafts = cards.filter(
+    (c) =>
+      c.kind === "draft" &&
+      c.status === "pending" &&
+      !(c.sourceSurface === "inbox" && c.threadId && pendingTriageThreadIds.has(c.threadId)),
+  );
   const resolved = cards
     .filter((c) => c.status !== "pending")
     .slice(0, 20);
@@ -667,7 +811,15 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
                 </div>
                 <div className="flex flex-col gap-3">
                   {triage.map((card) => (
-                    <TriageCard key={card.id} card={card} onResolved={onResolved} />
+                    <TriageCard
+                      key={card.id}
+                      card={card}
+                      replyDraft={
+                        card.triage ? inlineReplyByThread.get(card.triage.threadId) ?? null : null
+                      }
+                      onResolved={onResolved}
+                      onDraftStaged={onDraftStaged}
+                    />
                   ))}
                 </div>
               </section>
@@ -762,7 +914,7 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
           <div className="flex items-start gap-3">
             <div className="w-1.5 h-1.5 rounded-full bg-slate-700 mt-1.5 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-slate-400">Live email triage</p>
+              <p className="text-sm font-medium text-slate-400">Live email triage + send</p>
               <p className="text-sm text-slate-600 mt-1 leading-relaxed">
                 <Link
                   href="/app/settings/connections"
@@ -771,8 +923,8 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
                   Connect Gmail
                 </Link>{" "}
                 and incoming mail lands here every few minutes — handle, reply, or archive in one
-                tap. Approving an email draft still copies it and opens your mail app to send;
-                live send-on-approval is next.
+                tap. Approving a drafted reply sends it from your Gmail, threaded into the original
+                conversation.
               </p>
             </div>
           </div>

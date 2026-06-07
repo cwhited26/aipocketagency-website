@@ -10,8 +10,7 @@ type AppDef = {
   label: string;
   description: string;
   tag: string;
-  tagColor?: "cyan" | "muted" | "soon";
-  comingSoonLabel?: string;
+  tagColor?: "cyan" | "muted";
 };
 
 const apps: AppDef[] = [
@@ -51,7 +50,7 @@ const apps: AppDef[] = [
     href: "/app/apps/inbox",
     label: "Inbox",
     description:
-      "Your agent's desk — drafts staged for your approval and items that need a yes or no. Live email sync arrives with Connections.",
+      "Your agent's desk — drafts staged for your approval and items that need a yes or no. Live email flows in through Connections, which is live now.",
     tag: "Queue",
     tagColor: "muted",
   },
@@ -59,7 +58,7 @@ const apps: AppDef[] = [
     href: "/app/apps/calendar",
     label: "Calendar",
     description:
-      "Upcoming items the agent knows about from your brain — scheduled jobs, deadlines, follow-up timelines. Live calendar sync arrives with Connections.",
+      "Upcoming items the agent knows about from your brain — scheduled jobs, deadlines, follow-up timelines. Live calendar sync is coming as a Connections integration.",
     tag: "Upcoming",
     tagColor: "muted",
   },

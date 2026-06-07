@@ -95,8 +95,8 @@ export default async function SettingsPage({
     };
   } else if (connectionParam === "not_configured") {
     connectionMessage = {
-      title: "Not configured yet",
-      body: "Google connections are being set up — they'll be available soon.",
+      title: "Google sign-in unavailable",
+      body: "Connections are live, but this workspace's Google sign-in isn't enabled. Contact support and we'll switch it on.",
       kind: "error",
     };
   } else if (connectionParam === "error") {

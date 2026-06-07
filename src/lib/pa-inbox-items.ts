@@ -164,31 +164,6 @@ export async function fetchGmailTriageThreadIds(
   return { ok: true, data: ids };
 }
 
-// Read a single gmail triage item by thread id (Email Drafter reply prefill).
-export async function fetchGmailTriageByThread(
-  userId: string,
-  threadId: string,
-): Promise<PaResult<InboxItem | null>> {
-  const env = paEnv();
-  if ("error" in env) return { ok: false, status: 500, error: env.error };
-
-  const res = await fetch(
-    `${env.url}/rest/v1/${TABLE}` +
-      `?user_id=eq.${encodeURIComponent(userId)}` +
-      `&kind=eq.email_triage` +
-      `&payload->>threadId=eq.${encodeURIComponent(threadId)}` +
-      `&order=created_at.desc&limit=1`,
-    { headers: authHeaders(env.key), cache: "no-store" },
-  );
-  if (!res.ok) {
-    const body = await res.text();
-    if (isMissingTable(res.status, body)) return { ok: true, data: null };
-    return { ok: false, status: res.status, error: body };
-  }
-  const rows = (await res.json()) as InboxItem[];
-  return { ok: true, data: rows[0] ?? null };
-}
-
 // Mark a triage item handled (archived / handed off). Looked up by the gmail
 // thread id since the action route only knows the thread, not our row id.
 export async function resolveGmailTriageByThread(

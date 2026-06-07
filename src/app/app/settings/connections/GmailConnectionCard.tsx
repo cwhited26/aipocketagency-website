@@ -26,10 +26,8 @@ function lastSyncLabel(iso: string | null): string | null {
 
 export default function GmailConnectionCard({
   connection,
-  oauthConfigured,
 }: {
   connection: GmailConnectionPublic | null;
-  oauthConfigured: boolean;
 }) {
   const router = useRouter();
   const [disconnecting, setDisconnecting] = useState(false);
@@ -101,17 +99,13 @@ export default function GmailConnectionCard({
                 {disconnecting ? "Disconnecting…" : "Disconnect"}
               </button>
             </>
-          ) : oauthConfigured ? (
+          ) : (
             <a
               href="/api/connections/gmail/start"
               className="inline-flex items-center rounded-lg bg-[#22d3ee] px-3.5 py-2 text-xs font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors"
             >
               {isError ? "Reconnect →" : "Connect Gmail →"}
             </a>
-          ) : (
-            <span className="text-[10px] font-mono text-slate-600 border border-slate-700/60 rounded px-2 py-1">
-              coming soon
-            </span>
           )}
         </div>
       </div>

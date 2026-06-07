@@ -221,7 +221,7 @@ export default async function LearnPage() {
             />
             <AppRow
               label="Calendar"
-              desc="Upcoming items from your brain. Live calendar sync arrives with Connections."
+              desc="Upcoming items from your brain. Live calendar sync is coming as a Connections integration."
               href="/app/apps/calendar"
               tag="Upcoming"
             />
@@ -266,21 +266,29 @@ export default async function LearnPage() {
             <div className="flex flex-col gap-2 mb-4">
               {[
                 {
-                  label: "Gmail (coming)",
+                  label: "Gmail",
                   desc: "Agent parses your inbox for action items and stages them in the approval queue.",
+                  live: true,
                 },
                 {
-                  label: "Google Calendar (coming)",
+                  label: "Google Calendar",
                   desc: "Live upcoming events surfaced in the Calendar app and Daily Brief.",
+                  live: false,
                 },
               ].map((item) => (
                 <div
                   key={item.label}
                   className="flex items-start gap-3 px-3 py-2.5 rounded-lg border border-slate-800/50 bg-slate-950/30"
                 >
-                  <span className="text-[10px] font-mono text-slate-600 border border-slate-700/40 rounded px-1.5 py-0.5 uppercase tracking-wider mt-0.5 shrink-0">
-                    soon
-                  </span>
+                  {item.live ? (
+                    <span className="text-[10px] font-mono text-[#22d3ee] border border-[#22d3ee]/30 rounded px-1.5 py-0.5 uppercase tracking-wider mt-0.5 shrink-0 bg-[#22d3ee]/5">
+                      live
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-slate-600 border border-slate-700/40 rounded px-1.5 py-0.5 uppercase tracking-wider mt-0.5 shrink-0">
+                      soon
+                    </span>
+                  )}
                   <div>
                     <p className="text-sm font-medium text-slate-300">{item.label}</p>
                     <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{item.desc}</p>

@@ -8,6 +8,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import {
+  OrchestratorDbError,
   fetchAutoApproveSetting,
   listAutoApproveSettings,
   setAutoApproveEnabled,
@@ -26,16 +27,28 @@ export async function GET(): Promise<NextResponse> {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const rows = await listAutoApproveSettings(user.id);
-  const settings = rows.map((r) => ({
-    connector: r.connector,
-    action: r.action,
-    enabled: r.enabled,
-    successCount: r.success_count,
-    unlocked: autoApproveUnlocked(r.success_count),
-    lastToggledAt: r.last_toggled_at,
-  }));
-  return NextResponse.json({ settings, trustWindow: AUTO_APPROVE_TRUST_WINDOW });
+  try {
+    const rows = await listAutoApproveSettings(user.id);
+    const settings = rows.map((r) => ({
+      connector: r.connector,
+      action: r.action,
+      enabled: r.enabled,
+      successCount: r.success_count,
+      unlocked: autoApproveUnlocked(r.success_count),
+      lastToggledAt: r.last_toggled_at,
+    }));
+    return NextResponse.json({ settings, trustWindow: AUTO_APPROVE_TRUST_WINDOW });
+  } catch (e) {
+    // Wave B ships dark behind PA_ORCHESTRATOR_ENABLED; until migration 021 is applied the
+    // trust-ladder table doesn't exist. Render the page's "nothing staged yet" empty state
+    // instead of a 500 — but only for that specific not-provisioned case. Any other DB
+    // failure still surfaces as an error the owner can see.
+    if (e instanceof OrchestratorDbError && e.schemaNotProvisioned) {
+      return NextResponse.json({ settings: [], trustWindow: AUTO_APPROVE_TRUST_WINDOW });
+    }
+    const status = e instanceof OrchestratorDbError ? e.status : 500;
+    return NextResponse.json({ error: "Failed to load auto-approve settings" }, { status });
+  }
 }
 
 const ToggleSchema = z.object({

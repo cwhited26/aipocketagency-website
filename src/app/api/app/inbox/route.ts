@@ -52,6 +52,11 @@ export type InboxCard = {
   email: { to: string; subject: string; body: string } | null;
   triage: TriageDetail | null;
   action: ActionApprovalDetail | null;
+  // The surface the draft was initiated from. 'inbox' means it was drafted from
+  // within the Inbox (a reply to a triaged thread) and is rendered inline on its
+  // originating thread instead of in the generic drafts list. threadId links it back.
+  sourceSurface: string | null;
+  threadId: string | null;
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -118,6 +123,8 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
       : null,
     triage,
     action,
+    sourceSurface: str(item.payload.sourceSurface) || null,
+    threadId: str(item.payload.threadId) || null,
   };
 }
 
@@ -148,6 +155,8 @@ function normalizeLegacyAction(action: PendingAction): InboxCard {
     email: null,
     triage: null,
     action: null,
+    sourceSurface: null,
+    threadId: null,
   };
 }
 
@@ -191,6 +200,18 @@ const createSchema = z.object({
     .array(z.object({ file: z.string(), line: z.string() }))
     .optional()
     .default([]),
+  // Reply threading context, carried from the source Gmail thread so an approved
+  // draft sends back into the original conversation (connector.gmail.send).
+  threadId: z.string().max(200).optional().default(""),
+  inReplyTo: z.string().max(500).optional().default(""),
+  // Which surface initiated this draft. 'inbox' = drafted from within the Inbox
+  // (a reply to a triaged thread) — the Inbox renders it inline on its thread
+  // rather than burying it in the generic drafts list. Everything else stages
+  // normally. Defaults to the Email Drafter app.
+  sourceSurface: z
+    .enum(["inbox", "email-app", "capture", "voice", "persona", "slash"])
+    .optional()
+    .default("email-app"),
 });
 
 export async function POST(req: Request): Promise<NextResponse> {
@@ -212,11 +233,21 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: parsed.error.message }, { status: 422 });
   }
 
-  const { to, subject, body, citations } = parsed.data;
+  const { to, subject, body, citations, threadId, inReplyTo, sourceSurface } = parsed.data;
   const trimmedSubject = subject.trim();
   const trimmedTo = to.trim();
   const title =
     trimmedSubject || (trimmedTo ? `Email to ${trimmedTo}` : "Drafted email");
+
+  const payload: Record<string, unknown> = {
+    to: trimmedTo,
+    subject: trimmedSubject,
+    body,
+    citations,
+    sourceSurface,
+  };
+  if (threadId.trim()) payload.threadId = threadId.trim();
+  if (inReplyTo.trim()) payload.inReplyTo = inReplyTo.trim();
 
   const result = await createInboxItem({
     userId: user.id,
@@ -224,7 +255,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     title,
     bodyMd: body,
     source: "email-drafter",
-    payload: { to: trimmedTo, subject: trimmedSubject, body, citations },
+    payload,
   });
 
   if (!result.ok) {
