@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import FileUploadZone from "../_components/FileUploadZone";
 import { TabGuide } from "../_components/TabGuide";
+import YouTubeExplainerCard from "@/components/youtube/ExplainerCard";
 
 type CompletenessData = { filled: number; total: number; pct: number };
 
@@ -246,8 +247,17 @@ export default function FeedBrainClient({
           </>
         )}
 
+        {/* Capturing a YouTube link is a first-class capture too — show the four use cases. */}
+        <YouTubeExplainerCard />
+
         {/* First-touch guide — what this connects to, and a sample absorbed item */}
         <TabGuide
+          prompts={[
+            "Drop a competitor's product launch video here — I'll log what they actually claimed",
+            "Share a Russell Brunson or Hormozi clip — I'll add the techniques to your voice influences",
+            "Send a customer testimonial video — I'll pull the quotes for your landing page",
+            "Forward an industry update from a contractor channel — I'll summarize and roll it into your weekly brief",
+          ]}
           worksWith={[
             {
               href: "/app/brain",

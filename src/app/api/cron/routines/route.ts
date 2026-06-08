@@ -15,6 +15,8 @@ import {
 import type { DigestPayload } from "@/lib/pa-drafts";
 import { createInboxItem } from "@/lib/pa-inbox-items";
 import { notifyDailyBriefReady } from "@/lib/connectors/system";
+import { fetchYouTubePrefs } from "@/lib/youtube/prefs";
+import { fetchRecentYouTubeIngests, buildYouTubeBriefSection } from "@/lib/youtube/recent";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,6 +84,15 @@ export async function GET(req: Request): Promise<NextResponse> {
       if (kind === "daily_brief") {
         const r = await generateDailyBrief(anthropic_api_key, brain_repo, github_token);
         content = r.brief;
+        // Opt-in: fold in what the owner sent PA on YouTube in the last 24h, with each video's
+        // use-case bucket, so the brief reflects the day's video intake.
+        const prefs = await fetchYouTubePrefs(routine.user_id);
+        if (prefs.dailyBriefInclude) {
+          const sinceIso = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+          const recent = await fetchRecentYouTubeIngests(routine.user_id, { sinceIso, limit: 20 });
+          const section = buildYouTubeBriefSection(recent);
+          if (section) content = `${content}\n\n${section}`;
+        }
       } else if (kind === "followup_sweep") {
         const r = await generateFollowUpsDraft({ context: "" }, anthropic_api_key, brain_repo, github_token);
         content = r.draft;

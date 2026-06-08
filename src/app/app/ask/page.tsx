@@ -8,6 +8,7 @@ import {
 import { listScaffolds, type ScaffoldEntry } from "@/lib/pa-brain";
 import { fetchGmailConnectionPublic } from "@/lib/pa-gmail-connections";
 import { fetchCalendarConnectionPublic } from "@/lib/pa-calendar-connections";
+import { fetchYouTubePrefs } from "@/lib/youtube/prefs";
 import { redirect } from "next/navigation";
 import HomeClient from "./HomeClient";
 
@@ -33,11 +34,12 @@ export default async function AskPage({
 
   // The Agent landing is the mascot page: the Ask box, the recent-threads list, and in-flight
   // plans all live here, so load them alongside the sidebar conversations.
-  const [convsResult, threadsResult, gmailResult, calendarResult] = await Promise.all([
+  const [convsResult, threadsResult, gmailResult, calendarResult, youtubePrefs] = await Promise.all([
     listConversations(user.id),
     listConversationThreads(user.id),
     fetchGmailConnectionPublic(user.id),
     fetchCalendarConnectionPublic(user.id),
+    fetchYouTubePrefs(user.id),
   ]);
   const initialConversations = convsResult.ok ? convsResult.data : [];
   const threads: ConversationThread[] = threadsResult.ok ? threadsResult.data : [];
@@ -63,6 +65,7 @@ export default async function AskPage({
       scaffolds={scaffolds}
       initialConversationId={searchParams.c ?? null}
       initialQuery={searchParams.q ?? null}
+      youtubeHintInitiallyVisible={!youtubePrefs.chatHintDismissed}
     />
   );
 }

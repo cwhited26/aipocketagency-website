@@ -37,11 +37,22 @@ function VideoBlock({ video }: { video: YouTubeIngestVideo }) {
             {video.title}
           </a>
           <p className="mt-0.5 text-[11px] font-mono text-slate-500 truncate">{video.channel}</p>
-          {video.summary && (
-            <p className="mt-1 text-[12px] text-slate-400 leading-snug line-clamp-3">{video.summary}</p>
-          )}
+          {/* The bucket-specific lead — what PA actually did with the video. */}
+          <p className="mt-1 text-[11px] font-medium text-[#22d3ee]/80 leading-snug">
+            {video.framingHeadline}
+          </p>
         </div>
       </div>
+      {video.bucketDetail && (
+        <div className="border-t border-slate-800/60 px-3 py-2">
+          <p className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">
+            {video.detailLabel}
+          </p>
+          <p className="mt-1 text-[12px] text-slate-300 leading-relaxed whitespace-pre-wrap">
+            {video.bucketDetail}
+          </p>
+        </div>
+      )}
       <div className="flex items-center gap-3 border-t border-slate-800/60 px-3 py-1.5">
         <button
           onClick={() => setShowTranscript((v) => !v)}

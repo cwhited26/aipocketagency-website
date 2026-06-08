@@ -11,10 +11,21 @@ import { z } from "zod";
 
 export const YOUTUBE_INGEST_KIND = "youtube_ingest" as const;
 
+/** The use-case bucket the classifier assigned — drives the card's lead framing + brain routing. */
+export const YOUTUBE_BUCKETS = ["competitor", "tactic", "testimonial", "industry", "default"] as const;
+
 export const YouTubeIngestVideoSchema = z.object({
   videoId: z.string().min(1).max(20),
   title: z.string().max(500),
   channel: z.string().max(300),
+  /** Use-case bucket (competitor / tactic / testimonial / industry / default). */
+  bucket: z.enum(YOUTUBE_BUCKETS),
+  /** The bucket-specific lead line, e.g. "Logged what they claimed — added to your competitive intel." */
+  framingHeadline: z.string().max(300),
+  /** Short label for the detail block, e.g. "What they claimed" / "Techniques" / "Lift-and-paste quotes". */
+  detailLabel: z.string().max(80),
+  /** The bucket-specific extraction (claims paragraph / techniques bullets / quotes / rundown / summary). */
+  bucketDetail: z.string().max(6000),
   /** Thumbnail URL (Data API best thumb, or the default i.ytimg.com hqdefault). */
   thumbnailUrl: z.string().max(1000),
   /** Canonical watch URL, shown as the "Watch on YouTube" link. */

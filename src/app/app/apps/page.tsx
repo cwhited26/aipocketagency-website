@@ -5,6 +5,7 @@ import Link from "next/link";
 import { GlowCard } from "../_components/GlowCard";
 import { TabGuide } from "../_components/TabGuide";
 import { StarterBox } from "../_components/StarterBox";
+import YouTubeExplainerCard from "@/components/youtube/ExplainerCard";
 
 type AppDef = {
   href: string;
@@ -52,6 +53,14 @@ const apps: AppDef[] = [
     label: "Upcoming (from brain)",
     description:
       "Scans your brain for anything date or deadline related — scheduled jobs, deadlines, follow-up timelines. For live events, see Calendar in the sidebar.",
+    tag: "Reads Brain",
+    tagColor: "cyan",
+  },
+  {
+    href: "/app/apps/youtube",
+    label: "YouTube",
+    description:
+      "Drop a YouTube link — PA reads the video, files what matters in your brain by use case, and watches channels so you catch every new upload.",
     tag: "Reads Brain",
     tagColor: "cyan",
   },
@@ -145,6 +154,10 @@ export default async function AppsPage() {
           </div>
         )}
 
+        <div className="mb-6">
+          <YouTubeExplainerCard />
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {apps.map((app) => (
             <GlowCard key={app.href} href={app.href} className="px-5 py-5 group">
@@ -191,7 +204,18 @@ export default async function AppsPage() {
         {/* First-touch guide — what to ask, what this connects to, and a sample output */}
         <div className="mt-8">
           <TabGuide
+            prompts={[
+              "Drop a competitor's product launch video here — I'll log what they actually claimed",
+              "Share a Russell Brunson or Hormozi clip — I'll add the techniques to your voice influences",
+              "Send a customer testimonial video — I'll pull the quotes for your landing page",
+              "Forward an industry update from a contractor channel — I'll summarize and roll it into your weekly brief",
+            ]}
             worksWith={[
+              {
+                href: "/app/apps/youtube",
+                label: "YouTube",
+                blurb: "Drop a link or watch a channel — PA reads the video and files what matters.",
+              },
               {
                 href: "/app/projects",
                 label: "Projects",

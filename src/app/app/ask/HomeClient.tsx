@@ -630,6 +630,8 @@ function HubView({
   addFiles,
   removeAttachment,
   attachError,
+  youtubeHint,
+  onDismissYouTubeHint,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
@@ -649,6 +651,9 @@ function HubView({
   addFiles: (files: FileList | null) => void;
   removeAttachment: (index: number) => void;
   attachError: string | null;
+  // One-time first-touch hint that PA reads YouTube links dropped into the chat box.
+  youtubeHint: boolean;
+  onDismissYouTubeHint: () => void;
 }) {
   return (
     <div className="h-full overflow-y-auto" style={{ animation: "hub-fadein 0.4s ease-out" }}>
@@ -686,6 +691,25 @@ function HubView({
           leaves your hands — an email, a meeting, an invoice — in Mission Control for you to approve.
           Big asks with several steps become a plan you sign off on first.
         </p>
+
+        {/* First-touch hint: PA reads YouTube links too. Shown once, dismissable. */}
+        {youtubeHint && (
+          <div className="rounded-lg border border-[#22d3ee]/25 bg-[#22d3ee]/5 px-4 py-3 flex items-start gap-3">
+            <span className="shrink-0 text-[#22d3ee] mt-0.5 text-sm">▶</span>
+            <p className="flex-1 text-sm text-slate-200 leading-relaxed">
+              You can drop YouTube links here too — PA reads the video, pulls what matters into your
+              brain, and answers like it watched the whole thing.
+            </p>
+            <button
+              type="button"
+              onClick={onDismissYouTubeHint}
+              className="shrink-0 text-slate-500 hover:text-slate-300 transition-colors text-xs font-mono"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Input — the primary interaction, first thing under the mascot */}
         {!hasApiKey ? (
@@ -1013,6 +1037,7 @@ export default function HomeClient({
   scaffolds,
   initialConversationId,
   initialQuery,
+  youtubeHintInitiallyVisible,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
@@ -1030,6 +1055,8 @@ export default function HomeClient({
   // When the owner taps a starter prompt on the Projects page (/app/ask?q=<text>), this seeds
   // the composer so they land with the ask already typed and can edit before sending.
   initialQuery: string | null;
+  // First time on the chat box (and not yet dismissed) → show the "PA reads YouTube links" hint.
+  youtubeHintInitiallyVisible: boolean;
 }) {
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [activeConvId, setActiveConvId] = useState<string | null>(initialConversationId);
@@ -1039,12 +1066,21 @@ export default function HomeClient({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [attachError, setAttachError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [youtubeHint, setYoutubeHint] = useState(youtubeHintInitiallyVisible);
   // Post-reply flourish — drives the mascot through tool_calling → responding → done
   // once a reply lands, then clears back to null. null means "let isLoading/typing decide."
   const [replyPhase, setReplyPhase] = useState<MascotState | null>(null);
   const flourishTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Dismiss the one-time "PA reads YouTube links" hint: hide it now, persist so it never returns.
+  function dismissYouTubeHint(): void {
+    setYoutubeHint(false);
+    void fetch("/api/app/youtube/first-touch", { method: "POST" }).catch(() => {
+      // A persistence miss only means the hint may reappear next load — not worth surfacing.
+    });
+  }
 
   // Single source of truth for the creature's mood, shared by the Hub mascot and
   // the in-thread reply indicator: explicit flourish wins, else in-flight = thinking,
@@ -1445,6 +1481,8 @@ export default function HomeClient({
             addFiles={addFiles}
             removeAttachment={removeAttachment}
             attachError={attachError}
+            youtubeHint={youtubeHint}
+            onDismissYouTubeHint={dismissYouTubeHint}
           />
         )}
       </div>

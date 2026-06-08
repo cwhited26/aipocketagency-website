@@ -19,6 +19,12 @@ import { fetchVideoMetadata, type YouTubeMetadata } from "@/lib/youtube/metadata
 import { transcribeYouTubeAudio } from "@/lib/youtube/whisper-fallback";
 import { recordYouTubeIngest } from "@/lib/youtube/log";
 import {
+  classifyBucket,
+  extractBucketDetail,
+  BUCKET_FRAMINGS,
+  type UseCaseBucket,
+} from "@/lib/youtube/classify";
+import {
   YOUTUBE_INGEST_KIND,
   type YouTubeIngestVideo,
   type YouTubeIngestPayload,
@@ -98,12 +104,37 @@ function slugify(input: string, fallback: string): string {
   return slug || fallback;
 }
 
-/** brain/youtube/<channel-slug>/<YYYY-MM-DD>-<title-slug>.md */
-export function brainNotePath(channel: string, title: string, dateIso: string): string {
+/** <dir>/<channel-slug>/<YYYY-MM-DD>-<title-slug>.md — dir defaults to brain/youtube, but the
+ *  classifier routes competitor/tactic/testimonial notes to their own brain areas. */
+export function brainNotePath(
+  channel: string,
+  title: string,
+  dateIso: string,
+  dir = "brain/youtube",
+): string {
   const channelSlug = slugify(channel, "unknown-channel");
   const titleSlug = slugify(title, "video");
   const date = dateIso.slice(0, 10);
-  return `brain/youtube/${channelSlug}/${date}-${titleSlug}.md`;
+  return `${dir}/${channelSlug}/${date}-${titleSlug}.md`;
+}
+
+/** Builds a timestamped transcript (`[mm:ss] line`) from caption segments, capped, so the
+ *  testimonial/industry extractions can cite moments. Whisper transcripts have no segments → "". */
+export function timestampedTranscript(
+  segments: Array<{ start: number; text: string }>,
+  maxChars = 28_000,
+): string {
+  const lines: string[] = [];
+  let total = 0;
+  for (const seg of segments) {
+    const mm = Math.floor(seg.start / 60);
+    const ss = Math.floor(seg.start % 60);
+    const line = `[${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}] ${seg.text}`;
+    if (total + line.length > maxChars) break;
+    lines.push(line);
+    total += line.length + 1;
+  }
+  return lines.join("\n");
 }
 
 // ── Summary ──────────────────────────────────────────────────────────────────────
@@ -170,6 +201,9 @@ function buildNoteMarkdown(params: {
   metaNote: string | null;
   fullText: string;
   summary: string;
+  bucket: UseCaseBucket;
+  detailLabel: string;
+  bucketDetail: string;
   source: InboundSurface;
   captionSource: "captions" | "whisper";
   ingestedAt: string;
@@ -194,6 +228,7 @@ function buildNoteMarkdown(params: {
     yaml("view_count", meta?.viewCount ?? 0),
     yaml("like_count", meta?.likeCount ?? 0),
     yaml("source_inbound_surface", params.source),
+    yaml("use_case_bucket", params.bucket),
     yaml("captions", params.captionSource),
     yaml("ingested_at", params.ingestedAt),
     "metadata:",
@@ -208,7 +243,12 @@ function buildNoteMarkdown(params: {
     body.push("", "_No captions were available — this transcript was generated from the audio (Whisper)._");
   }
   if (params.metaNote) body.push("", `_Note: ${params.metaNote}_`);
-  body.push("", "## Summary", "", params.summary);
+  // The bucket-specific extraction leads (claims / techniques / quotes / rundown); the generic
+  // summary still follows for non-default buckets so the note has both the angle and the overview.
+  body.push("", `## ${params.detailLabel}`, "", params.bucketDetail);
+  if (params.bucket !== "default" && params.summary.trim() && params.summary.trim() !== params.bucketDetail.trim()) {
+    body.push("", "## Summary", "", params.summary);
+  }
   if (meta?.description) body.push("", "## Description", "", meta.description);
   body.push("", "## Transcript", "", params.fullText.trim());
 
@@ -221,7 +261,9 @@ function buildContextBlock(params: {
   channel: string;
   url: string;
   brainPath: string;
-  summary: string;
+  framingHeadline: string;
+  detailLabel: string;
+  bucketDetail: string;
   fullText: string;
 }): string {
   const truncated = params.fullText.length > CONTEXT_TRANSCRIPT_CHARS;
@@ -229,8 +271,8 @@ function buildContextBlock(params: {
   const lines = [
     `[YouTube video ingested from ${SURFACE_LABELS[params.source]}: "${params.title}" — ${params.channel}]`,
     `Watch: ${params.url}`,
-    `Saved to the brain at ${params.brainPath}.`,
-    `Summary: ${params.summary}`,
+    `${params.framingHeadline} Saved to the brain at ${params.brainPath}.`,
+    `${params.detailLabel}: ${params.bucketDetail}`,
     `Transcript${truncated ? " (excerpt — full text is in the brain note)" : ""}:`,
     transcript,
   ];
@@ -265,9 +307,11 @@ export async function ingestYouTubeVideo(params: {
   // 2. Transcript: timedtext first, Whisper audio fallback when captionless.
   let fullText: string;
   let captionSource: "captions" | "whisper";
+  let segments: Array<{ start: number; text: string }> = [];
   const transcript = await fetchTranscript(videoId);
   if (transcript) {
     fullText = transcript.full_text;
+    segments = transcript.segments;
     captionSource = "captions";
   } else {
     const whisper = await transcribeYouTubeAudio({
@@ -283,12 +327,32 @@ export async function ingestYouTubeVideo(params: {
     captionSource = "whisper";
   }
 
-  // 3. One-paragraph summary.
+  // 3. Classify the use-case bucket (cheap Haiku), then run the generic summary + the bucket-specific
+  //    extraction in parallel — the extraction leads the card; the summary backstops it / the default.
+  const bucket = await classifyBucket({
+    apiKey: ctx.anthropicApiKey,
+    title,
+    channel,
+    transcriptHead: fullText.slice(0, 500),
+  });
+  const detailTranscript = segments.length > 0 ? timestampedTranscript(segments) : fullText;
   const summary = await summarizeTranscript(ctx.anthropicApiKey, { title, channel, fullText });
+  // For non-default buckets, the detail is the tailored extraction; default reuses the summary
+  // (extractBucketDetail short-circuits to genericSummary for the default bucket — no extra call).
+  const bucketDetail = await extractBucketDetail({
+    apiKey: ctx.anthropicApiKey,
+    bucket,
+    title,
+    channel,
+    transcript: detailTranscript,
+    genericSummary: summary,
+  });
+  const framing = BUCKET_FRAMINGS[bucket];
 
-  // 4. Write the brain note.
+  // 4. Write the brain note — routed by bucket (competitive intel / voice influences / testimonials /
+  //    the youtube roll-up).
   const dateIso = meta?.postedAt || ingestedAt;
-  const brainPath = brainNotePath(channel, title, dateIso);
+  const brainPath = brainNotePath(channel, title, dateIso, framing.brainDir);
   const markdown = buildNoteMarkdown({
     videoId,
     url,
@@ -296,6 +360,9 @@ export async function ingestYouTubeVideo(params: {
     metaNote,
     fullText,
     summary,
+    bucket,
+    detailLabel: framing.detailLabel,
+    bucketDetail,
     source,
     captionSource,
     ingestedAt,
@@ -311,16 +378,19 @@ export async function ingestYouTubeVideo(params: {
     return { ok: false, videoId, url, error: `Couldn't save the video to your brain: ${commit.error}` };
   }
 
-  // 5. Record the ingest (analytics row). A logging miss is non-fatal — the note is already saved —
-  //    but recordYouTubeIngest returns a typed result rather than throwing, so this isn't a swallow.
+  // 5. Record the ingest (analytics row + the bucket choice, so the classifier can be refined). A
+  //    logging miss is non-fatal — the note is already saved — but it returns a typed result, not a
+  //    swallow.
   await recordYouTubeIngest({
     ownerId: ctx.ownerId,
     videoId,
+    channelId: meta?.channelId ?? "",
     channel,
     title,
     brainPath,
     transcriptChars: fullText.length,
     usedWhisper: captionSource === "whisper",
+    useCaseBucket: bucket,
     sourceInboundSurface: source,
   });
 
@@ -329,6 +399,10 @@ export async function ingestYouTubeVideo(params: {
     videoId,
     title,
     channel,
+    bucket,
+    framingHeadline: framing.headline,
+    detailLabel: framing.detailLabel,
+    bucketDetail,
     thumbnailUrl,
     url,
     summary,
@@ -349,7 +423,17 @@ export async function ingestYouTubeVideo(params: {
     summary,
     usedWhisper: captionSource === "whisper",
     card,
-    contextBlock: buildContextBlock({ source, title, channel, url, brainPath, summary, fullText }),
+    contextBlock: buildContextBlock({
+      source,
+      title,
+      channel,
+      url,
+      brainPath,
+      framingHeadline: framing.headline,
+      detailLabel: framing.detailLabel,
+      bucketDetail,
+      fullText,
+    }),
   };
 }
 

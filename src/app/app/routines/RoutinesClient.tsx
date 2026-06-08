@@ -174,6 +174,49 @@ function RoutineCard({
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
+// The Daily-Brief plug-in: fold the owner's last-24h YouTube ingests (with each video's use-case
+// bucket) into the brief. Self-contained — reads + writes its own pref via /api/app/youtube/brief-toggle.
+function YouTubeBriefToggle() {
+  const [enabled, setEnabled] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/app/youtube/brief-toggle", { cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<{ enabled?: boolean }>) : Promise.reject()))
+      .then((d) => setEnabled(Boolean(d.enabled)))
+      .catch(() => {
+        // Pref read failed — leave the toggle off; the owner can still flip it.
+      });
+  }, []);
+
+  async function handleChange(next: boolean) {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/app/youtube/brief-toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: next }),
+        cache: "no-store",
+      });
+      if (res.ok) setEnabled(next);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-3 flex items-center gap-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-slate-200">Include YouTube ingests from the last 24h</p>
+        <p className="text-[12px] text-slate-500 leading-relaxed mt-0.5">
+          When on, your Daily Brief lists the videos you shared and what bucket each landed in.
+        </p>
+      </div>
+      <Toggle enabled={enabled} onChange={(v) => void handleChange(v)} busy={busy} />
+    </div>
+  );
+}
+
 export default function RoutinesClient() {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [loading, setLoading] = useState(true);
@@ -298,6 +341,8 @@ export default function RoutinesClient() {
             {routines.map((r) => (
               <RoutineCard key={r.id} routine={r} onToggle={handleToggle} />
             ))}
+            {/* Daily-Brief plug-in — only relevant once the Daily Brief routine is on. */}
+            {routines.some((r) => r.kind === "daily_brief" && r.enabled) && <YouTubeBriefToggle />}
           </div>
         )}
 

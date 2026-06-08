@@ -7,7 +7,9 @@ import {
 } from "../detect";
 import { parseTimedText } from "../transcript";
 import { parseIsoDuration } from "../metadata";
-import { brainNotePath } from "../ingest";
+import { brainNotePath, timestampedTranscript } from "../ingest";
+import { BUCKET_FRAMINGS, USE_CASE_BUCKETS } from "../classify";
+import { buildYouTubeBriefSection, type RecentIngest } from "../recent";
 import { YouTubeIngestPayloadSchema, asYouTubeIngestPayload, YOUTUBE_INGEST_KIND } from "../card";
 
 describe("youtube url detection", () => {
@@ -105,6 +107,61 @@ describe("brain note path", () => {
       "brain/youtube/unknown-channel/2026-06-08-video.md",
     );
   });
+
+  it("routes to the bucket's brain area when a dir is passed", () => {
+    expect(brainNotePath("Hormozi", "Offers", "2026-06-08", "brain/voice/influences")).toBe(
+      "brain/voice/influences/hormozi/2026-06-08-offers.md",
+    );
+    expect(brainNotePath("Acme", "Launch", "2026-06-08", "brain/competitive")).toBe(
+      "brain/competitive/acme/2026-06-08-launch.md",
+    );
+  });
+});
+
+describe("use-case buckets", () => {
+  it("has a framing (headline + brainDir + detailLabel) for every bucket", () => {
+    for (const bucket of USE_CASE_BUCKETS) {
+      const f = BUCKET_FRAMINGS[bucket];
+      expect(f.headline.length).toBeGreaterThan(0);
+      expect(f.brainDir.startsWith("brain/")).toBe(true);
+      expect(f.detailLabel.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("routes competitor/tactic/testimonial to distinct brain areas", () => {
+    expect(BUCKET_FRAMINGS.competitor.brainDir).toBe("brain/competitive");
+    expect(BUCKET_FRAMINGS.tactic.brainDir).toBe("brain/voice/influences");
+    expect(BUCKET_FRAMINGS.testimonial.brainDir).toBe("brain/testimonials");
+    expect(BUCKET_FRAMINGS.industry.brainDir).toBe("brain/youtube");
+  });
+});
+
+describe("timestamped transcript", () => {
+  it("prefixes each cue with [mm:ss]", () => {
+    const out = timestampedTranscript([
+      { start: 0, text: "intro" },
+      { start: 75, text: "the point" },
+    ]);
+    expect(out).toBe("[00:00] intro\n[01:15] the point");
+  });
+
+  it("caps total length", () => {
+    const long = Array.from({ length: 100 }, (_, i) => ({ start: i, text: "x".repeat(50) }));
+    expect(timestampedTranscript(long, 200).length).toBeLessThanOrEqual(200);
+  });
+});
+
+describe("daily-brief youtube section", () => {
+  it("groups ingests with their bucket label, or returns '' when none", () => {
+    expect(buildYouTubeBriefSection([])).toBe("");
+    const rows: RecentIngest[] = [
+      { videoId: "a", channelId: "UC1", channel: "Acme", title: "Launch", bucket: "competitor", brainPath: "p", createdAt: "" },
+    ];
+    const section = buildYouTubeBriefSection(rows);
+    expect(section).toContain("YouTube you shared");
+    expect(section).toContain("Launch");
+    expect(section).toContain("Acme");
+  });
 });
 
 describe("youtube_ingest card contract", () => {
@@ -112,10 +169,14 @@ describe("youtube_ingest card contract", () => {
     videoId: "dQw4w9WgXcQ",
     title: "A Talk",
     channel: "A Channel",
+    bucket: "tactic" as const,
+    framingHeadline: "Pulled the techniques into your voice influences.",
+    detailLabel: "Techniques",
+    bucketDetail: "- Hook-Story-Offer\n- Value ladder",
     thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
     url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     summary: "It's about a thing.",
-    brainPath: "brain/youtube/a-channel/2026-06-08-a-talk.md",
+    brainPath: "brain/voice/influences/a-channel/2026-06-08-a-talk.md",
     transcriptChars: 1234,
     usedWhisper: false,
     transcriptPreview: "hello world",

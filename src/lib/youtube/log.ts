@@ -23,11 +23,15 @@ function paEnv(): { url: string; key: string } | { error: string } {
 export type YouTubeIngestLogRow = {
   ownerId: string;
   videoId: string;
+  /** Resolved channel id (UC…) when metadata was available — "" otherwise. Drives watch + suggest. */
+  channelId: string;
   channel: string;
   title: string;
   brainPath: string;
   transcriptChars: number;
   usedWhisper: boolean;
+  /** Use-case bucket the classifier assigned (competitor/tactic/testimonial/industry/default). */
+  useCaseBucket: string;
   sourceInboundSurface: string;
 };
 
@@ -52,11 +56,13 @@ export async function recordYouTubeIngest(row: YouTubeIngestLogRow): Promise<Log
       body: JSON.stringify({
         owner_id: row.ownerId,
         video_id: row.videoId,
+        channel_id: row.channelId,
         channel: row.channel,
         title: row.title,
         brain_path: row.brainPath,
         transcript_chars: row.transcriptChars,
         used_whisper: row.usedWhisper,
+        use_case_bucket: row.useCaseBucket,
         source_inbound_surface: row.sourceInboundSurface,
       }),
       cache: "no-store",
