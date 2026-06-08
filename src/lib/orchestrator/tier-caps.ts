@@ -61,6 +61,12 @@ export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> 
   "stripe:refund_charge": Number.POSITIVE_INFINITY,
   "zoom:update_meeting": 20,
   "zoom:cancel_meeting": 20,
+  // Calendly (roadmap §9): create_one_off_link is low-risk — it only mints a link; nothing happens
+  // out there until a prospect books — so it carries the default window (10, listed here for
+  // intent). cancel_scheduled_event notifies a prospect who already booked, so it stays gated far
+  // longer (25) before auto-approve can even be offered.
+  "calendly:create_one_off_link": 10,
+  "calendly:cancel_scheduled_event": 25,
 };
 
 /** The trust window for a specific (connector, action), honoring the money-action overrides. */

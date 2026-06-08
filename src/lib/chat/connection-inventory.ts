@@ -11,8 +11,9 @@ import { fetchPaUser } from "@/lib/pa-supabase";
 
 // Connectors this lane knows how to drive inline (read) or stage (write). Stripe/QuickBooks are
 // owned by their own dispatch lanes and intentionally excluded here. Zoom is in-process (registry),
-// so the chat surfaces its reads + create_meeting alongside the meeting-drafting composition.
-export const CHAT_CONNECTORS = ["gmail", "calendar", "slack", "zoom"] as const;
+// so the chat surfaces its reads + create_meeting. Calendly rides here alongside Calendar so the
+// drafter can route a prospect meeting to a one-off booking link.
+export const CHAT_CONNECTORS = ["gmail", "calendar", "slack", "zoom", "calendly"] as const;
 export type ChatConnector = (typeof CHAT_CONNECTORS)[number];
 
 export type LiveConnector = {

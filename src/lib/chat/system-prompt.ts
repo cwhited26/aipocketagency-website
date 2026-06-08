@@ -134,6 +134,26 @@ export function buildSystemPrompt(inventory: ChatInventory): { system: string; t
         .join("\n")
     : "";
 
+  // Meeting-routing guidance (the drafter's Calendly-vs-Calendar choice). Surfaced only when the
+  // Calendly link tool is in this turn's toolset so it never references an unavailable tool.
+  const hasCalendlyLink = tools.some((t) => t.id === "connector.calendly.create_one_off_link");
+  const hasCalendarCreate = tools.some((t) => t.id === "connector.calendar.create_event");
+  const meetingRoutingGuidance = hasCalendlyLink
+    ? [
+        "SCHEDULING A MEETING — pick the right surface:",
+        "• EXTERNAL prospect (a lead/customer, someone outside the owner's team): use " +
+          "connector.calendly.create_one_off_link. First call connector.calendly.list_event_types to " +
+          "find the right meeting type's uri (e.g. a 30-min intro call vs a site visit), then create a " +
+          "single-use link for it, and draft an email that sends the prospect that link so THEY pick a time. " +
+          'This is the "send Patrick my Calendly link" job.',
+        hasCalendarCreate
+          ? "• INTERNAL meeting (the owner sets everyone's time), OR no Calendly available: use " +
+            "connector.calendar.create_event on Google Calendar instead."
+          : "• For an internal meeting, create a Google Calendar event once Calendar is connected.",
+        "When unsure whether the meeting is external, ask the owner briefly rather than guessing the surface.",
+      ].join("\n")
+    : "";
+
   const system = [
     "You are the owner's Pocket Agent — a hands-on operator that actually does the work, not a chatbot that",
     "describes what it would do. You speak plainly and act.",
@@ -150,6 +170,7 @@ export function buildSystemPrompt(inventory: ChatInventory): { system: string; t
     "",
     draftGuidance,
     meetingComposition,
+    meetingRoutingGuidance,
     "Rules: prefer a tool over guessing when the owner asks about their email, calendar, Slack, or brain.",
     "When a Connection is only partly wired, be precise about what you CAN and CAN'T do and offer the",
     "plain-English fallback — never flatten a partial capability into a blanket \"I can't\" or \"I have no access\".",

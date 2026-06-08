@@ -5,10 +5,12 @@ import { fetchSlackConnectionPublic } from "@/lib/pa-slack-connections";
 import { fetchQuickBooksConnectionPublic } from "@/lib/pa-quickbooks-connections";
 import { fetchStripeConnectionPublic } from "@/lib/pa-stripe-connections";
 import { fetchZoomConnectionPublic } from "@/lib/pa-zoom-connections";
+import { fetchCalendlyConnectionPublic } from "@/lib/pa-calendly-connections";
 import { isSlackOAuthConfigured } from "@/lib/connectors/slack/oauth";
 import { isQuickBooksOAuthConfigured } from "@/lib/connectors/quickbooks/oauth";
 import { isStripeConnectConfigured } from "@/lib/connectors/stripe/oauth";
 import { isZoomOAuthConfigured } from "@/lib/connectors/zoom/oauth";
+import { isCalendlyOAuthConfigured } from "@/lib/connectors/calendly/oauth";
 import { redirect } from "next/navigation";
 import { TabGuide } from "../../_components/TabGuide";
 import GmailConnectionCard from "./GmailConnectionCard";
@@ -17,6 +19,7 @@ import SlackConnectionCard from "./SlackConnectionCard";
 import QuickBooksConnectionCard from "./QuickBooksConnectionCard";
 import StripeConnectionCard from "./StripeConnectionCard";
 import ZoomConnectionCard from "./ZoomConnectionCard";
+import CalendlyConnectionCard from "./CalendlyConnectionCard";
 
 export const dynamic = "force-dynamic";
 
@@ -138,6 +141,24 @@ const ZOOM_MESSAGES: Record<string, { title: string; body: string; kind: "succes
   },
 };
 
+const CALENDLY_MESSAGES: Record<string, { title: string; body: string; kind: "success" | "error" }> = {
+  connected: {
+    title: "Calendly connected",
+    body: "Your agent can now send prospects a booking link with the right meeting type, see what's booked, and cancel a booking. Booking links and cancellations are staged for your approval first.",
+    kind: "success",
+  },
+  not_configured: {
+    title: "Calendly sign-in unavailable",
+    body: "Calendly OAuth isn't configured for this deployment yet. Add CALENDLY_CLIENT_ID and CALENDLY_CLIENT_SECRET in Vercel to switch it on.",
+    kind: "error",
+  },
+  error: {
+    title: "Calendly connection failed",
+    body: "Something went wrong connecting Calendly. Try again, or contact support if it keeps happening.",
+    kind: "error",
+  },
+};
+
 export default async function ConnectionsPage({
   searchParams,
 }: {
@@ -148,6 +169,7 @@ export default async function ConnectionsPage({
     quickbooks?: string;
     stripe?: string;
     zoom?: string;
+    calendly?: string;
   };
 }) {
   const supabase = createClient();
@@ -156,7 +178,15 @@ export default async function ConnectionsPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/app/login");
 
-  const [gmailResult, calendarResult, slackResult, quickbooksResult, stripeResult, zoomResult] =
+  const [
+    gmailResult,
+    calendarResult,
+    slackResult,
+    quickbooksResult,
+    stripeResult,
+    zoomResult,
+    calendlyResult,
+  ] =
     await Promise.all([
       fetchGmailConnectionPublic(user.id),
       fetchCalendarConnectionPublic(user.id),
@@ -164,6 +194,7 @@ export default async function ConnectionsPage({
       fetchQuickBooksConnectionPublic(user.id),
       fetchStripeConnectionPublic(user.id),
       fetchZoomConnectionPublic(user.id),
+      fetchCalendlyConnectionPublic(user.id),
     ]);
   const gmail = gmailResult.ok ? gmailResult.data : null;
   const calendar = calendarResult.ok ? calendarResult.data : null;
@@ -171,10 +202,12 @@ export default async function ConnectionsPage({
   const quickbooks = quickbooksResult.ok ? quickbooksResult.data : null;
   const stripe = stripeResult.ok ? stripeResult.data : null;
   const zoom = zoomResult.ok ? zoomResult.data : null;
+  const calendly = calendlyResult.ok ? calendlyResult.data : null;
   const slackOAuthConfigured = isSlackOAuthConfigured();
   const quickBooksOAuthConfigured = isQuickBooksOAuthConfigured();
   const stripeConfigured = isStripeConnectConfigured();
   const zoomOAuthConfigured = isZoomOAuthConfigured();
+  const calendlyOAuthConfigured = isCalendlyOAuthConfigured();
 
   const message = searchParams.connection ? MESSAGES[searchParams.connection] ?? null : null;
   const calendarMessage = searchParams.calendar
@@ -186,6 +219,9 @@ export default async function ConnectionsPage({
     : null;
   const stripeMessage = searchParams.stripe ? STRIPE_MESSAGES[searchParams.stripe] ?? null : null;
   const zoomMessage = searchParams.zoom ? ZOOM_MESSAGES[searchParams.zoom] ?? null : null;
+  const calendlyMessage = searchParams.calendly
+    ? CALENDLY_MESSAGES[searchParams.calendly] ?? null
+    : null;
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">
@@ -296,6 +332,19 @@ export default async function ConnectionsPage({
           </div>
         )}
 
+        {calendlyMessage && (
+          <div
+            className={`rounded-xl border px-5 py-4 space-y-1 ${
+              calendlyMessage.kind === "success"
+                ? "border-[#22d3ee]/25 bg-[#22d3ee]/5"
+                : "border-slate-700/60 bg-slate-900/50"
+            }`}
+          >
+            <p className="text-sm font-semibold text-slate-100">{calendlyMessage.title}</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{calendlyMessage.body}</p>
+          </div>
+        )}
+
         <GmailConnectionCard connection={gmail} />
 
         <CalendarConnectionCard connection={calendar} />
@@ -311,6 +360,8 @@ export default async function ConnectionsPage({
 
         <ZoomConnectionCard connection={zoom} oauthConfigured={zoomOAuthConfigured} />
 
+        <CalendlyConnectionCard connection={calendly} oauthConfigured={calendlyOAuthConfigured} />
+
         <p className="text-xs text-slate-600 leading-relaxed">
           Gmail access lets your agent read incoming mail and archive a thread when you tap
           “I’ll handle” or “Archive.” Calendar access lets it read your schedule and propose,
@@ -318,9 +369,10 @@ export default async function ConnectionsPage({
           QuickBooks access lets it draft invoices, record payments, and pull reports. Stripe
           access lets it draft invoices, payment links, and refunds on your own Stripe account. Zoom
           access lets it schedule the video call and drop the join link into your invites and emails.
-          It never sends, deletes, or writes anything on its own — replies, calendar changes, new
-          Zoom meetings, and every invoice, payment, or refund are always staged for your approval
-          first.
+          Calendly access lets it send prospects a booking link with the right meeting type, see
+          what’s booked, and cancel a booking. It never sends, deletes, or writes anything on its
+          own — replies, calendar changes, new Zoom meetings, booking links, and every invoice,
+          payment, or refund are always staged for your approval first.
         </p>
 
         {/* First-touch guide — what to ask, what this connects to, and a sample status */}
@@ -359,6 +411,7 @@ export default async function ConnectionsPage({
               { tool: "Slack", does: "Posts messages, replies in threads, sends DMs — each send on approval." },
               { tool: "Stripe", does: "Drafts invoices, payment links, and refunds — refunds always ask first." },
               { tool: "Zoom", does: "Schedules the call and adds the join link to your calendar invite + emails — new meetings on approval." },
+              { tool: "Calendly", does: "Sends prospects a booking link with the right meeting type — links and cancellations on approval." },
               { tool: "GitHub", does: "Connects the repo that holds your brain so your agent can read and update it." },
             ].map((c) => (
               <li

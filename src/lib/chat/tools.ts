@@ -24,6 +24,7 @@ import {
 } from "@/lib/connectors/gmail/actions/create_draft";
 import { hasGmailSendScope } from "@/lib/gmail";
 import { runCalendarAction } from "@/lib/connectors/calendar";
+import { runCalendlyAction } from "@/lib/connectors/calendly";
 import { executeSlackAction } from "@/lib/connectors/slack/execute";
 import { executeZoomAction } from "@/lib/connectors/zoom";
 import { stageConnectorAction } from "@/lib/orchestrator/tool-use";
@@ -136,7 +137,11 @@ const CONNECTOR_TOOLS: Record<ChatConnector, ToolSpec[]> = {
       connector: "calendar",
       action: "create_event",
       signature: "connector.calendar.create_event(title, start, end, attendees?, description?)",
-      description: "Create a calendar event. Staged for approval before it's created.",
+      description:
+        "Create an event on the owner's Google Calendar. Use this for INTERNAL meetings (the owner " +
+        "controls everyone's time), or for an external prospect when Calendly ISN'T connected. " +
+        "For an external prospect WITH Calendly connected, prefer connector.calendly.create_one_off_link " +
+        "instead. Staged for approval before it's created.",
     },
   ],
   slack: [
@@ -189,6 +194,35 @@ const CONNECTOR_TOOLS: Record<ChatConnector, ToolSpec[]> = {
         "into connector.calendar.create_event's description.",
     },
   ],
+  calendly: [
+    {
+      id: "connector.calendly.list_event_types",
+      kind: "read",
+      signature: "connector.calendly.list_event_types(active_only?, count?)",
+      description:
+        "List the owner's Calendly meeting types (e.g. '30 min intro call', 'Site visit') — what " +
+        "a prospect can book. Use this first to find the right event_type_uri for a booking link.",
+    },
+    {
+      id: "connector.calendly.list_scheduled_events",
+      kind: "read",
+      signature: "connector.calendly.list_scheduled_events(min_start_time?, max_start_time?, count?)",
+      description: "List what's actually booked on the owner's Calendly (who's coming, when).",
+    },
+    {
+      id: "connector.calendly.create_one_off_link",
+      kind: "write",
+      connector: "calendly",
+      action: "create_one_off_link",
+      signature: "connector.calendly.create_one_off_link(event_type_uri, max_event_count?)",
+      description:
+        "Generate a single-use Calendly booking link for a specific meeting type — the link you " +
+        "send a prospect so they self-book. PREFER THIS over connector.calendar.create_event when " +
+        "the meeting is with an EXTERNAL prospect and Calendly is connected (the prospect picks " +
+        "their own time). Pair it with a drafted email containing the link. Staged for approval " +
+        "before the link is minted.",
+    },
+  ],
 };
 
 // Per-connection re-auth annotation for a Gmail tool. Never hides the tool — it surfaces
@@ -216,7 +250,7 @@ function annotateGmail(spec: ToolSpec, conn: LiveConnector): ToolSpec {
 export function buildToolset(inventory: ChatInventory): ToolSpec[] {
   const tools: ToolSpec[] = [];
   if (inventory.brainRepo) tools.push(...BRAIN_TOOLS);
-  for (const provider of ["gmail", "calendar", "slack", "zoom"] as const) {
+  for (const provider of ["gmail", "calendar", "slack", "zoom", "calendly"] as const) {
     const conn = inventory.connectors.find((c) => c.provider === provider);
     if (!conn) continue;
     const specs = CONNECTOR_TOOLS[provider];
@@ -541,6 +575,71 @@ async function runInline(
         forModel: joinUrl ? `Zoom join link for meeting ${meetingId}: ${joinUrl}` : `Meeting ${meetingId} has no join link.`,
       };
     }
+    case "connector.calendly.list_event_types": {
+      const payload: Record<string, unknown> = {};
+      if (input.active_only !== undefined) payload.active_only = Boolean(input.active_only);
+      payload.count = asNumber(input.count ?? input.n, 25);
+      const res = await runCalendlyAction({
+        userId,
+        action: "list_event_types",
+        payload,
+        ownerEmail: null,
+      });
+      if (!res.ok) {
+        return { status: "error", label: "Checked your Calendly", summary: res.error, forModel: `ERROR: ${res.error}` };
+      }
+      const types = Array.isArray(res.data.eventTypes) ? res.data.eventTypes : [];
+      const detail = types.length
+        ? types
+            .map((t, i) => {
+              const et = t as { name?: string; uri?: string; active?: boolean; duration?: number | null };
+              const dur = typeof et.duration === "number" ? ` (${et.duration} min)` : "";
+              const off = et.active === false ? " [inactive]" : "";
+              return `${i + 1}. ${et.name ?? "(untitled)"}${dur}${off}\n   ${et.uri ?? ""}`;
+            })
+            .join("\n")
+        : "No meeting types found.";
+      return {
+        status: "ok",
+        label: "Checked your Calendly",
+        summary: `Found ${types.length} meeting type${types.length === 1 ? "" : "s"}.`,
+        detail,
+        forModel: clampForModel(
+          `Calendly meeting types (${types.length}). Use a uri as event_type_uri for create_one_off_link:\n${detail}`,
+        ),
+      };
+    }
+    case "connector.calendly.list_scheduled_events": {
+      const payload: Record<string, unknown> = {};
+      if (asString(input.min_start_time)) payload.min_start_time = asString(input.min_start_time);
+      if (asString(input.max_start_time)) payload.max_start_time = asString(input.max_start_time);
+      payload.count = asNumber(input.count, 20);
+      const res = await runCalendlyAction({
+        userId,
+        action: "list_scheduled_events",
+        payload,
+        ownerEmail: null,
+      });
+      if (!res.ok) {
+        return { status: "error", label: "Checked your Calendly bookings", summary: res.error, forModel: `ERROR: ${res.error}` };
+      }
+      const events = Array.isArray(res.data.events) ? res.data.events : [];
+      const detail = events.length
+        ? events
+            .map((e, i) => {
+              const ev = e as { name?: string; start?: string | null; status?: string | null };
+              return `${i + 1}. ${ev.name ?? "(untitled)"} — ${ev.start ?? "?"}${ev.status ? ` [${ev.status}]` : ""}`;
+            })
+            .join("\n")
+        : "No bookings in that window.";
+      return {
+        status: "ok",
+        label: "Checked your Calendly bookings",
+        summary: `Found ${events.length} booking${events.length === 1 ? "" : "s"}.`,
+        detail,
+        forModel: clampForModel(`Calendly bookings (${events.length}):\n${detail}`),
+      };
+    }
     default:
       return unavailable(spec.id);
   }
@@ -643,6 +742,16 @@ function writePreview(
       const duration = asNumber(input.duration_minutes, 0);
       const when = duration > 0 ? `${start} for ${duration} min` : start;
       return { title: `Create Zoom meeting — ${topic}`, preview: `${topic}\n${when}` };
+    }
+    case "connector.calendly.create_one_off_link": {
+      const which = asString(input.event_type_name) || asString(input.event_type_uri) || "(no meeting type)";
+      const max = asNumber(input.max_event_count, 1);
+      return {
+        title: `Calendly booking link — ${which}`,
+        preview:
+          `Meeting type: ${which}\n` +
+          (max === 1 ? "Single-use link (expires after one booking)." : `Bookable up to ${max} times.`),
+      };
     }
     default:
       return { title: spec.id, preview: JSON.stringify(input).slice(0, 500) };

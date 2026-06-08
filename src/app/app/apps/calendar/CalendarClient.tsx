@@ -1,23 +1,135 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 type Citation = { file: string; line: string };
 type BriefResponse = { brief: string; citations: Citation[]; hasBrain: boolean };
 
+// One merged timeline entry — a Google Calendar event or a Calendly booking, normalized so the UI
+// renders both the same way. `source` drives the small origin badge.
+type TimelineItem = {
+  source: "calendar" | "calendly";
+  title: string;
+  start: string | null;
+  end: string | null;
+  location: string | null;
+  status: string | null;
+};
+
+type CalendarEventsResponse = {
+  events?: { summary?: string; start?: string; end?: string; location?: string | null }[];
+};
+type CalendlyEventsResponse = {
+  events?: { name?: string; start?: string | null; end?: string | null; location?: string | null; status?: string | null }[];
+};
+
+function startMs(item: TimelineItem): number {
+  if (!item.start) return Number.POSITIVE_INFINITY;
+  const t = new Date(item.start).getTime();
+  return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
+}
+
+function whenLabel(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default function CalendarClient({
   brainRepo,
   hasApiKey,
+  hasCalendar,
+  hasCalendly,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
+  hasCalendar: boolean;
+  hasCalendly: boolean;
 }) {
   const [upcoming, setUpcoming] = useState("");
   const [citations, setCitations] = useState<Citation[]>([]);
   const [hasBrain, setHasBrain] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Live merged timeline (Google Calendar + Calendly) ──────────────────────────
+  const anyConnected = hasCalendar || hasCalendly;
+  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [timelineError, setTimelineError] = useState<string | null>(null);
+
+  const loadTimeline = useCallback(async () => {
+    if (!anyConnected) return;
+    setTimelineLoading(true);
+    setTimelineError(null);
+
+    const items: TimelineItem[] = [];
+    const problems: string[] = [];
+
+    if (hasCalendar) {
+      const res = await fetch("/api/connections/calendar/events", { cache: "no-store" }).catch(
+        () => null,
+      );
+      if (res && res.ok) {
+        const data = (await res.json().catch(() => ({}))) as CalendarEventsResponse;
+        for (const e of data.events ?? []) {
+          items.push({
+            source: "calendar",
+            title: e.summary || "(no title)",
+            start: e.start ?? null,
+            end: e.end ?? null,
+            location: e.location ?? null,
+            status: null,
+          });
+        }
+      } else if (res) {
+        problems.push("Google Calendar");
+      }
+    }
+
+    if (hasCalendly) {
+      const res = await fetch("/api/connections/calendly/read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "list_scheduled_events" }),
+        cache: "no-store",
+      }).catch(() => null);
+      if (res && res.ok) {
+        const data = (await res.json().catch(() => ({}))) as CalendlyEventsResponse;
+        for (const e of data.events ?? []) {
+          items.push({
+            source: "calendly",
+            title: e.name || "(no title)",
+            start: e.start ?? null,
+            end: e.end ?? null,
+            location: e.location ?? null,
+            status: e.status ?? null,
+          });
+        }
+      } else if (res) {
+        problems.push("Calendly");
+      }
+    }
+
+    items.sort((a, b) => startMs(a) - startMs(b));
+    setTimeline(items);
+    setTimelineError(
+      problems.length ? `Couldn't load ${problems.join(" and ")} — try reconnecting.` : null,
+    );
+    setTimelineLoading(false);
+  }, [anyConnected, hasCalendar, hasCalendly]);
+
+  useEffect(() => {
+    void loadTimeline();
+  }, [loadTimeline]);
 
   async function handleScan() {
     if (!hasApiKey || isLoading) return;
@@ -64,7 +176,7 @@ export default function CalendarClient({
             href="/app/apps"
             className="text-xs text-slate-600 hover:text-slate-400 transition-colors font-mono"
           >
-            ← Apps
+            ← Work apps
           </Link>
         </div>
 
@@ -79,6 +191,71 @@ export default function CalendarClient({
               : "Your agent scans your brain for any upcoming dates, deadlines, or scheduled items it knows about. Connect a brain to make it specific."}
           </p>
         </div>
+
+        {/* Live merged timeline: Google Calendar (your schedule) + Calendly (prospect bookings) */}
+        {anyConnected && (
+          <div className="mb-8 rounded-xl border border-slate-700 bg-slate-900 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800">
+              <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">
+                Your schedule
+                <span className="ml-2 text-slate-600">
+                  {hasCalendar && hasCalendly
+                    ? "· Google Calendar + Calendly"
+                    : hasCalendar
+                      ? "· Google Calendar"
+                      : "· Calendly bookings"}
+                </span>
+              </span>
+              <button
+                onClick={() => void loadTimeline()}
+                disabled={timelineLoading}
+                className="text-[11px] font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] disabled:opacity-40 transition-colors"
+              >
+                {timelineLoading ? "Refreshing…" : "Refresh"}
+              </button>
+            </div>
+
+            {timelineError && (
+              <div className="px-5 py-3 text-xs text-amber-400/90 border-b border-slate-800">
+                {timelineError}
+              </div>
+            )}
+
+            <div className="divide-y divide-slate-800/70">
+              {timeline.length === 0 && !timelineLoading ? (
+                <p className="px-5 py-5 text-sm text-slate-500">
+                  Nothing on the calendar in the next few weeks.
+                </p>
+              ) : (
+                timeline.map((item, i) => (
+                  <div key={`${item.source}-${i}`} className="px-5 py-3 flex items-start gap-3">
+                    <span
+                      className={`mt-0.5 shrink-0 text-[9px] font-mono uppercase tracking-wider rounded px-1.5 py-0.5 border ${
+                        item.source === "calendly"
+                          ? "text-[#22d3ee] border-[#22d3ee]/30 bg-[#22d3ee]/5"
+                          : "text-slate-400 border-slate-700/60"
+                      }`}
+                    >
+                      {item.source === "calendly" ? "Calendly" : "Calendar"}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm text-slate-100 truncate">
+                        {item.title}
+                        {item.status && item.status !== "active" ? (
+                          <span className="ml-2 text-[11px] text-amber-400/80">({item.status})</span>
+                        ) : null}
+                      </p>
+                      <p className="text-[12px] text-slate-500 mt-0.5">
+                        {whenLabel(item.start)}
+                        {item.location ? ` · ${item.location}` : ""}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Brain scan section */}
         {hasApiKey && brainRepo && (
@@ -146,24 +323,28 @@ export default function CalendarClient({
           </div>
         )}
 
-        {/* Coming soon seam */}
-        <div className="rounded-xl border border-slate-800/40 bg-transparent px-5 py-5">
-          <div className="flex items-start gap-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-slate-700 mt-1.5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-slate-400">
-                Live Google Calendar sync arrives with Connections
-              </p>
-              <p className="text-sm text-slate-600 mt-1 leading-relaxed">
-                Once you connect Google Calendar, your agent will read your real schedule —
-                upcoming meetings, job site visits, calls — alongside what&apos;s in your brain.
-                {brainRepo
-                  ? " Together, it becomes a full picture of your time."
-                  : " Connect a brain and calendar to get the full picture."}
-              </p>
+        {/* Connect seam — shown only when neither booking surface is connected yet */}
+        {!anyConnected && (
+          <div className="rounded-xl border border-slate-800/40 bg-transparent px-5 py-5">
+            <div className="flex items-start gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-700 mt-1.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-slate-400">
+                  Connect Google Calendar and Calendly for a live schedule
+                </p>
+                <p className="text-sm text-slate-600 mt-1 leading-relaxed">
+                  Google Calendar is your own schedule; Calendly is how prospects self-book. Connect
+                  either in{" "}
+                  <Link href="/app/settings/connections" className="text-[#22d3ee] hover:underline">
+                    Settings → Connections
+                  </Link>{" "}
+                  and your real meetings and bookings show up here in one timeline, next to what your
+                  brain knows.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
