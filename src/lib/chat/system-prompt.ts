@@ -12,8 +12,14 @@ import { buildToolset, type ToolSpec } from "./tools";
 function toolLines(tools: ToolSpec[]): string {
   return tools
     .map((t) => {
-      const gate = t.kind === "write" ? "  (write — staged for approval)" : "";
-      return `- ${t.signature} — ${t.description}${gate}`;
+      const gate =
+        t.kind === "write"
+          ? "  (write — staged for approval)"
+          : t.kind === "action"
+            ? "  (runs immediately — no approval)"
+            : "";
+      const note = t.note ? `  [${t.note}]` : "";
+      return `- ${t.signature} — ${t.description}${gate}${note}`;
     })
     .join("\n");
 }
@@ -29,9 +35,16 @@ export function buildSystemPrompt(inventory: ChatInventory): { system: string; t
 
   const connectorSummary = inventory.connectors.length
     ? inventory.connectors
-        .map((c) => (c.accountLabel ? `${c.provider} (${c.accountLabel})` : c.provider))
+        .map((c) => {
+          const label = c.accountLabel ? `${c.provider} (${c.accountLabel})` : c.provider;
+          return c.needsReauth ? `${label} — flagged for reconnect` : label;
+        })
         .join(", ")
     : "none connected yet";
+
+  // Surfaced only when the owner actually has the Gmail draft tool, so the guidance never
+  // references a tool that isn't in this turn's toolset.
+  const hasGmailDraft = tools.some((t) => t.id === "connector.gmail.create_draft");
 
   const personaLine = inventory.personaNames.length
     ? `The owner has these personas you can hand a question to via the chat command "ask my <persona>: …": ${inventory.personaNames.join(", ")}.`
@@ -50,12 +63,21 @@ export function buildSystemPrompt(inventory: ChatInventory): { system: string; t
         '  {"tool": "<tool id>", "input": { ...args }}',
         "Use the exact tool id (the part before the parentheses above, e.g. \"connector.gmail.list_recent\").",
         "After a tool runs you'll receive its result; then either call another tool or write your final answer.",
-        "Read tools (list/search/read) run immediately and return data. Write tools (send/post/create) are",
-        "staged in the owner's Approval Inbox — after staging one, tell the owner it's queued for approval;",
-        "NEVER claim a write already happened.",
+        "Read tools (list/search/read) and no-approval actions (create_draft) run immediately and return data.",
+        "Write tools (send/post) are staged in the owner's Approval Inbox — after staging one, tell the owner",
+        "it's queued for approval; NEVER claim a write already happened.",
         "TO ANSWER NORMALLY: reply with plain text (no JSON). Answer from the brain context and the conversation.",
       ].join("\n")
     : "Answer the owner in plain text from what you know.";
+
+  // Steer the model to the right email tool: a draft when the owner wants to stage/review,
+  // a send only when they explicitly want it out the door.
+  const draftGuidance = hasGmailDraft
+    ? 'connector.gmail.create_draft is available — use it when the owner wants to stage an email for ' +
+      'review (e.g. "add it to my Gmail drafts", "draft this", "set it up so I can review") rather than ' +
+      "send immediately. It saves straight to their Gmail Drafts with no approval. Only use connector.gmail.send " +
+      "when the owner explicitly wants the email sent now."
+    : "";
 
   const system = [
     "You are the owner's Pocket Agent — a hands-on operator that actually does the work, not a chatbot that",
@@ -69,6 +91,7 @@ export function buildSystemPrompt(inventory: ChatInventory): { system: string; t
     "",
     protocol,
     "",
+    draftGuidance,
     "Rules: prefer a tool over guessing when the owner asks about their email, calendar, Slack, or brain.",
     "Keep answers tight. If a tool errors with a reconnect hint, relay that hint instead of inventing data.",
   ]

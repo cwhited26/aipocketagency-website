@@ -18,6 +18,15 @@ export type LiveConnector = {
   provider: ChatConnector;
   // Workspace / account label for the prompt ("connected as chase@…"), when known.
   accountLabel: string | null;
+  // Scopes the owner actually granted on this connection's OAuth row. Drives the
+  // "needs re-auth" annotation when an action requires a scope not present here.
+  // Empty when the row predates scope tracking (treated as "unknown", not "denied").
+  scopes: string[];
+  // The connection is present (token on file) but flagged status='error' — a token
+  // refresh or sync hit an auth hiccup. We STILL surface its tools: reads/drafts
+  // self-heal on a good refresh, and a truly dead grant relays a reconnect hint at
+  // call time. Hiding it (the old status=active filter) was the Gmail-not-surfacing bug.
+  needsReauth: boolean;
 };
 
 export type ChatInventory = {
@@ -50,15 +59,32 @@ function isChatConnector(value: string): value is ChatConnector {
   return (CHAT_CONNECTORS as readonly string[]).includes(value);
 }
 
-type ConnectionRow = { provider: string; email: string | null; status: string };
+type ConnectionRow = {
+  provider: string;
+  email: string | null;
+  status: string;
+  scopes: string[] | null;
+  access_token: string | null;
+};
 type PersonaRow = { name: string };
 
-/** Active connector grants for the user, restricted to the connectors this lane drives. */
+/**
+ * Connector grants for the user that the agent can actually drive, restricted to the
+ * connectors this lane knows.
+ *
+ * A connection surfaces when it has a token on file (`access_token` present) and isn't
+ * revoked — REGARDLESS of `status` or which scopes were granted. This is deliberate: the
+ * old `status=eq.active` filter hid any Gmail connection the cron had flagged 'error'
+ * (e.g. a refresh-token hiccup, or a grant predating the incremental gmail.send scope),
+ * so the agent reported "I don't have a Gmail integration" while the read path could
+ * still reach it. Scope/error state travels on the LiveConnector instead, so the prompt
+ * annotates an action that needs a missing scope rather than dropping the whole Connection.
+ */
 async function fetchLiveConnectors(userId: string): Promise<LiveConnector[]> {
   const env = paEnv();
   if (!env) return [];
   const res = await fetch(
-    `${env.url}/rest/v1/pa_connections?user_id=eq.${enc(userId)}&status=eq.active&select=provider,email,status`,
+    `${env.url}/rest/v1/pa_connections?user_id=eq.${enc(userId)}&status=neq.revoked&select=provider,email,status,scopes,access_token`,
     { headers: { apikey: env.key, Authorization: `Bearer ${env.key}` }, cache: "no-store" },
   );
   if (!res.ok) return [];
@@ -66,7 +92,14 @@ async function fetchLiveConnectors(userId: string): Promise<LiveConnector[]> {
   const out: LiveConnector[] = [];
   for (const row of rows) {
     if (!isChatConnector(row.provider)) continue;
-    out.push({ provider: row.provider, accountLabel: row.email });
+    // A revoked row wipes its token; require a token so we never advertise a dead grant.
+    if (!row.access_token) continue;
+    out.push({
+      provider: row.provider,
+      accountLabel: row.email,
+      scopes: Array.isArray(row.scopes) ? row.scopes : [],
+      needsReauth: row.status === "error",
+    });
   }
   // Stable order so the prompt is deterministic.
   return out.sort((a, b) => a.provider.localeCompare(b.provider));

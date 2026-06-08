@@ -12,26 +12,43 @@
 
 import { fetchFileContent } from "@/lib/pa-brain";
 import { fetchMemoryIndex } from "@/lib/pa-brain-index";
-import { gmailListRecent, gmailSearch, type GmailReadMessage } from "@/lib/connectors/gmail/read";
+import {
+  gmailListRecent,
+  gmailSearch,
+  resolveGmailAccess,
+  type GmailReadMessage,
+} from "@/lib/connectors/gmail/read";
+import {
+  GmailDraftInputSchema,
+  execute as createGmailDraftAction,
+} from "@/lib/connectors/gmail/actions/create_draft";
+import { hasGmailSendScope } from "@/lib/gmail";
 import { runCalendarAction } from "@/lib/connectors/calendar";
 import { executeSlackAction } from "@/lib/connectors/slack/execute";
 import { stageConnectorAction } from "@/lib/orchestrator/tool-use";
 import { ConnectorScopeError } from "@/lib/orchestrator/containment-guard";
 import { orchestratorEnabled } from "@/lib/orchestrator/feature-flag";
 import { OrchestratorDbError } from "@/lib/orchestrator/db";
-import type { ChatInventory, ChatConnector } from "./connection-inventory";
+import type { ChatInventory, ChatConnector, LiveConnector } from "./connection-inventory";
 import { hasConnector } from "./connection-inventory";
 
 const INBOX_HREF = "/app/apps/inbox";
+// Deep link to the owner's Gmail Drafts (the Gmail API draft id isn't a URL-addressable
+// compose key, so we link the folder rather than a specific draft).
+const GMAIL_DRAFTS_URL = "https://mail.google.com/mail/u/0/#drafts";
 
 // ── Tool catalog ────────────────────────────────────────────────────────────────────────────
 
-export type ToolKind = "read" | "write";
+// read   — runs inline, returns data, no side effect.
+// action — runs inline like a read but performs a side effect that needs no approval
+//          (e.g. create a Gmail draft: the owner can delete it from Gmail, nothing sent).
+// write  — staged to the Approval Inbox and only fires on the owner's approval.
+export type ToolKind = "read" | "action" | "write";
 
 export type ToolSpec = {
   id: string;
   kind: ToolKind;
-  // The connector a write stages against (omitted for brain / read-only helpers).
+  // The connector a write/action runs against (omitted for brain / read-only helpers).
   connector?: ChatConnector;
   // The exact action name passed to the connector's executor / approval middleware (writes).
   action?: string;
@@ -39,6 +56,10 @@ export type ToolSpec = {
   signature: string;
   // What the tool does — also shown in the prompt.
   description: string;
+  // Optional per-connection annotation shown in the prompt, e.g. a "needs re-auth" hint
+  // for a send action when the gmail.send scope isn't granted. Computed in buildToolset
+  // from the live connection's scope/error state — never hides the tool, just flags it.
+  note?: string;
 };
 
 // Always-on tools (gated only on a connected brain repo).
@@ -71,6 +92,17 @@ const CONNECTOR_TOOLS: Record<ChatConnector, ToolSpec[]> = {
       kind: "read",
       signature: "connector.gmail.search(query, n?)",
       description: 'Search Gmail (Gmail query syntax, e.g. "from:patrick is:unread").',
+    },
+    {
+      id: "connector.gmail.create_draft",
+      kind: "action",
+      connector: "gmail",
+      action: "create_draft",
+      signature:
+        "connector.gmail.create_draft(to, subject, body_text|body_html, cc?, bcc?, in_reply_to?, thread_id?)",
+      description:
+        "Create a draft in the owner's Gmail Drafts folder. Different from send — it stays a " +
+        "draft until the owner sends it from Gmail. Runs immediately; no approval needed.",
     },
     {
       id: "connector.gmail.send",
@@ -121,12 +153,36 @@ const CONNECTOR_TOOLS: Record<ChatConnector, ToolSpec[]> = {
   ],
 };
 
+// Per-connection re-auth annotation for a Gmail tool. Never hides the tool — it surfaces
+// either way; this just tells the model (and the owner) when an action needs a fresh grant.
+function annotateGmail(spec: ToolSpec, conn: LiveConnector): ToolSpec {
+  const notes: string[] = [];
+  if (conn.needsReauth) {
+    notes.push(
+      "Gmail is flagged for reconnect — I'll try anyway and relay a reconnect hint if the grant is dead.",
+    );
+  }
+  // Only SENDING needs the incremental gmail.send scope; reads + drafts don't. An empty
+  // scopes list means an old grant that predates send tracking, so treat it as not-granted.
+  if (spec.id === "connector.gmail.send" && !hasGmailSendScope(conn.scopes)) {
+    notes.push(
+      "the send scope isn't granted yet — reads + drafts still work; reconnect Gmail in " +
+        "Settings → Connections to enable sending.",
+    );
+  }
+  if (notes.length === 0) return spec;
+  return { ...spec, note: notes.join(" ") };
+}
+
 /** The tools available to a user, given what they've actually connected. */
 export function buildToolset(inventory: ChatInventory): ToolSpec[] {
   const tools: ToolSpec[] = [];
   if (inventory.brainRepo) tools.push(...BRAIN_TOOLS);
   for (const provider of ["gmail", "calendar", "slack"] as const) {
-    if (hasConnector(inventory, provider)) tools.push(...CONNECTOR_TOOLS[provider]);
+    const conn = inventory.connectors.find((c) => c.provider === provider);
+    if (!conn) continue;
+    const specs = CONNECTOR_TOOLS[provider];
+    tools.push(...(provider === "gmail" ? specs.map((s) => annotateGmail(s, conn)) : specs));
   }
   return tools;
 }
@@ -160,6 +216,17 @@ function asNumber(v: unknown, fallback: number): number {
   if (typeof v === "number" && Number.isFinite(v)) return v;
   if (typeof v === "string" && v.trim() && Number.isFinite(Number(v))) return Number(v);
   return fallback;
+}
+
+// Models often pass a single recipient as a bare string ("a@b.com") or a comma/semicolon
+// list instead of the array the schema wants. Coerce to an array so a well-formed call
+// isn't rejected on a shape technicality; leave non-strings (incl. real arrays) untouched.
+function coerceRecipients(v: unknown): unknown {
+  if (typeof v !== "string") return v;
+  return v
+    .split(/[,;]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function unavailable(id: string): ToolRunResult {
@@ -202,8 +269,9 @@ async function runGmailRead(
 }
 
 /**
- * Run one tool call. Reads execute inline and return their data; writes are staged for approval.
- * Throws nothing — every path returns a typed ToolRunResult.
+ * Run one tool call. Reads and no-approval actions (create_draft) execute inline and return
+ * their data; writes are staged for approval. Throws nothing — every path returns a typed
+ * ToolRunResult.
  */
 export async function executeTool(
   userId: string,
@@ -215,7 +283,7 @@ export async function executeTool(
 
   try {
     if (spec.kind === "write") return await stageWrite(userId, inventory, spec, call.input);
-    return await runRead(userId, inventory, spec, call.input);
+    return await runInline(userId, inventory, spec, call.input);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unexpected tool failure";
     return {
@@ -227,7 +295,7 @@ export async function executeTool(
   }
 }
 
-async function runRead(
+async function runInline(
   userId: string,
   inventory: ChatInventory,
   spec: ToolSpec,
@@ -293,6 +361,8 @@ async function runRead(
       const n = asNumber(input.n ?? input.limit, 5);
       return runGmailRead(userId, "Searched your Gmail", await gmailSearch(userId, query, n));
     }
+    case "connector.gmail.create_draft":
+      return runCreateDraft(userId, input);
     case "connector.calendar.list_events": {
       const payload: Record<string, unknown> = {};
       if (asString(input.time_min)) payload.time_min = asString(input.time_min);
@@ -366,6 +436,65 @@ async function runRead(
     default:
       return unavailable(spec.id);
   }
+}
+
+// ── Inline action: create a Gmail draft (no approval) ─────────────────────────────────────────────
+// A draft has no real-world side effect (nothing is sent; the owner can delete it from Gmail),
+// so it runs inline like a read rather than staging to the Approval Inbox. Resolves a fresh
+// access token (self-healing an errored connection), validates the input, creates the draft,
+// and returns an "ok" card linking to the owner's Gmail Drafts.
+async function runCreateDraft(
+  userId: string,
+  input: Record<string, unknown>,
+): Promise<ToolRunResult> {
+  const access = await resolveGmailAccess(userId);
+  if (!access.ok) {
+    return { status: "error", label: "Create Gmail draft", summary: access.error, forModel: `ERROR: ${access.error}` };
+  }
+
+  const normalizedInput: Record<string, unknown> = {
+    ...input,
+    to: coerceRecipients(input.to),
+    ...(input.cc !== undefined ? { cc: coerceRecipients(input.cc) } : {}),
+    ...(input.bcc !== undefined ? { bcc: coerceRecipients(input.bcc) } : {}),
+  };
+  const parsed = GmailDraftInputSchema.safeParse(normalizedInput);
+  if (!parsed.success) {
+    const msg = parsed.error.issues[0]?.message ?? "Invalid draft input.";
+    return {
+      status: "error",
+      label: "Create Gmail draft",
+      summary: msg,
+      forModel: `ERROR: connector.gmail.create_draft — ${msg}`,
+    };
+  }
+
+  const res = await createGmailDraftAction({
+    accessToken: access.token,
+    fromEmail: access.email,
+    input: parsed.data,
+  });
+  if (!res.ok) {
+    const hint = res.authError ? " Reconnect Gmail in Settings → Connections." : "";
+    return {
+      status: "error",
+      label: "Create Gmail draft",
+      summary: `${res.error}${hint}`,
+      forModel: `ERROR creating draft: ${res.error}${hint}`,
+    };
+  }
+
+  const detail = `To: ${res.to.join(", ")}\nSubject: ${res.subject}`;
+  return {
+    status: "ok",
+    label: "Draft created in Gmail",
+    summary: `Saved a draft to ${res.to.join(", ")} in your Gmail Drafts.`,
+    detail,
+    openHref: GMAIL_DRAFTS_URL,
+    forModel:
+      `DRAFT CREATED: Gmail draft ${res.draftId} to ${res.to.join(", ")} (subject "${res.subject}"). ` +
+      `It is in the owner's Drafts folder — NOT sent. Tell the owner it's ready to review and send from Gmail.`,
+  };
 }
 
 // ── Write staging (Wave B Approval Inbox) ───────────────────────────────────────────────────────

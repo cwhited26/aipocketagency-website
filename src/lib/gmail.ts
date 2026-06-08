@@ -40,6 +40,21 @@ export function hasGmailSendScope(scopes: readonly string[] | null): boolean {
   return Array.isArray(scopes) && scopes.includes(GMAIL_SEND_SCOPE);
 }
 
+// Creating a draft (users.drafts.create) needs gmail.modify OR gmail.compose — both
+// distinct from gmail.send. gmail.modify is part of the base Connections scope set
+// (it backs the triage archive), so drafting works for accounts connected before
+// gmail.send existed, with no re-auth.
+export const GMAIL_MODIFY_SCOPE = "https://www.googleapis.com/auth/gmail.modify";
+export const GMAIL_COMPOSE_SCOPE = "https://www.googleapis.com/auth/gmail.compose";
+
+/** True iff a connection's granted scopes allow creating drafts (modify or compose). */
+export function hasGmailDraftScope(scopes: readonly string[] | null): boolean {
+  return (
+    Array.isArray(scopes) &&
+    (scopes.includes(GMAIL_MODIFY_SCOPE) || scopes.includes(GMAIL_COMPOSE_SCOPE))
+  );
+}
+
 export type GmailResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: string; authError: boolean };
@@ -416,6 +431,16 @@ export async function archiveThread(
 
 // ─── messages.send (send AS the user) ─────────────────────────────────────────
 
+// base64url-encode a raw MIME string for the Gmail API's `raw` field (used by both
+// messages.send and drafts.create).
+function base64UrlEncode(raw: string): string {
+  return Buffer.from(raw, "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
 const SendResponseSchema = z.object({
   id: z.string(),
   threadId: z.string(),
@@ -433,11 +458,7 @@ export async function sendGmailMessage(
   accessToken: string,
   params: { raw: string; threadId?: string | null },
 ): Promise<GmailResult<GmailSendResponse>> {
-  const encodedRaw = Buffer.from(params.raw, "utf8")
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  const encodedRaw = base64UrlEncode(params.raw);
 
   const body: { raw: string; threadId?: string } = { raw: encodedRaw };
   if (params.threadId) body.threadId = params.threadId;
@@ -455,6 +476,45 @@ export async function sendGmailMessage(
     },
   );
   return parseJson(res, SendResponseSchema);
+}
+
+// ─── drafts.create (stage in Drafts, never send) ───────────────────────────────
+
+const DraftResponseSchema = z.object({
+  id: z.string(),
+  message: z
+    .object({ id: z.string(), threadId: z.string().optional() })
+    .optional(),
+});
+export type GmailDraftResponse = z.infer<typeof DraftResponseSchema>;
+
+/**
+ * Create a draft via users.drafts.create. `raw` is the unencoded MIME string (this
+ * function base64url-encodes it). Unlike send, this never delivers — the draft sits
+ * in the user's Drafts folder until they send it manually from Gmail. When `threadId`
+ * is set, the draft attaches to that conversation. Needs gmail.modify or gmail.compose
+ * (NOT gmail.send).
+ */
+export async function createGmailDraft(
+  accessToken: string,
+  params: { raw: string; threadId?: string | null },
+): Promise<GmailResult<GmailDraftResponse>> {
+  const message: { raw: string; threadId?: string } = { raw: base64UrlEncode(params.raw) };
+  if (params.threadId) message.threadId = params.threadId;
+
+  const res = await fetch(
+    "https://gmail.googleapis.com/gmail/v1/users/me/drafts",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message }),
+      cache: "no-store",
+    },
+  );
+  return parseJson(res, DraftResponseSchema);
 }
 
 // ─── Shared JSON parse ────────────────────────────────────────────────────────

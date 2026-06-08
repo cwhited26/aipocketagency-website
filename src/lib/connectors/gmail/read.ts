@@ -33,19 +33,25 @@ export type GmailReadResult =
   | { ok: true; messages: GmailReadMessage[] }
   | { ok: false; status: number; error: string; reauth: boolean };
 
-async function resolveToken(
-  userId: string,
-): Promise<
-  | { ok: true; token: string }
-  | { ok: false; status: number; error: string; reauth: boolean }
-> {
+export type GmailAccess =
+  | { ok: true; token: string; email: string | null; scopes: string[] }
+  | { ok: false; status: number; error: string; reauth: boolean };
+
+/**
+ * Resolve a usable Gmail access token for the owner, plus the connected address and
+ * granted scopes. Refreshes the cached token when stale and self-heals a connection
+ * flagged status='error' (a successful refresh flips it back to active inside
+ * ensureFreshAccessToken). Shared by every inline Gmail tool — the reads AND the inline
+ * draft action — so the reconnect path is identical everywhere.
+ */
+export async function resolveGmailAccess(userId: string): Promise<GmailAccess> {
   const conn = await fetchGmailConnectionFull(userId);
   if (!conn.ok) return { ok: false, status: conn.status, error: conn.error, reauth: false };
   if (!conn.data || conn.data.status === "revoked") {
     return {
       ok: false,
       status: 409,
-      error: "Connect Gmail in Settings → Connections before reading your email.",
+      error: "Connect Gmail in Settings → Connections before I can use it.",
       reauth: true,
     };
   }
@@ -60,7 +66,7 @@ async function resolveToken(
       reauth: true,
     };
   }
-  return { ok: true, token: token.data };
+  return { ok: true, token: token.data, email: conn.data.email, scopes: conn.data.scopes ?? [] };
 }
 
 function epochToIso(internalDate: string | null): string | null {
@@ -91,7 +97,7 @@ async function hydrate(
 
 /** Most-recent inbox messages (default 5), newest first. */
 export async function gmailListRecent(userId: string, limit: number): Promise<GmailReadResult> {
-  const resolved = await resolveToken(userId);
+  const resolved = await resolveGmailAccess(userId);
   if (!resolved.ok) return resolved;
 
   const bounded = Math.min(Math.max(limit, 1), MAX_HYDRATE);
@@ -108,7 +114,7 @@ export async function gmailSearch(
   query: string,
   limit: number,
 ): Promise<GmailReadResult> {
-  const resolved = await resolveToken(userId);
+  const resolved = await resolveGmailAccess(userId);
   if (!resolved.ok) return resolved;
 
   const bounded = Math.min(Math.max(limit, 1), MAX_HYDRATE);
