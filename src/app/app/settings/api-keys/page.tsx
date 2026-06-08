@@ -53,6 +53,21 @@ export default async function ApiKeysPage() {
           </p>
         </div>
 
+        <div className="rounded-xl border border-[#22d3ee]/25 bg-[#22d3ee]/[0.04] p-5">
+          <div className="text-sm font-semibold text-slate-100">📸 Use it from your iPhone</div>
+          <p className="text-sm text-slate-400 mt-1.5 leading-relaxed">
+            Pair a key with an iPhone shortcut to snap a photo — a receipt, a whiteboard, an invoice
+            — and get your agent’s answer back on your phone. We walk you through building it in
+            about five minutes.
+          </p>
+          <a
+            href="/app/settings/api-keys/shortcut"
+            className="inline-block mt-3 text-sm font-semibold text-[#22d3ee] hover:underline"
+          >
+            How to use this →
+          </a>
+        </div>
+
         <ApiKeysClient initialKeys={initialKeys} />
       </div>
     </div>
