@@ -25,6 +25,9 @@ export type SlackConnectionPublic = {
   workspace: string | null;
   scopes: string[] | null;
   status: SlackConnectionStatus;
+  /** Installing user's Slack id + workspace id (migration 037) — present once reconnected. */
+  slack_user_id: string | null;
+  slack_team_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -39,7 +42,8 @@ type PaResult<T> = { ok: true; data: T } | { ok: false; status: number; error: s
 
 const TABLE = "pa_connections";
 
-const PUBLIC_FIELDS = "id,user_id,provider,email,scopes,status,created_at,updated_at";
+const PUBLIC_FIELDS =
+  "id,user_id,provider,email,scopes,status,slack_user_id,slack_team_id,created_at,updated_at";
 const FULL_FIELDS =
   `${PUBLIC_FIELDS},refresh_token_encrypted,access_token,access_token_expires_at`;
 
@@ -51,6 +55,8 @@ type SlackRow = {
   email: string | null;
   scopes: string[] | null;
   status: SlackConnectionStatus;
+  slack_user_id?: string | null;
+  slack_team_id?: string | null;
   created_at: string;
   updated_at: string;
   refresh_token_encrypted?: string | null;
@@ -66,6 +72,8 @@ function toPublic(row: SlackRow): SlackConnectionPublic {
     workspace: row.email,
     scopes: row.scopes,
     status: row.status,
+    slack_user_id: row.slack_user_id ?? null,
+    slack_team_id: row.slack_team_id ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -129,6 +137,33 @@ export async function fetchSlackConnectionFull(
   return { ok: true, data: rows[0] ? toFull(rows[0]) : null };
 }
 
+/**
+ * Resolve the owner behind an inbound Slack event by the author's Slack user id (migration 037).
+ * Returns the FULL connection (the caller needs both `user_id` to route the message into PA and
+ * the token to post the reply). When `teamId` is given it's added as an extra filter so a user id
+ * that collides across workspaces resolves to the right install. Only `status='active'` rows match
+ * — a revoked/errored connection should not silently answer DMs.
+ */
+export async function fetchSlackConnectionBySlackUserId(
+  slackUserId: string,
+  teamId: string | null,
+): Promise<PaResult<SlackConnectionFull | null>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const teamFilter = teamId
+    ? `&slack_team_id=eq.${encodeURIComponent(teamId)}`
+    : "";
+  const res = await fetch(
+    `${env.url}/rest/v1/${TABLE}?slack_user_id=eq.${encodeURIComponent(slackUserId)}` +
+      `&provider=eq.slack&status=eq.active${teamFilter}&select=${FULL_FIELDS}&limit=1`,
+    { headers: authHeaders(env.key), cache: "no-store" },
+  );
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as SlackRow[];
+  return { ok: true, data: rows[0] ? toFull(rows[0]) : null };
+}
+
 // ─── Writes (service-role) ────────────────────────────────────────────────────
 
 export type UpsertSlackConnectionData = {
@@ -139,6 +174,10 @@ export type UpsertSlackConnectionData = {
   accessToken: string | null;
   accessTokenExpiresAt: string | null;
   scopes: string[];
+  // Slack identity (migration 037) — drives inbound DM owner resolution. Null if oauth.v2.access
+  // didn't return them (shouldn't happen for a bot install, but stays nullable to fail soft).
+  slackUserId: string | null;
+  slackTeamId: string | null;
 };
 
 export async function upsertSlackConnection(
@@ -156,6 +195,8 @@ export async function upsertSlackConnection(
     access_token: data.accessToken,
     access_token_expires_at: data.accessTokenExpiresAt,
     scopes: data.scopes,
+    slack_user_id: data.slackUserId,
+    slack_team_id: data.slackTeamId,
     status: "active",
     updated_at: now,
   };

@@ -67,7 +67,7 @@ const CALENDAR_MESSAGES: Record<string, { title: string; body: string; kind: "su
 const SLACK_MESSAGES: Record<string, { title: string; body: string; kind: "success" | "error" }> = {
   connected: {
     title: "Slack connected",
-    body: "Your agent can now post, reply in threads, and DM — each send waits for your approval in the Inbox.",
+    body: "Your agent can now post, reply in threads, and DM — each send waits for your approval in the Inbox. And you can DM @Pocket Agent (or @mention it in a channel) to ask anything; it replies right there in Slack.",
     kind: "success",
   },
   not_configured: {

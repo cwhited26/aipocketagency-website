@@ -102,6 +102,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     accessToken,
     accessTokenExpiresAt,
     scopes,
+    // Persist the Slack identity so an inbound DM / @mention resolves back to this owner.
+    slackUserId: data.authed_user?.id ?? null,
+    slackTeamId: data.team?.id ?? null,
   });
   if (!result.ok) {
     return pageRedirect(request, "slack=error");

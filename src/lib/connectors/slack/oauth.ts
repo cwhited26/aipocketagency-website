@@ -33,9 +33,16 @@ import {
 // channel listing + history for drafting replies and user lookup for DMs; the writes cover
 // channel posts, threaded replies, and opening a DM. Union of the roadmap mini-spec and the
 // lane brief's required minimum — adding scopes is safe, dropping a required one is not.
-//   reads:  channels:read, channels:history, groups:read, groups:history, im:read, im:history, users:read
+//   reads:  channels:read, channels:history, groups:read, groups:history, im:read, im:history,
+//           users:read, app_mentions:read (receive @mentions on the inbound webhook)
 //   writes: chat:write, chat:write.public (post to public channels w/o joining),
 //           chat:write.customize (custom username/icon), im:write (open a DM channel)
+//
+// Inbound DM (PA-SLACK-DM-1) rides on three of these: `im:history` (receive `message.im`
+// events when the owner DMs the bot), `app_mentions:read` (receive `app_mention` events when
+// they @mention it in a channel), and `chat:write`/`im:write` to post the reply back. Existing
+// connections predate `app_mentions:read`, so the owner must reconnect once to grant it before
+// channel @mentions reach the webhook.
 export const SLACK_BOT_SCOPES = [
   "channels:read",
   "channels:history",
@@ -44,6 +51,7 @@ export const SLACK_BOT_SCOPES = [
   "im:read",
   "im:history",
   "users:read",
+  "app_mentions:read",
   "chat:write",
   "chat:write.public",
   "chat:write.customize",

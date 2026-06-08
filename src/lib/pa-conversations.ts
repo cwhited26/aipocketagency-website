@@ -241,6 +241,38 @@ export async function listProjectConversationThreads(
   return { ok: true, data: threads };
 }
 
+// The title of the single conversation every inbound Slack DM / @mention for an owner appends to,
+// so the back-and-forth lives in one thread the owner can also open in the Ask box. Matched by
+// (user_id, title) since pocket_agent_conversations has no per-origin column.
+const SLACK_CONVERSATION_TITLE = "Slack";
+
+/**
+ * Find — or create on first contact — the owner's dedicated Slack conversation (migration-free:
+ * keyed on the reserved title above). Inbound Slack messages route here so the thread is stable
+ * across DMs and survives in the Hub list like any other conversation.
+ */
+export async function getOrCreateSlackConversation(
+  userId: string,
+): Promise<PaResult<Conversation>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const endpoint =
+    `${env.url}/rest/v1/pocket_agent_conversations` +
+    `?user_id=eq.${encodeURIComponent(userId)}` +
+    `&title=eq.${encodeURIComponent(SLACK_CONVERSATION_TITLE)}` +
+    `&order=created_at.asc&limit=1`;
+  const res = await fetch(endpoint, {
+    headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },
+    cache: "no-store",
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as Conversation[];
+  if (rows[0]) return { ok: true, data: rows[0] };
+
+  return createConversation(userId, SLACK_CONVERSATION_TITLE);
+}
+
 export function generateTitle(firstMessage: string): string {
   const clean = firstMessage.trim().replace(/\n+/g, " ");
   return clean.length > 52 ? clean.slice(0, 49) + "…" : clean;

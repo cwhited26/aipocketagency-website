@@ -57,6 +57,15 @@ export function slackOAuthCreds(): { clientId: string; clientSecret: string } | 
   return { clientId, clientSecret };
 }
 
+/**
+ * The app's Signing Secret (Slack Basic Information → Signing Secret). Every inbound Events API
+ * request is HMAC-signed with it; the webhook verifies the signature before trusting a payload.
+ * Null when unset so the webhook can refuse cleanly (501) instead of accepting unverifiable events.
+ */
+export function slackSigningSecret(): string | null {
+  return process.env.SLACK_SIGNING_SECRET ?? null;
+}
+
 // ─── oauth.v2.access (code exchange + refresh) ──────────────────────────────────
 
 // Bot install response. authed_user carries the installing user's id; team carries the

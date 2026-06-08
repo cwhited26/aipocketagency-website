@@ -44,6 +44,10 @@ export default function SlackConnectionCard({
   const isActive = connection?.status === "active";
   const isError = connection?.status === "error";
   const scopes = connection?.scopes ?? [];
+  // Inbound DM is live once the bot is installed (we captured the owner's Slack id) AND the
+  // workspace granted the @mention scope. Older connections predate both → prompt a reconnect.
+  const dmReady = isActive && Boolean(connection?.slack_user_id);
+  const mentionReady = isActive && scopes.includes("app_mentions:read");
 
   async function handleDisconnect() {
     if (disconnecting) return;
@@ -133,6 +137,38 @@ export default function SlackConnectionCard({
           )}
         </div>
       </div>
+
+      {/* Inbound DM onboarding — once connected, the owner can message the bot and get a reply. */}
+      {isActive && (
+        <div className="mt-4 ml-7 rounded-lg border border-slate-700/50 bg-slate-950/40 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-1.5 w-1.5 rounded-full shrink-0 ${dmReady ? "bg-[#22d3ee]" : "bg-amber-400/80"}`}
+            />
+            <p className="text-[13px] font-semibold text-slate-100">
+              {dmReady ? "Bot installed — DM it anytime" : "Reconnect to finish DM setup"}
+            </p>
+          </div>
+          {dmReady ? (
+            <p className="text-[13px] text-slate-400 leading-relaxed mt-1.5">
+              DM <span className="text-slate-200">@Pocket Agent</span> in any channel of your
+              workspace to ask anything — it answers right there in Slack.
+              {!mentionReady && (
+                <>
+                  {" "}
+                  To also let it answer when you <span className="text-slate-200">@mention</span> it
+                  in a channel, reconnect once to grant the mention permission.
+                </>
+              )}
+            </p>
+          ) : (
+            <p className="text-[13px] text-slate-400 leading-relaxed mt-1.5">
+              Reconnect Slack once to let your agent reply to your DMs and @mentions right inside
+              your workspace.
+            </p>
+          )}
+        </div>
+      )}
 
       {error && <p className="mt-3 text-xs text-red-400 pl-7">{error}</p>}
     </div>
