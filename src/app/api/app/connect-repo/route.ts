@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { upsertPaUser, fetchPaUser } from "@/lib/pa-supabase";
 import { indexBrain } from "@/lib/pa-brain-index";
+import { ensureInboundAddresses } from "@/lib/inbound-email/addresses";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -74,6 +75,18 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+
+  // Provision the owner's two inbound-email addresses (forwarding + BCC). Idempotent and
+  // non-fatal — a failure here never blocks connecting the brain; the Connections page
+  // re-ensures them on load.
+  const addresses = await ensureInboundAddresses(user.id, githubUsername);
+  if (!addresses.ok) {
+    console.error("[connect-repo] inbound address provisioning failed", {
+      userId: user.id,
+      status: addresses.status,
+      error: addresses.error,
+    });
   }
 
   // Fire brain indexer for the newly connected repo.

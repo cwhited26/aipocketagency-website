@@ -245,6 +245,57 @@ export async function persistAssetBytes(params: {
   return { ok: true, sha: result.sha, assetPath };
 }
 
+/**
+ * Commit a UTF-8 text file to an arbitrary path in the brain repo (creating or overwriting
+ * it in a single commit). Used by the inbound-email BCC handler to log a touchpoint to
+ * brain/email-log/… — a brain capture that isn't an uploaded asset or a memory entry.
+ */
+export async function commitBrainTextFile(params: {
+  repo: string;
+  token: string;
+  path: string;
+  content: string;
+  commitMessage: string;
+}): Promise<{ ok: true; sha: string } | { ok: false; error: string }> {
+  const files = new Map<string, CommitFile>([[params.path, { content: params.content, encoding: "utf-8" }]]);
+  const result = await commitFiles(params.repo, params.token, files, params.commitMessage);
+  if (!result.ok) return { ok: false, error: result.error };
+  return { ok: true, sha: result.sha };
+}
+
+/**
+ * Hard-delete a file from the brain repo via the GitHub Contents API (resolve its blob sha,
+ * then DELETE). Backs the privacy-page "Purge from brain" button. A missing file is treated
+ * as already-gone (idempotent success).
+ */
+export async function deleteBrainFile(params: {
+  repo: string;
+  token: string;
+  path: string;
+  commitMessage: string;
+}): Promise<{ ok: true; deleted: boolean } | { ok: false; error: string }> {
+  const branchResult = await getDefaultBranch(params.repo, params.token);
+  if (!branchResult.ok) return { ok: false, error: branchResult.error };
+
+  const metaRes = await fetch(
+    `https://api.github.com/repos/${params.repo}/contents/${params.path}?ref=${branchResult.branch}`,
+    { headers: ghHeaders(params.token), cache: "no-store" },
+  );
+  if (metaRes.status === 404) return { ok: true, deleted: false };
+  if (!metaRes.ok) return { ok: false, error: `Could not read file to delete (${metaRes.status}).` };
+  const meta = (await metaRes.json()) as { sha?: string };
+  if (!meta.sha) return { ok: false, error: "File metadata missing sha." };
+
+  const delRes = await fetch(`https://api.github.com/repos/${params.repo}/contents/${params.path}`, {
+    method: "DELETE",
+    headers: ghHeaders(params.token),
+    body: JSON.stringify({ message: params.commitMessage, sha: meta.sha, branch: branchResult.branch }),
+    cache: "no-store",
+  });
+  if (!delRes.ok) return { ok: false, error: `Failed to delete file (${delRes.status}).` };
+  return { ok: true, deleted: true };
+}
+
 // ─── Claude extraction ───────────────────────────────────────────────────────────
 
 const ABSORPTION_PROMPT = `You are absorbing a file uploaded by a business owner into their AI agent's memory repository (their "brain").

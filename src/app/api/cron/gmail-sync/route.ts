@@ -11,12 +11,14 @@ import {
   getMessageMeta,
   listHistoryAdded,
   listRecentInboxMessages,
+  type GmailMessageMeta,
 } from "@/lib/gmail";
 import {
   createInboxItem,
   fetchGmailTriageThreadIds,
 } from "@/lib/pa-inbox-items";
 import { notifyConnectionReauthNeeded } from "@/lib/connectors/system";
+import { runBccWatchPass } from "@/lib/inbound-email/watch-runner";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +30,8 @@ type SyncResult = {
   userId: string;
   status: "ok" | "skipped" | "error";
   staged?: number;
+  // Replies drafted this cycle by the BCC thread-watch pass (inbound-email feature).
+  bccDrafted?: number;
   reason?: string;
 };
 
@@ -125,6 +129,9 @@ async function syncConnection(conn: GmailConnectionFull): Promise<SyncResult> {
   }
 
   let staged = 0;
+  // Metas gathered this cycle, reused by the BCC thread-watch pass below so it doesn't
+  // re-fetch the same messages — a watched recipient's reply arrives as a new inbox thread.
+  const metas: GmailMessageMeta[] = [];
   for (const t of newThreads) {
     const meta = await getMessageMeta(token.data, t.id);
     if (!meta.ok) {
@@ -135,6 +142,7 @@ async function syncConnection(conn: GmailConnectionFull): Promise<SyncResult> {
       continue; // skip a single unreadable message, keep going
     }
     if (!meta.data.inInbox) continue; // archived between list and fetch
+    metas.push(meta.data);
 
     const receivedAt = receivedAtIso(meta.data.internalDate);
     const created = await createInboxItem({
@@ -165,15 +173,29 @@ async function syncConnection(conn: GmailConnectionFull): Promise<SyncResult> {
     // Duplicate (unique-index race) → silently skip, it is already staged.
   }
 
+  // BCC thread-watch pass: match this cycle's new mail against the owner's open watches and
+  // draft a reply when a watched recipient responds. Self-contained + best-effort — a failure
+  // here must not block the triage cursor advance, so it runs after staging.
+  let bccDrafted = 0;
+  try {
+    const bcc = await runBccWatchPass({ userId: conn.user_id, candidates: metas });
+    bccDrafted = bcc.drafted;
+  } catch (e) {
+    console.error("[cron/gmail-sync] bcc watch pass failed", {
+      userId: conn.user_id,
+      error: e instanceof Error ? e.message : "unexpected error",
+    });
+  }
+
   const cursor = await updateGmailSyncCursor(conn.id, {
     lastSyncAt: new Date().toISOString(),
     lastSyncHistoryId: collected.nextHistoryId,
   });
   if (!cursor.ok) {
-    return { userId: conn.user_id, status: "error", reason: cursor.error, staged };
+    return { userId: conn.user_id, status: "error", reason: cursor.error, staged, bccDrafted };
   }
 
-  return { userId: conn.user_id, status: "ok", staged };
+  return { userId: conn.user_id, status: "ok", staged, bccDrafted };
 }
 
 export async function GET(req: Request): Promise<NextResponse> {
@@ -203,5 +225,11 @@ export async function GET(req: Request): Promise<NextResponse> {
   }
 
   const stagedTotal = results.reduce((n, r) => n + (r.staged ?? 0), 0);
-  return NextResponse.json({ processed: results.length, staged: stagedTotal, results });
+  const bccDraftedTotal = results.reduce((n, r) => n + (r.bccDrafted ?? 0), 0);
+  return NextResponse.json({
+    processed: results.length,
+    staged: stagedTotal,
+    bccDrafted: bccDraftedTotal,
+    results,
+  });
 }

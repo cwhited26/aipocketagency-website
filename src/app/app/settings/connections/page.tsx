@@ -11,6 +11,8 @@ import { isQuickBooksOAuthConfigured } from "@/lib/connectors/quickbooks/oauth";
 import { isStripeConnectConfigured } from "@/lib/connectors/stripe/oauth";
 import { isZoomOAuthConfigured } from "@/lib/connectors/zoom/oauth";
 import { isCalendlyOAuthConfigured } from "@/lib/connectors/calendly/oauth";
+import { ensureInboundAddresses } from "@/lib/inbound-email/addresses";
+import { INBOUND_DOMAIN, BCC_DOMAIN } from "@/lib/inbound-email/parse";
 import { redirect } from "next/navigation";
 import { TabGuide } from "../../_components/TabGuide";
 import GmailConnectionCard from "./GmailConnectionCard";
@@ -20,6 +22,7 @@ import QuickBooksConnectionCard from "./QuickBooksConnectionCard";
 import StripeConnectionCard from "./StripeConnectionCard";
 import ZoomConnectionCard from "./ZoomConnectionCard";
 import CalendlyConnectionCard from "./CalendlyConnectionCard";
+import InboundEmailCard from "./InboundEmailCard";
 
 export const dynamic = "force-dynamic";
 
@@ -209,6 +212,19 @@ export default async function ConnectionsPage({
   const zoomOAuthConfigured = isZoomOAuthConfigured();
   const calendlyOAuthConfigured = isCalendlyOAuthConfigured();
 
+  // Inbound-email addresses: ensure both exist (idempotent) and resolve them for display.
+  const seedName =
+    (user.user_metadata?.user_name as string | undefined) ?? user.email?.split("@")[0] ?? "owner";
+  const addressesResult = await ensureInboundAddresses(user.id, seedName);
+  const inboundLocal = addressesResult.ok
+    ? addressesResult.data.find((a) => a.kind === "inbound")?.local_part ?? null
+    : null;
+  const bccLocal = addressesResult.ok
+    ? addressesResult.data.find((a) => a.kind === "bcc")?.local_part ?? null
+    : null;
+  const inboundAddress = inboundLocal ? `${inboundLocal}@${INBOUND_DOMAIN}` : null;
+  const bccAddress = bccLocal ? `${bccLocal}@${BCC_DOMAIN}` : null;
+
   const message = searchParams.connection ? MESSAGES[searchParams.connection] ?? null : null;
   const calendarMessage = searchParams.calendar
     ? CALENDAR_MESSAGES[searchParams.calendar] ?? null
@@ -346,6 +362,8 @@ export default async function ConnectionsPage({
         )}
 
         <GmailConnectionCard connection={gmail} />
+
+        <InboundEmailCard inboundAddress={inboundAddress} bccAddress={bccAddress} />
 
         <CalendarConnectionCard connection={calendar} />
 
