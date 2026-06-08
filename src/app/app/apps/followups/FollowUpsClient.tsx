@@ -67,7 +67,7 @@ export default function FollowUpsClient({
 
   if (!hasApiKey) {
     return (
-      <div className="min-h-screen bg-[#05070a] flex flex-col items-center justify-center px-4">
+      <div className="h-full overflow-y-auto bg-[#05070a] flex flex-col items-center justify-center px-4">
         <div className="max-w-sm w-full space-y-4 text-center">
           <div className="text-[#22d3ee] text-xs font-mono tracking-[0.2em] uppercase">
             Setup required
@@ -89,7 +89,7 @@ export default function FollowUpsClient({
   }
 
   return (
-    <div className="min-h-screen bg-[#05070a]">
+    <div className="h-full overflow-y-auto bg-[#05070a]">
       <div className="max-w-2xl mx-auto px-6 py-10">
         <div className="mb-2">
           <Link
