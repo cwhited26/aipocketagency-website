@@ -245,6 +245,29 @@ export async function listRecentInboxMessages(
   return { ok: true, data: parsed.data.messages ?? [] };
 }
 
+/**
+ * Messages matching an arbitrary Gmail search query (e.g. "from:patrick is:unread"), newest
+ * first, capped at `max`. Backs the connector.gmail.search read action. Empty `query` falls back
+ * to a recent-inbox window so a bare "search my email" still returns something useful.
+ */
+export async function searchMessages(
+  accessToken: string,
+  query: string,
+  max: number,
+): Promise<GmailResult<{ id: string; threadId: string }[]>> {
+  const q = query.trim() || "in:inbox newer_than:30d";
+  const url = new URL("https://gmail.googleapis.com/gmail/v1/users/me/messages");
+  url.searchParams.set("q", q);
+  url.searchParams.set("maxResults", String(max));
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  const parsed = await parseJson(res, MessagesListSchema);
+  if (!parsed.ok) return parsed;
+  return { ok: true, data: parsed.data.messages ?? [] };
+}
+
 // ─── history.list (incremental) ───────────────────────────────────────────────
 
 const HistorySchema = z.object({

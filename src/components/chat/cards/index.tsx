@@ -17,6 +17,7 @@ import {
   type SubAgentActivityPayload,
   type ActionApprovalPayload,
   type PersonaResponsePayload,
+  type ToolCallPayload,
 } from "@/lib/chat/types";
 import CardShell from "./CardShell";
 import MemoryWriteCard from "./MemoryWriteCard";
@@ -26,6 +27,7 @@ import VoiceMemoCard from "./VoiceMemoCard";
 import ScreenshotCard from "./ScreenshotCard";
 import SubAgentActivityCard from "./SubAgentActivityCard";
 import ActionApprovalCard from "./ActionApprovalCard";
+import ToolCallCard from "./ToolCallCard";
 import { RailIcon } from "../icons";
 
 function primaryTag(tags: readonly FilterTag[]): FilterTag {
@@ -82,6 +84,8 @@ export default function InlineCard({
       return <SubAgentActivityCard payload={data as SubAgentActivityPayload} tag={tag} createdAt={message.created_at} onArchive={archive} />;
     case "action_approval":
       return <ActionApprovalCard payload={data as ActionApprovalPayload} tag={tag} createdAt={message.created_at} onArchive={archive} />;
+    case "tool_call":
+      return <ToolCallCard payload={data as ToolCallPayload} tag={tag} createdAt={message.created_at} onArchive={archive} />;
     case "persona_response": {
       const p = data as PersonaResponsePayload;
       return (

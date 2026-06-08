@@ -5,29 +5,27 @@ import { SendMessageSchema, type ChatMessage } from "@/lib/chat/types";
 import { parseIntent } from "@/lib/chat/filters";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { commitMemoryFile } from "@/lib/pa-brain";
-import { orchestratorEnabled } from "@/lib/orchestrator/feature-flag";
-import { dispatchUserGoal } from "@/lib/orchestrator/dispatcher";
+import { loadChatInventory } from "@/lib/chat/connection-inventory";
+import { runChatAgent, type AgentLlm, type AgentToolRunner } from "@/lib/chat/agent-loop";
+import { executeTool } from "@/lib/chat/tools";
+import { completeLlm } from "@/lib/llm/dispatch";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-
-// Wave A generic reply — used when the orchestrator is off, a goal is a simple lookup, or a
-// dispatch attempt degrades. Kept verbatim so default behaviour is unchanged with the flag off.
-const WAVE_A_REPLY =
-  "Got it — logged to your chat. I can: save to memory (\"add to memory: …\"), " +
-  "answer through a persona (\"ask my <persona>: …\"), capture voice (/capture voice), and " +
-  "upload files (/upload). Full task execution — spawning sub-agents to do the work — arrives " +
-  "with v5 Wave B.";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MEMORY_PATH = "memory/active/chat-captures.md";
 
+// Cap LLM output per step — answers + tool-call JSON are both short.
+const AGENT_MAX_TOKENS = 1024;
+
 // POST /api/app/chat/send  { content }
-// Appends the user message, runs deterministic intent parsing (lib/chat/filters), and emits
-// the matching inline card(s). Wave A makes existing features chat-reachable; it does NOT
-// dispatch sub-agents (that is Wave B). Returns every row it appended so the client renders
-// them in order.
+// Appends the user message, runs deterministic intent parsing (memory / persona fast-paths), and
+// otherwise hands the message to the tool-aware agent loop: the LLM picks Connections to use,
+// reads fire INLINE and stream their result into the chat, writes stage to the Approval Inbox.
+// This replaces the old canned Wave-A fallback — the agent now knows (and uses) its Connections.
+// Returns every row it appended so the client renders them in order.
 export async function POST(req: Request): Promise<NextResponse> {
   if (!chatAsHomeEnabled()) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -61,14 +59,9 @@ export async function POST(req: Request): Promise<NextResponse> {
       out.push(...(await handleMemory(user.id, intent.content)));
     } else if (intent.kind === "persona") {
       out.push(...(await handlePersona(user.id, intent.personaQuery, intent.question)));
-    } else if (orchestratorEnabled()) {
-      // PA v5 Wave B: route a generic message to the dispatcher. Simple lookups + a disabled /
-      // misconfigured runtime fall back to the Wave A reply, so chat never breaks.
-      out.push(...(await handleOrchestratorGoal(user.id, content, out[0]?.id ?? null)));
     } else {
-      out.push(
-        await insertMessage({ userId: user.id, role: "assistant", content: WAVE_A_REPLY, filterTags: ["general"] }),
-      );
+      // Tool-aware agent: enumerate live Connections, run reads inline, stage writes for approval.
+      out.push(...(await handleAgentTurn(user.id, content)));
     }
 
     return NextResponse.json({ messages: out });
@@ -81,58 +74,48 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 }
 
-// ── Generic message → orchestrator dispatch (Wave B) ─────────────────────────────────────
-// Maps a DispatchOutcome onto chat rows: a dispatched run renders a sub_agent_activity card in
-// the /tasks view; capped/simple/disabled render an assistant message. Any thrown error (e.g.
-// the orchestrator tables aren't migrated yet) degrades to the Wave A reply — chat never 500s
-// on a half-configured orchestrator.
-async function handleOrchestratorGoal(
-  userId: string,
-  goal: string,
-  originatingMessageId: string | null,
-): Promise<ChatMessage[]> {
-  let outcome;
-  try {
-    outcome = await dispatchUserGoal({ businessId: userId, goal, originatingMessageId });
-  } catch {
-    return [
-      await insertMessage({ userId, role: "assistant", content: WAVE_A_REPLY, filterTags: ["general"] }),
-    ];
-  }
+// ── Generic message → tool-aware agent loop ──────────────────────────────────────────────
+// Loads the user's live tool inventory, runs the LLM tool-use loop (reads inline, writes staged),
+// and persists each emitted row: a tool_call card per fired Connection, then the final answer.
+async function handleAgentTurn(userId: string, content: string): Promise<ChatMessage[]> {
+  const inventory = await loadChatInventory(userId);
 
-  if (outcome.kind === "dispatched") {
-    const msgs: ChatMessage[] = [];
-    msgs.push(
-      await insertMessage({
-        userId,
-        role: "inline_card",
-        cardKind: "sub_agent_activity",
-        cardPayload: {
-          label: outcome.scaffold.project,
-          phase: "observe",
-          note: outcome.reason,
-        },
-        filterTags: ["tasks"],
-      }),
-    );
-    if (!outcome.dispatched) {
-      msgs.push(
-        await insertMessage({ userId, role: "assistant", content: outcome.reason, filterTags: ["tasks"] }),
+  const llm: AgentLlm = async ({ system, messages }) => {
+    const res = await completeLlm({
+      userId,
+      paManagedKey: inventory.paManagedKey,
+      system,
+      messages,
+      maxTokens: AGENT_MAX_TOKENS,
+    });
+    if (!res.ok) return { ok: false, error: res.error };
+    return { ok: true, text: res.text };
+  };
+
+  const runTool: AgentToolRunner = (call) => executeTool(userId, inventory, call);
+
+  const emits = await runChatAgent({ inventory, content, llm, runTool });
+
+  const rows: ChatMessage[] = [];
+  for (const emit of emits) {
+    if (emit.role === "assistant") {
+      rows.push(
+        await insertMessage({ userId, role: "assistant", content: emit.content, filterTags: ["general"] }),
+      );
+    } else {
+      rows.push(
+        await insertMessage({
+          userId,
+          role: "inline_card",
+          cardKind: emit.cardKind,
+          cardPayload: emit.cardPayload,
+          // Surface tool activity under both the home stream and the Connections view.
+          filterTags: ["connections", "general"],
+        }),
       );
     }
-    return msgs;
   }
-
-  if (outcome.kind === "capped") {
-    return [
-      await insertMessage({ userId, role: "assistant", content: outcome.reason, filterTags: ["general"] }),
-    ];
-  }
-
-  // simple | disabled → Wave A behaviour (answer inline / generic reply).
-  return [
-    await insertMessage({ userId, role: "assistant", content: WAVE_A_REPLY, filterTags: ["general"] }),
-  ];
+  return rows;
 }
 
 // ── Memory intent → commit to brain + memory_write card ──────────────────────────────────
@@ -191,8 +174,8 @@ async function handleMemory(userId: string, note: string): Promise<ChatMessage[]
 }
 
 // ── Persona intent → resolve persona + persona_invoke card ───────────────────────────────
-// Wave A surfaces the invocation and deep-links into the persona's full chat thread (where
-// the existing persona LLM pipeline answers). Inline answer streaming is a Wave B concern.
+// Surfaces the invocation and deep-links into the persona's full chat thread (where the existing
+// persona LLM pipeline answers).
 async function handlePersona(
   userId: string,
   personaQuery: string,

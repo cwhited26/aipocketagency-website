@@ -27,6 +27,14 @@ const VALID_PAYLOADS: Record<CardKind, unknown> = {
   sub_agent_activity: { label: "Job file lookup", phase: "plan", note: "reviewing photos" },
   action_approval: { connector: "gmail", action: "send", preview: "Subject: Williams" },
   persona_response: { personaId: "p1", personaName: "Coach", answer: "Do the hardest thing first." },
+  tool_call: {
+    tool: "connector.gmail.list_recent",
+    label: "Checked your Gmail",
+    status: "ok",
+    summary: "Found 5 messages.",
+    detail: "1. patrick@… — Re: roof",
+    openHref: "/app/apps/inbox",
+  },
 };
 
 describe("card payload schemas", () => {

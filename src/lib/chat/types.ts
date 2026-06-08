@@ -42,6 +42,7 @@ export const CARD_KINDS = [
   "sub_agent_activity",
   "action_approval",
   "persona_response",
+  "tool_call",
 ] as const;
 export const CardKindSchema = z.enum(CARD_KINDS);
 export type CardKind = z.infer<typeof CardKindSchema>;
@@ -131,6 +132,25 @@ export const PersonaResponsePayloadSchema = z.object({
 });
 export type PersonaResponsePayload = z.infer<typeof PersonaResponsePayloadSchema>;
 
+// Tool-call activity card (PA v5 connector bridge). The chat-send tool-use loop appends one of
+// these every time the agent fires a Connection: a read runs inline and lands status='ok'/'error'
+// with the result preview; a write is staged to the Approval Inbox and lands status='staged'.
+export const ToolCallPayloadSchema = z.object({
+  // Canonical tool id the agent invoked, e.g. "connector.gmail.list_recent".
+  tool: z.string().min(1).max(120),
+  // Human card title, e.g. "Checked your Gmail".
+  label: z.string().min(1).max(200),
+  // read tools resolve to ok|error; write tools resolve to staged (queued for approval).
+  status: z.enum(["ok", "error", "staged"]),
+  // One-line outcome, e.g. "Found 5 recent messages" / "Queued for your approval".
+  summary: z.string().min(1).max(2_000),
+  // Optional multi-line preview of the result (read) or the staged action (write).
+  detail: z.string().max(8_000).optional(),
+  // Deep link to where the result/approval lives (e.g. the Inbox for a staged write).
+  openHref: z.string().max(500).optional(),
+});
+export type ToolCallPayload = z.infer<typeof ToolCallPayloadSchema>;
+
 // Maps a card kind to its payload schema. Used by validateCardPayload + the renderers'
 // prop-validation tests.
 export const CARD_PAYLOAD_SCHEMAS = {
@@ -142,6 +162,7 @@ export const CARD_PAYLOAD_SCHEMAS = {
   sub_agent_activity: SubAgentActivityPayloadSchema,
   action_approval: ActionApprovalPayloadSchema,
   persona_response: PersonaResponsePayloadSchema,
+  tool_call: ToolCallPayloadSchema,
 } satisfies Record<CardKind, z.ZodTypeAny>;
 
 /**
