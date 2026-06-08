@@ -25,6 +25,7 @@ import {
 import { hasGmailSendScope } from "@/lib/gmail";
 import { runCalendarAction } from "@/lib/connectors/calendar";
 import { executeSlackAction } from "@/lib/connectors/slack/execute";
+import { executeZoomAction } from "@/lib/connectors/zoom";
 import { stageConnectorAction } from "@/lib/orchestrator/tool-use";
 import { ConnectorScopeError } from "@/lib/orchestrator/containment-guard";
 import { orchestratorEnabled } from "@/lib/orchestrator/feature-flag";
@@ -160,6 +161,34 @@ const CONNECTOR_TOOLS: Record<ChatConnector, ToolSpec[]> = {
       description: "Post a message to a Slack channel. Staged for approval before it posts.",
     },
   ],
+  zoom: [
+    {
+      id: "connector.zoom.list_upcoming_meetings",
+      kind: "read",
+      signature: "connector.zoom.list_upcoming_meetings(page_size?)",
+      description: "List the owner's upcoming Zoom meetings (topic / start / join link).",
+    },
+    {
+      id: "connector.zoom.get_meeting_link",
+      kind: "read",
+      signature: "connector.zoom.get_meeting_link(meeting_id)",
+      description:
+        "Get the join link (join_url) for a specific Zoom meeting — use this when you need a link " +
+        "to put into an email or a calendar invite.",
+    },
+    {
+      id: "connector.zoom.create_meeting",
+      kind: "write",
+      connector: "zoom",
+      action: "create_meeting",
+      signature:
+        "connector.zoom.create_meeting(topic, start_time, duration_minutes|end_time, agenda?, timezone?, auto_recording?)",
+      description:
+        "Schedule a Zoom meeting and get its join link. Staged for approval before it's created. " +
+        "To put a Zoom call on a calendar invite: call this first, then pass the returned join_url " +
+        "into connector.calendar.create_event's description.",
+    },
+  ],
 };
 
 // Per-connection re-auth annotation for a Gmail tool. Never hides the tool — it surfaces
@@ -187,7 +216,7 @@ function annotateGmail(spec: ToolSpec, conn: LiveConnector): ToolSpec {
 export function buildToolset(inventory: ChatInventory): ToolSpec[] {
   const tools: ToolSpec[] = [];
   if (inventory.brainRepo) tools.push(...BRAIN_TOOLS);
-  for (const provider of ["gmail", "calendar", "slack"] as const) {
+  for (const provider of ["gmail", "calendar", "slack", "zoom"] as const) {
     const conn = inventory.connectors.find((c) => c.provider === provider);
     if (!conn) continue;
     const specs = CONNECTOR_TOOLS[provider];
@@ -470,6 +499,48 @@ async function runInline(
         forModel: clampForModel(`Slack messages in ${channel}:\n${detail}`),
       };
     }
+    case "connector.zoom.list_upcoming_meetings": {
+      const payload: Record<string, unknown> = { page_size: asNumber(input.page_size ?? input.limit, 10) };
+      const res = await executeZoomAction({ userId, action: "list_upcoming_meetings", payload, ownerEmail: null });
+      if (!res.ok) {
+        return { status: "error", label: "Checked your Zoom", summary: res.error, forModel: `ERROR: ${res.error}` };
+      }
+      const meetings = Array.isArray((res.data as { meetings?: unknown }).meetings)
+        ? (res.data as { meetings: { topic?: string; start?: string; joinUrl?: string | null }[] }).meetings
+        : [];
+      const detail = meetings.length
+        ? meetings
+            .map((m, i) => `${i + 1}. ${m.topic ?? "(no topic)"} — ${m.start ?? "?"}${m.joinUrl ? `\n   ${m.joinUrl}` : ""}`)
+            .join("\n")
+        : "No upcoming Zoom meetings.";
+      return {
+        status: "ok",
+        label: "Checked your Zoom",
+        summary: `Found ${meetings.length} upcoming meeting${meetings.length === 1 ? "" : "s"}.`,
+        detail,
+        forModel: clampForModel(`Zoom returned ${meetings.length} upcoming meeting(s):\n${detail}`),
+      };
+    }
+    case "connector.zoom.get_meeting_link": {
+      const meetingId = asString(input.meeting_id);
+      if (!meetingId) {
+        return { status: "error", label: "Zoom meeting link", summary: "No meeting_id given.", forModel: "ERROR: connector.zoom.get_meeting_link needs a `meeting_id`." };
+      }
+      const res = await executeZoomAction({ userId, action: "get_meeting_link", payload: { meeting_id: meetingId }, ownerEmail: null });
+      if (!res.ok) {
+        return { status: "error", label: "Zoom meeting link", summary: res.error, forModel: `ERROR: ${res.error}` };
+      }
+      const joinUrl = typeof (res.data as { joinUrl?: unknown }).joinUrl === "string"
+        ? (res.data as { joinUrl: string }).joinUrl
+        : null;
+      return {
+        status: "ok",
+        label: "Zoom meeting link",
+        summary: joinUrl ? "Found the join link." : "No join link on that meeting.",
+        detail: joinUrl ?? undefined,
+        forModel: joinUrl ? `Zoom join link for meeting ${meetingId}: ${joinUrl}` : `Meeting ${meetingId} has no join link.`,
+      };
+    }
     default:
       return unavailable(spec.id);
   }
@@ -536,7 +607,11 @@ async function runCreateDraft(
 
 // ── Write staging (Wave B Approval Inbox) ───────────────────────────────────────────────────────
 
-function writePreview(spec: ToolSpec, input: Record<string, unknown>): { title: string; preview: string } {
+function writePreview(
+  spec: ToolSpec,
+  input: Record<string, unknown>,
+  inventory: ChatInventory,
+): { title: string; preview: string } {
   switch (spec.id) {
     case "connector.gmail.send": {
       const to = asString(input.to) || "(no recipient)";
@@ -548,12 +623,26 @@ function writePreview(spec: ToolSpec, input: Record<string, unknown>): { title: 
       const t = asString(input.title) || "(untitled)";
       const start = asString(input.start);
       const end = asString(input.end);
-      return { title: `Create event — ${t}`, preview: `${t}\n${start} → ${end}` };
+      // Cross-connector composition (task item 6): when Zoom is connected, the calendar lane adds a
+      // Zoom join link to this event on approval (composeZoomForEvent), so the preview says so. The
+      // link itself is generated when the event is created — covered by this single approval.
+      const zoomLine =
+        hasConnector(inventory, "zoom") && !asString(input.description).includes("zoom.us")
+          ? "\n+ A Zoom meeting link will be created and added on approval."
+          : "";
+      return { title: `Create event — ${t}`, preview: `${t}\n${start} → ${end}${zoomLine}` };
     }
     case "connector.slack.post_message": {
       const channel = asString(input.channel) || "(no channel)";
       const text = asString(input.text);
       return { title: `Post to ${channel}`, preview: `#${channel}: ${text}` };
+    }
+    case "connector.zoom.create_meeting": {
+      const topic = asString(input.topic) || "(untitled)";
+      const start = asString(input.start_time);
+      const duration = asNumber(input.duration_minutes, 0);
+      const when = duration > 0 ? `${start} for ${duration} min` : start;
+      return { title: `Create Zoom meeting — ${topic}`, preview: `${topic}\n${when}` };
     }
     default:
       return { title: spec.id, preview: JSON.stringify(input).slice(0, 500) };
@@ -569,7 +658,7 @@ async function stageWrite(
   if (!spec.connector || !spec.action) return unavailable(spec.id);
   if (!hasConnector(inventory, spec.connector)) return unavailable(spec.id);
 
-  const { title, preview } = writePreview(spec, input);
+  const { title, preview } = writePreview(spec, input, inventory);
   // Honest notice when the autonomous runtime is off: the action is still queued and runs
   // in-process on approval, but we never imply it already fired.
   const runtimeOffNote = orchestratorEnabled()

@@ -16,6 +16,7 @@ import {
   markCalendarConnectionError,
 } from "@/lib/pa-calendar-connections";
 import { ensureFreshCalendarAccessToken, hasCalendarScope } from "./oauth";
+import { composeZoomForEvent, applyZoomToEventFields } from "@/lib/connectors/zoom/compose";
 import type { ActionExecOutcome, CalendarActionMeta, CalendarActionName, ApprovalGate } from "./types";
 
 import { listEventsAction, ListEventsInputSchema } from "./actions/list_events";
@@ -187,9 +188,24 @@ export async function runCalendarAction(input: {
     };
   }
 
+  // Cross-connector composition (Zoom Connection lane, task items 6 + 10): when PA creates a
+  // calendar event for a meeting (it has attendees) and the owner has Zoom connected, spawn a Zoom
+  // meeting with the same topic + time and inject its join link into the event description +
+  // location. This runs at EXECUTION time — after the owner approved the event — so the single
+  // approval covers the (lowest-risk) Zoom-link generation. Fallback is graceful: if Zoom isn't
+  // connected, the event keeps whatever conferencing it already had (Google Meet via conference_data,
+  // or none). A Zoom failure is surfaced in the summary, never swallowed, and the event still books.
+  let payload = input.payload;
+  let zoomNote = "";
+  if (input.action === "create_event") {
+    const composed = await maybeComposeZoom(input.userId, conn.data.email, payload);
+    payload = composed.payload;
+    zoomNote = composed.note;
+  }
+
   const outcome = await executeCalendarAction(input.action, {
     accessToken: token.data,
-    payload: input.payload,
+    payload,
     requestId: input.requestId,
   });
   if (!outcome.ok) {
@@ -199,5 +215,54 @@ export async function runCalendarAction(input: {
     }
     return { ok: false, status: outcome.status, error: outcome.error, reauth: false };
   }
-  return { ok: true, summary: outcome.summary, data: outcome.data };
+  return { ok: true, summary: `${outcome.summary}${zoomNote}`, data: outcome.data };
+}
+
+/**
+ * Attach a Zoom join link to a create_event payload when the owner has Zoom connected and the event
+ * is a meeting (has attendees) without an existing video link. Returns the (possibly enriched)
+ * payload + a human note for the summary. Never throws — composeZoomForEvent returns typed
+ * skip/failure outcomes.
+ */
+async function maybeComposeZoom(
+  userId: string,
+  ownerEmail: string | null,
+  payload: Record<string, unknown>,
+): Promise<{ payload: Record<string, unknown>; note: string }> {
+  const attendees = Array.isArray(payload.attendees) ? payload.attendees : [];
+  const description = typeof payload.description === "string" ? payload.description : "";
+  const title = typeof payload.title === "string" ? payload.title : "";
+  const start = typeof payload.start === "string" ? payload.start : "";
+  // Only compose for a real meeting (attendees) we can place in time, and don't double up if the
+  // description already carries a video link.
+  if (attendees.length === 0 || !title || !start || /zoom\.us|meet\.google\.com/.test(description)) {
+    return { payload, note: "" };
+  }
+
+  const composed = await composeZoomForEvent({
+    userId,
+    topic: title,
+    startIso: start,
+    endIso: typeof payload.end === "string" ? payload.end : undefined,
+    agenda: description || undefined,
+    timezone: typeof payload.timezone === "string" ? payload.timezone : undefined,
+    ownerEmail,
+  });
+
+  if (composed.status === "attached") {
+    const fields = applyZoomToEventFields(
+      { description, location: typeof payload.location === "string" ? payload.location : undefined },
+      composed.joinUrl,
+    );
+    return {
+      // conference_data:false so the event doesn't also provision a Google Meet alongside Zoom.
+      payload: { ...payload, description: fields.description, location: fields.location, conference_data: false },
+      note: ` Added a Zoom link (${composed.joinUrl}).`,
+    };
+  }
+  if (composed.status === "failed") {
+    return { payload, note: ` (Couldn't attach a Zoom link: ${composed.reason})` };
+  }
+  // skipped — Zoom not connected; leave the event's own conferencing untouched.
+  return { payload, note: "" };
 }

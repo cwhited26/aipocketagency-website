@@ -103,6 +103,37 @@ export function buildSystemPrompt(inventory: ChatInventory): { system: string; t
       "when the owner explicitly wants the email sent now."
     : "";
 
+  // Cross-connector meeting composition (Zoom Connection lane, task item 10). Surfaced only when
+  // Zoom is live this turn, so the chain never references a tool the owner can't reach. Teaches the
+  // model how Calendar (where the event goes), Zoom (where the call happens), and email (where the
+  // link is shared) chain together.
+  const hasZoom = tools.some((t) => t.id.startsWith("connector.zoom."));
+  const hasCalendar = tools.some((t) => t.id.startsWith("connector.calendar."));
+  const hasEmail = tools.some(
+    (t) => t.id === "connector.gmail.send" || t.id === "connector.gmail.create_draft",
+  );
+  const meetingComposition = hasZoom
+    ? [
+        "MEETINGS — chaining Zoom + Calendar + email:",
+        "Zoom is where the actual video call happens. When you schedule a meeting, the call link should",
+        "ride along into wherever the meeting lives.",
+        hasCalendar
+          ? "• Calendar invite: when you create a calendar event for a meeting with attendees, a Zoom join " +
+            "link is added to the event description automatically on approval — you don't need to chain " +
+            "create_meeting yourself for that case. To control it explicitly, call connector.zoom.create_meeting " +
+            "first, then pass the returned join_url into connector.calendar.create_event's description."
+          : "",
+        hasEmail
+          ? "• Outbound email: call connector.zoom.create_meeting (or connector.zoom.get_meeting_link for an " +
+            "existing meeting) to get the join_url, then put that link in the email body when you draft/send."
+          : "",
+        "Canonical chain: create_meeting on Zoom → grab the join_url → create_event on Calendar with the " +
+          "join_url in the description → draft the email. Falls back gracefully when Zoom isn't connected.",
+      ]
+        .filter((l) => l !== "")
+        .join("\n")
+    : "";
+
   const system = [
     "You are the owner's Pocket Agent — a hands-on operator that actually does the work, not a chatbot that",
     "describes what it would do. You speak plainly and act.",
@@ -118,6 +149,7 @@ export function buildSystemPrompt(inventory: ChatInventory): { system: string; t
     protocol,
     "",
     draftGuidance,
+    meetingComposition,
     "Rules: prefer a tool over guessing when the owner asks about their email, calendar, Slack, or brain.",
     "When a Connection is only partly wired, be precise about what you CAN and CAN'T do and offer the",
     "plain-English fallback — never flatten a partial capability into a blanket \"I can't\" or \"I have no access\".",

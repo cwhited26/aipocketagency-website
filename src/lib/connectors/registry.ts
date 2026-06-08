@@ -10,13 +10,15 @@ import {
   type QuickBooksExecuteResult,
 } from "./quickbooks/execute";
 import { executeStripeAction, STRIPE_CONNECTOR, type StripeExecuteResult } from "./stripe";
+import { executeZoomAction, ZOOM_CONNECTOR, type ZoomExecuteResult } from "./zoom";
 
 // All in-process executors share the same terminal result shape ({ok,summary,data} |
 // {ok,status,error}); the union keeps that explicit as more connectors register.
 export type ConnectorExecuteResult =
   | SlackExecuteResult
   | QuickBooksExecuteResult
-  | StripeExecuteResult;
+  | StripeExecuteResult
+  | ZoomExecuteResult;
 
 export type ExecuteConnectorActionInput = {
   connector: string;
@@ -63,6 +65,15 @@ export async function executeConnectorAction(
     // Stripe derives its own idempotency key from (run + action + payload hash) internally
     // (roadmap §3.2), so it doesn't need requestId threaded here.
     return executeStripeAction({
+      userId: input.userId,
+      action: input.action,
+      payload: input.payload,
+      subAgentRunId: input.subAgentRunId ?? null,
+      ownerEmail: input.ownerEmail ?? null,
+    });
+  }
+  if (input.connector === ZOOM_CONNECTOR) {
+    return executeZoomAction({
       userId: input.userId,
       action: input.action,
       payload: input.payload,

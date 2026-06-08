@@ -50,10 +50,17 @@ export const AUTO_APPROVE_TRUST_WINDOW = 10;
 // NEVER become auto-approve eligible regardless of how many were manually approved: every refund
 // is an explicit per-action owner tap, forever. autoApproveUnlockedFor() reads this, so the
 // auto-approve toggle route refuses to enable it and the approval route never reports it unlocked.
+//
+// Zoom (Zoom Connection lane, task item 8): create_meeting clears at the default window (10) —
+// generating a join link has no real-world side effect until someone joins. update_meeting and
+// cancel_meeting carry a higher bar (20) because they alter / remove a meeting already on the
+// books and notify attendees.
 export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> = {
   "quickbooks:create_invoice": 10,
   "quickbooks:record_payment": 20,
   "stripe:refund_charge": Number.POSITIVE_INFINITY,
+  "zoom:update_meeting": 20,
+  "zoom:cancel_meeting": 20,
 };
 
 /** The trust window for a specific (connector, action), honoring the money-action overrides. */

@@ -4,9 +4,11 @@ import { fetchCalendarConnectionPublic } from "@/lib/pa-calendar-connections";
 import { fetchSlackConnectionPublic } from "@/lib/pa-slack-connections";
 import { fetchQuickBooksConnectionPublic } from "@/lib/pa-quickbooks-connections";
 import { fetchStripeConnectionPublic } from "@/lib/pa-stripe-connections";
+import { fetchZoomConnectionPublic } from "@/lib/pa-zoom-connections";
 import { isSlackOAuthConfigured } from "@/lib/connectors/slack/oauth";
 import { isQuickBooksOAuthConfigured } from "@/lib/connectors/quickbooks/oauth";
 import { isStripeConnectConfigured } from "@/lib/connectors/stripe/oauth";
+import { isZoomOAuthConfigured } from "@/lib/connectors/zoom/oauth";
 import { redirect } from "next/navigation";
 import { TabGuide } from "../../_components/TabGuide";
 import GmailConnectionCard from "./GmailConnectionCard";
@@ -14,6 +16,7 @@ import CalendarConnectionCard from "./CalendarConnectionCard";
 import SlackConnectionCard from "./SlackConnectionCard";
 import QuickBooksConnectionCard from "./QuickBooksConnectionCard";
 import StripeConnectionCard from "./StripeConnectionCard";
+import ZoomConnectionCard from "./ZoomConnectionCard";
 
 export const dynamic = "force-dynamic";
 
@@ -117,6 +120,24 @@ const STRIPE_MESSAGES: Record<string, { title: string; body: string; kind: "succ
   },
 };
 
+const ZOOM_MESSAGES: Record<string, { title: string; body: string; kind: "success" | "error" }> = {
+  connected: {
+    title: "Zoom connected",
+    body: "Your agent can now schedule Zoom meetings and drop the join link straight into your calendar invites and emails. New meetings are staged for your approval first.",
+    kind: "success",
+  },
+  not_configured: {
+    title: "Zoom sign-in unavailable",
+    body: "Zoom OAuth isn't configured for this deployment yet. Add ZOOM_CLIENT_ID and ZOOM_CLIENT_SECRET in Vercel to switch it on.",
+    kind: "error",
+  },
+  error: {
+    title: "Zoom connection failed",
+    body: "Something went wrong connecting Zoom. Try again, or contact support if it keeps happening.",
+    kind: "error",
+  },
+};
+
 export default async function ConnectionsPage({
   searchParams,
 }: {
@@ -126,6 +147,7 @@ export default async function ConnectionsPage({
     slack?: string;
     quickbooks?: string;
     stripe?: string;
+    zoom?: string;
   };
 }) {
   const supabase = createClient();
@@ -134,22 +156,25 @@ export default async function ConnectionsPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/app/login");
 
-  const [gmailResult, calendarResult, slackResult, quickbooksResult, stripeResult] =
+  const [gmailResult, calendarResult, slackResult, quickbooksResult, stripeResult, zoomResult] =
     await Promise.all([
       fetchGmailConnectionPublic(user.id),
       fetchCalendarConnectionPublic(user.id),
       fetchSlackConnectionPublic(user.id),
       fetchQuickBooksConnectionPublic(user.id),
       fetchStripeConnectionPublic(user.id),
+      fetchZoomConnectionPublic(user.id),
     ]);
   const gmail = gmailResult.ok ? gmailResult.data : null;
   const calendar = calendarResult.ok ? calendarResult.data : null;
   const slack = slackResult.ok ? slackResult.data : null;
   const quickbooks = quickbooksResult.ok ? quickbooksResult.data : null;
   const stripe = stripeResult.ok ? stripeResult.data : null;
+  const zoom = zoomResult.ok ? zoomResult.data : null;
   const slackOAuthConfigured = isSlackOAuthConfigured();
   const quickBooksOAuthConfigured = isQuickBooksOAuthConfigured();
   const stripeConfigured = isStripeConnectConfigured();
+  const zoomOAuthConfigured = isZoomOAuthConfigured();
 
   const message = searchParams.connection ? MESSAGES[searchParams.connection] ?? null : null;
   const calendarMessage = searchParams.calendar
@@ -160,6 +185,7 @@ export default async function ConnectionsPage({
     ? QUICKBOOKS_MESSAGES[searchParams.quickbooks] ?? null
     : null;
   const stripeMessage = searchParams.stripe ? STRIPE_MESSAGES[searchParams.stripe] ?? null : null;
+  const zoomMessage = searchParams.zoom ? ZOOM_MESSAGES[searchParams.zoom] ?? null : null;
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">
@@ -257,6 +283,19 @@ export default async function ConnectionsPage({
           </div>
         )}
 
+        {zoomMessage && (
+          <div
+            className={`rounded-xl border px-5 py-4 space-y-1 ${
+              zoomMessage.kind === "success"
+                ? "border-[#22d3ee]/25 bg-[#22d3ee]/5"
+                : "border-slate-700/60 bg-slate-900/50"
+            }`}
+          >
+            <p className="text-sm font-semibold text-slate-100">{zoomMessage.title}</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{zoomMessage.body}</p>
+          </div>
+        )}
+
         <GmailConnectionCard connection={gmail} />
 
         <CalendarConnectionCard connection={calendar} />
@@ -270,14 +309,18 @@ export default async function ConnectionsPage({
 
         <StripeConnectionCard connection={stripe} configured={stripeConfigured} />
 
+        <ZoomConnectionCard connection={zoom} oauthConfigured={zoomOAuthConfigured} />
+
         <p className="text-xs text-slate-600 leading-relaxed">
           Gmail access lets your agent read incoming mail and archive a thread when you tap
           “I’ll handle” or “Archive.” Calendar access lets it read your schedule and propose,
           create, or reschedule events. Slack access lets it post, reply in threads, and DM.
           QuickBooks access lets it draft invoices, record payments, and pull reports. Stripe
-          access lets it draft invoices, payment links, and refunds on your own Stripe account. It
-          never sends, deletes, or writes anything on its own — replies, calendar changes, and every
-          invoice, payment, or refund are always staged for your approval first.
+          access lets it draft invoices, payment links, and refunds on your own Stripe account. Zoom
+          access lets it schedule the video call and drop the join link into your invites and emails.
+          It never sends, deletes, or writes anything on its own — replies, calendar changes, new
+          Zoom meetings, and every invoice, payment, or refund are always staged for your approval
+          first.
         </p>
 
         {/* First-touch guide — what to ask, what this connects to, and a sample status */}
@@ -315,6 +358,7 @@ export default async function ConnectionsPage({
               { tool: "QuickBooks", does: "Drafts invoices, records payments, pulls reports — writes on approval." },
               { tool: "Slack", does: "Posts messages, replies in threads, sends DMs — each send on approval." },
               { tool: "Stripe", does: "Drafts invoices, payment links, and refunds — refunds always ask first." },
+              { tool: "Zoom", does: "Schedules the call and adds the join link to your calendar invite + emails — new meetings on approval." },
               { tool: "GitHub", does: "Connects the repo that holds your brain so your agent can read and update it." },
             ].map((c) => (
               <li

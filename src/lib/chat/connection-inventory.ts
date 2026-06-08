@@ -3,15 +3,16 @@
 // the tool dispatcher (tools.ts) refuses any tool whose connector isn't present — so the agent
 // never advertises (or attempts) a Connection the owner hasn't connected.
 //
-// All connector grants (Gmail / Calendar / Slack) share the pa_connections table keyed by a
+// All connector grants (Gmail / Calendar / Slack / Zoom) share the pa_connections table keyed by a
 // `provider` column, so one query covers them. The brain repo + its GitHub token come from the
 // pocket_agent_users row; persona names from the personas table. Service-role REST, no SDK.
 
 import { fetchPaUser } from "@/lib/pa-supabase";
 
 // Connectors this lane knows how to drive inline (read) or stage (write). Stripe/QuickBooks are
-// owned by their own dispatch lanes and intentionally excluded here.
-export const CHAT_CONNECTORS = ["gmail", "calendar", "slack"] as const;
+// owned by their own dispatch lanes and intentionally excluded here. Zoom is in-process (registry),
+// so the chat surfaces its reads + create_meeting alongside the meeting-drafting composition.
+export const CHAT_CONNECTORS = ["gmail", "calendar", "slack", "zoom"] as const;
 export type ChatConnector = (typeof CHAT_CONNECTORS)[number];
 
 export type LiveConnector = {
