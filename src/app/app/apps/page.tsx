@@ -64,6 +64,14 @@ const apps: AppDef[] = [
     tag: "Reads Brain",
     tagColor: "cyan",
   },
+  {
+    href: "/app/apps/lead-scout",
+    label: "Lead Scout",
+    description:
+      "Paste a list of URLs — PA visits each one, extracts a structured profile, sorts them by fit, and stages the batch for review. Find leads, draft outreach, stage for your tap.",
+    tag: "Finds Leads",
+    tagColor: "cyan",
+  },
 ];
 
 function tagClass(color: AppDef["tagColor"]): string {

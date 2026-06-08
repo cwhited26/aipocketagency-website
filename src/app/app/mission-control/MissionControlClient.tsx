@@ -36,6 +36,16 @@ type ActionApprovalDetail = {
   subAgentRunId: string | null;
 };
 
+type LeadScoutBatchDetail = {
+  runId: string;
+  sourceName: string;
+  projectId: string | null;
+  leadCount: number;
+  breakdown: { hot: number; warm: number; cold: number; wrong_fit: number; needs_research: number };
+  csvPath: string;
+  runPath: string;
+};
+
 type InboxCard = {
   id: string;
   system: "inbox" | "legacy";
@@ -50,6 +60,7 @@ type InboxCard = {
   email: { to: string; subject: string; body: string } | null;
   triage: TriageDetail | null;
   action: ActionApprovalDetail | null;
+  leadScout: LeadScoutBatchDetail | null;
   sourceSurface: string | null;
   threadId: string | null;
 };
@@ -100,7 +111,15 @@ async function postDecision(url: string): Promise<void> {
 }
 
 // Which "Awaiting your decision" sub-section a kind renders in. Exhaustive with a `never` guard.
-type AwaitingSection = "triage" | "actions" | "drafts" | "decisions" | "briefs" | "activity" | "hidden";
+type AwaitingSection =
+  | "triage"
+  | "actions"
+  | "drafts"
+  | "decisions"
+  | "briefs"
+  | "activity"
+  | "leads"
+  | "hidden";
 
 function sectionFor(kind: InboxItemKind): AwaitingSection {
   switch (kind) {
@@ -116,6 +135,8 @@ function sectionFor(kind: InboxItemKind): AwaitingSection {
       return "briefs";
     case "sub_agent_activity":
       return "activity";
+    case "lead_scout_batch":
+      return "leads";
     case "persona_lead":
       return "hidden";
     default: {
@@ -719,6 +740,7 @@ function TriageCard({
         email: { to, subject, body: gen.draft },
         triage: null,
         action: null,
+        leadScout: null,
         sourceSurface: "inbox",
         threadId: triage!.threadId,
       });
@@ -1163,6 +1185,152 @@ function RoutineOutputCard({
   );
 }
 
+// ─── Lead Scout batch card (PA-LS-7) ───────────────────────────────────────────
+//
+// A finished scrape batch: classification breakdown, top leads, a CSV download, and a Phase-3 hook
+// to draft outreach for the warm+hot leads. Informational (the leads are already saved to the brain
+// and the run page) — Mark as read / Dismiss, never Approve.
+
+const LEAD_CHIPS: {
+  key: keyof LeadScoutBatchDetail["breakdown"];
+  label: string;
+  tone: string;
+}[] = [
+  { key: "hot", label: "hot", tone: "text-amber-300 border-amber-500/30 bg-amber-500/5" },
+  { key: "warm", label: "warm", tone: "text-[#22d3ee] border-[#22d3ee]/30 bg-[#22d3ee]/5" },
+  { key: "cold", label: "cold", tone: "text-slate-300 border-slate-700/60 bg-slate-800/30" },
+  { key: "wrong_fit", label: "wrong-fit", tone: "text-slate-500 border-slate-800/60 bg-transparent" },
+  {
+    key: "needs_research",
+    label: "needs research",
+    tone: "text-violet-300/80 border-violet-500/25 bg-violet-500/5",
+  },
+];
+
+function LeadScoutBatchCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState<"read" | "dismiss" | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const detail = card.leadScout;
+
+  async function markRead() {
+    setBusy("read");
+    setErr(null);
+    try {
+      await postDecision(approveEndpoint(card));
+      onResolved(card.id, "approved");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  async function dismiss() {
+    setBusy("dismiss");
+    setErr(null);
+    try {
+      await postDecision(rejectEndpoint(card));
+      onResolved(card.id, "rejected");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  // The card body is "<breakdown line>\n\n**Top leads**\n\n<bullets>"; the chips already show the
+  // breakdown, so render just the top-leads portion below them.
+  const topLeads = card.bodyMd.split("**Top leads**").pop()?.trim() ?? "";
+
+  return (
+    <div className="rounded-2xl border border-[#22d3ee]/15 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-[#22d3ee]/70 uppercase tracking-[0.18em]">
+          Lead Scout · {detail?.sourceName ?? "batch"}
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
+      </div>
+
+      <p className="text-[15px] font-semibold text-slate-100 leading-snug">{card.title}</p>
+
+      {detail && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {LEAD_CHIPS.map((chip) => (
+            <span
+              key={chip.key}
+              className={`text-[11px] font-mono rounded border px-2 py-0.5 ${chip.tone}`}
+            >
+              {detail.breakdown[chip.key]} {chip.label}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {topLeads && (
+        <div className="mt-3 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+          {topLeads}
+        </div>
+      )}
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {detail?.csvPath && (
+          <a
+            href={detail.csvPath}
+            className="min-h-[44px] inline-flex items-center px-4 rounded-xl bg-[#22d3ee] hover:bg-[#06b6d4] text-[#031820] text-sm font-semibold transition-colors"
+          >
+            Download CSV
+          </a>
+        )}
+        {detail?.projectId && (
+          <Link
+            href={`/app/projects/${detail.projectId}`}
+            className="min-h-[44px] inline-flex items-center px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors"
+          >
+            Open project →
+          </Link>
+        )}
+        <button
+          type="button"
+          disabled
+          title="Outreach drafting arrives in a later phase."
+          className="min-h-[44px] px-4 rounded-xl border border-slate-800/60 text-slate-600 text-sm font-medium cursor-not-allowed"
+        >
+          Generate outreach for hot + warm
+        </button>
+      </div>
+
+      <p className="mt-2 text-[11px] text-slate-600 leading-relaxed">
+        Drafting outreach to the warm leads is coming. For now, every lead is saved to your brain and
+        in the CSV.
+      </p>
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          onClick={() => void markRead()}
+          disabled={busy !== null}
+          className="flex-1 min-h-[44px] py-3 px-4 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-slate-200 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {busy === "read" ? "…" : "Mark as read"}
+        </button>
+        <button
+          onClick={() => void dismiss()}
+          disabled={busy !== null}
+          aria-label="Dismiss lead batch"
+          className="min-h-[44px] px-4 rounded-xl text-slate-500 text-sm hover:text-slate-300 transition-colors disabled:opacity-50"
+        >
+          {busy === "dismiss" ? "…" : "Dismiss"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Sub-agent activity card (unchanged) ───────────────────────────────────────
 
 function SubAgentActivityCard({
@@ -1373,6 +1541,7 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
   const actions = inSection("actions");
   const decisions = inSection("decisions");
   const briefs = inSection("briefs");
+  const leads = inSection("leads");
   const activity = inSection("activity");
 
   const pendingTriageThreadIds = new Set(
@@ -1515,7 +1684,13 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
   const sectionOffset = { scrollMarginTop: headerH + 12 };
 
   const awaitingCount =
-    triage.length + actions.length + drafts.length + decisions.length + briefs.length + activity.length;
+    triage.length +
+    actions.length +
+    drafts.length +
+    decisions.length +
+    briefs.length +
+    leads.length +
+    activity.length;
   const allClear =
     attention.length === 0 &&
     active.length === 0 &&
@@ -1679,6 +1854,17 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
                 <div className="flex flex-col gap-3">
                   {briefs.map((card) => (
                     <RoutineOutputCard key={card.id} card={card} onResolved={onResolved} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {leads.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader label="Lead batches" count={leads.length} tone="text-[#22d3ee]/70" />
+                <div className="flex flex-col gap-3">
+                  {leads.map((card) => (
+                    <LeadScoutBatchCard key={card.id} card={card} onResolved={onResolved} />
                   ))}
                 </div>
               </section>

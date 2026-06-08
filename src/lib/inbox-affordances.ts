@@ -18,7 +18,8 @@ export type InboxItemKind =
   | "persona_lead"
   | "action_approval"
   | "sub_agent_activity"
-  | "routine_output";
+  | "routine_output"
+  | "lead_scout_batch";
 
 export type AffordanceRole = "primary" | "secondary" | "destructive";
 
@@ -112,6 +113,18 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
         affordances: [
           { key: "mark_read", label: "Mark as read", role: "primary" },
           { key: "save_to_brain", label: "Save to brain", role: "secondary" },
+          { key: "dismiss", label: "Dismiss", role: "destructive" },
+        ],
+      };
+
+    // A finished Lead Scout batch — the leads are already saved to the brain + the run page. This
+    // card is the readout (counts + CSV + a Phase-3 "draft outreach" hook), so it's informational:
+    // Mark as read / Dismiss. NO Approve — nothing fires on tap, the scrape already ran.
+    case "lead_scout_batch":
+      return {
+        hasApproval: false,
+        affordances: [
+          { key: "mark_read", label: "Mark as read", role: "primary" },
           { key: "dismiss", label: "Dismiss", role: "destructive" },
         ],
       };

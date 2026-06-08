@@ -25,7 +25,8 @@ export type InboxKind =
   | "persona_lead"
   | "action_approval"
   | "sub_agent_activity"
-  | "routine_output";
+  | "routine_output"
+  | "lead_scout_batch";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

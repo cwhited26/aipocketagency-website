@@ -21,7 +21,8 @@ export type InboxCardKind =
   | "persona_lead"
   | "action_approval"
   | "sub_agent_activity"
-  | "routine_output";
+  | "routine_output"
+  | "lead_scout_batch";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -43,6 +44,18 @@ export type ActionApprovalDetail = {
   subAgentRunId: string | null;
 };
 
+// Lead Scout: a finished scrape batch (kind='lead_scout_batch'). Counts + CSV link + a link into the
+// backing Project workspace; the breakdown drives the classification chips on the card.
+export type LeadScoutBatchDetail = {
+  runId: string;
+  sourceName: string;
+  projectId: string | null;
+  leadCount: number;
+  breakdown: { hot: number; warm: number; cold: number; wrong_fit: number; needs_research: number };
+  csvPath: string;
+  runPath: string;
+};
+
 export type InboxCard = {
   id: string;
   system: InboxCardSystem;
@@ -57,6 +70,7 @@ export type InboxCard = {
   email: { to: string; subject: string; body: string } | null;
   triage: TriageDetail | null;
   action: ActionApprovalDetail | null;
+  leadScout: LeadScoutBatchDetail | null;
   // The surface the draft was initiated from. 'inbox' means it was drafted from
   // within the Inbox (a reply to a triaged thread) and is rendered inline on its
   // originating thread instead of in the generic drafts list. threadId links it back.
@@ -103,6 +117,29 @@ function actionOf(item: InboxItem): ActionApprovalDetail {
   };
 }
 
+function num(v: unknown): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+}
+
+function leadScoutOf(item: InboxItem): LeadScoutBatchDetail {
+  const b = (item.payload.breakdown ?? {}) as Record<string, unknown>;
+  return {
+    runId: str(item.payload.runId),
+    sourceName: str(item.payload.sourceName) || item.title,
+    projectId: str(item.payload.projectId) || null,
+    leadCount: num(item.payload.leadCount),
+    breakdown: {
+      hot: num(b.hot),
+      warm: num(b.warm),
+      cold: num(b.cold),
+      wrong_fit: num(b.wrong_fit),
+      needs_research: num(b.needs_research),
+    },
+    csvPath: str(item.payload.csvPath),
+    runPath: str(item.payload.runPath),
+  };
+}
+
 function normalizeInboxItem(item: InboxItem): InboxCard {
   const isEmail = item.kind === "draft" && item.source === "email-drafter";
   const isTriage = item.kind === "email_triage";
@@ -110,6 +147,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
   const body = item.body_md ?? "";
   const triage = isTriage ? triageOf(item) : null;
   const action = isAction ? actionOf(item) : null;
+  const leadScout = item.kind === "lead_scout_batch" ? leadScoutOf(item) : null;
   return {
     id: item.id,
     system: "inbox",
@@ -130,6 +168,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
       : null,
     triage,
     action,
+    leadScout,
     sourceSurface: str(item.payload.sourceSurface) || null,
     threadId: str(item.payload.threadId) || null,
   };
@@ -166,6 +205,7 @@ function normalizeLegacyAction(action: PendingAction): InboxCard {
     email: null,
     triage: null,
     action: null,
+    leadScout: null,
     sourceSurface: null,
     threadId: null,
   };

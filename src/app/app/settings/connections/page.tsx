@@ -12,6 +12,11 @@ import { isStripeConnectConfigured } from "@/lib/connectors/stripe/oauth";
 import { isZoomOAuthConfigured } from "@/lib/connectors/zoom/oauth";
 import { isCalendlyOAuthConfigured } from "@/lib/connectors/calendly/oauth";
 import { isSmsConfigured } from "@/lib/connectors/sms/config";
+import {
+  fetchLeadScoutConnectionPublic,
+  tierAllowsSharedBrightData,
+} from "@/lib/pa-lead-scout-connections";
+import { getCurrentTier } from "@/lib/personas/tier-caps";
 import { fetchActiveSmsNumber } from "@/lib/pa-sms-numbers";
 import { fetchRecentSmsActivity } from "@/lib/pa-conversations";
 import { ensureInboundAddresses } from "@/lib/inbound-email/addresses";
@@ -27,6 +32,7 @@ import ZoomConnectionCard from "./ZoomConnectionCard";
 import CalendlyConnectionCard from "./CalendlyConnectionCard";
 import SmsConnectionCard from "./SmsConnectionCard";
 import InboundEmailCard from "./InboundEmailCard";
+import LeadScoutConnectionCard from "./LeadScoutConnectionCard";
 
 export const dynamic = "force-dynamic";
 
@@ -235,6 +241,14 @@ export default async function ConnectionsPage({
   const calendly = calendlyResult.ok ? calendlyResult.data : null;
   const smsNumber = smsNumberResult.ok ? smsNumberResult.data : null;
   const smsActivity = smsActivityResult.ok ? smsActivityResult.data : [];
+
+  // Lead Scout (Bright Data key) connection + whether this owner's tier unlocks the shared account.
+  const [leadScoutResult, tier] = await Promise.all([
+    fetchLeadScoutConnectionPublic(user.id),
+    getCurrentTier(user.id),
+  ]);
+  const leadScout = leadScoutResult.ok ? leadScoutResult.data : null;
+  const leadScoutSharedEligible = tierAllowsSharedBrightData(tier);
   const slackOAuthConfigured = isSlackOAuthConfigured();
   const quickBooksOAuthConfigured = isQuickBooksOAuthConfigured();
   const stripeConfigured = isStripeConnectConfigured();
@@ -425,6 +439,11 @@ export default async function ConnectionsPage({
         <ZoomConnectionCard connection={zoom} oauthConfigured={zoomOAuthConfigured} />
 
         <CalendlyConnectionCard connection={calendly} oauthConfigured={calendlyOAuthConfigured} />
+
+        <LeadScoutConnectionCard
+          connection={leadScout}
+          sharedEligible={leadScoutSharedEligible}
+        />
 
         <p className="text-xs text-slate-600 leading-relaxed">
           Gmail access lets your agent read incoming mail and archive a thread when you tap
