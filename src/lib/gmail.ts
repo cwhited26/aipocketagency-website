@@ -16,14 +16,29 @@ import {
 
 // ─── Scopes ───────────────────────────────────────────────────────────────────
 // readonly: read message/thread content. modify + labels: archive (remove the
-// INBOX label) on a triage action.
+// INBOX label) on a triage action. send: send a reply AS the user, threaded into
+// the original conversation, landing in their Sent folder (connector.gmail.send).
+// gmail.send is incrementally authorized — a user connected before this scope
+// existed is prompted to re-grant the first time a send action fires. The OAuth
+// start route requests this list with prompt=consent + include_granted_scopes, so
+// a reconnect re-grants the new scope without dropping the old ones.
 export const GMAIL_SCOPES = [
   "openid",
   "email",
   "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/gmail.modify",
   "https://www.googleapis.com/auth/gmail.labels",
+  "https://www.googleapis.com/auth/gmail.send",
 ];
+
+// The send scope, named once so the connector action, the approval route, and the
+// Connections UI agree on what "send AS you" requires.
+export const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
+
+/** True iff a connection's granted scopes include gmail.send. */
+export function hasGmailSendScope(scopes: readonly string[] | null): boolean {
+  return Array.isArray(scopes) && scopes.includes(GMAIL_SEND_SCOPE);
+}
 
 export type GmailResult<T> =
   | { ok: true; data: T }
@@ -306,6 +321,10 @@ export type GmailMessageMeta = {
   snippet: string;
   internalDate: string | null;
   inInbox: boolean;
+  // The RFC 2822 Message-ID header (e.g. "<CA+abc@mail.gmail.com>"). Threading a
+  // reply requires it in the In-Reply-To + References headers — distinct from the
+  // Gmail API message id. Empty when the header is absent.
+  rfcMessageId: string;
 };
 
 export async function getMessageMeta(
@@ -319,6 +338,7 @@ export async function getMessageMeta(
   url.searchParams.append("metadataHeaders", "From");
   url.searchParams.append("metadataHeaders", "Subject");
   url.searchParams.append("metadataHeaders", "Date");
+  url.searchParams.append("metadataHeaders", "Message-ID");
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
@@ -340,6 +360,7 @@ export async function getMessageMeta(
       snippet: parsed.data.snippet ?? "",
       internalDate: parsed.data.internalDate ?? null,
       inInbox: parsed.data.labelIds ? parsed.data.labelIds.includes("INBOX") : true,
+      rfcMessageId: header("Message-ID"),
     },
   };
 }
@@ -368,6 +389,49 @@ export async function archiveThread(
     return { ok: false, status: res.status, error: text, authError: isAuthFailure(res.status, text) };
   }
   return { ok: true, data: undefined };
+}
+
+// ─── messages.send (send AS the user) ─────────────────────────────────────────
+
+const SendResponseSchema = z.object({
+  id: z.string(),
+  threadId: z.string(),
+  labelIds: z.array(z.string()).optional(),
+});
+export type GmailSendResponse = z.infer<typeof SendResponseSchema>;
+
+/**
+ * Send a raw RFC 2822 message via users.messages.send. `raw` is the unencoded MIME
+ * string — this function base64url-encodes it for the API. When `threadId` is set
+ * (and the message carries In-Reply-To/References + a matching Subject), Gmail files
+ * the reply inside that conversation; the sent copy lands in the user's Sent folder.
+ */
+export async function sendGmailMessage(
+  accessToken: string,
+  params: { raw: string; threadId?: string | null },
+): Promise<GmailResult<GmailSendResponse>> {
+  const encodedRaw = Buffer.from(params.raw, "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+
+  const body: { raw: string; threadId?: string } = { raw: encodedRaw };
+  if (params.threadId) body.threadId = params.threadId;
+
+  const res = await fetch(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    },
+  );
+  return parseJson(res, SendResponseSchema);
 }
 
 // ─── Shared JSON parse ────────────────────────────────────────────────────────

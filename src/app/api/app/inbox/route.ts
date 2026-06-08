@@ -31,6 +31,9 @@ export type TriageDetail = {
   snippet: string;
   url: string;
   receivedAt: string | null;
+  // RFC 2822 Message-ID of the triaged message, captured at sync time. A reply
+  // drafted from this thread passes it as in_reply_to so the send threads correctly.
+  inReplyTo: string;
 };
 
 // PA v5 Wave B: connector write-action staged for one-tap approval (kind='action_approval').
@@ -87,6 +90,7 @@ function triageOf(item: InboxItem): TriageDetail {
     snippet: str(item.payload.snippet),
     url: str(item.payload.url),
     receivedAt: typeof receivedAt === "string" ? receivedAt : null,
+    inReplyTo: str(item.payload.rfcMessageId),
   };
 }
 

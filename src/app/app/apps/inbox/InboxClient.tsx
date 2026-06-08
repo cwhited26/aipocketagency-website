@@ -12,6 +12,9 @@ type TriageDetail = {
   snippet: string;
   url: string;
   receivedAt: string | null;
+  // RFC 2822 Message-ID of the triaged message — passed as in_reply_to when a reply
+  // is staged so the send threads back into the original conversation.
+  inReplyTo: string;
 };
 
 type ActionApprovalDetail = {
@@ -367,6 +370,7 @@ function TriageCard({
           body: gen.draft,
           citations: gen.citations,
           threadId: triage!.threadId,
+          inReplyTo: triage!.inReplyTo,
           sourceSurface: "inbox",
         }),
         cache: "no-store",

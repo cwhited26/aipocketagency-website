@@ -35,6 +35,13 @@ export default function GmailConnectionCard({
 
   const isActive = connection?.status === "active";
   const isError = connection?.status === "error";
+  // Mirrors GMAIL_SEND_SCOPE / hasGmailSendScope in lib/gmail.ts — inlined here so a
+  // client component never pulls the server-only gmail module into its bundle. A
+  // connection made before the send scope existed is active but can't send yet; we
+  // surface a reconnect prompt (incremental authorization re-grants on the next consent).
+  const canSend =
+    connection?.scopes?.includes("https://www.googleapis.com/auth/gmail.send") ?? false;
+  const needsSendReauth = isActive && !canSend;
 
   async function handleDisconnect() {
     if (disconnecting) return;
@@ -73,8 +80,20 @@ export default function GmailConnectionCard({
               </p>
             ) : (
               <p className="text-sm text-slate-500 mt-0.5 leading-relaxed">
-                Pull incoming email into your Inbox for triage. Read-access plus archive — never
-                sends on its own.
+                Pull incoming email into your Inbox for triage, and — once you approve a reply —
+                send it as you, threaded into the original conversation. Read, archive, and send;
+                nothing leaves your account without your tap.
+              </p>
+            )}
+            {needsSendReauth && (
+              <p className="text-sm text-amber-400/90 mt-1.5 leading-relaxed">
+                Reconnect to enable sending — this connection predates send permission, so approved
+                replies can’t go out yet. Reconnecting re-grants in one tap.
+              </p>
+            )}
+            {isActive && canSend && (
+              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                Read · archive · send-as-you (approved replies only)
               </p>
             )}
             {isActive && lastSyncLabel(connection?.last_sync_at ?? null) && (
@@ -91,6 +110,14 @@ export default function GmailConnectionCard({
               <span className="text-[10px] font-mono text-[#22d3ee] border border-[#22d3ee]/30 rounded px-2 py-1 bg-[#22d3ee]/5">
                 connected
               </span>
+              {needsSendReauth && (
+                <a
+                  href="/api/connections/gmail/start"
+                  className="inline-flex items-center rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-semibold text-[#2a1a00] hover:bg-amber-300 transition-colors"
+                >
+                  Reconnect →
+                </a>
+              )}
               <button
                 onClick={handleDisconnect}
                 disabled={disconnecting}

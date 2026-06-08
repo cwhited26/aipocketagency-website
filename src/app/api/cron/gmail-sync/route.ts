@@ -130,6 +130,11 @@ async function syncConnection(conn: GmailConnectionFull): Promise<SyncResult> {
         snippet: meta.data.snippet,
         url: buildThreadUrl(meta.data.threadId),
         receivedAt,
+        // Threading metadata so a drafted reply sends back into this conversation:
+        // messageId is the Gmail API id, rfcMessageId the RFC 2822 Message-ID that
+        // becomes the reply's In-Reply-To / References headers.
+        messageId: meta.data.id,
+        rfcMessageId: meta.data.rfcMessageId,
       },
     });
     if (created.ok) {
