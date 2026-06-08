@@ -3,13 +3,16 @@ import { fetchGmailConnectionPublic } from "@/lib/pa-gmail-connections";
 import { fetchCalendarConnectionPublic } from "@/lib/pa-calendar-connections";
 import { fetchSlackConnectionPublic } from "@/lib/pa-slack-connections";
 import { fetchQuickBooksConnectionPublic } from "@/lib/pa-quickbooks-connections";
+import { fetchStripeConnectionPublic } from "@/lib/pa-stripe-connections";
 import { isSlackOAuthConfigured } from "@/lib/connectors/slack/oauth";
 import { isQuickBooksOAuthConfigured } from "@/lib/connectors/quickbooks/oauth";
+import { isStripeConnectConfigured } from "@/lib/connectors/stripe/oauth";
 import { redirect } from "next/navigation";
 import GmailConnectionCard from "./GmailConnectionCard";
 import CalendarConnectionCard from "./CalendarConnectionCard";
 import SlackConnectionCard from "./SlackConnectionCard";
 import QuickBooksConnectionCard from "./QuickBooksConnectionCard";
+import StripeConnectionCard from "./StripeConnectionCard";
 
 export const dynamic = "force-dynamic";
 
@@ -95,10 +98,34 @@ const QUICKBOOKS_MESSAGES: Record<string, { title: string; body: string; kind: "
   },
 };
 
+const STRIPE_MESSAGES: Record<string, { title: string; body: string; kind: "success" | "error" }> = {
+  connected: {
+    title: "Stripe connected",
+    body: "Your agent can now draft invoices, payment links, and refunds on your Stripe account. Every one is staged for your approval first — and refunds always ask before money moves.",
+    kind: "success",
+  },
+  not_configured: {
+    title: "Stripe Connect not enabled",
+    body: "Connecting a Stripe account needs Stripe Connect enabled on this workspace's Stripe platform. Enable Connect in the Stripe Dashboard and we'll switch it on.",
+    kind: "error",
+  },
+  error: {
+    title: "Stripe connection failed",
+    body: "Something went wrong connecting Stripe. Try again, or contact support if it keeps happening.",
+    kind: "error",
+  },
+};
+
 export default async function ConnectionsPage({
   searchParams,
 }: {
-  searchParams: { connection?: string; calendar?: string; slack?: string; quickbooks?: string };
+  searchParams: {
+    connection?: string;
+    calendar?: string;
+    slack?: string;
+    quickbooks?: string;
+    stripe?: string;
+  };
 }) {
   const supabase = createClient();
   const {
@@ -106,18 +133,22 @@ export default async function ConnectionsPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/app/login");
 
-  const [gmailResult, calendarResult, slackResult, quickbooksResult] = await Promise.all([
-    fetchGmailConnectionPublic(user.id),
-    fetchCalendarConnectionPublic(user.id),
-    fetchSlackConnectionPublic(user.id),
-    fetchQuickBooksConnectionPublic(user.id),
-  ]);
+  const [gmailResult, calendarResult, slackResult, quickbooksResult, stripeResult] =
+    await Promise.all([
+      fetchGmailConnectionPublic(user.id),
+      fetchCalendarConnectionPublic(user.id),
+      fetchSlackConnectionPublic(user.id),
+      fetchQuickBooksConnectionPublic(user.id),
+      fetchStripeConnectionPublic(user.id),
+    ]);
   const gmail = gmailResult.ok ? gmailResult.data : null;
   const calendar = calendarResult.ok ? calendarResult.data : null;
   const slack = slackResult.ok ? slackResult.data : null;
   const quickbooks = quickbooksResult.ok ? quickbooksResult.data : null;
+  const stripe = stripeResult.ok ? stripeResult.data : null;
   const slackOAuthConfigured = isSlackOAuthConfigured();
   const quickBooksOAuthConfigured = isQuickBooksOAuthConfigured();
+  const stripeConfigured = isStripeConnectConfigured();
 
   const message = searchParams.connection ? MESSAGES[searchParams.connection] ?? null : null;
   const calendarMessage = searchParams.calendar
@@ -127,6 +158,7 @@ export default async function ConnectionsPage({
   const quickbooksMessage = searchParams.quickbooks
     ? QUICKBOOKS_MESSAGES[searchParams.quickbooks] ?? null
     : null;
+  const stripeMessage = searchParams.stripe ? STRIPE_MESSAGES[searchParams.stripe] ?? null : null;
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">
@@ -203,6 +235,19 @@ export default async function ConnectionsPage({
           </div>
         )}
 
+        {stripeMessage && (
+          <div
+            className={`rounded-xl border px-5 py-4 space-y-1 ${
+              stripeMessage.kind === "success"
+                ? "border-[#22d3ee]/25 bg-[#22d3ee]/5"
+                : "border-slate-700/60 bg-slate-900/50"
+            }`}
+          >
+            <p className="text-sm font-semibold text-slate-100">{stripeMessage.title}</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{stripeMessage.body}</p>
+          </div>
+        )}
+
         <GmailConnectionCard connection={gmail} />
 
         <CalendarConnectionCard connection={calendar} />
@@ -214,13 +259,16 @@ export default async function ConnectionsPage({
           oauthConfigured={quickBooksOAuthConfigured}
         />
 
+        <StripeConnectionCard connection={stripe} configured={stripeConfigured} />
+
         <p className="text-xs text-slate-600 leading-relaxed">
           Gmail access lets your agent read incoming mail and archive a thread when you tap
           “I’ll handle” or “Archive.” Calendar access lets it read your schedule and propose,
           create, or reschedule events. Slack access lets it post, reply in threads, and DM.
-          QuickBooks access lets it draft invoices, record payments, and pull reports. It never
-          sends, deletes, or writes anything on its own — replies, calendar changes, and every
-          invoice or payment are always staged for your approval first.
+          QuickBooks access lets it draft invoices, record payments, and pull reports. Stripe
+          access lets it draft invoices, payment links, and refunds on your own Stripe account. It
+          never sends, deletes, or writes anything on its own — replies, calendar changes, and every
+          invoice, payment, or refund are always staged for your approval first.
         </p>
       </div>
     </div>

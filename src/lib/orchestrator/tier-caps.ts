@@ -42,13 +42,18 @@ export const MAX_SUBAGENTS_PER_TASK: Record<Tier, number | null> = {
 export const AUTO_APPROVE_TRUST_WINDOW = 10;
 
 // Per-(connector, action) overrides that HARD-TIGHTEN the default trust window for actions that
-// move real money (QuickBooks mini-spec, roadmap §2.3). An action absent from this map uses
-// AUTO_APPROVE_TRUST_WINDOW. record_payment carries the highest bar in the whole connector set:
-// even after clearing 20 approvals it stays opt-in / default-off (the owner must deliberately
-// flip the toggle; the higher count only makes that option available).
+// move real money (QuickBooks mini-spec, roadmap §2.3; Stripe mini-spec, roadmap §2.4). An action
+// absent from this map uses AUTO_APPROVE_TRUST_WINDOW. record_payment carries a high bar (20).
+//
+// stripe:refund_charge is the ONLY entry set to Infinity — an UNREACHABLE window. A refund moves
+// real money OUT and is the prime prompt-injection target (roadmap §2.4, abuse-risk 5), so it can
+// NEVER become auto-approve eligible regardless of how many were manually approved: every refund
+// is an explicit per-action owner tap, forever. autoApproveUnlockedFor() reads this, so the
+// auto-approve toggle route refuses to enable it and the approval route never reports it unlocked.
 export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> = {
   "quickbooks:create_invoice": 10,
   "quickbooks:record_payment": 20,
+  "stripe:refund_charge": Number.POSITIVE_INFINITY,
 };
 
 /** The trust window for a specific (connector, action), honoring the money-action overrides. */
