@@ -11,6 +11,7 @@ import {
   insertMessage,
 } from "@/lib/pa-conversations";
 import { absorbToMemory, isAllowedUploadType } from "@/lib/brain/absorb";
+import { maybeIngestYouTubeUrls, buildYouTubeContextAppend } from "@/lib/youtube/ingest";
 import { sendTransactional } from "@/lib/email/resend";
 import { fetchAuthUserEmail } from "@/lib/connectors/system/recipient";
 import { generateInboundReply } from "./agent";
@@ -96,9 +97,16 @@ export async function handleInboundForward(params: {
   if (!conv.ok) return conv;
 
   const bodyText = email.text.trim() || email.html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+  // A YouTube link in the forwarded email → ingest it (transcript + metadata → brain note) and fold
+  // the transcript into the turn so PA's reply can act on the video, not just the URL.
+  const ytResults = await maybeIngestYouTubeUrls(bodyText, ownerId, "inbound_email");
+  const ytContext = buildYouTubeContextAppend(ytResults);
+  const bodyWithVideo = [bodyText, ytContext].filter(Boolean).join("\n\n");
+
   const userTurn =
     `Forwarded email — From: ${email.fromRaw || email.fromAddr} · Subject: ${email.subject || "(no subject)"}\n\n` +
-    `${bodyText}${attachmentNote}`;
+    `${bodyWithVideo}${attachmentNote}`;
 
   const userMsg = await insertMessage({
     conversationId: conv.id,
@@ -123,7 +131,9 @@ export async function handleInboundForward(params: {
     return { ok: true, replied: false };
   }
 
-  const generated = await generateInboundReply({ anthropicApiKey, brainRepo, githubToken, email });
+  // When a video was ingested, give the reply agent the transcript by augmenting the email body.
+  const emailForReply = ytContext ? { ...email, text: bodyWithVideo } : email;
+  const generated = await generateInboundReply({ anthropicApiKey, brainRepo, githubToken, email: emailForReply });
   if (!generated.ok) return { ok: false, status: generated.status, error: generated.error };
 
   const asstMsg = await insertMessage({

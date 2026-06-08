@@ -28,6 +28,7 @@ import { isVisionUploadType, visionTypeLabel } from "@/lib/vision/ocr";
 import { MAX_UPLOAD_BYTES } from "@/lib/brain/absorb";
 import { UPLOAD_RESULT_KIND, type UploadResultPayload } from "@/lib/chat/upload-card";
 import { runAgentTurn, type AgentToolContext } from "@/lib/mobile/agent";
+import { maybeIngestYouTubeUrls, buildYouTubeContextAppend } from "@/lib/youtube/ingest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -128,7 +129,12 @@ export async function POST(req: Request): Promise<Response> {
     anthropicApiKey: anthropic_api_key,
     files: [{ fileName, mimeType: fileEntry.type, buffer }],
   });
-  const effectiveContent = [prompt, processed.modelContext].filter(Boolean).join("\n\n");
+  // A YouTube link in the prompt → ingest it (transcript + metadata → brain note) and fold the
+  // transcript into this turn so the agent can act on the video. The capture's upload card stays the
+  // message metadata; the video lands as its own brain note.
+  const ytResults = await maybeIngestYouTubeUrls(prompt, userId, "mobile_capture");
+  const ytContext = buildYouTubeContextAppend(ytResults);
+  const effectiveContent = [prompt, processed.modelContext, ytContext].filter(Boolean).join("\n\n");
   const uploadMetadata: UploadResultPayload = {
     kind: UPLOAD_RESULT_KIND,
     caption: prompt,

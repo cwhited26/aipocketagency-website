@@ -26,6 +26,7 @@ import { fetchPaUser } from "@/lib/pa-supabase";
 import { getOrCreateSlackConversation } from "@/lib/pa-conversations";
 import { runConversationTurn } from "@/lib/chat/conversation-agent";
 import { slackOrigin } from "@/lib/chat/message-origin";
+import { maybeIngestYouTubeUrls, buildYouTubeContextAppend } from "@/lib/youtube/ingest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -106,11 +107,19 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return ack();
   }
 
+  // A YouTube link in the DM/@mention → ingest it (transcript + metadata → brain note) and fold the
+  // transcript into the turn so PA can act on the video and reply in-place about it.
+  const ytResults = await maybeIngestYouTubeUrls(event.text, connection.user_id, "slack_dm");
+  const content =
+    ytResults.length > 0
+      ? [event.text, buildYouTubeContextAppend(ytResults)].filter(Boolean).join("\n\n")
+      : event.text;
+
   const turn = await runConversationTurn({
     paUser,
     userId: connection.user_id,
     conversationId: convResult.data.id,
-    content: event.text,
+    content,
     userMetadata: slackOrigin(event.surface),
   });
 

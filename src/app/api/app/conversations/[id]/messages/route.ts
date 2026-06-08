@@ -21,6 +21,12 @@ import { tieredPathForNewMemory } from "@/lib/brain/memory-tier";
 import { processChatUploads, type UploadInput } from "@/lib/vision/process-upload";
 import { isVisionUploadType, visionTypeLabel } from "@/lib/vision/ocr";
 import { UPLOAD_RESULT_KIND, type UploadResultPayload } from "@/lib/chat/upload-card";
+import {
+  maybeIngestYouTubeUrls,
+  buildYouTubeCardPayload,
+  buildYouTubeContextAppend,
+} from "@/lib/youtube/ingest";
+import { type YouTubeIngestPayload } from "@/lib/youtube/card";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -511,6 +517,7 @@ export async function POST(
   // the owner sees thumbnails + extracted text. Uploads need a brain repo to land the bytes.
   let effectiveContent = caption.trim();
   let uploadMetadata: UploadResultPayload | undefined;
+  let youtubeMetadata: YouTubeIngestPayload | undefined;
   if (hasUploads) {
     if (!brain_repo || !github_token) {
       return NextResponse.json(
@@ -531,15 +538,25 @@ export async function POST(
       caption: caption.trim(),
       files: processed.cardFiles,
     };
+  } else {
+    // YouTube link in chat → ingest BEFORE the agent runs, so the transcript + summary fold into
+    // this turn (the agent reads them) and an ingest card rides in metadata for the rich render. A
+    // message carries one card kind, so YouTube ingest is scoped to the no-upload (text) path.
+    const ytResults = await maybeIngestYouTubeUrls(caption.trim(), user.id, "ask_box");
+    if (ytResults.length > 0) {
+      const ytContext = buildYouTubeContextAppend(ytResults);
+      effectiveContent = [caption.trim(), ytContext].filter(Boolean).join("\n\n");
+      youtubeMetadata = buildYouTubeCardPayload(caption.trim(), ytResults) ?? undefined;
+    }
   }
 
-  // Persist user message first (with the upload card payload when files were attached).
+  // Persist user message first (with the upload / YouTube card payload when one applies).
   const userMsgResult = await insertMessage({
     conversationId,
     userId: user.id,
     role: "user",
     content: effectiveContent,
-    metadata: uploadMetadata,
+    metadata: uploadMetadata ?? youtubeMetadata,
   });
   if (!userMsgResult.ok) {
     return NextResponse.json({ error: userMsgResult.error }, { status: userMsgResult.status });
@@ -665,7 +682,10 @@ export async function POST(
   let conversationTitle: string | undefined;
   if (conversation.title === "New conversation" && priorMessages.length === 0) {
     const titleSeed =
-      caption.trim() || uploadMetadata?.files[0]?.structuredDescription || "Image upload";
+      caption.trim() ||
+      uploadMetadata?.files[0]?.structuredDescription ||
+      youtubeMetadata?.videos[0]?.title ||
+      "Image upload";
     conversationTitle = generateTitle(titleSeed);
     await updateConversation(conversationId, user.id, { title: conversationTitle });
   }

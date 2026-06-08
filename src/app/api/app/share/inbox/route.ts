@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { commitMemoryFile, fetchFileContent } from "@/lib/pa-brain";
 import { appendEntryToRaw } from "@/lib/pa-inbox";
+import { maybeIngestYouTubeUrls } from "@/lib/youtube/ingest";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -172,10 +173,24 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: commitResult.error }, { status: 502 });
   }
 
+  // If the shared content is (or contains) a YouTube link, pull its transcript + metadata and write
+  // a clean brain note too — so a shared video lands as something the agent can act on, not just a
+  // URL in the inbox. The note is in addition to the inbox entry above.
+  const shareText = [payload.content, payload.sourceUrl].filter(Boolean).join("\n");
+  const ytResults = await maybeIngestYouTubeUrls(shareText, tokenRow.user_id, "ios_share");
+  const ingested = ytResults
+    .filter((r): r is Extract<(typeof ytResults)[number], { ok: true }> => r.ok)
+    .map((r) => ({ title: r.title, channel: r.channel, brainPath: r.brainPath, summary: r.summary }));
+
   return NextResponse.json({
     ok: true,
     id: entry.id,
     path: inboxPath,
     sha: commitResult.sha,
+    ingested,
+    message:
+      ingested.length > 0
+        ? ingested.map((i) => `Captured + transcribed: ${i.title}`).join("; ")
+        : undefined,
   });
 }

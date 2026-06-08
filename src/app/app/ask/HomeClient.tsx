@@ -9,6 +9,7 @@ import { AgentSetupBar } from "../_components/AgentSetupBar";
 import type { ConversationThread } from "@/lib/pa-conversations";
 import type { ScaffoldEntry } from "@/lib/pa-brain";
 import UploadCard from "./_components/UploadCard";
+import YouTubeIngestCard from "./_components/YouTubeIngestCard";
 import {
   AttachControls,
   AttachmentChips,
@@ -16,6 +17,7 @@ import {
   MAX_ATTACH_BYTES,
 } from "./_components/AttachControls";
 import { asUploadResultPayload } from "@/lib/chat/upload-card";
+import { asYouTubeIngestPayload } from "@/lib/youtube/card";
 import { asSlackOrigin, asSmsOrigin } from "@/lib/chat/message-origin";
 import { isVisionUploadType } from "@/lib/vision/ocr";
 
@@ -1300,6 +1302,10 @@ export default function HomeClient({
                         (() => {
                           const upload = asUploadResultPayload(msg.metadata);
                           if (upload) return <UploadCard payload={upload} />;
+                          // A YouTube link in chat renders as an ingest card (thumbnail + summary +
+                          // "View transcript"); the transcript also rides in the message body.
+                          const youtube = asYouTubeIngestPayload(msg.metadata);
+                          if (youtube) return <YouTubeIngestCard payload={youtube} />;
                           // An inbound Slack DM / @mention or an SMS to the owner's PA number renders
                           // with an origin chip so the thread shows it arrived from outside the app.
                           const slack = asSlackOrigin(msg.metadata);
