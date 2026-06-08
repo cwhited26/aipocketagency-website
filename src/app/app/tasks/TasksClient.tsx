@@ -391,12 +391,6 @@ export default function TasksClient({ brainRepo }: { brainRepo: string | null })
 
         {/* First-touch guide — what to ask, what this connects to, and a sample list */}
         <TabGuide
-          promptsHeading="Try one of these"
-          prompts={[
-            "What do I personally need to do this week that you can't do for me?",
-            "List the open steps on the warehouse build that need me, not you",
-            "What's still missing from my brain that would make your drafts better?",
-          ]}
           worksWith={[
             {
               href: "/app/projects",

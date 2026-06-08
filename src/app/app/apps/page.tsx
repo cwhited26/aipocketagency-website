@@ -191,13 +191,6 @@ export default async function AppsPage() {
         {/* First-touch guide — what to ask, what this connects to, and a sample output */}
         <div className="mt-8">
           <TabGuide
-            promptsHeading="Try one of these"
-            prompts={[
-              "Draft a proposal for the warehouse build",
-              "Write a follow-up email about last week's site walk",
-              "Show me which leads have gone cold",
-              "Give me today's brief",
-            ]}
             worksWith={[
               {
                 href: "/app/projects",
