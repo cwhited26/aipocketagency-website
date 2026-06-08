@@ -91,8 +91,8 @@ export default function PersonasCatalogClient() {
           chasing the next step. A support persona writes like a patient operator. A recruiting persona
           writes like a coach. Each one draws from its own slice of your brain, so your sales agent
           isn&apos;t answering refund questions and your support agent isn&apos;t cold-pitching. That voice
-          and that slice of knowledge don&apos;t just shape emails — they shape how the agent builds for
-          you in Projects too, so a sales-flavored landing page sounds like sales, not like a manual.
+          and that slice of knowledge don&apos;t just shape emails — they shape how the agent works for
+          you in Projects too, so a sales-flavored follow-up sequence sounds like sales, not like a manual.
           Build one from a template, share a link with a teammate, and it only ever knows what
           you&apos;ve taught it. (Soon you&apos;ll be able to keep separate brains for separate businesses,
           each with its own personas.)

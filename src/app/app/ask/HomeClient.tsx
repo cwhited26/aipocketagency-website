@@ -66,7 +66,7 @@ function relativeTime(isoString: string): string {
   return `${Math.floor(d / 7)}w ago`;
 }
 
-// "kitchen-remodel-crm" → "Kitchen remodel crm" for a readable in-flight plan label.
+// "prospect-followup-sweep" → "Prospect followup sweep" for a readable in-flight plan label.
 function deslugify(slug: string): string {
   const words = slug.replace(/[-_]+/g, " ").trim();
   return words.charAt(0).toUpperCase() + words.slice(1);
@@ -791,7 +791,7 @@ function HubView({
             {
               href: "/app/projects",
               label: "Projects",
-              blurb: "Ask for something big — a whole system — and it becomes a plan you approve first.",
+              blurb: "Ask for something big — a multi-step job across your connected tools — and it becomes a plan you approve first.",
             },
             {
               href: "/app/personas",

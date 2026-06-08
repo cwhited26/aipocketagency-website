@@ -10,26 +10,28 @@ export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Projects — Pocket Agent" };
 
-// System-level builds the agent can take on. These pre-fill the "Tell me what to build" box so the
-// owner can edit and start without leaving the tab. Invented scenarios across industries — no real
-// customer names — so the breadth is obvious.
+// Multi-step jobs the agent can run across the tools it's already connected to. These pre-fill the
+// "Tell me what you want done" box so the owner can edit and start without leaving the tab. Every
+// one is honest to today's surface — Gmail / Calendar / Slack / QuickBooks / Stripe / Calendly /
+// Zoom and the brain. No whole-system builds (no CRM, no website, no dashboard) — those are queued
+// for the build connector pack, called out in the "What's planned next" panel below.
 const STARTERS = [
-  "Build me a CRM tailored to how I run my contracting business",
-  "Build a full lead-capture website for my med-spa with the brand identity in my brain",
-  "Wire up an automation that creates a QuickBooks invoice every time I mark a job complete",
-  "Stand up a five-touch email + SMS drip for prospects who are still deciding",
-  "Build an internal dashboard that shows every active deal in one view",
+  "Draft a five-touch follow-up sequence for the three prospects from my discovery calls this week",
+  "Pull every Stripe invoice and Gmail thread from last month and write me a weekly client revenue brief to my brain",
+  "Schedule a Zoom call with a prospect next Tuesday — find a 30-minute slot, draft the invite, send the Calendly confirmation",
+  "Coordinate a monthly newsletter: pull what's in my brain about my latest work, draft three section variations, stage it as a Gmail draft for me",
+  "Run a follow-up sweep — find every prospect I haven't contacted in 14 days, draft a nudge in my voice for each, stage them in my approval inbox",
 ];
 
-// "kitchen-remodel-crm" → "Kitchen remodel crm" for a readable project label.
+// "prospect-followup-sweep" → "Prospect followup sweep" for a readable project label.
 function deslugify(slug: string): string {
   const words = slug.replace(/[-_]+/g, " ").trim();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-// Top-level Projects surface. Renders active build plans — each is a plan in the owner's brain.
-// The "Tell me what to build" box starts a new one in place; the collapsible example shows what a
-// real system-level plan looks like before the owner ever runs one.
+// Top-level Projects surface. Renders active plans — each is a plan in the owner's brain. The
+// "Tell me what you want done" box starts a new one in place; the collapsible example shows what a
+// real multi-step plan looks like before the owner ever runs one.
 export default async function ProjectsPage() {
   const supabase = createClient();
   const {
@@ -57,29 +59,27 @@ export default async function ProjectsPage() {
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Projects</h1>
           <p className="text-slate-400 text-sm mt-2 leading-relaxed">
-            Whole-system builds, planned out and approved before anything runs.
+            Big asks broken down so you can approve before they run.
           </p>
         </div>
 
-        {/* Intro — the full story: system-scale, built inside your rules */}
+        {/* Intro — multi-step work across the tools your agent already has connected */}
         <p className="text-sm text-slate-300 leading-relaxed">
-          Projects is where your agent takes on big work — whole systems, not paragraphs. Ask for a
-          CRM tailored to how you run your business, a lead-capture website deployed live, an
-          automation that connects your email to your accounting, a multi-channel drip across email
-          and text, a custom internal dashboard. Your agent reads your brain&apos;s rulebook — your
-          conventions, your voice, your decisions, what you&apos;ve tried and what you&apos;ve ruled
-          out — and writes a full build plan first. You see every milestone and every task before
-          any of it fires. Edit anything that&apos;s off. Hit Approve. It builds inside <em>your</em>{" "}
-          rules, not some generic best-practice mush, and reports back here as each milestone lands.
+          Projects is where your agent takes on multi-step work across the tools it&apos;s already
+          connected to. Drip campaigns. Follow-up sweeps. Coordinated outreach. Reporting workflows.
+          Anything that&apos;s more than one step and touches Gmail, Calendar, Slack, QuickBooks,
+          Stripe, Calendly, Zoom, or your brain. The agent reads your brain&apos;s rulebook — your
+          conventions, your voice, your decisions — and writes a full plan first. You see every
+          milestone and every task before any of it fires. You approve. It runs.
         </p>
 
-        {/* Start a build — act without leaving the tab */}
+        {/* Start a project — act without leaving the tab */}
         <div className="flex flex-col gap-2">
           <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
-            Start a build
+            Start a project
           </span>
           <StarterBox
-            placeholder="Tell me what to build…"
+            placeholder="Tell me what you want done…"
             submitLabel="Start project →"
             chips={STARTERS}
           />
@@ -126,23 +126,35 @@ export default async function ProjectsPage() {
             {
               href: "/app/apps/inbox",
               label: "Inbox",
-              blurb: "Anything the build sends or books waits there for your approval as it runs.",
+              blurb: "Anything the project sends or books waits there for your approval as it runs.",
             },
             {
               href: "/app/brain",
               label: "Brain",
-              blurb: "Your conventions, voice, and decisions are the rulebook your agent builds inside.",
+              blurb: "Your conventions, voice, and decisions are the rulebook your agent works inside.",
             },
             {
               href: "/app/settings/connections",
               label: "Connections",
-              blurb: "A build can wire up the tools you've connected — Gmail, QuickBooks, Slack.",
+              blurb: "A project runs across the tools you've connected — Gmail, Calendar, QuickBooks, Stripe, Slack.",
             },
           ]}
         />
 
         {/* Example plan — always available */}
         <ExamplePlanPanel />
+
+        {/* What's planned next — honest about the build-tools roadmap, no dates */}
+        <div className="rounded-xl border border-dashed border-slate-700/70 bg-slate-900/30 px-5 py-4">
+          <div className="text-[11px] font-mono text-slate-500 uppercase tracking-[0.14em] mb-1.5">
+            What&apos;s planned next
+          </div>
+          <p className="text-sm text-slate-400 leading-relaxed">
+            Today, projects run across the tools your agent is already connected to. Bigger builds —
+            spinning up new repos, deploying websites, provisioning databases — aren&apos;t here yet.
+            That arrives when the build connector pack ships.
+          </p>
+        </div>
 
       </div>
     </div>

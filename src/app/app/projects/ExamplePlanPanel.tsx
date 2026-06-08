@@ -2,54 +2,45 @@
 
 import { useState } from "react";
 
-// An illustrative Project → Milestones → Tasks plan for a system-level build, rendered in the
-// same shape the agent stages a real plan. Collapsed by default so the page reads as copy first;
-// the owner expands it when they want to see what a plan looks like. Non-interactive — the
-// Approve / Change buttons are a preview of the real flow. Invented scenario, no real names.
+// An illustrative Project → Milestones → Tasks plan for a multi-step job, rendered in the same
+// shape the agent stages a real plan. Collapsed by default so the page reads as copy first; the
+// owner expands it when they want to see what a plan looks like. Non-interactive — the Approve /
+// Change buttons are a preview of the real flow. Scope is honest to today's surface: it reads the
+// brain, drafts in Gmail, and stages everything for approval. No whole-system build.
 const EXAMPLE = {
-  project: "Build me a CRM tailored to how I run my contracting business",
-  subhead: "Five milestones, built inside your conventions. Nothing runs until you approve the plan.",
+  project: "Draft a five-touch follow-up sequence for the three prospects from my discovery calls this week",
+  subhead: "Four milestones across your brain, Gmail, and Calendar. Nothing sends until you approve the drafts.",
   milestones: [
     {
       n: 1,
-      title: "Design the data model",
+      title: "Pull the three prospects",
       tasks: [
-        "Read your brain for how you track jobs, leads, and crews",
-        "Lay out contacts, deals, jobs, and invoices to match your stages",
-        "Use your naming and your pipeline, not a generic template",
+        "Read your brain for this week's discovery-call notes",
+        "Pull each prospect's context — what they care about, where you left off",
       ],
     },
     {
       n: 2,
-      title: "Stand up accounts + access",
+      title: "Draft the five touches per prospect",
       tasks: [
-        "Add secure sign-in for you and your team",
-        "Set who can see what — office vs. field",
+        "Write five emails each, in your voice, spaced across the sequence",
+        "Reference what they actually said, not a generic template",
       ],
     },
     {
       n: 3,
-      title: "Build the deal pipeline view",
+      title: "Stage everything for approval",
       tasks: [
-        "A board of every active job by stage",
-        "Quick-add a lead and move it down the pipeline",
-        "Pull contact history into each card",
+        "Drop all fifteen drafts in your Inbox",
+        "You read, edit, and approve before anything sends",
       ],
     },
     {
       n: 4,
-      title: "Build the job detail view",
+      title: "Space out the sends",
       tasks: [
-        "One screen per job — scope, docs, photos, payments",
-        "Wire it to your connected tools so invoices show live",
-      ],
-    },
-    {
-      n: 5,
-      title: "Deploy it live",
-      tasks: [
-        "Ship it to a private URL only your team can reach",
-        "Hand you the link and stage a walkthrough in your Inbox",
+        "Set each touch on the calendar so the sequence paces itself",
+        "Hold the next touch automatically if a prospect replies",
       ],
     },
   ],
@@ -128,8 +119,8 @@ export default function ExamplePlanPanel() {
           </div>
 
           <p className="mt-3 text-[11px] font-mono text-slate-600 leading-relaxed">
-            This is an example. Your real plans show up here once you ask your agent to build
-            something — and every one is shaped by what&apos;s in your brain.
+            This is an example. Your real plans show up here once you hand your agent a multi-step
+            job — and every one is shaped by what&apos;s in your brain.
           </p>
         </div>
       )}
