@@ -2,11 +2,11 @@ export type Conversation = {
   id: string;
   user_id: string;
   title: string;
-  // Which project this thread belongs to (migration 035). Null = a loose thread not in a project.
+  // Which project this thread belongs to (migration 036). Null = a loose thread not in a project.
   // When set, the agent loop prepends the project's Instructions + references + memory to its
   // system prompt so the conversation runs inside the project's context.
   project_id: string | null;
-  // Pin a thread to the top of its project's Conversations list (migration 035).
+  // Pin a thread to the top of its project's Conversations list (migration 036).
   pinned: boolean;
   created_at: string;
   updated_at: string;

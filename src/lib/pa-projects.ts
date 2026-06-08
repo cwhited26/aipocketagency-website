@@ -1,4 +1,4 @@
-// Projects data layer (migration 035). A project is both an execution unit (goal + plan + tasks +
+// Projects data layer (migration 036). A project is both an execution unit (goal + plan + tasks +
 // approvals, backed by a brain scaffold) AND a context container: per-project Instructions, scoped
 // memory, reference docs, and linked conversations. Every read/write goes through PostgREST with
 // the service-role key scoped by owner_id — the same pattern as pa-conversations.ts.

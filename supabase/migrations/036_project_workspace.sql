@@ -1,4 +1,6 @@
--- 035_project_workspace.sql — Projects become an execution unit AND a context container.
+-- 036_project_workspace.sql — Projects become an execution unit AND a context container.
+-- (Numbered 036, not 035: the mobile-capture lane took 035_api_keys_mobile_capture.sql. Never
+--  reuse a migration number — additive-only, same rule as APA-ORCH-21.)
 --
 -- Before this migration a "project" lived only as a scaffold file in the owner's brain repo
 -- (goal + milestones + tasks, surfaced read-only on /app/projects). This adds the holding-context

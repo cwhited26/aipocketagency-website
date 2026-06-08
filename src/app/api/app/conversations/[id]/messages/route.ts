@@ -562,7 +562,7 @@ export async function POST(
 
   // Project context: when this thread belongs to a project, prepend the project's Instructions,
   // reference files, and scoped memory to the system prompt so the conversation runs inside the
-  // project's context. (project_id is null on loose threads and undefined until migration 035 lands
+  // project's context. (project_id is null on loose threads and undefined until migration 036 lands
   // — both resolve to no project context, so the agent behaves exactly as before.)
   const projectId = conversation.project_id ?? null;
   let projectBlock = "";
