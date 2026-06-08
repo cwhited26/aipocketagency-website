@@ -5,6 +5,7 @@ import { ROUTINE_DEFS, ROUTINE_KINDS } from "@/lib/routine-meta";
 import type { RoutineKind } from "@/lib/routine-meta";
 import Mascot from "@/components/Mascot";
 import Link from "next/link";
+import { TabGuide } from "../_components/TabGuide";
 
 type Routine = {
   id: string;
@@ -235,13 +236,20 @@ export default function RoutinesClient() {
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Routines</h1>
           <p className="text-slate-400 text-sm mt-2 leading-relaxed">
-            When a routine runs, the output lands in your{" "}
-            <Link href="/app/tasks" className="text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors">
-              Tasks inbox
-            </Link>{" "}
-            ready to read and dismiss. Outputs are generated from your brain — keep it fresh.
+            Work your agent does on a schedule, without you asking.
           </p>
         </div>
+
+        <p className="text-sm text-slate-300 leading-relaxed">
+          Some work happens on a clock, not a request. A Daily Brief every weekday morning so you
+          start with what&apos;s on the radar. A follow-up sweep every Sunday night so nothing goes
+          cold. A weekly read on what moved and what stalled. Flip a routine on and your agent runs
+          it on its own, pulls from your brain, and drops the result in your{" "}
+          <Link href="/app/apps/inbox" className="text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors">
+            Inbox
+          </Link>{" "}
+          for you to read. The fresher your brain, the better each run.
+        </p>
 
         <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-3 flex items-start gap-3">
           <span className="text-[#22d3ee]/40 shrink-0 mt-0.5">
@@ -291,6 +299,56 @@ export default function RoutinesClient() {
             ))}
           </div>
         )}
+
+        {/* First-touch guide — what to ask, what this connects to, and a sample brief */}
+        <TabGuide
+          promptsHeading="Try one of these"
+          prompts={[
+            "Run a Daily Brief every weekday at 8am",
+            "Sweep my follow-ups every Sunday night",
+            "Send me a weekly read on what moved and what stalled",
+          ]}
+          worksWith={[
+            {
+              href: "/app/apps/inbox",
+              label: "Inbox",
+              blurb: "Whatever a routine produces lands there for you to read and clear.",
+            },
+            {
+              href: "/app/email",
+              label: "Email",
+              blurb: "Some routines email you directly — like your Daily Brief landing in your inbox.",
+            },
+            {
+              href: "/app/calendar",
+              label: "Calendar",
+              blurb: "A routine can prep you before meetings by pulling the day off your calendar.",
+            },
+          ]}
+          exampleLabel="See an example Daily Brief"
+          exampleNote="This is a sample. Turn a routine on above and its real output lands in your Inbox."
+        >
+          <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 p-4">
+            <div className="text-[10px] font-mono text-[#22d3ee]/60 uppercase tracking-[0.18em]">
+              Daily Brief · Mon 8:00 AM
+            </div>
+            <p className="mt-1.5 text-sm font-semibold text-slate-100">Here&apos;s what&apos;s on the radar</p>
+            <ul className="mt-2 flex flex-col gap-1.5 text-[13px] text-slate-400">
+              <li className="leading-relaxed">
+                <span className="text-slate-200">Move on today:</span> Stoll decision is expected this
+                week — your follow-up draft is in the Inbox.
+              </li>
+              <li className="leading-relaxed">
+                <span className="text-slate-200">Pending your approval:</span> 2 drafted replies, 1
+                calendar invite.
+              </li>
+              <li className="leading-relaxed">
+                <span className="text-slate-200">Going quiet:</span> Keaton Hoskins — quote sent 12 days
+                ago, no reply.
+              </li>
+            </ul>
+          </div>
+        </TabGuide>
 
       </div>
     </div>

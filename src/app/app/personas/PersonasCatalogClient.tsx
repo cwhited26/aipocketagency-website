@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { TabGuide } from "../_components/TabGuide";
 import type { PersonaRow } from "@/lib/personas/types";
 
 type CatalogResponse = {
@@ -60,8 +61,7 @@ export default function PersonasCatalogClient() {
           <div>
             <h1 className="text-2xl font-semibold text-slate-100">Personas</h1>
             <p className="text-sm text-slate-500 mt-1 max-w-xl">
-              Specialist AI agents built from your business brain. Share each one with your
-              team — it only knows what you teach it.
+              Versions of your agent with their own voice and focus.
             </p>
           </div>
           {canCreate ? (
@@ -85,6 +85,14 @@ export default function PersonasCatalogClient() {
             </div>
           )}
         </header>
+
+        <p className="text-sm text-slate-300 leading-relaxed max-w-2xl mb-8">
+          A persona is your agent wearing a different hat. A sales persona writes like a closer — direct,
+          chasing the next step. A support persona writes like a patient operator. A recruiting persona
+          writes like a coach. Each one draws from its own slice of your brain, so your sales agent
+          isn&apos;t answering refund questions and your support agent isn&apos;t cold-pitching. Build one
+          from a template, share a link with a teammate, and it only ever knows what you&apos;ve taught it.
+        </p>
 
         {loading && <p className="text-slate-500 text-sm">Loading…</p>}
         {error && (
@@ -146,6 +154,58 @@ export default function PersonasCatalogClient() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* First-touch guide — what to ask, what this connects to, and sample voices */}
+        <div className="mt-10 max-w-2xl">
+          <TabGuide
+            promptsHeading="Try one of these"
+            prompts={[
+              "Ask my Sales persona to draft a cold outreach to Alan Stoll",
+              "Make a Support persona for handling refund questions",
+              "Have my Sales persona write a follow-up in a closer's voice",
+            ]}
+            worksWith={[
+              {
+                href: "/app/ask",
+                label: "Agent",
+                blurb: "Point any chat at a persona to get its voice instead of your default agent.",
+              },
+              {
+                href: "/app/brain",
+                label: "Brain",
+                blurb: "Each persona reads its own zone of your brain — sales facts, support facts, and so on.",
+              },
+              {
+                href: "/app/email",
+                label: "Email",
+                blurb: "Let different personas draft replies in different voices for different threads.",
+              },
+            ]}
+            exampleLabel="See an example of two voices"
+            exampleNote="This is a sample. Create a persona above to start drafting in a specific voice."
+          >
+            <div className="flex flex-col gap-2">
+              <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 p-4">
+                <div className="text-[10px] font-mono text-[#22d3ee]/60 uppercase tracking-[0.16em]">
+                  Sales persona — closer
+                </div>
+                <p className="mt-1.5 text-sm text-slate-300 leading-relaxed">
+                  &ldquo;Alan — scope&apos;s locked and the timeline works on your end. Want me to send the
+                  final today so your crew can start Monday?&rdquo;
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 p-4">
+                <div className="text-[10px] font-mono text-violet-300/70 uppercase tracking-[0.16em]">
+                  Support persona — operator
+                </div>
+                <p className="mt-1.5 text-sm text-slate-300 leading-relaxed">
+                  &ldquo;Happy to help sort the refund. I see the charge from June 2 — I&apos;ll get that back
+                  to your card within a few business days and send confirmation when it&apos;s done.&rdquo;
+                </p>
+              </div>
+            </div>
+          </TabGuide>
         </div>
       </div>
     </div>

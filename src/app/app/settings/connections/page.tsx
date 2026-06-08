@@ -8,6 +8,7 @@ import { isSlackOAuthConfigured } from "@/lib/connectors/slack/oauth";
 import { isQuickBooksOAuthConfigured } from "@/lib/connectors/quickbooks/oauth";
 import { isStripeConnectConfigured } from "@/lib/connectors/stripe/oauth";
 import { redirect } from "next/navigation";
+import { TabGuide } from "../../_components/TabGuide";
 import GmailConnectionCard from "./GmailConnectionCard";
 import CalendarConnectionCard from "./CalendarConnectionCard";
 import SlackConnectionCard from "./SlackConnectionCard";
@@ -175,13 +176,21 @@ export default async function ConnectionsPage({
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Connect your tools</h1>
           <p className="text-sm text-slate-400 mt-2 leading-relaxed">
-            Connect an account and your agent pulls what needs your attention into the{" "}
-            <a href="/app/apps/inbox" className="text-[#22d3ee] hover:underline">
-              Inbox
-            </a>{" "}
-            — one tap each to handle, reply, or archive.
+            The outside tools your agent can read from and act on.
           </p>
         </div>
+
+        <p className="text-sm text-slate-300 leading-relaxed">
+          Out of the box, your agent works from your brain. Connect a tool and it can work with the
+          real thing. Connect Gmail and it reads your mail and drafts replies in your voice.
+          Connect Google Calendar and it can see your schedule and propose times. Connect
+          QuickBooks and it can draft invoices; Slack and it can post for you. Reads happen on
+          their own — but every action that changes something out there waits in your{" "}
+          <a href="/app/apps/inbox" className="text-[#22d3ee] hover:underline">
+            Inbox
+          </a>{" "}
+          for your approval first. Nothing sends, books, or charges without your tap.
+        </p>
 
         {message && (
           <div
@@ -270,6 +279,52 @@ export default async function ConnectionsPage({
           never sends, deletes, or writes anything on its own — replies, calendar changes, and every
           invoice, payment, or refund are always staged for your approval first.
         </p>
+
+        {/* First-touch guide — what to ask, what this connects to, and a sample status */}
+        <TabGuide
+          promptsHeading="Try one of these"
+          prompts={[
+            "What can you do for me once I connect Gmail?",
+            "Once QuickBooks is connected, draft an invoice for the Stoll job",
+            "After I connect Slack, post a heads-up to my team channel",
+          ]}
+          worksWith={[
+            {
+              href: "/app/email",
+              label: "Email",
+              blurb: "Gmail powers the Email tab — reading threads and sending your approved replies.",
+            },
+            {
+              href: "/app/calendar",
+              label: "Calendar",
+              blurb: "Google Calendar powers the Calendar tab — reading and proposing events.",
+            },
+            {
+              href: "/app/apps/inbox",
+              label: "Inbox",
+              blurb: "Every action on a connected tool stages here for your approval before it runs.",
+            },
+          ]}
+          exampleLabel="See an example of what connecting unlocks"
+          exampleNote="This is a sample. Connect a tool above and these become real on your account."
+        >
+          <ul className="flex flex-col gap-1.5">
+            {[
+              { tool: "Gmail", does: "Reads incoming mail, drafts replies in your voice, sends on approval." },
+              { tool: "Google Calendar", does: "Reads your schedule, proposes times, books events on approval." },
+              { tool: "QuickBooks", does: "Drafts invoices, records payments, pulls reports — writes on approval." },
+              { tool: "Slack", does: "Posts messages, replies in threads, sends DMs — each send on approval." },
+            ].map((c) => (
+              <li
+                key={c.tool}
+                className="rounded-xl border border-slate-800/60 bg-slate-950/50 px-4 py-3"
+              >
+                <p className="text-sm font-semibold text-slate-100">{c.tool}</p>
+                <p className="text-[13px] text-slate-500 leading-relaxed mt-0.5">{c.does}</p>
+              </li>
+            ))}
+          </ul>
+        </TabGuide>
       </div>
     </div>
   );

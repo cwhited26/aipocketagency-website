@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
+import { TabGuide } from "../_components/TabGuide";
 import { BRAIN_TASKS, getOpenBrainTasks } from "@/lib/brain-tasks";
 import type { FreshnessResponse } from "@/app/api/app/brain/freshness/route";
 
@@ -279,9 +280,17 @@ export default function TasksClient({ brainRepo }: { brainRepo: string | null })
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Tasks</h1>
           <p className="text-slate-400 text-sm mt-2 leading-relaxed">
-            Pending agent proposals + open brain-build steps. Act here or everything backs up.
+            The things that need you — not your agent.
           </p>
         </div>
+
+        <p className="text-sm text-slate-300 leading-relaxed">
+          Your agent handles what it can on its own. What&apos;s left is the work only you can do:
+          a draft it wrote that&apos;s waiting on your yes or no, and the setup steps that make it
+          smarter about your business. Sign off on a proposal before it goes to Stoll, fill in your
+          pricing so every quote comes out right, tell it your follow-up cadence. Clear what&apos;s
+          here and your agent keeps moving. Let it pile up and everything behind it waits.
+        </p>
 
         {loading ? (
           <div className="flex flex-col items-center gap-3 py-16">
@@ -366,6 +375,60 @@ export default function TasksClient({ brainRepo }: { brainRepo: string | null })
             )}
           </>
         )}
+
+        {/* First-touch guide — what to ask, what this connects to, and a sample list */}
+        <TabGuide
+          promptsHeading="Try one of these"
+          prompts={[
+            "What do I personally need to do this week that you can't do for me?",
+            "List the open steps on the Stoll deal that need me, not you",
+            "What's still missing from my brain that would make your drafts better?",
+          ]}
+          worksWith={[
+            {
+              href: "/app/projects",
+              label: "Projects",
+              blurb: "Steps a plan hands back to you — sign a contract, send a deposit — show up as tasks.",
+            },
+            {
+              href: "/app/brain",
+              label: "Brain",
+              blurb: "Setup steps here fill the gaps in what your agent knows about your business.",
+            },
+            {
+              href: "/app/apps/inbox",
+              label: "Inbox",
+              blurb: "Approvals waiting on you live here too — the full queue with every draft.",
+            },
+          ]}
+          exampleLabel="See an example task list"
+          exampleNote="This is a sample. Your real approvals and setup steps appear above."
+        >
+          <div className="flex flex-col gap-2">
+            <div className="rounded-xl border border-amber-500/20 bg-slate-950/50 p-3.5">
+              <div className="text-[10px] font-mono text-amber-400/70 uppercase tracking-[0.18em]">
+                Waiting on you
+              </div>
+              <p className="mt-1 text-sm font-medium text-slate-100">
+                Approve the proposal before it goes to Alan Stoll
+              </p>
+              <p className="mt-0.5 text-[13px] text-slate-500 leading-relaxed">
+                Your agent drafted it and is holding the send until you say go.
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-800/60 bg-slate-950/40 p-3.5">
+              <div className="text-[10px] font-mono text-[#22d3ee]/60 uppercase tracking-[0.18em]">
+                Build your brain
+              </div>
+              <p className="mt-1 text-sm font-medium text-slate-100">
+                Add your pricing so every quote comes out right
+              </p>
+              <p className="mt-0.5 text-[13px] text-slate-500 leading-relaxed">
+                Takes two minutes and sharpens every draft from here on.
+              </p>
+            </div>
+          </div>
+        </TabGuide>
       </div>
     </div>
   );

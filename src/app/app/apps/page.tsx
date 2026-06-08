@@ -3,6 +3,7 @@ import { fetchPaUser } from "@/lib/pa-supabase";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { GlowCard } from "../_components/GlowCard";
+import { TabGuide } from "../_components/TabGuide";
 
 type AppDef = {
   href: string;
@@ -159,6 +160,57 @@ export default async function AppsPage() {
             The deeper your brain, the better the output. More work apps ship as the platform
             grows.
           </p>
+        </div>
+
+        {/* First-touch guide — what to ask, what this connects to, and a sample output */}
+        <div className="mt-8">
+          <TabGuide
+            promptsHeading="Try one of these"
+            prompts={[
+              "Draft a proposal for the Stoll deal",
+              "Write a follow-up email to Patrick about the site walk",
+              "Show me which leads have gone cold",
+              "Give me today's brief",
+            ]}
+            worksWith={[
+              {
+                href: "/app/projects",
+                label: "Projects",
+                blurb: "When an app's work has several steps, it runs as a plan you approve first.",
+              },
+              {
+                href: "/app/apps/inbox",
+                label: "Inbox",
+                blurb: "Whatever an app drafts — an email, a proposal — stages there for your approval.",
+              },
+            ]}
+            exampleLabel="See an example output"
+            exampleNote="This is a sample. Open any app above to run it against your own brain."
+          >
+            <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 p-4">
+              <div className="text-[10px] font-mono text-[#22d3ee]/60 uppercase tracking-[0.18em]">
+                Follow-up Radar
+              </div>
+              <p className="mt-1.5 text-sm font-semibold text-slate-100">3 relationships have gone quiet</p>
+              <ul className="mt-2 flex flex-col gap-1.5 text-[13px] text-slate-400">
+                <li className="leading-relaxed">
+                  <span className="text-slate-200">Alan Stoll</span> — no contact in 6 days, decision
+                  expected this week. Drafted a nudge.
+                </li>
+                <li className="leading-relaxed">
+                  <span className="text-slate-200">Patrick (Fresh Page)</span> — site walk was Tuesday,
+                  no recap sent. Drafted one.
+                </li>
+                <li className="leading-relaxed">
+                  <span className="text-slate-200">Keaton Hoskins</span> — quote sent 12 days ago,
+                  never followed up. Drafted a check-in.
+                </li>
+              </ul>
+              <p className="mt-3 text-[11px] font-mono text-slate-500">
+                All three drafts staged in your Inbox →
+              </p>
+            </div>
+          </TabGuide>
         </div>
       </div>
     </div>

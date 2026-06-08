@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Mascot from "@/components/Mascot";
 import type { ActivityItem } from "@/app/api/app/brain/activity/route";
+import { TabGuide } from "../_components/TabGuide";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -598,6 +599,16 @@ function HubView({
           </div>
         </div>
 
+        {/* The full story — this is the one box that does everything */}
+        <p className="text-sm text-slate-300 leading-relaxed text-center max-w-xl mx-auto">
+          This is the one place you tell your agent what you want done — in plain English, like
+          you&apos;d text a sharp assistant. Ask it to draft a recap from yesterday&apos;s call,
+          pull where the Stoll deal stands, or write follow-ups to everyone who replied this week.
+          It reads your brain for context, does the work, and stages anything that leaves your
+          hands — an email, a meeting, an invoice — in your Inbox for you to approve. Big asks with
+          several steps become a plan you sign off on first.
+        </p>
+
         {/* Input — the primary interaction, first thing under the mascot */}
         {!hasApiKey ? (
           <div className="rounded-xl border border-[#22d3ee]/25 bg-[#22d3ee]/5 px-5 py-5 space-y-3">
@@ -766,6 +777,70 @@ function HubView({
             ))}
           </div>
         </div>
+
+        {/* First-touch guide — tap a prompt to drop it in the box; see where the work goes */}
+        <TabGuide
+          promptsHeading="Not sure what to ask? Tap one to drop it in the box"
+          onPick={setInputValue}
+          prompts={[
+            "Draft a recap email from yesterday's call with Stoll",
+            "Pull my last three touches with Stoll and tell me where the deal sits",
+            "Write a follow-up to everyone who replied to me this week",
+            "Turn what's in my brain about Patrick's build into a one-page summary",
+          ]}
+          worksWith={[
+            {
+              href: "/app/apps/inbox",
+              label: "Inbox",
+              blurb: "Anything your agent wants to send or book waits here for your approval.",
+            },
+            {
+              href: "/app/projects",
+              label: "Projects",
+              blurb: "Ask for something with several steps and it becomes a plan you approve first.",
+            },
+            {
+              href: "/app/personas",
+              label: "Personas",
+              blurb: "Route a chat to a sales or support version of your agent with its own voice.",
+            },
+            {
+              href: "/app/brain",
+              label: "Brain",
+              blurb: "Every reply is grounded in what your agent knows about your business.",
+            },
+          ]}
+          exampleLabel="See an example thread"
+          exampleNote="This is a sample. Type anything above and your real conversation starts here."
+        >
+          <div className="flex flex-col gap-3">
+            <div className="self-end max-w-[85%] rounded-2xl rounded-tr-sm bg-slate-800 border border-slate-700/60 px-4 py-2.5 text-sm text-slate-100">
+              Draft a recap email from yesterday&apos;s call with Stoll.
+            </div>
+            <div className="self-start max-w-full">
+              <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-[0.18em] uppercase mb-1.5">
+                Pocket Agent
+              </div>
+              <div className="rounded-2xl rounded-tl-sm border border-slate-800/60 bg-slate-950/50 px-4 py-3 text-sm text-slate-300 leading-relaxed">
+                <p>Read the Stoll discovery notes from your brain. Here&apos;s the recap, drafted in your voice:</p>
+                <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-slate-800/40 bg-slate-950/60 p-3 text-xs leading-relaxed text-slate-400 font-mono">
+{`Alan —
+
+Good catching up Tuesday. Quick recap of what we landed on:
+scope, timeline, and the line-item pricing are attached.
+
+I'll hold the proposal in your Inbox until you give the word.
+
+— Chase`}
+                </pre>
+                <p className="mt-2 text-[13px] text-slate-400">
+                  Staged the send-to-Stoll email in your{" "}
+                  <span className="text-[#22d3ee]/80">Inbox</span> — approve it whenever you&apos;re ready.
+                </p>
+              </div>
+            </div>
+          </div>
+        </TabGuide>
 
       </div>
     </div>

@@ -4,6 +4,7 @@ import { fetchPaUser } from "@/lib/pa-supabase";
 import { listScaffolds, type ScaffoldEntry } from "@/lib/pa-brain";
 import { redirect } from "next/navigation";
 import ExamplePlanPanel from "./ExamplePlanPanel";
+import { WorksWithPanel } from "../_components/TabGuide";
 
 export const dynamic = "force-dynamic";
 
@@ -116,6 +117,32 @@ export default async function ProjectsPage() {
             </ul>
           </div>
         )}
+
+        {/* Works with — the tabs a project touches */}
+        <WorksWithPanel
+          items={[
+            {
+              href: "/app/ask",
+              label: "Agent",
+              blurb: "Give your agent a multi-step ask and it writes the plan you see here.",
+            },
+            {
+              href: "/app/apps/inbox",
+              label: "Inbox",
+              blurb: "Anything the plan sends or books waits there for your approval as it runs.",
+            },
+            {
+              href: "/app/tasks",
+              label: "Tasks",
+              blurb: "Steps that need you — sign a contract, send a deposit — show up as your tasks.",
+            },
+            {
+              href: "/app/apps",
+              label: "Apps",
+              blurb: "A workflow app can run as a plan when its work has several steps.",
+            },
+          ]}
+        />
 
         {/* Example plan — always available */}
         <ExamplePlanPanel />

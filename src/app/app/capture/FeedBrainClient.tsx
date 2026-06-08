@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import FileUploadZone from "../_components/FileUploadZone";
+import { TabGuide } from "../_components/TabGuide";
 
 type CompletenessData = { filled: number; total: number; pct: number };
 
@@ -62,8 +63,15 @@ export default function FeedBrainClient({
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Feed your brain.</h1>
           <p className="text-slate-400 text-sm mt-1.5 leading-relaxed">
-            Drop files or photos about your business. The agent reads them and absorbs the content
-            into your memory files — so it knows more without you having to explain.
+            The fastest way to get something into your brain, from anywhere.
+          </p>
+          <p className="text-sm text-slate-300 mt-3 leading-relaxed">
+            When something matters and you don&apos;t want to lose it, drop it here. A voice memo
+            while you&apos;re driving back from a job. A photo of a competitor&apos;s yard sign. A
+            proposal PDF, a whiteboard shot, a doc shared straight from your phone. Your agent reads
+            whatever you send, pulls out what matters, and files it into your brain — so next time
+            you ask, it already knows. Set up the iPhone share sheet and it&apos;s two taps from any
+            app.
           </p>
         </div>
 
@@ -237,6 +245,48 @@ export default function FeedBrainClient({
             </div>
           </>
         )}
+
+        {/* First-touch guide — what this connects to, and a sample absorbed item */}
+        <TabGuide
+          worksWith={[
+            {
+              href: "/app/brain",
+              label: "Brain",
+              blurb: "Everything you capture gets absorbed into what your agent knows.",
+            },
+            {
+              href: "/app/documents",
+              label: "Documents",
+              blurb: "The files you send in land here, viewable any time.",
+            },
+            {
+              href: "/app/apps/inbox",
+              label: "Inbox",
+              blurb: "Things shared from your phone show up to triage before they're filed.",
+            },
+          ]}
+          exampleLabel="See what happens after you capture something"
+          exampleNote="This is a sample. Drop a file or record a memo above to see your agent absorb it."
+        >
+          <div className="flex flex-col gap-2">
+            <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 px-4 py-3">
+              <p className="text-[11px] font-mono text-slate-500">You shared</p>
+              <p className="mt-0.5 text-sm font-medium text-slate-200">
+                Voice memo — &ldquo;notes from the Stoll site walk&rdquo;
+              </p>
+            </div>
+            <div className="rounded-xl border border-[#22d3ee]/20 bg-[#22d3ee]/5 px-4 py-3">
+              <p className="text-[11px] font-mono text-[#22d3ee]/70">Your agent absorbed it</p>
+              <p className="mt-0.5 text-sm text-slate-300 leading-relaxed">
+                Transcribed it, pulled the scope and the timeline you mentioned, and saved them to your
+                brain under the Stoll deal.
+              </p>
+              <p className="mt-1 text-[10px] font-mono text-[#22d3ee]/50">
+                → memory/deal-stoll.md
+              </p>
+            </div>
+          </div>
+        </TabGuide>
       </div>
     </div>
   );

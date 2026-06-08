@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
 import { affordancesFor, type InboxItemKind } from "@/lib/inbox-affordances";
+import { TabGuide } from "../../_components/TabGuide";
 
 type TriageDetail = {
   threadId: string;
@@ -1052,10 +1053,18 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Inbox</h1>
           <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-            Everything your agent stages for you — drafts waiting on your approval and quick
-            yes/no decisions. Nothing sends or saves without your explicit go-ahead.
+            Where you approve anything your agent wants to do in the outside world.
           </p>
         </div>
+
+        <p className="text-sm text-slate-300 leading-relaxed mb-7">
+          Your agent reads and drafts on its own, but it never sends, books, or pays without you.
+          When it wants to do something that touches the outside world — fire off a reply to the
+          Stoll thread, put a meeting with Patrick on your calendar, send an invoice — it stages
+          the action right here and waits. You see exactly what it&apos;s about to do, change
+          anything that&apos;s off, and tap once to let it go. Routines that run on their own, like
+          your Daily Brief, land here too. Nothing leaves without your tap.
+        </p>
 
         {loading ? (
           <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 px-6 py-10 flex flex-col items-center gap-3">
@@ -1193,6 +1202,74 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
               </p>
             </div>
           </div>
+        </div>
+
+        {/* First-touch guide — what to try, what this connects to, and a sample card */}
+        <div className="mt-8">
+          <TabGuide
+            promptsHeading="Want something to land here? Try one of these"
+            prompts={[
+              "Draft a reply to the Stoll thread and stage it for me to approve",
+              "Find a 30-minute slot next week with Patrick and stage the calendar invite",
+              "Catch me up — what's waiting on my approval right now?",
+            ]}
+            worksWith={[
+              {
+                href: "/app/email",
+                label: "Email",
+                blurb: "Replies your agent drafts in your voice show up here before they send.",
+              },
+              {
+                href: "/app/calendar",
+                label: "Calendar",
+                blurb: "Meetings your agent wants to book wait here until you approve them.",
+              },
+              {
+                href: "/app/settings/connections",
+                label: "Connections",
+                blurb: "Every action on a connected tool — Gmail, QuickBooks, Slack — stages here first.",
+              },
+              {
+                href: "/app/routines",
+                label: "Routines",
+                blurb: "Scheduled work like your Daily Brief drops here when it runs.",
+              },
+            ]}
+            exampleLabel="See an example approval"
+            exampleNote="This is a sample. Your real drafts and decisions appear above the moment your agent stages them."
+          >
+            <div className="rounded-xl border border-amber-500/20 bg-slate-950/50 p-4">
+              <div className="text-[10px] font-mono text-amber-400/70 uppercase tracking-[0.18em]">
+                Draft awaiting approval
+              </div>
+              <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                Reply to Alan Stoll — &ldquo;Re: roof scope + timeline&rdquo;
+              </p>
+              <p className="mt-0.5 text-[11px] font-mono text-slate-500">to alan@stollexteriors.com</p>
+              <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-slate-800/40 bg-slate-950/60 p-3 text-xs leading-relaxed text-slate-400 font-mono">
+{`Alan —
+
+Good talking Tuesday. Here's the scope we landed on, with
+the timeline and the line-item pricing attached.
+
+One question left: do you want the gutter work bundled in
+or quoted separately? Reply with either and I'll lock it.
+
+— Chase`}
+              </pre>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="rounded-lg bg-[#22d3ee] px-3 py-1.5 text-xs font-semibold text-[#031820]">
+                  Approve &amp; send
+                </span>
+                <span className="rounded-lg border border-slate-700/60 px-3 py-1.5 text-xs font-medium text-slate-300">
+                  Edit first
+                </span>
+                <span className="rounded-lg border border-slate-700/60 px-3 py-1.5 text-xs font-medium text-slate-300">
+                  Discard
+                </span>
+              </div>
+            </div>
+          </TabGuide>
         </div>
       </div>
     </div>

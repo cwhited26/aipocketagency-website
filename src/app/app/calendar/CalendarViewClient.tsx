@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { TabGuide } from "../_components/TabGuide";
 
 // UI-safe event projection — mirrors ListedEvent from the calendar connector.
 type CalendarEvent = {
@@ -86,6 +87,15 @@ export default function CalendarViewClient({
           </p>
         </div>
 
+        <p className="text-sm text-slate-300 leading-relaxed mb-8">
+          Once your calendar is connected, your agent can read it like you do. Ask it to find a
+          30-minute slot next week and propose it to Patrick, and it checks for conflicts and
+          stages the invite in your Inbox. Ask what you should prep for tomorrow&apos;s meeting and
+          it pulls your notes from the last one. It can create, move, or cancel events — but every
+          change waits for your approval before it touches your real calendar. Nothing gets booked
+          behind your back.
+        </p>
+
         {!connected && (
           <div className="rounded-2xl border border-slate-700/60 bg-slate-900/50 px-6 py-8 text-center">
             <p className="text-sm font-semibold text-slate-100">No calendar connected</p>
@@ -165,6 +175,54 @@ export default function CalendarViewClient({
             ))}
           </ul>
         )}
+
+        {/* First-touch guide — what to ask, what this connects to, and a sample day */}
+        <div className="mt-10">
+          <TabGuide
+            promptsHeading="Try one of these"
+            prompts={[
+              "Find a 30-minute slot next week and propose it to Patrick",
+              "Pull my notes from the Stoll discovery call",
+              "What's on my calendar tomorrow, and what should I prep for?",
+            ]}
+            worksWith={[
+              {
+                href: "/app/email",
+                label: "Email",
+                blurb: "Once you approve an invite, your agent can send it from your Gmail.",
+              },
+              {
+                href: "/app/apps/inbox",
+                label: "Inbox",
+                blurb: "Every event your agent wants to create or move waits there for your tap.",
+              },
+              {
+                href: "/app/personas",
+                label: "Personas",
+                blurb: "Have a sales persona build the prep doc before a discovery call.",
+              },
+            ]}
+            exampleLabel="See an example day"
+            exampleNote="This is a sample. Your real events show above once Google Calendar is connected."
+          >
+            <ul className="flex flex-col gap-2">
+              {[
+                { t: "Discovery call — Alan Stoll", w: "Mon, Jun 9 · 10:00 AM", who: "2 attendees" },
+                { t: "Site walk with Patrick", w: "Tue, Jun 10 · 2:00 PM", who: "Fresh Page Home Improvement" },
+                { t: "Proposal review (hold)", w: "Wed, Jun 11 · 9:00 AM", who: "Proposed by your agent — waiting on you" },
+              ].map((ev) => (
+                <li
+                  key={ev.t}
+                  className="rounded-xl border border-slate-800/60 bg-slate-950/50 px-4 py-3"
+                >
+                  <p className="text-sm font-semibold text-slate-100">{ev.t}</p>
+                  <p className="text-xs text-[#22d3ee]/70 font-mono mt-1">{ev.w}</p>
+                  <p className="text-xs text-slate-500 mt-1">{ev.who}</p>
+                </li>
+              ))}
+            </ul>
+          </TabGuide>
+        </div>
       </div>
     </div>
   );

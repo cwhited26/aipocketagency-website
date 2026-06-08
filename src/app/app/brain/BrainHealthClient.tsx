@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Mascot from "@/components/Mascot";
+import { TabGuide } from "../_components/TabGuide";
 import type { FreshnessArea, FreshnessResponse, FreshnessStatus } from "@/app/api/app/brain/freshness/route";
 import type { BrainIndexResponse } from "@/app/api/app/brain/index/route";
 import type { MemoryIndexRow, MemoryEntryType, RootFile } from "@/lib/pa-brain-index";
@@ -610,6 +611,16 @@ export default function BrainHealthClient({
           </div>
         </div>
 
+        <p className="text-sm text-slate-300 leading-relaxed">
+          Your brain is everything your agent knows about your business — your services and
+          pricing, how you write, who your customers are, the decisions you&apos;ve made, the way
+          you like to follow up. It reads all of it before every reply, so the more it holds, the
+          more the drafts sound like you and the answers fit your situation. Ask it what it knows
+          about the Stoll deal and it tells you. Tell it your follow-up cadence is 7, 14, then 30
+          days and it remembers for good. This page shows how complete your brain is and what to
+          fill in next.
+        </p>
+
         {/* Brain primitives — quick access to North Star, Specs, and Memory tiers */}
         {brainRepo && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -696,6 +707,53 @@ export default function BrainHealthClient({
             </div>
           </div>
         ) : null}
+
+        {/* First-touch guide — what to ask, what this connects to, and sample memory */}
+        <TabGuide
+          promptsHeading="Try one of these"
+          prompts={[
+            "What do you know about the Stoll deal?",
+            "Add to memory: my follow-up cadence is 7, 14, then 30 days",
+            "What's my pricing for a single-page site?",
+          ]}
+          worksWith={[
+            {
+              href: "/app/documents",
+              label: "Documents",
+              blurb: "The actual files behind your brain — proposals, PDFs, notes you've uploaded.",
+            },
+            {
+              href: "/app/capture",
+              label: "Capture",
+              blurb: "The fastest way to add to your brain — a voice memo, a photo, a shared doc.",
+            },
+            {
+              href: "/app/ask",
+              label: "Agent",
+              blurb: "Reads from here on every reply, and saves new facts back when you tell it to.",
+            },
+          ]}
+          exampleLabel="See an example of what your agent remembers"
+          exampleNote="This is a sample. Your real memory fills in as you talk to your agent and feed your brain."
+        >
+          <ul className="flex flex-col gap-2">
+            {[
+              { k: "Deal · Stoll", v: "Roof + gutter scope quoted Jun 2. Decision expected this week. Prefers email over calls." },
+              { k: "How you follow up", v: "Cadence is 7, 14, then 30 days. Short, no fluff, one clear ask per email." },
+              { k: "Pricing", v: "Single-page site: $1,500 flat. Multi-step builds quoted per scope." },
+            ].map((m) => (
+              <li
+                key={m.k}
+                className="rounded-xl border border-slate-800/60 bg-slate-950/50 px-4 py-3"
+              >
+                <p className="text-[10px] font-mono text-[#22d3ee]/60 uppercase tracking-[0.16em]">
+                  {m.k}
+                </p>
+                <p className="mt-1 text-sm text-slate-300 leading-relaxed">{m.v}</p>
+              </li>
+            ))}
+          </ul>
+        </TabGuide>
       </div>
     </div>
   );

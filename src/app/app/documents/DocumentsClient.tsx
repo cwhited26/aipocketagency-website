@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FileUploadZone from "../_components/FileUploadZone";
 import Mascot from "@/components/Mascot";
+import { TabGuide } from "../_components/TabGuide";
 import type { BrainFile } from "@/app/api/app/brain/files/route";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -319,6 +320,15 @@ export default function DocumentsClient({
           )}
         </div>
 
+        <p className="text-sm text-slate-300 leading-relaxed">
+          These are the actual files your agent works from — proposals, contracts, your services
+          PDF, a photo of the whiteboard, anything you&apos;ve uploaded or shared in. When you add
+          a file, your agent reads it and pulls the important parts into its memory, so it can use
+          what&apos;s inside without you re-explaining. Ask it to open the Stoll proposal or find
+          every file that mentions Patrick and it goes straight to the right one. Upload here, or
+          send things in from your phone through Capture.
+        </p>
+
         {/* Upload zone (toggled) */}
         {showUpload && brainRepo && (
           <FileUploadZone
@@ -409,6 +419,54 @@ export default function DocumentsClient({
             </p>
           </div>
         )}
+
+        {/* First-touch guide — what to ask, what this connects to, and a sample file list */}
+        <TabGuide
+          promptsHeading="Try one of these"
+          prompts={[
+            "Open the Stoll proposal",
+            "Find every file that mentions Patrick",
+            "Pull the pricing out of my services PDF",
+          ]}
+          worksWith={[
+            {
+              href: "/app/brain",
+              label: "Brain",
+              blurb: "What your agent absorbs from these files becomes part of what it knows.",
+            },
+            {
+              href: "/app/capture",
+              label: "Capture",
+              blurb: "Send files in from your phone — a photo, a voice memo, a shared doc.",
+            },
+            {
+              href: "/app/ask",
+              label: "Agent",
+              blurb: "Your agent opens and reads these files when a question calls for one.",
+            },
+          ]}
+          exampleLabel="See an example of your files"
+          exampleNote="This is a sample. Your real files appear above once you've uploaded or shared some in."
+        >
+          <ul className="flex flex-col gap-1.5">
+            {[
+              { n: "Stoll proposal.pdf", m: "Uploaded Jun 2 · absorbed into memory" },
+              { n: "Services + pricing.pdf", m: "Uploaded May 20 · absorbed into memory" },
+              { n: "Whiteboard — Q3 plan.jpg", m: "Shared from iPhone Jun 5" },
+            ].map((f) => (
+              <li
+                key={f.n}
+                className="flex items-center gap-3 rounded-xl border border-slate-800/60 bg-slate-950/50 px-4 py-3"
+              >
+                <span className="shrink-0 text-[#22d3ee]/50 text-sm">◈</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-200 truncate">{f.n}</p>
+                  <p className="text-[11px] font-mono text-slate-500 truncate">{f.m}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </TabGuide>
 
       </div>
 
