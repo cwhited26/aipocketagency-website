@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import Mascot from "@/components/Mascot";
+import Mascot, { type MascotState } from "@/components/Mascot";
 import type { ActivityItem } from "@/app/api/app/brain/activity/route";
 import { TabGuide } from "../_components/TabGuide";
 
@@ -368,14 +368,25 @@ type NavNodeDef = {
 
 function MascotNavHub({
   brainRepo,
+  mascotState,
   size = 260,
 }: {
   brainRepo: string | null;
+  mascotState: MascotState;
   size?: number;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(true);
   const router = useRouter();
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const handler = () => setReducedMotion(mq.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  const flow = mounted && !reducedMotion;
 
   const height = Math.round((size * 400) / 380);
   const brainLabel = brainRepo
@@ -478,6 +489,22 @@ function MascotNavHub({
                 }
               />
 
+              {/* Data-flow pulse — a faint dot travels mascot → label, then fades.
+                  Staggered per tendril via animDelay so they never pulse in unison. */}
+              {flow && (
+                <circle
+                  r={2.2}
+                  fill="#5eead4"
+                  style={{
+                    offsetPath: `path('${node.tendrilD}')`,
+                    offsetRotate: "0deg",
+                    animation: `mascot-tendril-flow ${node.animDur} linear ${node.animDelay} infinite`,
+                    ["--flow-op" as string]: node.connected ? 0.85 : 0.4,
+                    opacity: 0,
+                  }}
+                />
+              )}
+
               {/* Clickable node group */}
               <g
                 onClick={() => router.push(node.href)}
@@ -542,9 +569,10 @@ function MascotNavHub({
         </svg>
       )}
 
-      {/* Creature — above nav layer, pointer-events-none so nav catches clicks */}
+      {/* Creature — above nav layer, pointer-events-none so nav catches clicks.
+          Reacts in real time: listening while composing, thinking in flight. */}
       <div className="absolute inset-0 pointer-events-none">
-        <Mascot state="idle" size={size} noTendrils />
+        <Mascot state={mascotState} size={size} noTendrils />
       </div>
     </div>
   );
@@ -567,6 +595,7 @@ function HubView({
   inputValue,
   setInputValue,
   isLoading,
+  mascotState,
   handleSubmit,
   handleKeyDown,
   textareaRef,
@@ -577,6 +606,7 @@ function HubView({
   inputValue: string;
   setInputValue: (v: string) => void;
   isLoading: boolean;
+  mascotState: MascotState;
   handleSubmit: () => void;
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
@@ -587,7 +617,7 @@ function HubView({
 
         {/* Mascot + tentacle nav — centrepiece */}
         <div className="flex flex-col items-center gap-3">
-          <MascotNavHub brainRepo={brainRepo} size={260} />
+          <MascotNavHub brainRepo={brainRepo} mascotState={mascotState} size={260} />
           <div className="flex items-center gap-2">
             <span
               className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0"
@@ -924,8 +954,38 @@ export default function HomeClient({
   const [threadError, setThreadError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState(initialQuery ?? "");
   const [isLoading, setIsLoading] = useState(false);
+  // Post-reply flourish — drives the mascot through tool_calling → responding → done
+  // once a reply lands, then clears back to null. null means "let isLoading/typing decide."
+  const [replyPhase, setReplyPhase] = useState<MascotState | null>(null);
+  const flourishTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Single source of truth for the creature's mood, shared by the Hub mascot and
+  // the in-thread reply indicator: explicit flourish wins, else in-flight = thinking,
+  // else a composed-but-unsent ask = listening, else idle.
+  const mascotState: MascotState =
+    replyPhase ?? (isLoading ? "thinking" : inputValue.trim() ? "listening" : "idle");
+
+  function clearFlourish() {
+    flourishTimers.current.forEach(clearTimeout);
+    flourishTimers.current = [];
+  }
+  // Play the celebratory beat after a reply arrives. If the agent ran a connector,
+  // open with a tool_calling flare; otherwise go straight to the speaking pulse.
+  function runFlourish(usedTools: boolean) {
+    clearFlourish();
+    const seq: [MascotState, number][] = usedTools
+      ? [["tool_calling", 650], ["responding", 900], ["done", 650]]
+      : [["responding", 750], ["done", 600]];
+    let acc = 0;
+    for (const [phase, dur] of seq) {
+      flourishTimers.current.push(setTimeout(() => setReplyPhase(phase), acc));
+      acc += dur;
+    }
+    flourishTimers.current.push(setTimeout(() => setReplyPhase(null), acc));
+  }
+  useEffect(() => () => clearFlourish(), []);
 
   // Load (restore) the active thread's full history. A failed load surfaces a visible notice
   // instead of a silent catch, so a stale ?c= link never strands the owner on a blank thread.
@@ -979,6 +1039,8 @@ export default function HomeClient({
     const content = inputValue.trim();
     if (!content || isLoading) return;
     setInputValue("");
+    clearFlourish();
+    setReplyPhase(null);
     setIsLoading(true);
 
     const tempId = `tmp-${Date.now()}`;
@@ -1041,6 +1103,10 @@ export default function HomeClient({
           .map((c) => (c.id === convId ? { ...c, updated_at: new Date().toISOString() } : c))
           .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()),
       );
+
+      // Let the creature acknowledge what just happened — a tool flare if a
+      // connector ran, then a speaking pulse, then a brief celebratory beat.
+      runFlourish((data.assistantMessage.toolSteps?.length ?? 0) > 0);
     } catch {
       setMessages((prev) => [
         ...prev.slice(0, -1),
@@ -1144,10 +1210,23 @@ export default function HomeClient({
                   );
                 })}
 
-                {isLoading && (
+                {(isLoading || replyPhase) && (
                   <div className="space-y-2">
                     <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-[0.18em] uppercase">Pocket Agent</div>
-                    <div className="text-sm text-slate-400 animate-pulse">Working…</div>
+                    <div className="flex items-center gap-3">
+                      {/* The creature reacts in place: thinking while in flight, a tool
+                          flare if a connector fired, then a speaking pulse as it lands. */}
+                      <Mascot state={mascotState} size={52} noTendrils />
+                      <span className={`text-sm text-slate-400 ${replyPhase ? "" : "animate-pulse"}`}>
+                        {replyPhase === "tool_calling"
+                          ? "Running a tool…"
+                          : replyPhase === "responding"
+                          ? "Responding…"
+                          : replyPhase === "done"
+                          ? "Done"
+                          : "Working…"}
+                      </span>
+                    </div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -1193,6 +1272,7 @@ export default function HomeClient({
             inputValue={inputValue}
             setInputValue={setInputValue}
             isLoading={isLoading}
+            mascotState={mascotState}
             handleSubmit={handleSubmit}
             handleKeyDown={handleKeyDown}
             textareaRef={textareaRef}

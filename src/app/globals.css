@@ -119,9 +119,65 @@ body {
   50%       { opacity: 1; }
 }
 
+/* ─── Mascot "alive" pass ──────────────────────────────────────────────────── */
+/* Idle breathing — gentle scale on the creature group. --breath-scale is set
+   per mood (listening/thinking/etc) so one keyframe drives every state. */
+@keyframes mascot-breathe {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(var(--breath-scale, 1.024)); }
+}
+
+/* Minimal breath that survives prefers-reduced-motion — barely-there, slow.
+   The creature reads as alive, not frozen, even with motion reduced. */
+@keyframes mascot-breathe-min {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.01); }
+}
+
+/* Soft halo that breathes — two layers offset in phase give depth. */
+@keyframes mascot-halo-breathe {
+  0%, 100% { transform: scale(1);    opacity: 0.82; }
+  50%       { transform: scale(1.07); opacity: 1; }
+}
+
+/* Particle drift — three subtle noise paths, desynced per particle by
+   duration + delay so the cloud never reads as a pattern. */
+@keyframes mascot-drift-a {
+  0%, 100% { transform: translate(0, 0); }
+  25%       { transform: translate(4px, -6px); }
+  50%       { transform: translate(-3px, -10px); }
+  75%       { transform: translate(-5px, -4px); }
+}
+@keyframes mascot-drift-b {
+  0%, 100% { transform: translate(0, 0); }
+  33%       { transform: translate(-5px, 5px); }
+  66%       { transform: translate(3px, 9px); }
+}
+@keyframes mascot-drift-c {
+  0%, 100% { transform: translate(0, 0); }
+  30%       { transform: translate(6px, 4px); }
+  60%       { transform: translate(8px, -3px); }
+}
+
+/* Speaking / tool pulse — energy ring flowing outward from the focal point. */
+@keyframes mascot-speak {
+  0%   { transform: scale(0.5); opacity: 0; }
+  18%  { opacity: var(--speak-op, 0.5); }
+  100% { transform: scale(1.95); opacity: 0; }
+}
+
+/* Tendril data-flow — a faint dot travels the nav tendril and fades. */
+@keyframes mascot-tendril-flow {
+  0%   { offset-distance: 0%;   opacity: 0; }
+  14%  { opacity: var(--flow-op, 0.85); }
+  82%  { opacity: var(--flow-op, 0.85); }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  /* Lively motion off — but the minimal idle breath (not .mascot-lively) stays. */
+  .mascot-root .mascot-lively { animation: none !important; }
   .mascot-root { animation: none !important; }
-  .mascot-root * { animation: none !important; }
 }
 
 /* ─── Work card glow (cyan, BOS surface-card mechanic) ────────────────────── */
