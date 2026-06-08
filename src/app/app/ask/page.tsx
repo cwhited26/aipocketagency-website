@@ -57,6 +57,7 @@ export default async function AskPage({
       hasApiKey={!!paUser.anthropic_api_key}
       hasGithubToken={!!paUser.github_token}
       hasConnection={hasConnection}
+      setupBarDismissedAt={paUser.setup_bar_dismissed_at}
       initialConversations={initialConversations}
       threads={threads}
       scaffolds={scaffolds}

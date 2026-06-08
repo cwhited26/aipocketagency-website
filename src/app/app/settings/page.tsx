@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import ApiKeyForm from "./ApiKeyForm";
 import BrainRepoPanel from "./BrainRepoPanel";
 import OnboardingChecklist from "./OnboardingChecklist";
+import SetupBarResurface from "./SetupBarResurface";
 
 function sbEnv(): { url: string; key: string } | null {
   const url =
@@ -130,6 +131,8 @@ export default async function SettingsPage({
           hasGoogleConnection={hasGoogleConnection}
           hasRoutines={hasRoutines}
         />
+
+        <SetupBarResurface setupBarDismissedAt={paUser?.setup_bar_dismissed_at ?? null} />
 
         {/* GitHub connector — always visible, prominent */}
         <div className={`rounded-xl border ${hasGithubToken ? "border-slate-700/60 bg-slate-900/50" : "border-[#22d3ee]/25 bg-[#22d3ee]/5"} px-5 py-4`}>

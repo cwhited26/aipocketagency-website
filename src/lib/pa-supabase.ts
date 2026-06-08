@@ -6,6 +6,8 @@ export type PaUser = {
   anthropic_api_key: string | null;
   brain_root_index_json: unknown[] | null;
   brain_indexed_at: string | null;
+  // When the owner explicitly hid the Agent-landing setup status bar (null = still showing).
+  setup_bar_dismissed_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -118,6 +120,34 @@ export async function upsertPaUserApiKey(
       Prefer: "return=minimal",
     },
     body: JSON.stringify({ anthropic_api_key: apiKey, updated_at: new Date().toISOString() }),
+    cache: "no-store",
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  return { ok: true, data: undefined };
+}
+
+// Persist (or clear) the owner's dismissal of the Agent-landing setup status bar.
+// Pass an ISO timestamp to hide it; pass null to bring it back (Settings → resurface).
+export async function setPaUserSetupBarDismissed(
+  userId: string,
+  dismissedAt: string | null,
+): Promise<PaResult<void>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const endpoint = `${env.url}/rest/v1/pocket_agent_users?id=eq.${encodeURIComponent(userId)}`;
+  const res = await fetch(endpoint, {
+    method: "PATCH",
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({
+      setup_bar_dismissed_at: dismissedAt,
+      updated_at: new Date().toISOString(),
+    }),
     cache: "no-store",
   });
   if (!res.ok) return { ok: false, status: res.status, error: await res.text() };

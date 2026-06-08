@@ -602,6 +602,7 @@ function HubView({
   hasApiKey,
   hasGithubToken,
   hasConnection,
+  setupBarDismissedAt,
   threads,
   scaffolds,
   inputValue,
@@ -616,6 +617,7 @@ function HubView({
   hasApiKey: boolean;
   hasGithubToken: boolean;
   hasConnection: boolean;
+  setupBarDismissedAt: string | null;
   threads: ConversationThread[];
   scaffolds: ScaffoldEntry[];
   inputValue: string;
@@ -650,6 +652,7 @@ function HubView({
           hasBrain={Boolean(brainRepo)}
           hasApiKey={hasApiKey}
           hasConnection={hasConnection}
+          setupBarDismissedAt={setupBarDismissedAt}
         />
 
         {/* The full story — this is the one box that does everything */}
@@ -975,6 +978,7 @@ export default function HomeClient({
   hasApiKey,
   hasGithubToken,
   hasConnection,
+  setupBarDismissedAt,
   initialConversations,
   threads,
   scaffolds,
@@ -986,6 +990,8 @@ export default function HomeClient({
   hasGithubToken: boolean;
   // Whether any outside tool is connected — drives the setup status bar.
   hasConnection: boolean;
+  // When the owner last hid the setup status bar (null = still showing).
+  setupBarDismissedAt: string | null;
   initialConversations: Conversation[];
   // Recent conversations (with one-line previews) and in-flight plans, shown on the landing.
   threads: ConversationThread[];
@@ -1319,6 +1325,7 @@ export default function HomeClient({
             hasApiKey={hasApiKey}
             hasGithubToken={hasGithubToken}
             hasConnection={hasConnection}
+            setupBarDismissedAt={setupBarDismissedAt}
             threads={threads}
             scaffolds={scaffolds}
             inputValue={inputValue}
