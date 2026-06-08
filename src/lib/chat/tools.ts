@@ -10,7 +10,7 @@
 // The toolset is computed from the live inventory, so a user without Slack never sees — or can
 // invoke — a Slack tool. Every failure is a typed result (never a silent catch).
 
-import { fetchFileContent } from "@/lib/pa-brain";
+import { fetchFileContent, listRepoTree } from "@/lib/pa-brain";
 import { fetchMemoryIndex } from "@/lib/pa-brain-index";
 import {
   gmailListRecent,
@@ -62,19 +62,28 @@ export type ToolSpec = {
   note?: string;
 };
 
-// Always-on tools (gated only on a connected brain repo).
+// Always-on tools (gated only on a connected brain repo). The brain repo IS a GitHub repo, read via
+// the owner's stored GitHub token — these are the agent's live GitHub-read capability, distinct from
+// the not-yet-shipped general GitHub Connection. The system prompt makes that distinction explicit.
 const BRAIN_TOOLS: ToolSpec[] = [
+  {
+    id: "brain.list",
+    kind: "read",
+    signature: "brain.list(path?)",
+    description:
+      "List files and folders in the owner's brain repo on GitHub (optionally under a path prefix).",
+  },
   {
     id: "brain.read",
     kind: "read",
     signature: "brain.read(path)",
-    description: "Read any file in the owner's brain repo by repo-relative path.",
+    description: "Read any file in the owner's brain repo on GitHub by repo-relative path.",
   },
   {
     id: "brain.search",
     kind: "read",
     signature: "brain.search(query)",
-    description: "Search the brain's indexed memory files by keyword; returns matching files.",
+    description: "Search the brain's indexed memory files (on GitHub) by keyword; returns matching files.",
   },
 ];
 
@@ -302,6 +311,34 @@ async function runInline(
   input: Record<string, unknown>,
 ): Promise<ToolRunResult> {
   switch (spec.id) {
+    case "brain.list": {
+      const repo = inventory.brainRepo;
+      if (!repo) return unavailable(spec.id);
+      const prefix = asString(input.path).trim().replace(/^\/+|\/+$/g, "");
+      const tree = await listRepoTree(repo, inventory.brainToken);
+      if (tree.length === 0) {
+        return {
+          status: "error",
+          label: "Listed brain files",
+          summary: "Couldn't list the brain repo (empty or unreachable).",
+          forModel: "ERROR: brain.list returned nothing — the repo is empty or the GitHub token can't read it.",
+        };
+      }
+      const entries = prefix
+        ? tree.filter((e) => e.path === prefix || e.path.startsWith(`${prefix}/`))
+        : tree;
+      const scoped = entries.slice(0, 200);
+      const lines = scoped.map((e) => `${e.type === "tree" ? "dir " : "file"} ${e.path}`).join("\n");
+      const where = prefix ? ` under ${prefix}` : "";
+      const more = entries.length > scoped.length ? `\n…(${entries.length - scoped.length} more)` : "";
+      return {
+        status: "ok",
+        label: "Listed brain files",
+        summary: `${entries.length} entr${entries.length === 1 ? "y" : "ies"}${where} in ${repo}.`,
+        detail: `${lines}${more}`,
+        forModel: clampForModel(`brain.list (${repo})${where} — ${entries.length} entries:\n${lines}${more}`),
+      };
+    }
     case "brain.read": {
       const path = asString(input.path).trim();
       if (!path) {

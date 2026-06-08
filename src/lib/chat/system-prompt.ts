@@ -70,6 +70,30 @@ export function buildSystemPrompt(inventory: ChatInventory): { system: string; t
       ].join("\n")
     : "Answer the owner in plain text from what you know.";
 
+  // The brain repo lives on GitHub and is read with the owner's stored GitHub token — so the agent
+  // DOES have GitHub read access today (for the brain). The bug this fixes: the agent used to answer
+  // "I have no GitHub access" because nothing tied "brain repo" to "GitHub". This block names the
+  // capability concretely (with the repo path) and separates it from the general GitHub Connection,
+  // which isn't wired yet — with the exact plain-English fallback to offer.
+  const githubBlock = inventory.brainRepo
+    ? [
+        `GitHub — YES, you can read the owner's brain repo on GitHub at ${inventory.brainRepo}.`,
+        "You read it with the owner's stored GitHub token: list any file or directory (brain.list), read",
+        "any file's contents (brain.read), and search the indexed memory (brain.search). This is wired and",
+        'working right now — so when the owner asks "can you read my GitHub?", the honest answer is YES for',
+        "the brain repo. Never say you have no GitHub access; that is wrong and the brain repo proves it.",
+        "GitHub as a GENERAL Connection — reading OTHER repos, issues, PRs, or code from projects beyond the",
+        "brain — is NOT connected yet. When the owner's question implies they want that broader access, say:",
+        `"I can read your brain repo on GitHub (${inventory.brainRepo}) — that's wired. Other repos, issues,`,
+        'PRs, or code from projects beyond the brain aren\'t yet. Want me to make do with the brain for now,',
+        'or add full GitHub as a Connection when it ships?"',
+      ].join("\n")
+    : [
+        "GitHub: no brain repo is connected yet, so there's nothing on GitHub you can read right now.",
+        "If the owner asks about GitHub, tell them to connect their brain repo in Settings first — and that",
+        "GitHub as a general Connection (other repos, issues, PRs) isn't wired yet either.",
+      ].join("\n");
+
   // Steer the model to the right email tool: a draft when the owner wants to stage/review,
   // a send only when they explicitly want it out the door.
   const draftGuidance = hasGmailDraft
@@ -89,10 +113,14 @@ export function buildSystemPrompt(inventory: ChatInventory): { system: string; t
     "",
     toolsBlock,
     "",
+    githubBlock,
+    "",
     protocol,
     "",
     draftGuidance,
     "Rules: prefer a tool over guessing when the owner asks about their email, calendar, Slack, or brain.",
+    "When a Connection is only partly wired, be precise about what you CAN and CAN'T do and offer the",
+    "plain-English fallback — never flatten a partial capability into a blanket \"I can't\" or \"I have no access\".",
     "Keep answers tight. If a tool errors with a reconnect hint, relay that hint instead of inventing data.",
   ]
     .filter((l) => l !== "")
