@@ -13,6 +13,9 @@ export type InboxEntry = {
   // path: sessions/inbox/share-*.md) rather than a block inside memory/inbox.md.
   // Removal of these entries deletes the file at `path` instead of rewriting a block.
   path?: string;
+  // Set once a share-extension file has been promoted into assets/ (the canonical
+  // capture location that Documents reflects). Drives the "View in Documents →" link.
+  assetPath?: string;
 };
 
 const ENTRY_START_RE = /^<!-- PA-INBOX (.+) -->$/;

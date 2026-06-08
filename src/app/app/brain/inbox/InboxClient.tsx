@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { InboxEntry, InboxKind } from "@/lib/pa-inbox";
@@ -172,6 +172,17 @@ function InboxRow({
         </a>
       )}
 
+      {/* Documents link — appears once the share file has been promoted into assets/.
+          Triaging (the × above) deletes the sessions/inbox artifact but leaves the asset. */}
+      {entry.assetPath && (
+        <a
+          href="/app/documents"
+          className="block text-[11px] font-mono text-[#38bdf8]/70 hover:text-[#38bdf8] transition-colors py-1"
+        >
+          View in Documents →
+        </a>
+      )}
+
       {/* Remove error */}
       {removeErr && (
         <p className="text-[10px] font-mono text-red-400">{removeErr}</p>
@@ -191,6 +202,50 @@ export default function InboxClient({
 }) {
   const [entries, setEntries] = useState<InboxEntry[]>(initialEntries);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  // Tracks share files we've already kicked off a promote for, so the effect doesn't
+  // re-fire when setEntries re-runs it (the server promote is idempotent regardless).
+  const promotingRef = useRef<Set<string>>(new Set());
+
+  // Auto-promote share-extension files (sessions/inbox/*) into assets/ + memory the moment
+  // the owner opens the inbox, so every captured file reaches Documents without a manual step.
+  useEffect(() => {
+    const pending = entries.filter(
+      (e): e is InboxEntry & { path: string } =>
+        typeof e.path === "string" &&
+        e.path.startsWith("sessions/inbox/") &&
+        !e.assetPath &&
+        !promotingRef.current.has(e.path),
+    );
+    if (pending.length === 0) return;
+    for (const e of pending) promotingRef.current.add(e.path);
+
+    void Promise.all(
+      pending.map(async (e) => {
+        try {
+          const res = await fetch("/api/app/brain/inbox", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ promote: e.path }),
+          });
+          if (!res.ok) {
+            promotingRef.current.delete(e.path); // let a later visit retry
+            return;
+          }
+          const body = (await res.json()) as { assetPath?: string };
+          if (body.assetPath) {
+            const asset = body.assetPath;
+            setEntries((prev) =>
+              prev.map((x) => (x.id === e.id ? { ...x, assetPath: asset } : x)),
+            );
+          }
+        } catch {
+          // Background promotion is best-effort; on a network failure clear the marker so
+          // the next inbox visit retries. The asset/absorb commit is idempotent server-side.
+          promotingRef.current.delete(e.path);
+        }
+      }),
+    );
+  }, [entries]);
 
   async function handleRemove(id: string) {
     setRemovingId(id);

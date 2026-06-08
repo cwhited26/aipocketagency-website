@@ -206,23 +206,14 @@ export default function ChatHome({
     [changeFilter],
   );
 
-  // ── File upload → doc_preview card. ──────────────────────────────────────────────────
+  // ── File upload → persist bytes to the brain + doc_preview card. ──────────────────────
+  // The file rides as multipart form-data so the server can run the canonical absorb pipeline
+  // (assets/ + memory). The returned card already points at Documents where the asset landed.
   const onFilePicked = useCallback(
     async (file: File) => {
-      let excerpt = "";
-      if (file.type.startsWith("text/") || /\.(md|txt|csv|json)$/i.test(file.name)) {
-        excerpt = (await file.text().catch(() => "")).slice(0, 200);
-      }
-      const res = await fetch("/api/app/chat/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: file.name,
-          mimeType: file.type || undefined,
-          sizeBytes: file.size,
-          excerpt: excerpt || undefined,
-        }),
-      });
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/app/chat/upload", { method: "POST", body: form });
       if (res.ok) {
         const body = (await res.json()) as { card: ChatMessage };
         setMessages((cur) => [...cur, body.card]);

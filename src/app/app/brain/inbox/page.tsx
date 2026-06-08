@@ -1,6 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
-import { fetchFileContent, listDirMarkdownFiles, listVoiceMemoFiles } from "@/lib/pa-brain";
+import {
+  fetchFileContent,
+  listDirMarkdownFiles,
+  listRepoTree,
+  listVoiceMemoFiles,
+} from "@/lib/pa-brain";
 import {
   parseInboxForDisplay,
   parseShareSheetFile,
@@ -8,6 +13,7 @@ import {
   mergeInboxEntries,
 } from "@/lib/pa-inbox";
 import type { InboxEntry } from "@/lib/pa-inbox";
+import { assetPathFor } from "@/lib/brain/absorb";
 import { redirect } from "next/navigation";
 import InboxClient from "./InboxClient";
 
@@ -37,11 +43,18 @@ export default async function BrainInboxPage() {
     //  • the native iOS Working Copy shortcut → one file per item in sessions/inbox/
     //  • the in-app voice recorder → one file per memo in inbox/voice-memos/<date>/
     // Read all three so every genuinely-captured item shows up, regardless of source.
-    const [blockRaw, shareFiles, voiceFiles] = await Promise.all([
+    const [blockRaw, shareFiles, voiceFiles, tree] = await Promise.all([
       fetchFileContent(repo, "memory/inbox.md", ghToken),
       listDirMarkdownFiles(repo, ghToken, "sessions/inbox"),
       listVoiceMemoFiles(repo, ghToken),
+      listRepoTree(repo, ghToken),
     ]);
+
+    // Which share files already have an assets/ copy → drives the "View in Documents →"
+    // link without re-promoting. Un-promoted ones get promoted on the client (auto, idempotent).
+    const existingAssets = new Set(
+      tree.filter((e) => e.type === "blob" && e.path.startsWith("assets/")).map((e) => e.path),
+    );
 
     const blockEntries = parseInboxForDisplay(blockRaw);
     const shareEntries = (
@@ -50,7 +63,12 @@ export default async function BrainInboxPage() {
           parseShareSheetFile(f.path, await fetchFileContent(repo, f.path, ghToken)),
         ),
       )
-    ).filter((e): e is NonNullable<typeof e> => e !== null);
+    )
+      .filter((e): e is NonNullable<typeof e> => e !== null)
+      .map((e) => {
+        const candidate = assetPathFor((e.path ?? "").split("/").pop() ?? "");
+        return existingAssets.has(candidate) ? { ...e, assetPath: candidate } : e;
+      });
     const voiceEntries = (
       await Promise.all(
         voiceFiles.map(async (f) =>

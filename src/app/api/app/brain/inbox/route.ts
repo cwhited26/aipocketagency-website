@@ -2,17 +2,26 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { fetchFileContent, commitMemoryFile, deleteRepoFile } from "@/lib/pa-brain";
 import { removeEntryFromRaw } from "@/lib/pa-inbox";
+import { absorbToMemory, assetPathFor } from "@/lib/brain/absorb";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// An item can be removed one of two ways depending on how it was captured:
-//  • { id }   → a PA-INBOX block inside memory/inbox.md (endpoint capture)
-//  • { path } → a standalone file: sessions/inbox/ (iOS Working Copy share) or
-//               inbox/voice-memos/ (in-app voice recorder)
-const RemoveBodySchema = z.union([
+const SHARE_FILE_RE = /^sessions\/inbox\/.+\.md$/;
+
+// This handler triages the share-extension lifecycle. Two write actions:
+//  • { promote } → copy a sessions/inbox/<file> into assets/<file> and absorb it into memory,
+//                  so the canonical capture (Documents visibility + agent-readable) happens
+//                  automatically while the sessions/inbox artifact stays put for triage.
+//  • { id } | { path } → remove one captured item once triaged:
+//      { id }   → a PA-INBOX block inside memory/inbox.md (endpoint capture)
+//      { path } → a standalone file: sessions/inbox/ (iOS share) or inbox/voice-memos/ (voice)
+const BodySchema = z.union([
+  z.object({
+    promote: z.string().min(1).regex(SHARE_FILE_RE, "Invalid share file path"),
+  }),
   z.object({ id: z.string().uuid("Entry id must be a UUID") }),
   z.object({
     path: z
@@ -22,8 +31,7 @@ const RemoveBodySchema = z.union([
   }),
 ]);
 
-// POST /api/app/brain/inbox  { id } | { path }
-// Removes one captured item — a block from memory/inbox.md, or a sessions/inbox file.
+// POST /api/app/brain/inbox  { promote } | { id } | { path }
 export async function POST(req: Request): Promise<NextResponse> {
   const supabase = createClient();
   const {
@@ -34,13 +42,13 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: z.infer<typeof RemoveBodySchema>;
+  let body: z.infer<typeof BodySchema>;
   try {
     const raw = (await req.json().catch(() => ({}))) as unknown;
-    body = RemoveBodySchema.parse(raw);
+    body = BodySchema.parse(raw);
   } catch {
     return NextResponse.json(
-      { error: "Invalid request body — id (UUID) or sessions/inbox path required" },
+      { error: "Invalid request body — promote/path (sessions/inbox) or id (UUID) required" },
       { status: 400 },
     );
   }
@@ -56,6 +64,41 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   if (!paUser.brain_repo || !ghToken) {
     return NextResponse.json({ error: "No brain repo connected" }, { status: 400 });
+  }
+
+  // Promote a share-extension file into assets/ + memory (idempotent: skip if already there).
+  if ("promote" in body) {
+    const sharePath = body.promote;
+    const fileName = sharePath.split("/").pop() ?? "share.md";
+    const assetPath = assetPathFor(fileName);
+
+    const existingAsset = await fetchFileContent(paUser.brain_repo, assetPath, ghToken);
+    if (existingAsset) {
+      return NextResponse.json({ ok: true, assetPath, absorbed: false, alreadyPromoted: true });
+    }
+
+    const raw = await fetchFileContent(paUser.brain_repo, sharePath, ghToken);
+    if (!raw) {
+      return NextResponse.json({ error: "Share file not found or empty" }, { status: 404 });
+    }
+
+    const result = await absorbToMemory({
+      repo: paUser.brain_repo,
+      token: ghToken,
+      anthropicApiKey: paUser.anthropic_api_key,
+      fileName,
+      mimeType: "text/markdown",
+      buffer: Buffer.from(raw, "utf-8"),
+    });
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+    return NextResponse.json({
+      ok: true,
+      assetPath: result.assetPath,
+      absorbed: result.absorbed,
+      ...(result.memoryPath ? { memoryPath: result.memoryPath } : {}),
+    });
   }
 
   // File-backed entry (iOS share): delete the file.
