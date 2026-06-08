@@ -1,0 +1,56 @@
+import { createClient } from "@/lib/supabase/server";
+import { signState } from "@/lib/crypto/encrypt";
+import { CALENDAR_SCOPES, calendarRedirectUri } from "@/lib/connectors/calendar/oauth";
+import { NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const CONNECTIONS_PAGE = "/app/settings/connections";
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.redirect(
+      new URL(`/app/login?next=${encodeURIComponent(CONNECTIONS_PAGE)}`, request.url),
+    );
+  }
+
+  // Calendar reuses the SAME Google OAuth client as Gmail (GMAIL_OAUTH_CLIENT_ID) — it just
+  // requests the calendar scope. include_granted_scopes lets a Gmail-connected user add Calendar
+  // incrementally on the existing grant (task item 1).
+  const clientId = process.env.GMAIL_OAUTH_CLIENT_ID;
+  if (!clientId) {
+    return NextResponse.redirect(
+      new URL(`${CONNECTIONS_PAGE}?calendar=not_configured`, request.url),
+    );
+  }
+
+  // Bit-exact match with the callback's token exchange — both derive the redirect_uri from
+  // PA_OAUTH_REDIRECT_BASE, never from the request host.
+  const callbackUrl = calendarRedirectUri();
+
+  const state = signState(
+    JSON.stringify({
+      userId: user.id,
+      nonce: crypto.randomBytes(16).toString("hex"),
+      exp: Date.now() + 10 * 60 * 1000, // 10 minutes
+    }),
+  );
+
+  const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  authUrl.searchParams.set("client_id", clientId);
+  authUrl.searchParams.set("redirect_uri", callbackUrl);
+  authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("scope", CALENDAR_SCOPES.join(" "));
+  authUrl.searchParams.set("access_type", "offline");
+  authUrl.searchParams.set("prompt", "consent"); // force a refresh_token on every connect
+  authUrl.searchParams.set("include_granted_scopes", "true"); // incremental auth alongside Gmail
+  authUrl.searchParams.set("state", state);
+
+  return NextResponse.redirect(authUrl.toString());
+}

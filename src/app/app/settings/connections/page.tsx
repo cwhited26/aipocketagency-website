@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchGmailConnectionPublic } from "@/lib/pa-gmail-connections";
+import { fetchCalendarConnectionPublic } from "@/lib/pa-calendar-connections";
 import { redirect } from "next/navigation";
 import GmailConnectionCard from "./GmailConnectionCard";
+import CalendarConnectionCard from "./CalendarConnectionCard";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +25,33 @@ const MESSAGES: Record<string, { title: string; body: string; kind: "success" | 
   },
 };
 
+const CALENDAR_MESSAGES: Record<string, { title: string; body: string; kind: "success" | "error" }> = {
+  connected: {
+    title: "Google Calendar connected",
+    body: "Your agent can now read your schedule and stage events for you to approve. Nothing is written to your calendar without a tap.",
+    kind: "success",
+  },
+  not_configured: {
+    title: "Calendar sign-in unavailable",
+    body: "Calendar connections reuse this workspace's Google sign-in, which isn't enabled yet. Contact support and we'll switch it on.",
+    kind: "error",
+  },
+  missing_scope: {
+    title: "Calendar permission not granted",
+    body: "The connection went through but didn't include calendar access. Reconnect and approve the calendar permission to finish.",
+    kind: "error",
+  },
+  error: {
+    title: "Calendar connection failed",
+    body: "Something went wrong connecting Google Calendar. Try again, or contact support if it keeps happening.",
+    kind: "error",
+  },
+};
+
 export default async function ConnectionsPage({
   searchParams,
 }: {
-  searchParams: { connection?: string };
+  searchParams: { connection?: string; calendar?: string };
 }) {
   const supabase = createClient();
   const {
@@ -34,10 +59,17 @@ export default async function ConnectionsPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/app/login");
 
-  const gmailResult = await fetchGmailConnectionPublic(user.id);
+  const [gmailResult, calendarResult] = await Promise.all([
+    fetchGmailConnectionPublic(user.id),
+    fetchCalendarConnectionPublic(user.id),
+  ]);
   const gmail = gmailResult.ok ? gmailResult.data : null;
+  const calendar = calendarResult.ok ? calendarResult.data : null;
 
   const message = searchParams.connection ? MESSAGES[searchParams.connection] ?? null : null;
+  const calendarMessage = searchParams.calendar
+    ? CALENDAR_MESSAGES[searchParams.calendar] ?? null
+    : null;
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">
@@ -75,12 +107,28 @@ export default async function ConnectionsPage({
           </div>
         )}
 
+        {calendarMessage && (
+          <div
+            className={`rounded-xl border px-5 py-4 space-y-1 ${
+              calendarMessage.kind === "success"
+                ? "border-[#22d3ee]/25 bg-[#22d3ee]/5"
+                : "border-slate-700/60 bg-slate-900/50"
+            }`}
+          >
+            <p className="text-sm font-semibold text-slate-100">{calendarMessage.title}</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{calendarMessage.body}</p>
+          </div>
+        )}
+
         <GmailConnectionCard connection={gmail} />
+
+        <CalendarConnectionCard connection={calendar} />
 
         <p className="text-xs text-slate-600 leading-relaxed">
           Gmail access lets your agent read incoming mail and archive a thread when you tap
-          “I’ll handle” or “Archive.” It never sends or deletes anything on its own — replies are
-          always drafted for your approval first.
+          “I’ll handle” or “Archive.” Calendar access lets it read your schedule and propose,
+          create, or reschedule events. It never sends, deletes, or writes anything on its own —
+          replies and calendar changes are always staged for your approval first.
         </p>
       </div>
     </div>
