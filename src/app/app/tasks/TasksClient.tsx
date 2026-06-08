@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
 import { TabGuide } from "../_components/TabGuide";
+import { StarterBox } from "../_components/StarterBox";
 import { BRAIN_TASKS, getOpenBrainTasks } from "@/lib/brain-tasks";
 import type { FreshnessResponse } from "@/app/api/app/brain/freshness/route";
 
@@ -287,10 +288,22 @@ export default function TasksClient({ brainRepo }: { brainRepo: string | null })
         <p className="text-sm text-slate-300 leading-relaxed">
           Your agent handles what it can on its own. What&apos;s left is the work only you can do:
           a draft it wrote that&apos;s waiting on your yes or no, and the setup steps that make it
-          smarter about your business. Sign off on a proposal before it goes to Stoll, fill in your
+          smarter about your business. Sign off on a proposal before it goes out, fill in your
           pricing so every quote comes out right, tell it your follow-up cadence. Clear what&apos;s
           here and your agent keeps moving. Let it pile up and everything behind it waits.
         </p>
+
+        {/* Quick capture — jot a to-do without leaving the tab */}
+        <StarterBox
+          placeholder="What's on your plate? Jot it down…"
+          submitLabel="Add task →"
+          framePrefix="Add this to my tasks:"
+          rows={2}
+          chips={[
+            "Order materials for the warehouse build before Friday",
+            "Call the inspector about the permit",
+          ]}
+        />
 
         {loading ? (
           <div className="flex flex-col items-center gap-3 py-16">
@@ -381,7 +394,7 @@ export default function TasksClient({ brainRepo }: { brainRepo: string | null })
           promptsHeading="Try one of these"
           prompts={[
             "What do I personally need to do this week that you can't do for me?",
-            "List the open steps on the Stoll deal that need me, not you",
+            "List the open steps on the warehouse build that need me, not you",
             "What's still missing from my brain that would make your drafts better?",
           ]}
           worksWith={[
@@ -410,7 +423,7 @@ export default function TasksClient({ brainRepo }: { brainRepo: string | null })
                 Waiting on you
               </div>
               <p className="mt-1 text-sm font-medium text-slate-100">
-                Approve the proposal before it goes to Alan Stoll
+                Approve the proposal before it goes out for the warehouse build
               </p>
               <p className="mt-0.5 text-[13px] text-slate-500 leading-relaxed">
                 Your agent drafted it and is holding the send until you say go.

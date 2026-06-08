@@ -86,13 +86,31 @@ export default function PersonasCatalogClient() {
           )}
         </header>
 
-        <p className="text-sm text-slate-300 leading-relaxed max-w-2xl mb-8">
+        <p className="text-sm text-slate-300 leading-relaxed max-w-2xl mb-4">
           A persona is your agent wearing a different hat. A sales persona writes like a closer — direct,
           chasing the next step. A support persona writes like a patient operator. A recruiting persona
           writes like a coach. Each one draws from its own slice of your brain, so your sales agent
-          isn&apos;t answering refund questions and your support agent isn&apos;t cold-pitching. Build one
-          from a template, share a link with a teammate, and it only ever knows what you&apos;ve taught it.
+          isn&apos;t answering refund questions and your support agent isn&apos;t cold-pitching. That voice
+          and that slice of knowledge don&apos;t just shape emails — they shape how the agent builds for
+          you in Projects too, so a sales-flavored landing page sounds like sales, not like a manual.
+          Build one from a template, share a link with a teammate, and it only ever knows what
+          you&apos;ve taught it. (Soon you&apos;ll be able to keep separate brains for separate businesses,
+          each with its own personas.)
         </p>
+
+        {/* Start a persona — common types, one tap to the builder */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {["Sales", "Support", "Recruiting", "Content"].map((t) => (
+            <Link
+              key={t}
+              href={`/app/personas/new?type=${t.toLowerCase()}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 px-3 py-2 text-sm text-slate-300 hover:border-[#22d3ee]/50 hover:text-slate-100 transition-all min-h-[40px]"
+            >
+              <span className="text-[#22d3ee] font-bold leading-none">+</span>
+              {t} persona
+            </Link>
+          ))}
+        </div>
 
         {loading && <p className="text-slate-500 text-sm">Loading…</p>}
         {error && (
@@ -161,7 +179,7 @@ export default function PersonasCatalogClient() {
           <TabGuide
             promptsHeading="Try one of these"
             prompts={[
-              "Ask my Sales persona to draft a cold outreach to Alan Stoll",
+              "Ask my Sales persona to draft a cold outreach to a regional homebuilder",
               "Make a Support persona for handling refund questions",
               "Have my Sales persona write a follow-up in a closer's voice",
             ]}
@@ -191,8 +209,8 @@ export default function PersonasCatalogClient() {
                   Sales persona — closer
                 </div>
                 <p className="mt-1.5 text-sm text-slate-300 leading-relaxed">
-                  &ldquo;Alan — scope&apos;s locked and the timeline works on your end. Want me to send the
-                  final today so your crew can start Monday?&rdquo;
+                  &ldquo;Morning — the scope&apos;s locked and the timeline works on your end. Want me to
+                  send the final today so your crew can start Monday?&rdquo;
                 </p>
               </div>
               <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 p-4">

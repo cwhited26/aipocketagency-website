@@ -125,7 +125,7 @@ export default function QuoteClient({
             </label>
             <input
               type="text"
-              placeholder="Patrick Johnson"
+              placeholder="Jordan Avery"
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none"
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}

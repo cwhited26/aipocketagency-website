@@ -248,7 +248,8 @@ export default function RoutinesClient() {
           <Link href="/app/apps/inbox" className="text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors">
             Inbox
           </Link>{" "}
-          for you to read. The fresher your brain, the better each run.
+          for you to read. The fresher your brain, the better each run. (Soon you&apos;ll be able to
+          run separate routines for separate businesses, each off its own brain.)
         </p>
 
         <div className="rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-3 flex items-start gap-3">
@@ -335,16 +336,16 @@ export default function RoutinesClient() {
             <p className="mt-1.5 text-sm font-semibold text-slate-100">Here&apos;s what&apos;s on the radar</p>
             <ul className="mt-2 flex flex-col gap-1.5 text-[13px] text-slate-400">
               <li className="leading-relaxed">
-                <span className="text-slate-200">Move on today:</span> Stoll decision is expected this
-                week — your follow-up draft is in the Inbox.
+                <span className="text-slate-200">Move on today:</span> the Delgado rebuild decision is
+                expected this week — your follow-up draft is in the Inbox.
               </li>
               <li className="leading-relaxed">
                 <span className="text-slate-200">Pending your approval:</span> 2 drafted replies, 1
                 calendar invite.
               </li>
               <li className="leading-relaxed">
-                <span className="text-slate-200">Going quiet:</span> Keaton Hoskins — quote sent 12 days
-                ago, no reply.
+                <span className="text-slate-200">Going quiet:</span> the Carter kitchen remodel — quote
+                sent 12 days ago, no reply.
               </li>
             </ul>
           </div>

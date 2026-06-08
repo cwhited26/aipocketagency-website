@@ -2,37 +2,54 @@
 
 import { useState } from "react";
 
-// An illustrative Project → Milestones → Tasks plan, rendered in the same shape the agent
-// stages a real scaffold (Project + Milestones + Tasks, Stoll-style). Collapsed by default so
-// the page reads as copy first; the owner expands it when they want to see what a plan looks
-// like. Non-interactive — the Approve / Change buttons are a preview of the real flow.
+// An illustrative Project → Milestones → Tasks plan for a system-level build, rendered in the
+// same shape the agent stages a real plan. Collapsed by default so the page reads as copy first;
+// the owner expands it when they want to see what a plan looks like. Non-interactive — the
+// Approve / Change buttons are a preview of the real flow. Invented scenario, no real names.
 const EXAMPLE = {
-  project: "Draft a proposal for the Stoll deal",
-  subhead: "Three milestones. Nothing sends until you approve it.",
+  project: "Build me a CRM tailored to how I run my contracting business",
+  subhead: "Five milestones, built inside your conventions. Nothing runs until you approve the plan.",
   milestones: [
     {
       n: 1,
-      title: "Pull the deal context",
+      title: "Design the data model",
       tasks: [
-        "Read the Stoll discovery notes from your brain",
-        "Pull the pricing for the scope you quoted on the call",
+        "Read your brain for how you track jobs, leads, and crews",
+        "Lay out contacts, deals, jobs, and invoices to match your stages",
+        "Use your naming and your pipeline, not a generic template",
       ],
     },
     {
       n: 2,
-      title: "Write the proposal",
+      title: "Stand up accounts + access",
       tasks: [
-        "Draft the proposal in your voice",
-        "Build the line-item pricing table",
-        "Add the scope and timeline section",
+        "Add secure sign-in for you and your team",
+        "Set who can see what — office vs. field",
       ],
     },
     {
       n: 3,
-      title: "Stage it for you",
+      title: "Build the deal pipeline view",
       tasks: [
-        "Format it as a clean PDF",
-        "Hold the send-to-Stoll email in your Inbox for approval",
+        "A board of every active job by stage",
+        "Quick-add a lead and move it down the pipeline",
+        "Pull contact history into each card",
+      ],
+    },
+    {
+      n: 4,
+      title: "Build the job detail view",
+      tasks: [
+        "One screen per job — scope, docs, photos, payments",
+        "Wire it to your connected tools so invoices show live",
+      ],
+    },
+    {
+      n: 5,
+      title: "Deploy it live",
+      tasks: [
+        "Ship it to a private URL only your team can reach",
+        "Hand you the link and stage a walkthrough in your Inbox",
       ],
     },
   ],
@@ -111,8 +128,8 @@ export default function ExamplePlanPanel() {
           </div>
 
           <p className="mt-3 text-[11px] font-mono text-slate-600 leading-relaxed">
-            This is an example. Your real plans show up here once you give your agent something
-            with multiple steps.
+            This is an example. Your real plans show up here once you ask your agent to build
+            something — and every one is shaped by what&apos;s in your brain.
           </p>
         </div>
       )}

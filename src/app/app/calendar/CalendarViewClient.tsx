@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { TabGuide } from "../_components/TabGuide";
+import { StarterBox } from "../_components/StarterBox";
 
 // UI-safe event projection — mirrors ListedEvent from the calendar connector.
 type CalendarEvent = {
@@ -89,12 +90,22 @@ export default function CalendarViewClient({
 
         <p className="text-sm text-slate-300 leading-relaxed mb-8">
           Once your calendar is connected, your agent can read it like you do. Ask it to find a
-          30-minute slot next week and propose it to Patrick, and it checks for conflicts and
-          stages the invite in your Inbox. Ask what you should prep for tomorrow&apos;s meeting and
+          30-minute slot next week and propose a showing to a buyer, and it checks for conflicts and
+          stages the invite in your Inbox. Ask what you should prep for tomorrow&apos;s walkthrough and
           it pulls your notes from the last one. It can create, move, or cancel events — but every
           change waits for your approval before it touches your real calendar. Nothing gets booked
           behind your back.
         </p>
+
+        {connected && (
+          <div className="mb-8">
+            <StarterBox
+              placeholder="Ask your agent to find a time, propose a meeting, or prep you for one…"
+              submitLabel="Ask →"
+              rows={2}
+            />
+          </div>
+        )}
 
         {!connected && (
           <div className="rounded-2xl border border-slate-700/60 bg-slate-900/50 px-6 py-8 text-center">
@@ -181,8 +192,8 @@ export default function CalendarViewClient({
           <TabGuide
             promptsHeading="Try one of these"
             prompts={[
-              "Find a 30-minute slot next week and propose it to Patrick",
-              "Pull my notes from the Stoll discovery call",
+              "Find a 30-minute slot next week and propose a showing to the Okafor buyers",
+              "Pull my notes from the last walkthrough at 42 Birch",
               "What's on my calendar tomorrow, and what should I prep for?",
             ]}
             worksWith={[
@@ -207,9 +218,9 @@ export default function CalendarViewClient({
           >
             <ul className="flex flex-col gap-2">
               {[
-                { t: "Discovery call — Alan Stoll", w: "Mon, Jun 9 · 10:00 AM", who: "2 attendees" },
-                { t: "Site walk with Patrick", w: "Tue, Jun 10 · 2:00 PM", who: "Fresh Page Home Improvement" },
-                { t: "Proposal review (hold)", w: "Wed, Jun 11 · 9:00 AM", who: "Proposed by your agent — waiting on you" },
+                { t: "Showing — 42 Birch St", w: "Mon, Jun 9 · 10:00 AM", who: "The Okafor buyers" },
+                { t: "Listing walkthrough — 8 Cedar Ct", w: "Tue, Jun 10 · 2:00 PM", who: "New seller" },
+                { t: "Buyer call (hold)", w: "Wed, Jun 11 · 9:00 AM", who: "Proposed by your agent — waiting on you" },
               ].map((ev) => (
                 <li
                   key={ev.t}

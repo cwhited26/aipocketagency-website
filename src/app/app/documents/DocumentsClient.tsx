@@ -324,9 +324,9 @@ export default function DocumentsClient({
           These are the actual files your agent works from — proposals, contracts, your services
           PDF, a photo of the whiteboard, anything you&apos;ve uploaded or shared in. When you add
           a file, your agent reads it and pulls the important parts into its memory, so it can use
-          what&apos;s inside without you re-explaining. Ask it to open the Stoll proposal or find
-          every file that mentions Patrick and it goes straight to the right one. Upload here, or
-          send things in from your phone through Capture.
+          what&apos;s inside without you re-explaining. Ask it to open the warehouse-build proposal
+          or find every file that mentions the Delgado job and it goes straight to the right one.
+          Upload here, or send things in from your phone through Capture.
         </p>
 
         {/* Upload zone (toggled) */}
@@ -424,8 +424,8 @@ export default function DocumentsClient({
         <TabGuide
           promptsHeading="Try one of these"
           prompts={[
-            "Open the Stoll proposal",
-            "Find every file that mentions Patrick",
+            "Open the warehouse-build proposal",
+            "Find every file that mentions the Delgado job",
             "Pull the pricing out of my services PDF",
           ]}
           worksWith={[
@@ -450,7 +450,7 @@ export default function DocumentsClient({
         >
           <ul className="flex flex-col gap-1.5">
             {[
-              { n: "Stoll proposal.pdf", m: "Uploaded Jun 2 · absorbed into memory" },
+              { n: "Warehouse-build proposal.pdf", m: "Uploaded Jun 2 · absorbed into memory" },
               { n: "Services + pricing.pdf", m: "Uploaded May 20 · absorbed into memory" },
               { n: "Whiteboard — Q3 plan.jpg", m: "Shared from iPhone Jun 5" },
             ].map((f) => (

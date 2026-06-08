@@ -1059,8 +1059,8 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
 
         <p className="text-sm text-slate-300 leading-relaxed mb-7">
           Your agent reads and drafts on its own, but it never sends, books, or pays without you.
-          When it wants to do something that touches the outside world — fire off a reply to the
-          Stoll thread, put a meeting with Patrick on your calendar, send an invoice — it stages
+          When it wants to do something that touches the outside world — fire off a reply about a
+          storm-damage rebuild, put a site visit on your calendar, send an invoice — it stages
           the action right here and waits. You see exactly what it&apos;s about to do, change
           anything that&apos;s off, and tap once to let it go. Routines that run on their own, like
           your Daily Brief, land here too. Nothing leaves without your tap.
@@ -1148,9 +1148,9 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
                 <div className="text-center max-w-sm">
                   <div className="text-slate-100 text-base font-semibold mb-2">All caught up</div>
                   <p className="text-slate-500 text-sm leading-relaxed">
-                    New drafts and decisions show up here the moment your agent stages them — a
-                    drafted email from the Email Drafter, a recommended brain update, or a quick
-                    yes/no it needs from you.
+                    Cards land here as your agent does work — a drafted reply ready to send, a
+                    meeting staged for your calendar, a brief delivered, or a quick yes/no it needs
+                    from you. Nothing leaves without your tap.
                   </p>
                 </div>
                 <Link
@@ -1209,8 +1209,8 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
           <TabGuide
             promptsHeading="Want something to land here? Try one of these"
             prompts={[
-              "Draft a reply to the Stoll thread and stage it for me to approve",
-              "Find a 30-minute slot next week with Patrick and stage the calendar invite",
+              "Draft a reply to the storm-damage rebuild thread and stage it for me to approve",
+              "Find a 30-minute slot next week for the Reyes site visit and stage the calendar invite",
               "Catch me up — what's waiting on my approval right now?",
             ]}
             worksWith={[
@@ -1243,19 +1243,17 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
                 Draft awaiting approval
               </div>
               <p className="mt-1.5 text-sm font-semibold text-slate-100">
-                Reply to Alan Stoll — &ldquo;Re: roof scope + timeline&rdquo;
+                Reply to Maria Reyes — &ldquo;Re: storm-damage rebuild scope + timeline&rdquo;
               </p>
-              <p className="mt-0.5 text-[11px] font-mono text-slate-500">to alan@stollexteriors.com</p>
+              <p className="mt-0.5 text-[11px] font-mono text-slate-500">to maria.reyes@email.com</p>
               <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-slate-800/40 bg-slate-950/60 p-3 text-xs leading-relaxed text-slate-400 font-mono">
-{`Alan —
+{`Hi Maria —
 
 Good talking Tuesday. Here's the scope we landed on, with
 the timeline and the line-item pricing attached.
 
 One question left: do you want the gutter work bundled in
-or quoted separately? Reply with either and I'll lock it.
-
-— Chase`}
+or quoted separately? Reply with either and I'll lock it.`}
               </pre>
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="rounded-lg bg-[#22d3ee] px-3 py-1.5 text-xs font-semibold text-[#031820]">

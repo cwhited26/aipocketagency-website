@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { GlowCard } from "../_components/GlowCard";
 import { TabGuide } from "../_components/TabGuide";
+import { StarterBox } from "../_components/StarterBox";
 
 type AppDef = {
   href: string;
@@ -89,8 +90,16 @@ export default async function AppsPage() {
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Apps</h1>
           <p className="text-slate-300 text-sm mt-2 leading-relaxed">
-            Your brain does the heavy lifting. These surfaces read your memory files — services,
-            pricing, voice, client history — and produce output that saves you hours.
+            Reusable workflows your agent can run on demand.
+          </p>
+          <p className="text-slate-300 text-sm mt-3 leading-relaxed">
+            Apps are the work you do over and over, packaged so your agent can run it in one move —
+            an Email Drafter, a Follow-up Radar that spots deals going cold, a Quote / Proposal
+            writer. Some are quick. Some are substantial — a full proposal, a sweep across your whole
+            pipeline. Each one reads your brain — your services, pricing, voice, history — so the
+            output comes back sounding like you, not like a template. Custom apps you build yourself
+            are coming, so the workflows that are unique to your business get the same one-tap
+            treatment.
           </p>
         </div>
 
@@ -155,6 +164,23 @@ export default async function AppsPage() {
           ))}
         </div>
 
+        {/* Run something now — without picking a card first */}
+        <div className="mt-8 flex flex-col gap-2">
+          <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
+            Run something now
+          </span>
+          <StarterBox
+            placeholder="Tell your agent what to run — a draft, a quote, a follow-up sweep…"
+            submitLabel="Run →"
+            rows={2}
+            chips={[
+              "Draft a proposal for the warehouse build",
+              "Show me which leads have gone cold this week",
+              "Write a quote for a first-time facial package",
+            ]}
+          />
+        </div>
+
         <div className="mt-10 pt-6 border-t border-slate-800/60">
           <p className="text-sm text-slate-500 leading-relaxed">
             The deeper your brain, the better the output. More work apps ship as the platform
@@ -167,8 +193,8 @@ export default async function AppsPage() {
           <TabGuide
             promptsHeading="Try one of these"
             prompts={[
-              "Draft a proposal for the Stoll deal",
-              "Write a follow-up email to Patrick about the site walk",
+              "Draft a proposal for the warehouse build",
+              "Write a follow-up email about last week's site walk",
               "Show me which leads have gone cold",
               "Give me today's brief",
             ]}
@@ -194,16 +220,16 @@ export default async function AppsPage() {
               <p className="mt-1.5 text-sm font-semibold text-slate-100">3 relationships have gone quiet</p>
               <ul className="mt-2 flex flex-col gap-1.5 text-[13px] text-slate-400">
                 <li className="leading-relaxed">
-                  <span className="text-slate-200">Alan Stoll</span> — no contact in 6 days, decision
+                  <span className="text-slate-200">Maria Delgado</span> — no contact in 6 days, decision
                   expected this week. Drafted a nudge.
                 </li>
                 <li className="leading-relaxed">
-                  <span className="text-slate-200">Patrick (Fresh Page)</span> — site walk was Tuesday,
+                  <span className="text-slate-200">The Hale wedding</span> — venue walk was Tuesday,
                   no recap sent. Drafted one.
                 </li>
                 <li className="leading-relaxed">
-                  <span className="text-slate-200">Keaton Hoskins</span> — quote sent 12 days ago,
-                  never followed up. Drafted a check-in.
+                  <span className="text-slate-200">Carter kitchen remodel</span> — quote sent 12 days
+                  ago, never followed up. Drafted a check-in.
                 </li>
               </ul>
               <p className="mt-3 text-[11px] font-mono text-slate-500">

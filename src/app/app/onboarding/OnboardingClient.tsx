@@ -115,7 +115,7 @@ const WIZARD_STEPS: WizardStepDef[] = [
         key: "currentProjects",
         label: "Current projects and priorities",
         placeholder:
-          "e.g. \n- Patrick's CRM: final handoff, two items left\n- Pocket Agent: Phase 1 launch\n- Dispatch Playbook: shipping next week",
+          "e.g. \n- A client CRM: final handoff, two items left\n- Pocket Agent: Phase 1 launch\n- Dispatch Playbook: shipping next week",
         multiline: true,
       },
     ],

@@ -1,33 +1,35 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { listScaffolds, type ScaffoldEntry } from "@/lib/pa-brain";
 import { redirect } from "next/navigation";
 import ExamplePlanPanel from "./ExamplePlanPanel";
 import { WorksWithPanel } from "../_components/TabGuide";
+import { StarterBox } from "../_components/StarterBox";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Projects — Pocket Agent" };
 
-// Starter prompts for the empty state — the kinds of multi-step asks that produce a plan.
+// System-level builds the agent can take on. These pre-fill the "Tell me what to build" box so the
+// owner can edit and start without leaving the tab. Invented scenarios across industries — no real
+// customer names — so the breadth is obvious.
 const STARTERS = [
-  "Build me a one-page landing site for [project]",
-  "Follow up with the three prospects from my call list and stage drafts for me to approve",
-  "Take what's in my brain about [topic] and turn it into a one-pager",
-  "Plan and run a five-email drip for [audience]",
+  "Build me a CRM tailored to how I run my contracting business",
+  "Build a full lead-capture website for my med-spa with the brand identity in my brain",
+  "Wire up an automation that creates a QuickBooks invoice every time I mark a job complete",
+  "Stand up a five-touch email + SMS drip for prospects who are still deciding",
+  "Build an internal dashboard that shows every active deal in one view",
 ];
 
-// "patrick-proposal" → "Patrick proposal" for a readable project label.
+// "kitchen-remodel-crm" → "Kitchen remodel crm" for a readable project label.
 function deslugify(slug: string): string {
   const words = slug.replace(/[-_]+/g, " ").trim();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
-// Top-level Projects surface. Renders active scaffoldings (Wave B SPEC §9.2a) — each is a
-// scaffolds/<slug>/scaffolding.md plan in the owner's brain. When there are none, shows a
-// concrete empty state with starter asks. The collapsible example plan panel is always
-// available so a first-time owner can see what a plan looks like before they ever run one.
+// Top-level Projects surface. Renders active build plans — each is a plan in the owner's brain.
+// The "Tell me what to build" box starts a new one in place; the collapsible example shows what a
+// real system-level plan looks like before the owner ever runs one.
 export default async function ProjectsPage() {
   const supabase = createClient();
   const {
@@ -55,41 +57,36 @@ export default async function ProjectsPage() {
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Projects</h1>
           <p className="text-slate-400 text-sm mt-2 leading-relaxed">
-            Big asks broken down so you can approve before they run.
+            Whole-system builds, planned out and approved before anything runs.
           </p>
         </div>
 
-        {/* Intro */}
+        {/* Intro — the full story: system-scale, built inside your rules */}
         <p className="text-sm text-slate-300 leading-relaxed">
-          Anytime you give your agent something with multiple steps &mdash; draft a proposal for
-          the Stoll deal, follow up with three prospects, build a lead magnet &mdash; it writes a
-          plan first. You see the whole plan before any of it fires. Edit what&apos;s off. Hit
-          Approve. Your agent does the work and reports back here.
+          Projects is where your agent takes on big work — whole systems, not paragraphs. Ask for a
+          CRM tailored to how you run your business, a lead-capture website deployed live, an
+          automation that connects your email to your accounting, a multi-channel drip across email
+          and text, a custom internal dashboard. Your agent reads your brain&apos;s rulebook — your
+          conventions, your voice, your decisions, what you&apos;ve tried and what you&apos;ve ruled
+          out — and writes a full build plan first. You see every milestone and every task before
+          any of it fires. Edit anything that&apos;s off. Hit Approve. It builds inside <em>your</em>{" "}
+          rules, not some generic best-practice mush, and reports back here as each milestone lands.
         </p>
 
-        {/* Active plans, or the concrete empty state */}
-        {scaffolds.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-700/60 bg-slate-900/40 px-5 py-6">
-            <p className="text-sm font-medium text-slate-200">
-              No active projects yet. Try one of these:
-            </p>
-            <ul className="mt-4 flex flex-col gap-2">
-              {STARTERS.map((s) => (
-                <li key={s}>
-                  <Link
-                    href={`/app/ask?q=${encodeURIComponent(s)}`}
-                    className="group flex items-start gap-3 rounded-lg border border-slate-800/50 bg-slate-950/30 px-4 py-3 hover:border-slate-700/60 hover:bg-slate-800/40 transition-all min-h-[44px]"
-                  >
-                    <span className="shrink-0 text-[#22d3ee]/50 mt-0.5 text-xs">→</span>
-                    <span className="text-sm text-slate-300 group-hover:text-slate-100 transition-colors leading-relaxed">
-                      {s}
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
+        {/* Start a build — act without leaving the tab */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
+            Start a build
+          </span>
+          <StarterBox
+            placeholder="Tell me what to build…"
+            submitLabel="Start project →"
+            chips={STARTERS}
+          />
+        </div>
+
+        {/* Active plans */}
+        {scaffolds.length > 0 && (
           <div className="flex flex-col gap-2">
             <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
               Active plans
@@ -124,41 +121,28 @@ export default async function ProjectsPage() {
             {
               href: "/app/ask",
               label: "Agent",
-              blurb: "Give your agent a multi-step ask and it writes the plan you see here.",
+              blurb: "Give your agent a big ask and it writes the plan you approve here.",
             },
             {
               href: "/app/apps/inbox",
               label: "Inbox",
-              blurb: "Anything the plan sends or books waits there for your approval as it runs.",
+              blurb: "Anything the build sends or books waits there for your approval as it runs.",
             },
             {
-              href: "/app/tasks",
-              label: "Tasks",
-              blurb: "Steps that need you — sign a contract, send a deposit — show up as your tasks.",
+              href: "/app/brain",
+              label: "Brain",
+              blurb: "Your conventions, voice, and decisions are the rulebook your agent builds inside.",
             },
             {
-              href: "/app/apps",
-              label: "Apps",
-              blurb: "A workflow app can run as a plan when its work has several steps.",
+              href: "/app/settings/connections",
+              label: "Connections",
+              blurb: "A build can wire up the tools you've connected — Gmail, QuickBooks, Slack.",
             },
           ]}
         />
 
         {/* Example plan — always available */}
         <ExamplePlanPanel />
-
-        {/* Footer */}
-        <div className="rounded-xl border border-slate-800/40 bg-transparent px-5 py-4">
-          <p className="text-[11px] font-mono text-slate-600 leading-relaxed">
-            Ready to start one?{" "}
-            <Link
-              href="/app/ask"
-              className="text-[#22d3ee]/60 hover:text-[#22d3ee] transition-colors"
-            >
-              Open Agent →
-            </Link>
-          </p>
-        </div>
 
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Mascot from "@/components/Mascot";
 import { TabGuide } from "../_components/TabGuide";
+import { AddMemoryButton } from "../_components/AddMemoryButton";
 import type { FreshnessArea, FreshnessResponse, FreshnessStatus } from "@/app/api/app/brain/freshness/route";
 import type { BrainIndexResponse } from "@/app/api/app/brain/index/route";
 import type { MemoryIndexRow, MemoryEntryType, RootFile } from "@/lib/pa-brain-index";
@@ -593,6 +594,7 @@ export default function BrainHealthClient({
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {brainRepo && <AddMemoryButton />}
             {brainRepo && (
               <a
                 href="/app/brain/digest"
@@ -616,9 +618,10 @@ export default function BrainHealthClient({
           pricing, how you write, who your customers are, the decisions you&apos;ve made, the way
           you like to follow up. It reads all of it before every reply, so the more it holds, the
           more the drafts sound like you and the answers fit your situation. Ask it what it knows
-          about the Stoll deal and it tells you. Tell it your follow-up cadence is 7, 14, then 30
-          days and it remembers for good. This page shows how complete your brain is and what to
-          fill in next.
+          about your spring promotion and it tells you. Tell it your follow-up cadence is 7, 14, then
+          30 days and it remembers for good. Tap <span className="text-slate-200">Add to memory</span> to
+          teach it something on the spot. This page shows how complete your brain is and what to fill
+          in next. (Soon you&apos;ll be able to keep a separate brain for each business you run.)
         </p>
 
         {/* Brain primitives — quick access to North Star, Specs, and Memory tiers */}
@@ -712,9 +715,9 @@ export default function BrainHealthClient({
         <TabGuide
           promptsHeading="Try one of these"
           prompts={[
-            "What do you know about the Stoll deal?",
+            "What do you know about my spring Botox-package promotion?",
             "Add to memory: my follow-up cadence is 7, 14, then 30 days",
-            "What's my pricing for a single-page site?",
+            "What's my pricing for a first-time facial package?",
           ]}
           worksWith={[
             {
@@ -738,9 +741,9 @@ export default function BrainHealthClient({
         >
           <ul className="flex flex-col gap-2">
             {[
-              { k: "Deal · Stoll", v: "Roof + gutter scope quoted Jun 2. Decision expected this week. Prefers email over calls." },
-              { k: "How you follow up", v: "Cadence is 7, 14, then 30 days. Short, no fluff, one clear ask per email." },
-              { k: "Pricing", v: "Single-page site: $1,500 flat. Multi-step builds quoted per scope." },
+              { k: "Promotion · Spring", v: "Botox package: 20% off through May for returning clients. Promote by text + email, not Instagram." },
+              { k: "How you follow up", v: "Cadence is 7, 14, then 30 days. Short, warm, one clear ask per message." },
+              { k: "Pricing", v: "First-time facial package: $149. Membership: $99/mo. No discounting memberships." },
             ].map((m) => (
               <li
                 key={m.k}

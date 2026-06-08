@@ -4,7 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Mascot, { type MascotState } from "@/components/Mascot";
 import type { ActivityItem } from "@/app/api/app/brain/activity/route";
-import { TabGuide } from "../_components/TabGuide";
+import { TryThesePanel, WorksWithPanel, ExamplePanel } from "../_components/TabGuide";
+import { AgentSetupBar } from "../_components/AgentSetupBar";
+import type { ConversationThread } from "@/lib/pa-conversations";
+import type { ScaffoldEntry } from "@/lib/pa-brain";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -61,6 +64,12 @@ function relativeTime(isoString: string): string {
   const d = Math.floor(h / 24);
   if (d < 7) return `${d}d ago`;
   return `${Math.floor(d / 7)}w ago`;
+}
+
+// "kitchen-remodel-crm" → "Kitchen remodel crm" for a readable in-flight plan label.
+function deslugify(slug: string): string {
+  const words = slug.replace(/[-_]+/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 function parseCitations(text: string): Citation[] {
@@ -592,6 +601,9 @@ function HubView({
   brainRepo,
   hasApiKey,
   hasGithubToken,
+  hasConnection,
+  threads,
+  scaffolds,
   inputValue,
   setInputValue,
   isLoading,
@@ -603,6 +615,9 @@ function HubView({
   brainRepo: string | null;
   hasApiKey: boolean;
   hasGithubToken: boolean;
+  hasConnection: boolean;
+  threads: ConversationThread[];
+  scaffolds: ScaffoldEntry[];
   inputValue: string;
   setInputValue: (v: string) => void;
   isLoading: boolean;
@@ -629,14 +644,22 @@ function HubView({
           </div>
         </div>
 
+        {/* Status-bar onboarding — disappears once everything's wired */}
+        <AgentSetupBar
+          hasGithubToken={hasGithubToken}
+          hasBrain={Boolean(brainRepo)}
+          hasApiKey={hasApiKey}
+          hasConnection={hasConnection}
+        />
+
         {/* The full story — this is the one box that does everything */}
         <p className="text-sm text-slate-300 leading-relaxed text-center max-w-xl mx-auto">
           This is the one place you tell your agent what you want done — in plain English, like
-          you&apos;d text a sharp assistant. Ask it to draft a recap from yesterday&apos;s call,
-          pull where the Stoll deal stands, or write follow-ups to everyone who replied this week.
-          It reads your brain for context, does the work, and stages anything that leaves your
-          hands — an email, a meeting, an invoice — in your Inbox for you to approve. Big asks with
-          several steps become a plan you sign off on first.
+          you&apos;d text a sharp assistant. Ask it to draft a recap from this morning&apos;s job
+          walk-through, write follow-ups to everyone who stopped by your booth, or pull where a
+          deal stands. It reads your brain for context, does the work, and stages anything that
+          leaves your hands — an email, a meeting, an invoice — in your Inbox for you to approve.
+          Big asks with several steps become a plan you sign off on first.
         </p>
 
         {/* Input — the primary interaction, first thing under the mascot */}
@@ -742,83 +765,21 @@ function HubView({
           </div>
         )}
 
-        {/* What your agent knows — brain status tiles, below the Ask box */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <ActivityFeedPanel brainRepo={brainRepo} />
-          <BrainOrganPanel brainRepo={brainRepo} />
-        </div>
-
-        {/* Work surface — single col on mobile */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[12px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
-              What I can do for you
-            </span>
-            <a href="/app/apps" className="text-[12px] font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors">
-              See all →
-            </a>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {[
-              { href: "/app/apps/quote", label: "Quote / Proposal", desc: "Reads your brain. Drafts a clean quote." },
-              { href: "/app/apps/email", label: "Email Drafter", desc: "Writes emails that sound like you." },
-            ].map((app) => (
-              <a
-                key={app.href}
-                href={app.href}
-                className="group block rounded-xl border border-slate-700/60 bg-slate-900/60 px-4 py-4 hover:border-slate-600 hover:bg-slate-900 transition-all min-h-[60px]"
-              >
-                <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100 transition-colors">
-                  {app.label}
-                </p>
-                <p className="text-[12px] text-slate-400 mt-0.5 leading-relaxed">{app.desc}</p>
-              </a>
-            ))}
-          </div>
-        </div>
-
-        {/* Level guide — quiet at the bottom */}
-        <div className="rounded-xl border border-slate-800/60 bg-slate-900/30 px-4 py-3">
-          <div className="flex items-center gap-4 overflow-x-auto">
-            {[
-              { n: 1, label: "Knows you", active: Boolean(brainRepo) },
-              { n: 2, label: "Drafts for you", active: false },
-              { n: 3, label: "Acts for you", active: false },
-            ].map((level, i) => (
-              <div key={level.n} className="flex items-center gap-2 shrink-0">
-                <span
-                  className="flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold border shrink-0"
-                  style={{
-                    background: level.active ? "rgba(34,211,238,0.18)" : "rgba(30,41,59,0.6)",
-                    borderColor: level.active ? "rgba(34,211,238,0.55)" : "rgba(51,65,85,0.6)",
-                    color: level.active ? "#22d3ee" : "#64748B",
-                  }}
-                >
-                  {level.active ? "✓" : level.n}
-                </span>
-                <span
-                  className="text-[11px] font-mono whitespace-nowrap"
-                  style={{ color: level.active ? "#CBD5E1" : "#64748B" }}
-                >
-                  {level.label}
-                </span>
-                {i < 2 && <span className="text-slate-700 text-xs shrink-0">→</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* First-touch guide — tap a prompt to drop it in the box; see where the work goes */}
-        <TabGuide
-          promptsHeading="Not sure what to ask? Tap one to drop it in the box"
+        {/* Try one of these — tap to drop it in the box above */}
+        <TryThesePanel
+          heading="Not sure what to ask? Tap one to drop it in the box"
           onPick={setInputValue}
           prompts={[
-            "Draft a recap email from yesterday's call with Stoll",
-            "Pull my last three touches with Stoll and tell me where the deal sits",
-            "Write a follow-up to everyone who replied to me this week",
-            "Turn what's in my brain about Patrick's build into a one-page summary",
+            "Draft a recap email from this morning's kitchen-remodel walk-through",
+            "Pull everything we know about the Maple Street rebuild and tell me where it stands",
+            "Write a follow-up to the three couples who stopped by our booth at the expo",
+            "Turn my notes from yesterday's discovery call into a one-page summary",
           ]}
-          worksWith={[
+        />
+
+        {/* Works with — where the work goes once the agent runs */}
+        <WorksWithPanel
+          items={[
             {
               href: "/app/apps/inbox",
               label: "Inbox",
@@ -827,7 +788,7 @@ function HubView({
             {
               href: "/app/projects",
               label: "Projects",
-              blurb: "Ask for something with several steps and it becomes a plan you approve first.",
+              blurb: "Ask for something big — a whole system — and it becomes a plan you approve first.",
             },
             {
               href: "/app/personas",
@@ -840,37 +801,117 @@ function HubView({
               blurb: "Every reply is grounded in what your agent knows about your business.",
             },
           ]}
-          exampleLabel="See an example thread"
-          exampleNote="This is a sample. Type anything above and your real conversation starts here."
+        />
+
+        {/* Recent threads — every conversation, plus any in-flight plans, right on the landing */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
+            Recent threads
+          </span>
+
+          {scaffolds.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              {scaffolds.map((s) => (
+                <a
+                  key={s.slug}
+                  href="/app/projects"
+                  className="group flex items-center gap-3 rounded-xl border border-slate-700/60 bg-slate-900/60 px-4 py-3 hover:border-slate-600 hover:bg-slate-900 transition-all min-h-[56px]"
+                >
+                  <span className="text-[#22d3ee]/60 shrink-0 text-sm">◆</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100 truncate">
+                      {deslugify(s.slug)}
+                    </p>
+                    <p className="text-[11px] font-mono text-slate-500 truncate">In-flight plan · {s.path}</p>
+                  </div>
+                  <span className="text-[11px] font-mono text-slate-600 group-hover:text-[#22d3ee]/70 transition-colors shrink-0">
+                    View →
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
+
+          {threads.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-700/60 bg-slate-900/40 px-5 py-6 text-center">
+              <p className="text-sm text-slate-300">No threads yet.</p>
+              <p className="text-[13px] text-slate-500 mt-1">
+                Ask your agent something above and the conversation shows up here so you can pick it
+                back up anytime.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {threads.slice(0, 6).map((t) => (
+                <a
+                  key={t.id}
+                  href={`/app/ask?c=${t.id}`}
+                  className="group block rounded-xl border border-slate-700/60 bg-slate-900/60 px-4 py-3.5 hover:border-slate-600 hover:bg-slate-900 transition-all min-h-[60px]"
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100 truncate">
+                      {t.title || "Untitled thread"}
+                    </p>
+                    <span className="shrink-0 text-[11px] font-mono text-slate-600">
+                      {relativeTime(t.updated_at)}
+                    </span>
+                  </div>
+                  <p className="text-[13px] text-slate-400 mt-1 leading-relaxed line-clamp-1">
+                    {t.snippet ?? "No messages yet."}
+                  </p>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recent activity — what your agent has been doing + how full your brain is */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-mono text-slate-300 tracking-[0.14em] uppercase font-semibold">
+            Recent activity
+          </span>
+          <p className="text-[13px] text-slate-500 leading-relaxed">
+            Cards land here as your agent does work — drafts written, plans staged, briefs delivered.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ActivityFeedPanel brainRepo={brainRepo} />
+            <BrainOrganPanel brainRepo={brainRepo} />
+          </div>
+        </div>
+
+        {/* See an example — a real thread shape, collapsed by default */}
+        <ExamplePanel
+          label="See an example thread"
+          note="This is a sample. Type anything above and your real conversation starts here."
         >
           <div className="flex flex-col gap-3">
             <div className="self-end max-w-[85%] rounded-2xl rounded-tr-sm bg-slate-800 border border-slate-700/60 px-4 py-2.5 text-sm text-slate-100">
-              Draft a recap email from yesterday&apos;s call with Stoll.
+              Draft a recap email from this morning&apos;s kitchen-remodel walk-through.
             </div>
             <div className="self-start max-w-full">
               <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-[0.18em] uppercase mb-1.5">
                 Pocket Agent
               </div>
               <div className="rounded-2xl rounded-tl-sm border border-slate-800/60 bg-slate-950/50 px-4 py-3 text-sm text-slate-300 leading-relaxed">
-                <p>Read the Stoll discovery notes from your brain. Here&apos;s the recap, drafted in your voice:</p>
+                <p>Pulled your walk-through notes from your brain. Here&apos;s the recap, in your voice:</p>
                 <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-slate-800/40 bg-slate-950/60 p-3 text-xs leading-relaxed text-slate-400 font-mono">
-{`Alan —
+{`Hi Dana —
 
-Good catching up Tuesday. Quick recap of what we landed on:
-scope, timeline, and the line-item pricing are attached.
+Good walking the kitchen this morning. Quick recap of what
+we settled on: cabinet layout, the quartz counters you liked,
+and a four-week timeline once the permit clears.
 
-I'll hold the proposal in your Inbox until you give the word.
-
-— Chase`}
+Full line-item quote is coming your way — I'll hold it in
+your Inbox so you can look it over before it sends.`}
                 </pre>
                 <p className="mt-2 text-[13px] text-slate-400">
-                  Staged the send-to-Stoll email in your{" "}
+                  Staged the recap email in your{" "}
                   <span className="text-[#22d3ee]/80">Inbox</span> — approve it whenever you&apos;re ready.
                 </p>
               </div>
             </div>
           </div>
-        </TabGuide>
+        </ExamplePanel>
 
       </div>
     </div>
@@ -933,21 +974,28 @@ export default function HomeClient({
   brainRepo,
   hasApiKey,
   hasGithubToken,
+  hasConnection,
   initialConversations,
+  threads,
+  scaffolds,
   initialConversationId,
   initialQuery,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
   hasGithubToken: boolean;
+  // Whether any outside tool is connected — drives the setup status bar.
+  hasConnection: boolean;
   initialConversations: Conversation[];
-  // When the owner deep-links from the Hub (/app/ask?c=<id>), this restores that thread on load.
+  // Recent conversations (with one-line previews) and in-flight plans, shown on the landing.
+  threads: ConversationThread[];
+  scaffolds: ScaffoldEntry[];
+  // When the owner deep-links a thread (/app/ask?c=<id>), this restores it on load.
   initialConversationId: string | null;
   // When the owner taps a starter prompt on the Projects page (/app/ask?q=<text>), this seeds
   // the composer so they land with the ask already typed and can edit before sending.
   initialQuery: string | null;
 }) {
-  const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [activeConvId, setActiveConvId] = useState<string | null>(initialConversationId);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -1023,9 +1071,10 @@ export default function HomeClient({
     setTimeout(() => textareaRef.current?.focus(), 80);
   }
 
-  // The "Hub" breadcrumb is a real destination: the thread list at /app/agent/hub.
-  function goToHub() {
-    router.push("/app/agent/hub");
+  // "Back" from a thread lands on the Agent landing — the mascot page (this same surface with no
+  // active thread), where the recent-threads list and Ask box live.
+  function goToLanding() {
+    setActiveConvId(null);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -1135,13 +1184,13 @@ export default function HomeClient({
           <div className="flex flex-col h-full">
             <div className="flex items-center gap-3 px-5 py-3 shrink-0 border-b border-slate-800/60">
               <button
-                onClick={goToHub}
+                onClick={goToLanding}
                 className="text-slate-400 hover:text-slate-100 text-sm transition-colors font-mono flex items-center gap-1.5"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                   <path d="M8 2L4 6l4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-                Hub
+                Agent
               </button>
               <span className="text-slate-700">·</span>
               <span className="text-sm text-slate-300 truncate">{activeConv?.title ?? "Conversation"}</span>
@@ -1158,8 +1207,8 @@ export default function HomeClient({
                 {threadError && (
                   <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200/90">
                     {threadError}{" "}
-                    <button onClick={goToHub} className="underline hover:text-amber-100">
-                      Back to Hub
+                    <button onClick={goToLanding} className="underline hover:text-amber-100">
+                      Back to Agent
                     </button>
                   </div>
                 )}
@@ -1269,6 +1318,9 @@ export default function HomeClient({
             brainRepo={brainRepo}
             hasApiKey={hasApiKey}
             hasGithubToken={hasGithubToken}
+            hasConnection={hasConnection}
+            threads={threads}
+            scaffolds={scaffolds}
             inputValue={inputValue}
             setInputValue={setInputValue}
             isLoading={isLoading}

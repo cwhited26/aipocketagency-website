@@ -120,7 +120,7 @@ export default function FollowUpsClient({
             </label>
             <textarea
               rows={3}
-              placeholder="e.g. Anyone who got a quote but didn't sign. Leads from last month. Patrick's follow-up on the roofing job."
+              placeholder="e.g. Anyone who got a quote but didn't sign. Leads from last month. A follow-up on the roofing job."
               className="w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-[#22d3ee] focus:outline-none resize-none"
               value={context}
               onChange={(e) => setContext(e.target.value)}

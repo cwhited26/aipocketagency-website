@@ -272,17 +272,17 @@ export default function FeedBrainClient({
             <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 px-4 py-3">
               <p className="text-[11px] font-mono text-slate-500">You shared</p>
               <p className="mt-0.5 text-sm font-medium text-slate-200">
-                Voice memo — &ldquo;notes from the Stoll site walk&rdquo;
+                Voice memo — &ldquo;notes from the Harbor View deck walk&rdquo;
               </p>
             </div>
             <div className="rounded-xl border border-[#22d3ee]/20 bg-[#22d3ee]/5 px-4 py-3">
               <p className="text-[11px] font-mono text-[#22d3ee]/70">Your agent absorbed it</p>
               <p className="mt-0.5 text-sm text-slate-300 leading-relaxed">
                 Transcribed it, pulled the scope and the timeline you mentioned, and saved them to your
-                brain under the Stoll deal.
+                brain under the Harbor View deck job.
               </p>
               <p className="mt-1 text-[10px] font-mono text-[#22d3ee]/50">
-                → memory/deal-stoll.md
+                → memory/job-harbor-view-deck.md
               </p>
             </div>
           </div>

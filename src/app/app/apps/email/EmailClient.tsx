@@ -280,7 +280,7 @@ export default function EmailClient({
               <textarea
                 rows={3}
                 placeholder={
-                  "follow-up to Patrick about the quote and our Thursday call — confirm the start date"
+                  "follow-up to a client about the quote and our Thursday call — confirm the start date"
                 }
                 className={`${inputClass} resize-none pr-12`}
                 value={brief}
@@ -330,7 +330,7 @@ export default function EmailClient({
                 </label>
                 <input
                   type="text"
-                  placeholder="Patrick Johnson"
+                  placeholder="Jordan Avery"
                   className={inputClass}
                   value={recipient}
                   onChange={(e) => setRecipient(e.target.value)}

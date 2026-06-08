@@ -285,8 +285,8 @@ export default async function ConnectionsPage({
           promptsHeading="Try one of these"
           prompts={[
             "What can you do for me once I connect Gmail?",
-            "Once QuickBooks is connected, draft an invoice for the Stoll job",
-            "After I connect Slack, post a heads-up to my team channel",
+            "Once QuickBooks is connected, draft an invoice for last week's landscaping jobs",
+            "After I connect Slack, post a heads-up to my crew channel",
           ]}
           worksWith={[
             {
@@ -314,6 +314,8 @@ export default async function ConnectionsPage({
               { tool: "Google Calendar", does: "Reads your schedule, proposes times, books events on approval." },
               { tool: "QuickBooks", does: "Drafts invoices, records payments, pulls reports — writes on approval." },
               { tool: "Slack", does: "Posts messages, replies in threads, sends DMs — each send on approval." },
+              { tool: "Stripe", does: "Drafts invoices, payment links, and refunds — refunds always ask first." },
+              { tool: "GitHub", does: "Connects the repo that holds your brain so your agent can read and update it." },
             ].map((c) => (
               <li
                 key={c.tool}

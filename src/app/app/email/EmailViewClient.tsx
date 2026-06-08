@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { TabGuide } from "../_components/TabGuide";
+import { StarterBox } from "../_components/StarterBox";
 
 // Mirrors GmailReadMessage from the Gmail read connector.
 type GmailMessage = {
@@ -14,7 +15,7 @@ type GmailMessage = {
 
 type MessagesResponse = { messages: GmailMessage[] };
 
-// `"Patrick Lane" <patrick@host>` → "Patrick Lane"; bare `addr@host` → "addr@host".
+// `"Maya Rivera" <maya@host>` → "Maya Rivera"; bare `addr@host` → "addr@host".
 function senderName(from: string): string {
   const quoted = from.match(/^"?([^"<]+?)"?\s*<.*>$/);
   if (quoted) return quoted[1].trim();
@@ -98,12 +99,22 @@ export default function EmailViewClient({
 
         <p className="text-sm text-slate-300 leading-relaxed mb-6">
           Connect Gmail and your agent reads your mail the way you would. Ask it to summarize the
-          back-and-forth on the Stoll thread and it gives you the short version. Ask it to draft a
-          follow-up to the three prospects who replied this week and it writes each one in your
-          voice — then stages them in your Inbox so you read, tweak, and send with one tap.
-          Incoming mail gets triaged there too, so the stuff that needs you rises to the top. It
-          reads and drafts on its own; it never sends without you.
+          back-and-forth with a couple about their fall wedding and it gives you the short version.
+          Ask it to draft a follow-up to the three couples who stopped by your booth and it writes
+          each one in your voice — then stages them in your Inbox so you read, tweak, and send with
+          one tap. Incoming mail gets triaged there too, so the stuff that needs you rises to the
+          top. It reads and drafts on its own; it never sends without you.
         </p>
+
+        {connected && (
+          <div className="mb-6">
+            <StarterBox
+              placeholder="Ask your agent to draft a reply, summarize a thread, or follow up…"
+              submitLabel="Ask →"
+              rows={2}
+            />
+          </div>
+        )}
 
         {connected && (
           <p className="text-xs text-slate-600 mb-5">
@@ -184,9 +195,9 @@ export default function EmailViewClient({
           <TabGuide
             promptsHeading="Try one of these"
             prompts={[
-              "Draft a follow-up to the three prospects who replied this week",
-              "Summarize the Stoll thread for me",
-              "Reply to Patrick's last email and stage it for my approval",
+              "Draft a follow-up to the three couples who stopped by our booth this weekend",
+              "Summarize the thread with the Hales about their fall date",
+              "Reply to the latest inquiry and stage it for my approval",
             ]}
             worksWith={[
               {
@@ -210,21 +221,20 @@ export default function EmailViewClient({
           >
             <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 p-4">
               <p className="text-[11px] font-mono text-slate-500">
-                to alan@stollexteriors.com · drafted in your voice
+                to maya + chris · drafted in your voice
               </p>
               <p className="mt-1.5 text-sm font-semibold text-slate-100">
-                Re: roof scope + timeline
+                Re: October wedding — availability + packages
               </p>
               <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-slate-800/40 bg-slate-950/60 p-3 text-xs leading-relaxed text-slate-400 font-mono">
-{`Alan —
+{`Hi Maya & Chris —
 
-Following up on Tuesday. The scope and timeline are locked,
-pricing's attached. Last thing I need: gutters bundled in,
-or quoted separate?
+So good meeting you at the expo. I've got your October 11th
+date open, and I put together two package options that fit
+what you described — the full-day coverage you wanted plus
+an engagement session.
 
-Reply with either and I'll send the final today.
-
-— Chase`}
+Want me to send the details and hold the date for you?`}
               </pre>
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="rounded-lg bg-[#22d3ee] px-3 py-1.5 text-xs font-semibold text-[#031820]">
