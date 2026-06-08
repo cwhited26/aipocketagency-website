@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
 import { affordancesFor, type InboxItemKind } from "@/lib/inbox-affordances";
 import type {
   LedgerStatus,
+  MissionControlCounts,
   MissionControlSnapshot,
   RunLedgerEntry,
   ScheduledEntry,
@@ -165,45 +167,164 @@ function useCountUp(value: number, durationMs = 600): number {
   return display;
 }
 
-// ─── Stat tile strip ──────────────────────────────────────────────────────────
+// ─── Stat tile strip (PA-MC-10 — tiles are jump buttons) ────────────────────────
+//
+// Each tile is a real button that scrolls to its urgency section, highlights when that section is
+// in view (IntersectionObserver, wired in the page), dims when its count is 0, and toasts instead
+// of scrolling when there's no section to jump to. The six tile keys are exactly the six count
+// buckets, so a non-zero tile always has a section below — see SECTION_ID / the page's anchors.
+
+type TileKey = keyof MissionControlCounts;
+
+// Anchor id for each tile's section. The page renders a matching `id` on every section so a tap on
+// the tile lands on it via scrollIntoView. Idle is a real section now (free sub-agent capacity), so
+// it has an anchor too — it used to be a count-only tile with nowhere to go.
+const SECTION_ID: Record<TileKey, string> = {
+  attention: "mc-attention",
+  active: "mc-active",
+  verifying: "mc-verifying",
+  scheduled: "mc-scheduled",
+  done: "mc-done",
+  idle: "mc-idle",
+};
+
+// Spoken section name for the jump aria-label (the tile's short label is too terse on its own).
+const SECTION_LABEL: Record<TileKey, string> = {
+  attention: "Attention",
+  active: "Active right now",
+  verifying: "Verifying",
+  scheduled: "Scheduled",
+  done: "Recently resolved",
+  idle: "Idle capacity",
+};
+
+const TILE_ORDER: TileKey[] = ["attention", "active", "verifying", "scheduled", "done", "idle"];
 
 type TileTone = "amber" | "cyan" | "violet" | "blue" | "emerald" | "muted";
 
-const TILE_TONE: Record<TileTone, { value: string; label: string; ring: string }> = {
-  amber: { value: "text-amber-300", label: "text-amber-400/70", ring: "border-amber-500/30" },
-  cyan: { value: "text-[#22d3ee]", label: "text-[#22d3ee]/60", ring: "border-[#22d3ee]/25" },
-  violet: { value: "text-violet-300", label: "text-violet-300/60", ring: "border-violet-500/25" },
-  blue: { value: "text-sky-300", label: "text-sky-300/60", ring: "border-sky-500/25" },
-  emerald: { value: "text-emerald-300", label: "text-emerald-400/60", ring: "border-emerald-500/25" },
-  muted: { value: "text-slate-300", label: "text-slate-500", ring: "border-slate-700/50" },
+const TILE_TONE: Record<TileTone, { value: string; label: string; ring: string; active: string }> = {
+  amber: {
+    value: "text-amber-300",
+    label: "text-amber-400/70",
+    ring: "border-amber-500/30",
+    active: "border-amber-400 ring-1 ring-amber-400/40",
+  },
+  cyan: {
+    value: "text-[#22d3ee]",
+    label: "text-[#22d3ee]/60",
+    ring: "border-[#22d3ee]/25",
+    active: "border-[#22d3ee] ring-1 ring-[#22d3ee]/40",
+  },
+  violet: {
+    value: "text-violet-300",
+    label: "text-violet-300/60",
+    ring: "border-violet-500/25",
+    active: "border-violet-400 ring-1 ring-violet-400/40",
+  },
+  blue: {
+    value: "text-sky-300",
+    label: "text-sky-300/60",
+    ring: "border-sky-500/25",
+    active: "border-sky-400 ring-1 ring-sky-400/40",
+  },
+  emerald: {
+    value: "text-emerald-300",
+    label: "text-emerald-400/60",
+    ring: "border-emerald-500/25",
+    active: "border-emerald-400 ring-1 ring-emerald-400/40",
+  },
+  muted: {
+    value: "text-slate-300",
+    label: "text-slate-500",
+    ring: "border-slate-700/50",
+    active: "border-slate-500 ring-1 ring-slate-500/40",
+  },
 };
 
-function StatTile({ count, label, tone }: { count: number; label: string; tone: TileTone }) {
+function StatTile({
+  tileKey,
+  count,
+  label,
+  tone,
+  active,
+  onActivate,
+  onArrow,
+}: {
+  tileKey: TileKey;
+  count: number;
+  label: string;
+  tone: TileTone;
+  active: boolean;
+  onActivate: (key: TileKey, empty: boolean) => void;
+  onArrow: (e: ReactKeyboardEvent<HTMLButtonElement>) => void;
+}) {
   const shown = useCountUp(count);
   const t = TILE_TONE[tone];
+  const empty = count === 0;
+  const ariaLabel = empty
+    ? `${SECTION_LABEL[tileKey]} — nothing right now`
+    : `Jump to ${SECTION_LABEL[tileKey]} — ${count} item${count === 1 ? "" : "s"}`;
   return (
-    <div className={`rounded-xl border ${t.ring} bg-slate-900/50 px-2.5 py-3 text-center`}>
+    <button
+      type="button"
+      data-tile={tileKey}
+      onClick={() => onActivate(tileKey, empty)}
+      onKeyDown={onArrow}
+      aria-label={ariaLabel}
+      title={empty ? "All clear" : undefined}
+      className={[
+        "group rounded-xl border bg-slate-900/50 px-2.5 py-3 text-center min-h-[44px] cursor-pointer",
+        "transition-[transform,colors,border-color] duration-150",
+        "motion-safe:hover:scale-[1.04] active:scale-95",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#22d3ee]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05070a]",
+        empty ? "opacity-40" : "hover:bg-slate-900/80",
+        active && !empty ? t.active : t.ring,
+      ].join(" ")}
+    >
       <div className={`text-xl sm:text-2xl font-bold tabular-nums ${t.value}`}>{shown}</div>
       <div className={`mt-0.5 text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] ${t.label}`}>
         {label}
       </div>
-    </div>
+    </button>
   );
 }
 
-function StatStrip({ counts }: { counts: MissionControlSnapshot["counts"] }) {
-  const tiles: { key: string; label: string; tone: TileTone; count: number }[] = [
-    { key: "attention", label: "Attention", tone: "amber", count: counts.attention },
-    { key: "active", label: "Active", tone: "cyan", count: counts.active },
-    { key: "verifying", label: "Verifying", tone: "violet", count: counts.verifying },
-    { key: "scheduled", label: "Scheduled", tone: "blue", count: counts.scheduled },
-    { key: "done", label: "Done", tone: "emerald", count: counts.done },
-    { key: "idle", label: "Idle", tone: "muted", count: counts.idle },
+function StatStrip({
+  counts,
+  activeKey,
+  onActivate,
+  onArrow,
+}: {
+  counts: MissionControlCounts;
+  activeKey: TileKey | null;
+  onActivate: (key: TileKey, empty: boolean) => void;
+  onArrow: (e: ReactKeyboardEvent<HTMLButtonElement>) => void;
+}) {
+  const tiles: { key: TileKey; label: string; tone: TileTone }[] = [
+    { key: "attention", label: "Attention", tone: "amber" },
+    { key: "active", label: "Active", tone: "cyan" },
+    { key: "verifying", label: "Verifying", tone: "violet" },
+    { key: "scheduled", label: "Scheduled", tone: "blue" },
+    { key: "done", label: "Done", tone: "emerald" },
+    { key: "idle", label: "Idle", tone: "muted" },
   ];
   return (
-    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-8">
+    <div
+      role="group"
+      aria-label="Fleet status — tap a tile to jump to its section"
+      className="grid grid-cols-3 sm:grid-cols-6 gap-2"
+    >
       {tiles.map((tile) => (
-        <StatTile key={tile.key} count={tile.count} label={tile.label} tone={tile.tone} />
+        <StatTile
+          key={tile.key}
+          tileKey={tile.key}
+          count={counts[tile.key]}
+          label={tile.label}
+          tone={tile.tone}
+          active={activeKey === tile.key}
+          onActivate={onActivate}
+          onArrow={onArrow}
+        />
       ))}
     </div>
   );
@@ -1143,6 +1264,9 @@ function SectionHeader({ label, count, tone }: { label: string; count: number; t
 
 // ─── Page ──────────────────────────────────────────────────────────────────────
 
+// Email-triage backlog cap (PA-MC-10): show this many inline, collapse the rest behind "Show all".
+const TRIAGE_PREVIEW = 5;
+
 const EMPTY_COUNTS: MissionControlSnapshot["counts"] = {
   attention: 0,
   active: 0,
@@ -1158,8 +1282,20 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showResolved, setShowResolved] = useState(false);
+  const [showAllTriage, setShowAllTriage] = useState(false);
+  // Which tile's section is currently in view (drives the bright accent border). Null until the
+  // IntersectionObserver or a tap sets it; the render falls back to a computed default.
+  const [activeKey, setActiveKey] = useState<TileKey | null>(null);
+  // Brief inline toast shown when an empty (0-count) tile is tapped — there's no section to jump to.
+  const [toast, setToast] = useState<string | null>(null);
+  // Measured height of the sticky stat strip, so scroll offsets and the IntersectionObserver root
+  // discount it (sections land below the pinned strip, not under it).
+  const [headerH, setHeaderH] = useState(100);
   // First load shows the Mascot; subsequent 8s polls refresh in place without a flash.
   const firstLoad = useRef(true);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -1267,6 +1403,116 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
   const verifying = snapshot?.verifying ?? [];
   const scheduled = snapshot?.scheduled ?? [];
   const recentlyDone = snapshot?.recentlyDone ?? [];
+  const idle = counts.idle;
+  const doneSectionPresent = recentlyDone.length > 0 || resolved.length > 0;
+
+  // Which tile sections are actually rendered below — the invariant is that a non-zero tile always
+  // has a section here (Idle included, now that it's a real section). Used to scope the
+  // IntersectionObserver, validate the active tile, and pick the default highlight.
+  const present: Record<TileKey, boolean> = {
+    attention: attention.length > 0,
+    active: active.length > 0,
+    verifying: verifying.length > 0,
+    scheduled: scheduled.length > 0,
+    done: doneSectionPresent,
+    idle: idle > 0,
+  };
+  const presentSections = TILE_ORDER.filter((k) => present[k]).join(",");
+  // Default highlight: Attention if it has items, otherwise the first non-empty section (PA-MC-10).
+  const defaultKey = TILE_ORDER.find((k) => present[k]) ?? null;
+  const effectiveActive = activeKey && present[activeKey] ? activeKey : defaultKey;
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  }, []);
+
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+  }, []);
+
+  // Tap / Enter / Space on a tile: scroll to its section, or toast if the bucket is empty. Done also
+  // expands its collapsed list so the jump lands on something visible.
+  const handleTile = useCallback(
+    (key: TileKey, empty: boolean) => {
+      if (empty) {
+        showToast("Nothing here right now");
+        return;
+      }
+      if (key === "done") setShowResolved(true);
+      const el = document.getElementById(SECTION_ID[key]);
+      if (!el) {
+        showToast("Nothing here right now");
+        return;
+      }
+      el.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
+      setActiveKey(key);
+    },
+    [showToast],
+  );
+
+  // Arrow keys move focus between tiles (roving). Enter/Space activate natively via the button.
+  const handleTileArrow = useCallback((e: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+    e.preventDefault();
+    const strip = stripRef.current;
+    if (!strip) return;
+    const buttons = Array.from(strip.querySelectorAll<HTMLButtonElement>("button[data-tile]"));
+    const idx = buttons.indexOf(e.currentTarget);
+    if (idx === -1) return;
+    const forward = e.key === "ArrowRight" || e.key === "ArrowDown";
+    const next = (idx + (forward ? 1 : -1) + buttons.length) % buttons.length;
+    buttons[next]?.focus();
+  }, []);
+
+  // Keep `headerH` in sync with the sticky strip's real height (changes across breakpoints).
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    const update = () => setHeaderH(strip.offsetHeight);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(strip);
+    return () => ro.disconnect();
+  }, [loading, fetchError]);
+
+  // Active-tile highlight (PA-MC-10): mark the topmost section currently below the sticky strip. The
+  // top rootMargin discounts the strip; the bottom one means a section is "active" once it reaches
+  // the upper third of the pane rather than the moment it peeks in.
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const observed = TILE_ORDER.map((k) => {
+      const el = document.getElementById(SECTION_ID[k]);
+      return el ? ([k, el] as const) : null;
+    }).filter((x): x is readonly [TileKey, HTMLElement] => x !== null);
+    if (observed.length === 0) return;
+    const idToKey = new Map(observed.map(([k, el]) => [el.id, k]));
+    const visible = new Set<TileKey>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const k = idToKey.get(entry.target.id);
+          if (!k) continue;
+          if (entry.isIntersecting) visible.add(k);
+          else visible.delete(k);
+        }
+        const topmost = TILE_ORDER.find((k) => visible.has(k));
+        if (topmost) setActiveKey(topmost);
+      },
+      { root: container, rootMargin: `-${headerH + 4}px 0px -55% 0px`, threshold: 0 },
+    );
+    observed.forEach(([, el]) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [presentSections, headerH]);
+
+  // Reset the triage "show all" toggle once the backlog drains below the preview cap.
+  useEffect(() => {
+    if (showAllTriage && triage.length <= TRIAGE_PREVIEW) setShowAllTriage(false);
+  }, [showAllTriage, triage.length]);
+
+  const sectionOffset = { scrollMarginTop: headerH + 12 };
 
   const awaitingCount =
     triage.length + actions.length + drafts.length + decisions.length + briefs.length + activity.length;
@@ -1277,7 +1523,7 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
     awaitingCount === 0;
 
   return (
-    <div className="h-full overflow-y-auto bg-[#05070a]">
+    <div ref={scrollRef} className="h-full overflow-y-auto bg-[#05070a]">
       <div
         className="max-w-2xl mx-auto px-5 sm:px-6 py-8 sm:py-10"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 2.5rem)" }}
@@ -1314,11 +1560,21 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
           </div>
         ) : (
           <>
-            <StatStrip counts={counts} />
+            <div
+              ref={stripRef}
+              className="sticky top-0 z-20 -mx-5 sm:-mx-6 px-5 sm:px-6 pt-2 pb-3 mb-8 bg-[#05070a]/95 backdrop-blur border-b border-slate-800/40"
+            >
+              <StatStrip
+                counts={counts}
+                activeKey={effectiveActive}
+                onActivate={handleTile}
+                onArrow={handleTileArrow}
+              />
+            </div>
 
             {/* 1 · Attention — failed / lost-contact / parked sub-agents */}
             {attention.length > 0 && (
-              <section className="mb-8">
+              <section id={SECTION_ID.attention} style={sectionOffset} className="mb-8">
                 <SectionHeader label="Attention" count={attention.length} tone="text-amber-400/80" />
                 <div className="flex flex-col gap-3">
                   {attention.map((entry) => (
@@ -1330,7 +1586,7 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
 
             {/* 2 · Active right now — running sub-agents with heartbeat + retry budget */}
             {active.length > 0 && (
-              <section className="mb-8">
+              <section id={SECTION_ID.active} style={sectionOffset} className="mb-8">
                 <SectionHeader label="Active right now" count={active.length} tone="text-[#22d3ee]/70" />
                 <div className="flex flex-col gap-3">
                   {active.map((entry) => (
@@ -1342,7 +1598,7 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
 
             {/* 3 · Verifying — second-opinion gate in flight */}
             {verifying.length > 0 && (
-              <section className="mb-8">
+              <section id={SECTION_ID.verifying} style={sectionOffset} className="mb-8">
                 <SectionHeader label="Verifying" count={verifying.length} tone="text-violet-300/70" />
                 <div className="flex flex-col gap-3">
                   {verifying.map((entry) => (
@@ -1352,12 +1608,14 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
               </section>
             )}
 
-            {/* 4 · Awaiting your decision — the original kind-grouped approval queue */}
+            {/* 4 · Awaiting your decision — the original kind-grouped approval queue. A large email
+                backlog is capped to the first few inline and collapsed behind "Show all" (PA-MC-10)
+                so it can't bury Scheduled / Idle / Done below it. */}
             {triage.length > 0 && (
               <section className="mb-8">
                 <SectionHeader label="Email to triage" count={triage.length} />
                 <div className="flex flex-col gap-3">
-                  {triage.map((card) => (
+                  {(showAllTriage ? triage : triage.slice(0, TRIAGE_PREVIEW)).map((card) => (
                     <TriageCard
                       key={card.id}
                       card={card}
@@ -1369,6 +1627,16 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
                     />
                   ))}
                 </div>
+                {triage.length > TRIAGE_PREVIEW && (
+                  <button
+                    onClick={() => setShowAllTriage((v) => !v)}
+                    className="mt-3 w-full min-h-[44px] rounded-xl border border-slate-800/70 text-[12px] font-mono text-slate-400 hover:border-slate-600 hover:text-slate-200 transition-colors"
+                  >
+                    {showAllTriage
+                      ? "Show fewer ↑"
+                      : `Show all ${triage.length} emails to triage ↓`}
+                  </button>
+                )}
               </section>
             )}
 
@@ -1429,12 +1697,34 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
 
             {/* 5 · Scheduled — next routine runs with countdown */}
             {scheduled.length > 0 && (
-              <section className="mb-8">
+              <section id={SECTION_ID.scheduled} style={sectionOffset} className="mb-8">
                 <SectionHeader label="Scheduled" count={scheduled.length} tone="text-sky-300/70" />
                 <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 px-5">
                   {scheduled.map((entry) => (
                     <ScheduledRow key={entry.kind} entry={entry} />
                   ))}
+                </div>
+              </section>
+            )}
+
+            {/* 6 · Idle — free sub-agent capacity. This is a real section now: the Idle tile used to
+                count free slots with nowhere to jump to, which is what left "Idle · N" pointing at
+                nothing. */}
+            {idle > 0 && (
+              <section id={SECTION_ID.idle} style={sectionOffset} className="mb-8">
+                <SectionHeader label="Idle capacity" count={idle} tone="text-slate-500" />
+                <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 px-5 py-5">
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    {idle === 1 ? "One free slot" : `${idle} free slots`} — Pocket Agent has capacity
+                    to run {idle === 1 ? "one more task" : `${idle} more tasks`} at the same time
+                    right now. Hand it something and it picks it up immediately.
+                  </p>
+                  <Link
+                    href="/app/ask"
+                    className="mt-3 inline-block text-xs font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors"
+                  >
+                    Give it a task →
+                  </Link>
                 </div>
               </section>
             )}
@@ -1459,9 +1749,9 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
               </div>
             )}
 
-            {/* 6 · Done — recently resolved (collapsed) */}
+            {/* 7 · Done — recently resolved (collapsed) */}
             {(recentlyDone.length > 0 || resolved.length > 0) && (
-              <section className="mt-2">
+              <section id={SECTION_ID.done} style={sectionOffset} className="mt-2">
                 <button
                   onClick={() => setShowResolved((v) => !v)}
                   className="text-[11px] font-mono text-slate-600 hover:text-slate-400 uppercase tracking-wider transition-colors"
@@ -1518,6 +1808,20 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
           </div>
         </div>
       </div>
+
+      {/* Tap-an-empty-tile toast (PA-MC-10) — there's no section to scroll to, so we say so. */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1.5rem)" }}
+        >
+          <div className="rounded-full border border-slate-700/70 bg-slate-900/95 px-4 py-2 text-xs font-mono text-slate-300 shadow-lg backdrop-blur">
+            {toast}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
