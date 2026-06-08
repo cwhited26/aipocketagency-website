@@ -11,6 +11,9 @@ import { isQuickBooksOAuthConfigured } from "@/lib/connectors/quickbooks/oauth";
 import { isStripeConnectConfigured } from "@/lib/connectors/stripe/oauth";
 import { isZoomOAuthConfigured } from "@/lib/connectors/zoom/oauth";
 import { isCalendlyOAuthConfigured } from "@/lib/connectors/calendly/oauth";
+import { isSmsConfigured } from "@/lib/connectors/sms/config";
+import { fetchActiveSmsNumber } from "@/lib/pa-sms-numbers";
+import { fetchRecentSmsActivity } from "@/lib/pa-conversations";
 import { ensureInboundAddresses } from "@/lib/inbound-email/addresses";
 import { INBOUND_DOMAIN, BCC_DOMAIN } from "@/lib/inbound-email/parse";
 import { redirect } from "next/navigation";
@@ -22,6 +25,7 @@ import QuickBooksConnectionCard from "./QuickBooksConnectionCard";
 import StripeConnectionCard from "./StripeConnectionCard";
 import ZoomConnectionCard from "./ZoomConnectionCard";
 import CalendlyConnectionCard from "./CalendlyConnectionCard";
+import SmsConnectionCard from "./SmsConnectionCard";
 import InboundEmailCard from "./InboundEmailCard";
 
 export const dynamic = "force-dynamic";
@@ -162,6 +166,24 @@ const CALENDLY_MESSAGES: Record<string, { title: string; body: string; kind: "su
   },
 };
 
+const SMS_MESSAGES: Record<string, { title: string; body: string; kind: "success" | "error" }> = {
+  connected: {
+    title: "Your PA number is live",
+    body: "Save it to your phone and text it like an assistant — ask for a draft, leave a voice memo, or send a photo. Your agent texts you back.",
+    kind: "success",
+  },
+  not_configured: {
+    title: "Text messaging unavailable",
+    body: "SMS isn't configured for this workspace yet. Add TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Vercel to switch it on.",
+    kind: "error",
+  },
+  error: {
+    title: "Couldn't set up your number",
+    body: "Something went wrong getting your PA number. Try again, or contact support if it keeps happening.",
+    kind: "error",
+  },
+};
+
 export default async function ConnectionsPage({
   searchParams,
 }: {
@@ -173,6 +195,7 @@ export default async function ConnectionsPage({
     stripe?: string;
     zoom?: string;
     calendly?: string;
+    sms?: string;
   };
 }) {
   const supabase = createClient();
@@ -189,6 +212,8 @@ export default async function ConnectionsPage({
     stripeResult,
     zoomResult,
     calendlyResult,
+    smsNumberResult,
+    smsActivityResult,
   ] =
     await Promise.all([
       fetchGmailConnectionPublic(user.id),
@@ -198,6 +223,8 @@ export default async function ConnectionsPage({
       fetchStripeConnectionPublic(user.id),
       fetchZoomConnectionPublic(user.id),
       fetchCalendlyConnectionPublic(user.id),
+      fetchActiveSmsNumber(user.id),
+      fetchRecentSmsActivity(user.id),
     ]);
   const gmail = gmailResult.ok ? gmailResult.data : null;
   const calendar = calendarResult.ok ? calendarResult.data : null;
@@ -206,11 +233,14 @@ export default async function ConnectionsPage({
   const stripe = stripeResult.ok ? stripeResult.data : null;
   const zoom = zoomResult.ok ? zoomResult.data : null;
   const calendly = calendlyResult.ok ? calendlyResult.data : null;
+  const smsNumber = smsNumberResult.ok ? smsNumberResult.data : null;
+  const smsActivity = smsActivityResult.ok ? smsActivityResult.data : [];
   const slackOAuthConfigured = isSlackOAuthConfigured();
   const quickBooksOAuthConfigured = isQuickBooksOAuthConfigured();
   const stripeConfigured = isStripeConnectConfigured();
   const zoomOAuthConfigured = isZoomOAuthConfigured();
   const calendlyOAuthConfigured = isCalendlyOAuthConfigured();
+  const smsConfigured = isSmsConfigured();
 
   // Inbound-email addresses: ensure both exist (idempotent) and resolve them for display.
   const seedName =
@@ -238,6 +268,7 @@ export default async function ConnectionsPage({
   const calendlyMessage = searchParams.calendly
     ? CALENDLY_MESSAGES[searchParams.calendly] ?? null
     : null;
+  const smsMessage = searchParams.sms ? SMS_MESSAGES[searchParams.sms] ?? null : null;
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">
@@ -360,6 +391,21 @@ export default async function ConnectionsPage({
             <p className="text-sm text-slate-300 leading-relaxed">{calendlyMessage.body}</p>
           </div>
         )}
+
+        {smsMessage && (
+          <div
+            className={`rounded-xl border px-5 py-4 space-y-1 ${
+              smsMessage.kind === "success"
+                ? "border-[#22d3ee]/25 bg-[#22d3ee]/5"
+                : "border-slate-700/60 bg-slate-900/50"
+            }`}
+          >
+            <p className="text-sm font-semibold text-slate-100">{smsMessage.title}</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{smsMessage.body}</p>
+          </div>
+        )}
+
+        <SmsConnectionCard number={smsNumber} configured={smsConfigured} activity={smsActivity} />
 
         <GmailConnectionCard connection={gmail} />
 

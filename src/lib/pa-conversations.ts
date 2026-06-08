@@ -20,10 +20,14 @@ export type Message = {
   content: string;
   created_at: string;
   // Optional inline-card payload (migration 034). Carries the upload_result card the Ask box
-  // renders for image/PDF uploads; null on every ordinary message. Untyped at this layer — the
-  // render side validates it against the card's Zod schema (lib/chat/upload-card.ts).
+  // renders for image/PDF uploads, or an off-app origin blob (lib/chat/message-origin.ts) for an
+  // inbound Slack/SMS message; null on every ordinary message. Untyped at this layer — the render
+  // side validates it against the matching Zod schema.
   metadata?: unknown;
 };
+
+// The title of the single per-owner thread that all inbound SMS land in.
+export const SMS_CONVERSATION_TITLE = "Text messages";
 
 type PaResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
 
@@ -139,7 +143,8 @@ export async function insertMessage(msg: {
   userId: string;
   role: "user" | "assistant";
   content: string;
-  // Inline-card payload (migration 034) — set for upload_result rows, omitted otherwise.
+  // Inline-card payload (migration 034) / off-app origin blob — set for upload_result or
+  // Slack/SMS-origin rows, omitted otherwise.
   metadata?: unknown;
 }): Promise<PaResult<Message>> {
   const env = paEnv();
@@ -332,4 +337,62 @@ export async function listConversationThreads(
     return { ...c, snippet: last ? messageSnippet(last) : null };
   });
   return { ok: true, data: threads };
+}
+
+// The owner's single SMS thread: find the existing one (by its sentinel title) or create it. All
+// inbound texts to the owner's PA number land here, so the owner picks up the same conversation in
+// the app or over SMS. Returns the conversation id.
+export async function findOrCreateSmsConversation(userId: string): Promise<PaResult<string>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const endpoint =
+    `${env.url}/rest/v1/pocket_agent_conversations` +
+    `?user_id=eq.${encodeURIComponent(userId)}` +
+    `&title=eq.${encodeURIComponent(SMS_CONVERSATION_TITLE)}` +
+    `&order=created_at.asc&limit=1`;
+  const res = await fetch(endpoint, {
+    headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },
+    cache: "no-store",
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as Conversation[];
+  if (rows[0]) return { ok: true, data: rows[0].id };
+
+  const created = await createConversation(userId, SMS_CONVERSATION_TITLE);
+  if (!created.ok) return created;
+  return { ok: true, data: created.data.id };
+}
+
+export type SmsActivityItem = {
+  snippet: string;
+  created_at: string;
+};
+
+// Recent inbound texts for the owner — the "recent activity" list the Settings card renders so the
+// owner can see texting is flowing. SMS-origin user messages carry a {kind:'sms_origin'} metadata
+// blob (lib/chat/message-origin.ts); we filter on that jsonb key (the same pattern Slack origin
+// uses) rather than a dedicated column.
+export async function fetchRecentSmsActivity(
+  userId: string,
+  limit = 5,
+): Promise<PaResult<SmsActivityItem[]>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const endpoint =
+    `${env.url}/rest/v1/pocket_agent_messages` +
+    `?user_id=eq.${encodeURIComponent(userId)}` +
+    `&metadata->>kind=eq.sms_origin` +
+    `&order=created_at.desc&limit=${limit}&select=content,created_at`;
+  const res = await fetch(endpoint, {
+    headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },
+    cache: "no-store",
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as { content: string; created_at: string }[];
+  return {
+    ok: true,
+    data: rows.map((r) => ({ snippet: messageSnippet(r.content, 64), created_at: r.created_at })),
+  };
 }

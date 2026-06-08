@@ -16,7 +16,7 @@ import {
   MAX_ATTACH_BYTES,
 } from "./_components/AttachControls";
 import { asUploadResultPayload } from "@/lib/chat/upload-card";
-import { asSlackOrigin } from "@/lib/chat/message-origin";
+import { asSlackOrigin, asSmsOrigin } from "@/lib/chat/message-origin";
 import { isVisionUploadType } from "@/lib/vision/ocr";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -1300,14 +1300,20 @@ export default function HomeClient({
                         (() => {
                           const upload = asUploadResultPayload(msg.metadata);
                           if (upload) return <UploadCard payload={upload} />;
-                          // An inbound Slack DM / @mention renders with a "Slack" origin chip so the
-                          // thread shows it arrived from outside the app.
+                          // An inbound Slack DM / @mention or an SMS to the owner's PA number renders
+                          // with an origin chip so the thread shows it arrived from outside the app.
                           const slack = asSlackOrigin(msg.metadata);
+                          const sms = asSmsOrigin(msg.metadata);
                           return (
                             <div className="flex flex-col items-end gap-1 max-w-[80%]">
                               {slack && (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-mono tracking-[0.12em] uppercase text-[#22d3ee]/70 border border-[#22d3ee]/25 rounded px-1.5 py-0.5">
                                   Slack{slack.surface === "channel" ? " · @mention" : " · DM"}
+                                </span>
+                              )}
+                              {sms && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-mono tracking-[0.12em] uppercase text-[#22d3ee]/70 border border-[#22d3ee]/25 rounded px-1.5 py-0.5">
+                                  SMS
                                 </span>
                               )}
                               <div className="rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-slate-100 whitespace-pre-wrap bg-slate-800 border border-slate-700/60">
