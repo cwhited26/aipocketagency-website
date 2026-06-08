@@ -283,7 +283,7 @@ export default function AppNav() {
         <div className="mb-2">
           <CommandPaletteButton />
         </div>
-        <NavItem href="/app/ask" active={isAgent} icon={<AgentIcon />} label="Agent" onClick={close} />
+        <NavItem href="/app/agent/hub" active={isAgent} icon={<AgentIcon />} label="Agent" onClick={close} />
         <NavItem href="/app/apps/inbox" active={isInbox} icon={<InboxIcon />} label="Inbox" badge={inboxCount} onClick={close} />
         <NavItem href="/app/tasks" active={isTasks} icon={<TasksIcon />} label="Tasks" badge={taskCount} onClick={close} />
         <NavItem href="/app/calendar" active={isCalendar} icon={<CalendarIcon />} label="Calendar" onClick={close} />

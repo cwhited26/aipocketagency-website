@@ -199,7 +199,7 @@ type PaletteItem = {
 
 const PALETTE_ITEMS: PaletteItem[] = [
   // Navigate — order mirrors the side rail
-  { id: "agent",      label: "Agent",                keywords: "agent ask chat conversation ai",                          href: "/app/ask",              section: "NAVIGATE", Icon: IcAgent       },
+  { id: "agent",      label: "Agent",                keywords: "agent ask chat conversation ai hub threads",              href: "/app/agent/hub",        section: "NAVIGATE", Icon: IcAgent       },
   { id: "inbox",      label: "Inbox",                keywords: "inbox messages approvals queue triage mail",              href: "/app/apps/inbox",       section: "NAVIGATE", Icon: IcInbox       },
   { id: "tasks",      label: "Tasks",                keywords: "tasks todos actions to do",                               href: "/app/tasks",            section: "NAVIGATE", Icon: IcWork        },
   { id: "calendar",   label: "Calendar",             keywords: "calendar schedule events dates google connection",        href: "/app/calendar",         section: "NAVIGATE", Icon: IcCalendar    },
