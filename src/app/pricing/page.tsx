@@ -166,6 +166,8 @@ export default function PricingPage() {
         </div>
       </section>
 
+      <ValueAnchor />
+
       <section className="border-b border-white/5">
         <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
           <div className="grid gap-6 lg:grid-cols-3">
@@ -180,6 +182,113 @@ export default function PricingPage() {
       <PersonalClose />
       <SiteFooter />
     </main>
+  );
+}
+
+// The value-stack anchor. List what an owner buys to replicate Pocket Agent by
+// hand, foot the column honestly, strike it, then drop PA's price under it. The
+// range total is the literal sum of the line items below (low ends / high ends)
+// — it has to add up, an operator will check the column.
+type Replacement = { job: string; tool: string; price: string };
+
+const REPLACEMENTS: Replacement[] = [
+  { job: "A part-time assistant to chase the busywork", tool: "executive assistant", price: "$1,500" },
+  { job: "A lead list to prospect from", tool: "Apollo / ZoomInfo seat", price: "$79–300" },
+  { job: "A CRM to hold the contacts and deals", tool: "HubSpot Starter", price: "$50" },
+  { job: "A booking link on your calendar", tool: "Calendly Pro", price: "$12" },
+  { job: "Voice notes turned into text", tool: "Otter.ai", price: "$20" },
+  { job: "An AI that drafts your emails", tool: "Copy AI / Jasper", price: "$39–99" },
+  { job: "A system that nudges the follow-ups", tool: "Followup.cc", price: "$30" },
+];
+
+// Low: 1500 + 79 + 50 + 12 + 20 + 39 + 30 = 1,730
+// High: 1500 + 300 + 50 + 12 + 20 + 99 + 30 = 2,011
+const STACK_TOTAL = "$1,730–$2,011/mo";
+
+function ValueAnchor() {
+  return (
+    <section className="border-b border-white/5 bg-black/30">
+      <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20">
+        <div className="text-center">
+          <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+            What you&apos;d pay to bolt this together yourself.
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-slate-400">
+            Pocket Agent does the job of a stack of tools and a person to drive
+            them. Here&apos;s what that stack runs every month — the seats, plus
+            the assistant you&apos;d pay to wire them together.
+          </p>
+        </div>
+
+        <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-8">
+          <ul className="divide-y divide-white/5">
+            {REPLACEMENTS.map((r) => (
+              <li
+                key={r.tool}
+                className="flex items-baseline justify-between gap-4 py-3.5"
+              >
+                <span className="min-w-0 text-[15px] text-slate-200">
+                  {r.job}
+                  <span className="ml-2 text-sm text-slate-500">{r.tool}</span>
+                </span>
+                <span
+                  className="shrink-0 tabular-nums text-[15px] text-slate-400"
+                  style={{ fontFamily: MONO_FONT }}
+                >
+                  {r.price}/mo
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-5 flex items-baseline justify-between gap-4 border-t border-white/10 pt-5">
+            <span className="text-base font-semibold text-slate-300">
+              Stitched together, every month
+            </span>
+            <span
+              className="tabular-nums text-lg text-slate-500 line-through"
+              style={{ fontFamily: MONO_FONT }}
+            >
+              {STACK_TOTAL}
+            </span>
+          </div>
+
+          <div className="mt-6 flex flex-col items-start gap-3 rounded-xl border border-accent/30 bg-accent/[0.05] p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-base font-semibold text-slate-100">
+                Pocket Agent does the same job.
+              </div>
+              <div className="mt-1 text-sm text-slate-400">
+                One chat. Your tools. Your okay before anything goes out.
+              </div>
+            </div>
+            <div className="flex items-baseline gap-1.5 sm:shrink-0">
+              <span className="text-3xl font-extrabold text-accent">$37</span>
+              <span className="text-sm text-slate-500">/mo</span>
+            </div>
+          </div>
+        </div>
+
+        <p className="mx-auto mt-6 max-w-xl text-center text-sm leading-relaxed text-slate-500">
+          And that stack still can&apos;t talk to itself. Pocket Agent is one
+          place that does — and it remembers what you taught it last time.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// Eject symbol (triangle over a bar) — the trust mark on every tier card.
+function EjectGlyph() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 16 16"
+      className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent/70"
+      fill="currentColor"
+    >
+      <path d="M8 3.2 13 9H3l5-5.8zM3 11h10v1.6H3z" />
+    </svg>
   );
 }
 
@@ -224,21 +333,32 @@ function TierCard({ tier }: { tier: Tier }) {
           </li>
         ))}
       </ul>
-      <div className="mt-7 pt-1">
-        {tier.cta.external ? (
-          <a
-            href={tier.cta.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={ctaClass(tier.featured)}
-          >
-            {tier.cta.label}
-          </a>
-        ) : (
-          <Link href={tier.cta.href} className={ctaClass(tier.featured)}>
-            {tier.cta.label}
-          </Link>
-        )}
+      <div className="mt-auto pt-6">
+        <div className="flex items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.02] px-3.5 py-3">
+          <EjectGlyph />
+          <p className="text-[13px] leading-snug text-slate-400">
+            <span className="font-semibold text-slate-300">
+              Your brain is a git repo on your own GitHub.
+            </span>{" "}
+            Eject anytime — Pocket Agent stops, your brain doesn&apos;t.
+          </p>
+        </div>
+        <div className="mt-5">
+          {tier.cta.external ? (
+            <a
+              href={tier.cta.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={ctaClass(tier.featured)}
+            >
+              {tier.cta.label}
+            </a>
+          ) : (
+            <Link href={tier.cta.href} className={ctaClass(tier.featured)}>
+              {tier.cta.label}
+            </Link>
+          )}
+        </div>
       </div>
     </div>
   );

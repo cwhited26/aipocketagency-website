@@ -39,6 +39,7 @@ export default function Page() {
     <main className="min-h-screen text-slate-100">
       <SiteHeader />
       <Hero />
+      <ValueBand />
       <SeeItWork />
       <YouStatements />
       <FounderLetter />
@@ -101,6 +102,31 @@ function TrustBar() {
         ))}
       </div>
     </div>
+  );
+}
+
+// Shortened value-stack anchor, lifted above the fold so the comparison isn't
+// buried on /pricing. Full footed breakdown lives on the pricing page.
+function ValueBand() {
+  return (
+    <section className="border-b border-white/5 bg-black/30">
+      <div className="mx-auto max-w-4xl px-6 py-14 text-center sm:py-16">
+        <p className="text-balance text-xl font-semibold leading-relaxed text-slate-200 sm:text-2xl">
+          An assistant, a lead tool, a copywriter, and a CRM run about{" "}
+          <span className="text-slate-400 line-through">$2,000 a month</span> —
+          and you&apos;re still the one stitching them together.
+        </p>
+        <p className="mt-4 text-balance text-xl font-semibold leading-relaxed sm:text-2xl">
+          Pocket Agent does the same job for{" "}
+          <span className="text-accent">$37</span>.
+        </p>
+        <p className="mt-5 text-sm text-slate-500">
+          <Link href="/pricing" className="underline-offset-4 transition hover:text-slate-300 hover:underline">
+            See the full breakdown →
+          </Link>
+        </p>
+      </div>
+    </section>
   );
 }
 
