@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { redirect } from "next/navigation";
 import YouTubeExplainerCard from "@/components/youtube/ExplainerCard";
+import YouTubeWatchClient from "./YouTubeWatchClient";
 import { TryThesePanel, WorksWithPanel } from "../../_components/TabGuide";
 
 export const dynamic = "force-dynamic";
@@ -38,6 +39,11 @@ export default async function YouTubePage() {
         </div>
 
         <YouTubeExplainerCard showWatchLink={false} />
+
+        {/* Channel-watch layer (v1.1): watched channels, add-a-channel, suggestions, 24h badge. */}
+        <div className="mt-8">
+          <YouTubeWatchClient />
+        </div>
 
         <div className="mt-8">
           <TryThesePanel heading="Try one of these" prompts={YOUTUBE_PROMPTS} />

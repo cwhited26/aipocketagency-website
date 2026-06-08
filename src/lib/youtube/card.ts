@@ -18,6 +18,9 @@ export const YouTubeIngestVideoSchema = z.object({
   videoId: z.string().min(1).max(20),
   title: z.string().max(500),
   channel: z.string().max(300),
+  /** Resolved channel id (UC…) when metadata was available — powers the "+ Watch this channel"
+   *  affordance. Empty when the Data API didn't resolve it (no key / not found). */
+  channelId: z.string().max(40).default(""),
   /** Use-case bucket (competitor / tactic / testimonial / industry / default). */
   bucket: z.enum(YOUTUBE_BUCKETS),
   /** The bucket-specific lead line, e.g. "Logged what they claimed — added to your competitive intel." */

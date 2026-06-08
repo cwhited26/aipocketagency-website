@@ -43,8 +43,9 @@ const PREVIEW_TRANSCRIPT_CHARS = 8_000;
 
 // ── Surfaces ─────────────────────────────────────────────────────────────────────
 
-/** Every inbound surface that can carry a YouTube link. All seven are wired: each calls
- *  maybeIngestYouTubeUrls(text, ownerId, "<surface>") on its inbound text. */
+/** Every source a YouTube link can be ingested from. The seven inbound text surfaces each call
+ *  maybeIngestYouTubeUrls(text, ownerId, "<surface>"); "channel_watch" is the v1.1 RSS poller, which
+ *  calls ingestYouTubeVideo directly when a watched channel posts a new upload. */
 export type InboundSurface =
   | "ask_box"
   | "ios_share"
@@ -52,7 +53,8 @@ export type InboundSurface =
   | "slack_dm"
   | "inbound_email"
   | "bcc"
-  | "sms";
+  | "sms"
+  | "channel_watch";
 
 const SURFACE_LABELS: Record<InboundSurface, string> = {
   ask_box: "the Ask box",
@@ -62,6 +64,7 @@ const SURFACE_LABELS: Record<InboundSurface, string> = {
   inbound_email: "an inbound email",
   bcc: "a BCC'd email",
   sms: "a text message",
+  channel_watch: "a channel you watch",
 };
 
 // ── Results ────────────────────────────────────────────────────────────────────
@@ -399,6 +402,7 @@ export async function ingestYouTubeVideo(params: {
     videoId,
     title,
     channel,
+    channelId: meta?.channelId ?? "",
     bucket,
     framingHeadline: framing.headline,
     detailLabel: framing.detailLabel,

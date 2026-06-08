@@ -9,6 +9,48 @@
 import { useState } from "react";
 import type { YouTubeIngestPayload, YouTubeIngestVideo } from "@/lib/youtube/card";
 
+// Competitor / tactic videos are usually worth catching every upload → Daily; testimonials and
+// industry updates trickle → Weekly. Pre-fills the one-tap watch so the owner doesn't pick.
+function defaultCadenceFor(bucket: YouTubeIngestVideo["bucket"]): "daily" | "weekly" {
+  return bucket === "competitor" || bucket === "tactic" ? "daily" : "weekly";
+}
+
+function WatchChannelButton({ video }: { video: YouTubeIngestVideo }) {
+  const [state, setState] = useState<"idle" | "adding" | "watching" | "error">("idle");
+  const cadence = defaultCadenceFor(video.bucket);
+
+  async function add() {
+    setState("adding");
+    try {
+      const res = await fetch("/api/app/youtube/watch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref: video.channelId, cadence, addedFrom: "ingest_card" }),
+      });
+      setState(res.ok ? "watching" : "error");
+    } catch {
+      setState("error");
+    }
+  }
+
+  if (state === "watching") {
+    return (
+      <span className="text-[11px] font-mono text-[#22d3ee]/70">
+        ● Watching {video.channel} · {cadence}
+      </span>
+    );
+  }
+  return (
+    <button
+      onClick={() => void add()}
+      disabled={state === "adding"}
+      className="text-[11px] font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors disabled:opacity-50"
+    >
+      {state === "adding" ? "Adding…" : state === "error" ? "Try again — + Watch this channel" : "+ Watch this channel"}
+    </button>
+  );
+}
+
 function VideoBlock({ video }: { video: YouTubeIngestVideo }) {
   const [showTranscript, setShowTranscript] = useState(false);
 
@@ -64,6 +106,11 @@ function VideoBlock({ video }: { video: YouTubeIngestVideo }) {
           {video.transcriptChars.toLocaleString()} chars
           {video.usedWhisper ? " · from audio" : " · captions"}
         </span>
+        {video.channelId && (
+          <span className="ml-auto">
+            <WatchChannelButton video={video} />
+          </span>
+        )}
       </div>
       {showTranscript && (
         <pre className="max-h-56 overflow-auto border-t border-slate-800/60 bg-[#0b1016] px-3 py-2 text-[11px] leading-relaxed text-slate-400 whitespace-pre-wrap">

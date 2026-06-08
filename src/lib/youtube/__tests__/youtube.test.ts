@@ -10,6 +10,8 @@ import { parseIsoDuration } from "../metadata";
 import { brainNotePath, timestampedTranscript } from "../ingest";
 import { BUCKET_FRAMINGS, USE_CASE_BUCKETS } from "../classify";
 import { buildYouTubeBriefSection, type RecentIngest } from "../recent";
+import { parseAtomFeed, newEntriesSince } from "../rss-poller";
+import { nextPollFrom } from "../watch";
 import { YouTubeIngestPayloadSchema, asYouTubeIngestPayload, YOUTUBE_INGEST_KIND } from "../card";
 
 describe("youtube url detection", () => {
@@ -161,6 +163,45 @@ describe("daily-brief youtube section", () => {
     expect(section).toContain("YouTube you shared");
     expect(section).toContain("Launch");
     expect(section).toContain("Acme");
+  });
+});
+
+describe("channel RSS feed (watch v1.1)", () => {
+  const feed =
+    '<feed><entry><yt:videoId>vid000newer</yt:videoId><title>Newer &amp; better</title>' +
+    "<published>2026-06-08T10:00:00Z</published></entry>" +
+    "<entry><id>yt:video:vid111older</id><title>Older one</title>" +
+    "<published>2026-06-07T10:00:00Z</published></entry></feed>";
+
+  it("parses entries newest-first, decoding titles, from either id shape", () => {
+    const entries = parseAtomFeed(feed);
+    expect(entries).toHaveLength(2);
+    expect(entries[0]).toEqual({ videoId: "vid000newer", title: "Newer & better", published: "2026-06-08T10:00:00Z" });
+    expect(entries[1].videoId).toBe("vid111older");
+  });
+
+  it("returns [] for a non-feed body", () => {
+    expect(parseAtomFeed("nope")).toEqual([]);
+  });
+
+  it("detects only entries newer than the cursor", () => {
+    const entries = parseAtomFeed(feed);
+    expect(newEntriesSince(entries, "vid111older").map((e) => e.videoId)).toEqual(["vid000newer"]);
+    expect(newEntriesSince(entries, "vid000newer")).toEqual([]);
+  });
+
+  it("returns only the newest entry on first poll (null cursor) — no backfill", () => {
+    const entries = parseAtomFeed(feed);
+    expect(newEntriesSince(entries, null).map((e) => e.videoId)).toEqual(["vid000newer"]);
+  });
+});
+
+describe("watch cadence scheduling", () => {
+  it("advances next_poll_at by the cadence window", () => {
+    const t0 = Date.parse("2026-06-08T00:00:00.000Z");
+    expect(nextPollFrom("realtime", t0)).toBe("2026-06-08T00:15:00.000Z");
+    expect(nextPollFrom("daily", t0)).toBe("2026-06-09T00:00:00.000Z");
+    expect(nextPollFrom("weekly", t0)).toBe("2026-06-15T00:00:00.000Z");
   });
 });
 
