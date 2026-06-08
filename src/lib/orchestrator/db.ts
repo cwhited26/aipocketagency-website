@@ -303,6 +303,30 @@ export async function listConnectorActionLog(
   return Array.isArray(rows) ? rows : [];
 }
 
+/**
+ * Count audit rows for a business + connector at a given status since `sinceIso`, optionally
+ * restricted to a set of actions. Backs the Slack per-minute send cap (count executed write
+ * actions in the last 60s) — a DB count is correct across serverless invocations where an
+ * in-memory counter would not be.
+ */
+export async function countRecentConnectorActions(input: {
+  businessId: string;
+  connector: string;
+  status: ActionStatus;
+  sinceIso: string;
+  actions?: readonly string[];
+}): Promise<number> {
+  let path =
+    `pa_connector_action_log?business_id=eq.${enc(input.businessId)}` +
+    `&connector=eq.${enc(input.connector)}&status=eq.${enc(input.status)}` +
+    `&created_at=gte.${enc(input.sinceIso)}&select=id`;
+  if (input.actions && input.actions.length > 0) {
+    path += `&action=in.(${input.actions.map((a) => enc(a)).join(",")})`;
+  }
+  const rows = await rest<{ id: string }[]>(path);
+  return Array.isArray(rows) ? rows.length : 0;
+}
+
 // ── pa_action_approvals ────────────────────────────────────────────────────────────────
 
 export type ActionApprovalRow = {

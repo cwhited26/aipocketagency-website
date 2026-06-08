@@ -11,10 +11,14 @@ import {
   fetchRun,
   logPhaseComplete,
   logPhaseEnter,
+  markConnectorActionStatusByRun,
   reconcileAgentMinutes,
   updateRun,
 } from "@/lib/orchestrator/db";
+import { resolveInboxItem } from "@/lib/pa-inbox-items";
 import { stageConnectorAction } from "@/lib/orchestrator/tool-use";
+import { executeConnectorAction } from "@/lib/connectors/registry";
+import { notifyApprovalNeeded } from "@/lib/connectors/system";
 import { ConnectorScopeError } from "@/lib/orchestrator/containment-guard";
 import { verifyWebhookSecret } from "@/lib/orchestrator/runtime-client";
 import { monthKey } from "@/lib/orchestrator/tier-caps";
@@ -78,11 +82,61 @@ export async function POST(req: Request): Promise<NextResponse> {
           title: `${event.connector} · ${event.action}`,
           preview: event.preview ?? "",
         });
+
+        // Auto-approve (trust ladder unlocked): an in-process connector must FIRE here, or the
+        // staged item would sit forever with no manual tap coming. A failed auto-execute leaves
+        // the item pending so the owner can still approve/retry. Remote connectors (exec
+        // undefined) resume via the runtime, unchanged.
+        let executed: boolean | undefined;
+        if (staged.autoApproved) {
+          const exec = await executeConnectorAction({
+            connector: event.connector,
+            userId: run.business_id,
+            action: event.action,
+            payload: event.payload,
+            subAgentRunId: run.id,
+          });
+          if (exec) {
+            executed = exec.ok;
+            if (exec.ok) {
+              await resolveInboxItem(staged.inboxItemId, "approved", run.business_id);
+              await markConnectorActionStatusByRun({
+                runId: run.id,
+                connector: event.connector,
+                action: event.action,
+                status: "executed",
+              }).catch(() => undefined);
+            }
+          }
+        }
+
+        // Approval-needed ping: only when a manual tap is actually coming (not auto-approved).
+        // Best-effort + idempotent (approval_needed:<inboxItemId>) — the Inbox card is the durable
+        // signal; the email nudges the owner who is out of the app.
+        if (!staged.autoApproved) {
+          const notice = await notifyApprovalNeeded({
+            userId: run.business_id,
+            connector: event.connector,
+            action: event.action,
+            preview: event.preview ?? "",
+            inboxItemId: staged.inboxItemId,
+          });
+          if (!notice.ok) {
+            console.error("[orchestrator/webhook] approval ping failed", {
+              userId: run.business_id,
+              inboxItemId: staged.inboxItemId,
+              status: notice.status,
+              error: notice.error,
+            });
+          }
+        }
+
         return NextResponse.json({
           ok: true,
           approvalId: staged.actionApprovalId,
           inboxItemId: staged.inboxItemId,
           autoApproved: staged.autoApproved,
+          executed,
         });
       } catch (e) {
         if (e instanceof ConnectorScopeError) {

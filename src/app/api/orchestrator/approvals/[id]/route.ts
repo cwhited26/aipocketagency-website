@@ -16,6 +16,7 @@ import {
 } from "@/lib/orchestrator/db";
 import { notifyApproval } from "@/lib/orchestrator/runtime-client";
 import { autoApproveUnlocked } from "@/lib/orchestrator/tier-caps";
+import { executeConnectorAction } from "@/lib/connectors/registry";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -72,19 +73,36 @@ export async function POST(
 
   // ── approve / reject ─────────────────────────────────────────────────────────────────
   if (body.decision === "approve") {
+    // In-process connectors (Slack) execute here, server-side, BEFORE the item is marked
+    // approved — so a failed send leaves the item pending for retry rather than reporting a
+    // success that never happened. Remote connectors return undefined and resume via the
+    // runtime notify below.
+    const exec = await executeConnectorAction({
+      connector: approval.connector,
+      userId: user.id,
+      action: approval.action,
+      payload: approval.payload,
+      subAgentRunId: approval.sub_agent_run_id,
+      ownerEmail: user.email ?? null,
+    });
+    if (exec && !exec.ok) {
+      return NextResponse.json({ error: exec.error }, { status: exec.status });
+    }
+
     await resolveInboxItem(item.id, "approved", user.id);
     await markConnectorActionStatusByRun({
       runId: approval.sub_agent_run_id ?? "",
       connector: approval.connector,
       action: approval.action,
-      status: "approved",
+      status: exec ? "executed" : "approved",
     }).catch(() => undefined);
     const trustCount = await recordAutoApproveSuccess(
       user.id,
       approval.connector,
       approval.action,
     );
-    if (approval.sub_agent_run_id) {
+    // Only signal the runtime for remote connectors; in-process ones already executed.
+    if (!exec && approval.sub_agent_run_id) {
       await notifyApproval({
         runId: approval.sub_agent_run_id,
         approvalId: approval.id,
@@ -98,6 +116,8 @@ export async function POST(
       autoApproveUnlocked: autoApproveUnlocked(trustCount),
       connector: approval.connector,
       action: approval.action,
+      executed: exec ? exec.ok : false,
+      result: exec && exec.ok ? exec.summary : undefined,
     });
   }
 
