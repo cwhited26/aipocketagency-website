@@ -8,6 +8,15 @@ import { TryThesePanel, WorksWithPanel, ExamplePanel } from "../_components/TabG
 import { AgentSetupBar } from "../_components/AgentSetupBar";
 import type { ConversationThread } from "@/lib/pa-conversations";
 import type { ScaffoldEntry } from "@/lib/pa-brain";
+import UploadCard from "./_components/UploadCard";
+import {
+  AttachControls,
+  AttachmentChips,
+  MAX_ATTACH_FILES,
+  MAX_ATTACH_BYTES,
+} from "./_components/AttachControls";
+import { asUploadResultPayload } from "@/lib/chat/upload-card";
+import { isVisionUploadType } from "@/lib/vision/ocr";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -47,6 +56,8 @@ type Message = {
   created_at: string;
   citations?: Citation[];
   toolSteps?: ToolStep[];
+  // Inline-card payload (migration 034) — set on user rows that carry an image/PDF upload.
+  metadata?: unknown;
 };
 
 type ConversationDetail = {
@@ -612,6 +623,10 @@ function HubView({
   handleSubmit,
   handleKeyDown,
   textareaRef,
+  attachments,
+  addFiles,
+  removeAttachment,
+  attachError,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
@@ -627,6 +642,10 @@ function HubView({
   handleSubmit: () => void;
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
+  attachments: File[];
+  addFiles: (files: FileList | null) => void;
+  removeAttachment: (index: number) => void;
+  attachError: string | null;
 }) {
   return (
     <div className="h-full overflow-y-auto" style={{ animation: "hub-fadein 0.4s ease-out" }}>
@@ -700,8 +719,15 @@ function HubView({
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
               />
+              {(attachments.length > 0 || attachError) && (
+                <div className="px-3 pt-2">
+                  <AttachmentChips files={attachments} onRemove={removeAttachment} />
+                  {attachError && <p className="px-1 text-[11px] text-amber-300/80">{attachError}</p>}
+                </div>
+              )}
               <div className="flex items-center justify-between px-3 py-2 border-t border-slate-700/60 gap-2">
-                <div className="flex gap-1 flex-wrap min-w-0">
+                <div className="flex gap-1 flex-wrap min-w-0 items-center">
+                  <AttachControls onAddFiles={addFiles} disabled={isLoading} />
                   {CHIPS.map((chip) => (
                     <button
                       key={chip.label}
@@ -716,7 +742,7 @@ function HubView({
                   <span className="text-[11px] text-slate-500 font-mono hidden sm:block">⌘↵</span>
                   <button
                     onClick={handleSubmit}
-                    disabled={!inputValue.trim() || isLoading}
+                    disabled={(!inputValue.trim() && attachments.length === 0) || isLoading}
                     className="rounded-lg bg-[#22d3ee] px-4 py-2.5 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors min-h-[44px]"
                   >
                     {isLoading ? "Working…" : "Ask"}
@@ -1007,6 +1033,8 @@ export default function HomeClient({
   const [messages, setMessages] = useState<Message[]>([]);
   const [threadError, setThreadError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState(initialQuery ?? "");
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [attachError, setAttachError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   // Post-reply flourish — drives the mascot through tool_calling → responding → done
   // once a reply lands, then clears back to null. null means "let isLoading/typing decide."
@@ -1090,10 +1118,43 @@ export default function HomeClient({
     }
   }
 
+  // Stage picked files for the next send: enforce type, 10 MB/file, and 5/message client-side
+  // (the server re-validates). Surfaces a reason instead of silently dropping a file.
+  function addFiles(list: FileList | null) {
+    if (!list || list.length === 0) return;
+    setAttachError(null);
+    setAttachments((prev) => {
+      const next = [...prev];
+      for (const file of Array.from(list)) {
+        if (next.length >= MAX_ATTACH_FILES) {
+          setAttachError(`You can attach up to ${MAX_ATTACH_FILES} files per message.`);
+          break;
+        }
+        if (!isVisionUploadType(file.type)) {
+          setAttachError(`${file.name || "That file"} isn't a supported type (PNG, JPG, WebP, HEIC, GIF, PDF).`);
+          continue;
+        }
+        if (file.size > MAX_ATTACH_BYTES) {
+          setAttachError(`${file.name} is larger than 10 MB.`);
+          continue;
+        }
+        next.push(file);
+      }
+      return next;
+    });
+  }
+
+  function removeAttachment(index: number) {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleSubmit() {
     const content = inputValue.trim();
-    if (!content || isLoading) return;
+    const filesToSend = attachments;
+    if ((!content && filesToSend.length === 0) || isLoading) return;
     setInputValue("");
+    setAttachments([]);
+    setAttachError(null);
     clearFlourish();
     setReplyPhase(null);
     setIsLoading(true);
@@ -1103,7 +1164,7 @@ export default function HomeClient({
       id: tempId,
       conversation_id: activeConvId ?? "",
       role: "user",
-      content,
+      content: content || (filesToSend.length ? `Reading ${filesToSend.length} attachment${filesToSend.length > 1 ? "s" : ""}…` : ""),
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempUserMsg]);
@@ -1123,11 +1184,20 @@ export default function HomeClient({
         setConversations((prev) => [data.conversation, ...prev]);
       }
 
-      const res = await fetch(`/api/app/conversations/${convId}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
-      });
+      // Multipart when files are attached (server runs vision OCR); plain JSON for a text turn.
+      let res: Response;
+      if (filesToSend.length > 0) {
+        const form = new FormData();
+        form.append("content", content);
+        for (const file of filesToSend) form.append("files", file);
+        res = await fetch(`/api/app/conversations/${convId}/messages`, { method: "POST", body: form });
+      } else {
+        res = await fetch(`/api/app/conversations/${convId}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+      }
 
       if (!res.ok) {
         const errData = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
@@ -1226,9 +1296,16 @@ export default function HomeClient({
                   return (
                     <div key={msg.id} className={msg.role === "user" ? "flex justify-end" : ""}>
                       {msg.role === "user" ? (
-                        <div className="max-w-[80%] rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-slate-100 whitespace-pre-wrap bg-slate-800 border border-slate-700/60">
-                          {msg.content}
-                        </div>
+                        (() => {
+                          const upload = asUploadResultPayload(msg.metadata);
+                          return upload ? (
+                            <UploadCard payload={upload} />
+                          ) : (
+                            <div className="max-w-[80%] rounded-2xl rounded-tr-sm px-4 py-3 text-sm text-slate-100 whitespace-pre-wrap bg-slate-800 border border-slate-700/60">
+                              {msg.content}
+                            </div>
+                          );
+                        })()
                       ) : (
                         <div className="space-y-2.5 max-w-full">
                           <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-[0.18em] uppercase">
@@ -1296,24 +1373,31 @@ export default function HomeClient({
                     to continue.
                   </p>
                 ) : (
-                  <div className="flex items-end gap-3">
-                    <textarea
-                      ref={textareaRef}
-                      rows={2}
-                      placeholder="Continue… (⌘↵ to send)"
-                      className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-[#22d3ee]/50 focus:outline-none resize-none transition-colors"
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      disabled={isLoading}
-                    />
-                    <button
-                      onClick={handleSubmit}
-                      disabled={!inputValue.trim() || isLoading}
-                      className="rounded-xl bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0 min-h-[44px]"
-                    >
-                      Send
-                    </button>
+                  <div className="flex flex-col gap-1.5">
+                    <AttachmentChips files={attachments} onRemove={removeAttachment} />
+                    {attachError && (
+                      <p className="px-1 text-[11px] text-amber-300/80">{attachError}</p>
+                    )}
+                    <div className="flex items-end gap-2">
+                      <AttachControls onAddFiles={addFiles} disabled={isLoading} />
+                      <textarea
+                        ref={textareaRef}
+                        rows={2}
+                        placeholder="Continue… (⌘↵ to send)"
+                        className="flex-1 rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-[#22d3ee]/50 focus:outline-none resize-none transition-colors"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        disabled={isLoading}
+                      />
+                      <button
+                        onClick={handleSubmit}
+                        disabled={(!inputValue.trim() && attachments.length === 0) || isLoading}
+                        className="rounded-xl bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0 min-h-[44px]"
+                      >
+                        Send
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1335,6 +1419,10 @@ export default function HomeClient({
             handleSubmit={handleSubmit}
             handleKeyDown={handleKeyDown}
             textareaRef={textareaRef}
+            attachments={attachments}
+            addFiles={addFiles}
+            removeAttachment={removeAttachment}
+            attachError={attachError}
           />
         )}
       </div>

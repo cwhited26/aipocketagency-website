@@ -17,8 +17,15 @@ import {
   type ZoneConfig,
 } from "@/lib/brain/containment-guard";
 import { tieredPathForNewMemory } from "@/lib/brain/memory-tier";
+import { processChatUploads, type UploadInput } from "@/lib/vision/process-upload";
+import { isVisionUploadType, visionTypeLabel } from "@/lib/vision/ocr";
+import { UPLOAD_RESULT_KIND, type UploadResultPayload } from "@/lib/chat/upload-card";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+
+// Image/PDF upload limits for the Ask box (mirrors lib/brain/absorb MAX_UPLOAD_BYTES).
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_UPLOAD_FILES = 5;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -367,20 +374,65 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let raw: unknown;
-  try {
-    raw = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const parsed = bodySchema.safeParse(raw);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.message }, { status: 422 });
-  }
-
   const { id: conversationId } = params;
-  const { content } = parsed.data;
+
+  // The Ask box sends plain JSON for a text turn, or multipart/form-data when the owner attaches
+  // images/PDFs (paperclip / camera). Both resolve to a caption + a (possibly empty) file list.
+  let caption: string;
+  const uploadInputs: UploadInput[] = [];
+  const contentType = req.headers.get("content-type") ?? "";
+
+  if (contentType.includes("multipart/form-data")) {
+    let form: FormData;
+    try {
+      form = await req.formData();
+    } catch {
+      return NextResponse.json({ error: "Invalid multipart request" }, { status: 400 });
+    }
+    caption = (form.get("content") ?? "").toString();
+    const fileEntries = form.getAll("files").filter((f): f is File => f instanceof File);
+    if (fileEntries.length === 0) {
+      return NextResponse.json({ error: "No files provided" }, { status: 400 });
+    }
+    if (fileEntries.length > MAX_UPLOAD_FILES) {
+      return NextResponse.json(
+        { error: `Too many files — attach up to ${MAX_UPLOAD_FILES} per message.` },
+        { status: 422 },
+      );
+    }
+    for (const file of fileEntries) {
+      if (!isVisionUploadType(file.type)) {
+        return NextResponse.json(
+          { error: `Unsupported file type: ${file.type || file.name}. Attach PNG, JPG, WebP, HEIC, GIF, or PDF.` },
+          { status: 422 },
+        );
+      }
+      if (file.size > MAX_UPLOAD_BYTES) {
+        return NextResponse.json(
+          { error: `${file.name} is too large (${(file.size / 1_048_576).toFixed(1)} MB). Maximum is 10 MB.` },
+          { status: 422 },
+        );
+      }
+      uploadInputs.push({
+        fileName: file.name || `upload.${visionTypeLabel(file.type)}`,
+        mimeType: file.type,
+        buffer: Buffer.from(await file.arrayBuffer()),
+      });
+    }
+  } else {
+    let raw: unknown;
+    try {
+      raw = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+    const parsed = bodySchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.message }, { status: 422 });
+    }
+    caption = parsed.data.content;
+  }
+  const hasUploads = uploadInputs.length > 0;
 
   const convResult = await getConversation(conversationId, user.id);
   if (!convResult.ok) {
@@ -415,12 +467,40 @@ export async function POST(
 
   const { brain_repo, github_token, anthropic_api_key } = paUser;
 
-  // Persist user message first
+  // Attachments → persist + Claude vision OCR. The extracted text is folded into the user turn so
+  // the agent literally reads the screenshot; an upload_result card payload rides in metadata so
+  // the owner sees thumbnails + extracted text. Uploads need a brain repo to land the bytes.
+  let effectiveContent = caption.trim();
+  let uploadMetadata: UploadResultPayload | undefined;
+  if (hasUploads) {
+    if (!brain_repo || !github_token) {
+      return NextResponse.json(
+        { error: "Connect your brain in Settings before attaching files." },
+        { status: 400 },
+      );
+    }
+    const processed = await processChatUploads({
+      userId: user.id,
+      repo: brain_repo,
+      token: github_token,
+      anthropicApiKey: anthropic_api_key,
+      files: uploadInputs,
+    });
+    effectiveContent = [caption.trim(), processed.modelContext].filter(Boolean).join("\n\n");
+    uploadMetadata = {
+      kind: UPLOAD_RESULT_KIND,
+      caption: caption.trim(),
+      files: processed.cardFiles,
+    };
+  }
+
+  // Persist user message first (with the upload card payload when files were attached).
   const userMsgResult = await insertMessage({
     conversationId,
     userId: user.id,
     role: "user",
-    content,
+    content: effectiveContent,
+    metadata: uploadMetadata,
   });
   if (!userMsgResult.ok) {
     return NextResponse.json({ error: userMsgResult.error }, { status: userMsgResult.status });
@@ -433,7 +513,7 @@ export async function POST(
       role: m.role as "user" | "assistant",
       content: m.content,
     })),
-    { role: "user", content },
+    { role: "user", content: effectiveContent },
   ];
 
   // Load the brain's privacy-zone config once per request for the ContainmentGuard.
@@ -524,10 +604,13 @@ export async function POST(
     return NextResponse.json({ error: asstMsgResult.error }, { status: asstMsgResult.status });
   }
 
-  // Auto-title on first message exchange
+  // Auto-title on first message exchange. An upload-only turn (empty caption) titles from the
+  // first file's description so the thread list reads sensibly instead of "New conversation".
   let conversationTitle: string | undefined;
   if (conversation.title === "New conversation" && priorMessages.length === 0) {
-    conversationTitle = generateTitle(content);
+    const titleSeed =
+      caption.trim() || uploadMetadata?.files[0]?.structuredDescription || "Image upload";
+    conversationTitle = generateTitle(titleSeed);
     await updateConversation(conversationId, user.id, { title: conversationTitle });
   }
 

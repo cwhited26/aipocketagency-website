@@ -191,6 +191,32 @@ export async function fetchFileContent(
   return data.content ?? "";
 }
 
+/**
+ * Fetches a file's raw bytes from the brain repo (Contents API, base64 → Buffer). Used to stream
+ * binary assets — image/PDF thumbnails for the Ask box upload card — that fetchFileContent (which
+ * decodes to a UTF-8 string) can't carry. Returns null when the file is missing or unreadable.
+ */
+export async function fetchFileBytes(
+  repo: string,
+  path: string,
+  token: string | null,
+): Promise<Buffer | null> {
+  const hdrs: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "pocket-agent/1.0",
+  };
+  if (token) hdrs.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`https://api.github.com/repos/${repo}/contents/${encodeURI(path)}`, {
+    headers: hdrs,
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as GhFileContent;
+  if (data.encoding !== "base64") return null;
+  return Buffer.from(data.content.replace(/\n/g, ""), "base64");
+}
+
 // `filterPaths` lets a caller drop files before they're read — used by the
 // ContainmentGuard to strip user-private paths out of LLM context. Passed as a plain
 // callback (rather than importing the guard here) to avoid a circular import.

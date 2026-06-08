@@ -13,6 +13,10 @@ export type Message = {
   role: "user" | "assistant";
   content: string;
   created_at: string;
+  // Optional inline-card payload (migration 034). Carries the upload_result card the Ask box
+  // renders for image/PDF uploads; null on every ordinary message. Untyped at this layer — the
+  // render side validates it against the card's Zod schema (lib/chat/upload-card.ts).
+  metadata?: unknown;
 };
 
 type PaResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
@@ -123,6 +127,8 @@ export async function insertMessage(msg: {
   userId: string;
   role: "user" | "assistant";
   content: string;
+  // Inline-card payload (migration 034) — set for upload_result rows, omitted otherwise.
+  metadata?: unknown;
 }): Promise<PaResult<Message>> {
   const env = paEnv();
   if ("error" in env) return { ok: false, status: 500, error: env.error };
@@ -136,6 +142,7 @@ export async function insertMessage(msg: {
       user_id: msg.userId,
       role: msg.role,
       content: msg.content,
+      ...(msg.metadata !== undefined ? { metadata: msg.metadata } : {}),
     }),
     cache: "no-store",
   });
