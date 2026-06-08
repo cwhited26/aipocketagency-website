@@ -3,7 +3,6 @@ import { fetchPaUser } from "@/lib/pa-supabase";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { GlowCard } from "../_components/GlowCard";
-import InboxBadge from "../_components/InboxBadge";
 
 type AppDef = {
   href: string;
@@ -47,20 +46,12 @@ const apps: AppDef[] = [
     tagColor: "cyan",
   },
   {
-    href: "/app/apps/inbox",
-    label: "Inbox",
-    description:
-      "Your agent's desk — drafts staged for your approval and items that need a yes or no. Live email flows in through Connections, which is live now.",
-    tag: "Queue",
-    tagColor: "muted",
-  },
-  {
     href: "/app/apps/calendar",
-    label: "Calendar",
+    label: "Upcoming (from brain)",
     description:
-      "Upcoming items the agent knows about from your brain — scheduled jobs, deadlines, follow-up timelines. Live calendar sync is coming as a Connections integration.",
-    tag: "Upcoming",
-    tagColor: "muted",
+      "Scans your brain for anything date or deadline related — scheduled jobs, deadlines, follow-up timelines. For live events, see Calendar in the sidebar.",
+    tag: "Reads Brain",
+    tagColor: "cyan",
   },
 ];
 
@@ -95,7 +86,7 @@ export default async function AppsPage() {
           <div className="text-[11px] text-[#22d3ee]/60 font-mono tracking-[0.18em] uppercase mb-2">
             Your agent&apos;s workbench
           </div>
-          <h1 className="text-2xl font-bold text-slate-100">Work</h1>
+          <h1 className="text-2xl font-bold text-slate-100">Apps</h1>
           <p className="text-slate-300 text-sm mt-2 leading-relaxed">
             Your brain does the heavy lifting. These surfaces read your memory files — services,
             pricing, voice, client history — and produce output that saves you hours.
@@ -149,14 +140,11 @@ export default async function AppsPage() {
             <GlowCard key={app.href} href={app.href} className="px-5 py-5 group">
               <div className="flex items-start justify-between gap-3 mb-2">
                 <h2 className="text-sm font-semibold text-slate-100">{app.label}</h2>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {app.href === "/app/apps/inbox" && <InboxBadge />}
-                  <span
-                    className={`text-[10px] font-mono border rounded px-1.5 py-0.5 uppercase tracking-wider ${tagClass(app.tagColor)}`}
-                  >
-                    {app.tag}
-                  </span>
-                </div>
+                <span
+                  className={`text-[10px] font-mono border rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0 ${tagClass(app.tagColor)}`}
+                >
+                  {app.tag}
+                </span>
               </div>
               <p className="text-sm text-slate-400 leading-relaxed">{app.description}</p>
               <div className="mt-3 text-[11px] text-[#22d3ee]/50 group-hover:text-[#22d3ee] transition-colors font-mono">

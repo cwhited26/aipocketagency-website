@@ -107,6 +107,52 @@ function RoutinesIcon() {
   );
 }
 
+function InboxIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M1.5 9h3l1.5 2h3L11 9h3" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M1.5 9V4a1 1 0 011-1h10a1 1 0 011 1v5" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <rect x="1.5" y="3" width="12" height="10.5" rx="1" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M1.5 6.5h12M5 1.5v3M10 1.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function EmailIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <rect x="1.5" y="3" width="12" height="9" rx="1" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M1.5 4l6 4 6-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ProjectsIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <rect x="1.5" y="2" width="12" height="11" rx="1" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M4 5.5h3M4 8h7M4 10.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ConnectionsIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <circle cx="4" cy="4" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="11" cy="11" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M5.5 5.5l4 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -128,13 +174,14 @@ type NavItemProps = {
   active: boolean;
   icon: React.ReactNode;
   label: string;
+  title?: string;
   disabled?: boolean;
   soon?: boolean;
   badge?: number;
   onClick?: () => void;
 };
 
-function NavItem({ href, active, icon, label, disabled, soon, badge, onClick }: NavItemProps) {
+function NavItem({ href, active, icon, label, title, disabled, soon, badge, onClick }: NavItemProps) {
   if (disabled) {
     return (
       <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg opacity-30 cursor-not-allowed select-none">
@@ -153,6 +200,7 @@ function NavItem({ href, active, icon, label, disabled, soon, badge, onClick }: 
     <Link
       href={href}
       onClick={onClick}
+      title={title}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 group ${
         active
           ? "bg-slate-800/70 text-slate-100"
@@ -178,26 +226,39 @@ export default function AppNav() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [taskCount, setTaskCount] = useState(0);
+  const [inboxCount, setInboxCount] = useState(0);
 
   useEffect(() => {
     fetch("/api/app/tasks/count")
       .then((r) => (r.ok ? (r.json() as Promise<{ total: number }>) : Promise.reject()))
       .then((d) => { setTaskCount(d.total); })
       .catch(() => { /* badge stays hidden on error */ });
+    fetch("/api/app/inbox/count", { cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<{ total: number }>) : Promise.reject()))
+      .then((d) => { setInboxCount(d.total); })
+      .catch(() => { /* badge stays hidden on error */ });
   }, []);
+
+  // Promoted Inbox / Connections live under /app/apps and /app/settings respectively,
+  // so their parent ("Apps", "Settings") must not also light up when they're active.
+  const isInbox = pathname.startsWith("/app/apps/inbox");
+  const isConnections = pathname.startsWith("/app/settings/connections");
 
   const isAgent =
     pathname.startsWith("/app/ask") || pathname.startsWith("/app/agent");
   const isBrain =
     pathname.startsWith("/app/brain") || pathname.startsWith("/app/onboarding");
-  const isWork = pathname.startsWith("/app/apps");
+  const isApps = pathname.startsWith("/app/apps") && !isInbox;
   const isDocs = pathname.startsWith("/app/documents");
   const isCommunity = pathname.startsWith("/app/skool");
-  const isSettings = pathname.startsWith("/app/settings");
+  const isSettings = pathname.startsWith("/app/settings") && !isConnections;
   const isCapture = pathname.startsWith("/app/capture");
   const isTasks = pathname.startsWith("/app/tasks");
   const isRoutines = pathname.startsWith("/app/routines");
   const isPersonas = pathname.startsWith("/app/personas");
+  const isCalendar = pathname.startsWith("/app/calendar");
+  const isEmail = pathname.startsWith("/app/email");
+  const isProjects = pathname.startsWith("/app/projects");
 
   const close = () => setMobileOpen(false);
 
@@ -223,13 +284,18 @@ export default function AppNav() {
           <CommandPaletteButton />
         </div>
         <NavItem href="/app/ask" active={isAgent} icon={<AgentIcon />} label="Agent" onClick={close} />
+        <NavItem href="/app/apps/inbox" active={isInbox} icon={<InboxIcon />} label="Inbox" badge={inboxCount} onClick={close} />
         <NavItem href="/app/tasks" active={isTasks} icon={<TasksIcon />} label="Tasks" badge={taskCount} onClick={close} />
-        <NavItem href="/app/brain" active={isBrain} icon={<BrainIcon />} label="Brain" onClick={close} />
-        <NavItem href="/app/documents" active={isDocs} icon={<DocsIcon />} label="Documents" onClick={close} />
-        <NavItem href="/app/apps" active={isWork} icon={<WorkIcon />} label="Work" onClick={close} />
+        <NavItem href="/app/calendar" active={isCalendar} icon={<CalendarIcon />} label="Calendar" onClick={close} />
+        <NavItem href="/app/email" active={isEmail} icon={<EmailIcon />} label="Email" onClick={close} />
+        <NavItem href="/app/brain" active={isBrain} icon={<BrainIcon />} label="Brain" title="What your agent knows" onClick={close} />
+        <NavItem href="/app/documents" active={isDocs} icon={<DocsIcon />} label="Documents" title="Files in your brain" onClick={close} />
+        <NavItem href="/app/apps" active={isApps} icon={<WorkIcon />} label="Apps" onClick={close} />
         <NavItem href="/app/personas" active={isPersonas} icon={<PersonasIcon />} label="Personas" onClick={close} />
         <NavItem href="/app/routines" active={isRoutines} icon={<RoutinesIcon />} label="Routines" onClick={close} />
+        <NavItem href="/app/projects" active={isProjects} icon={<ProjectsIcon />} label="Projects" onClick={close} />
         <NavItem href="/app/skool" active={isCommunity} icon={<CommunityIcon />} label="Community" onClick={close} />
+        <NavItem href="/app/settings/connections" active={isConnections} icon={<ConnectionsIcon />} label="Connections" onClick={close} />
 
         <div className="my-2 border-t border-slate-800/50" />
 

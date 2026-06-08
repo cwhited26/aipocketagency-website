@@ -139,6 +139,25 @@ function IcSettings() {
   );
 }
 
+function IcProjects() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
+      <rect x="1.5" y="2" width="12" height="11" rx="1" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M4 5.5h3M4 8h7M4 10.5h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IcConnections() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
+      <circle cx="4" cy="4" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="11" cy="11" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M5.5 5.5l4 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function IcPlus() {
   return (
     <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
@@ -179,24 +198,30 @@ type PaletteItem = {
 };
 
 const PALETTE_ITEMS: PaletteItem[] = [
-  // Navigate
-  { id: "agent",      label: "Agent",               keywords: "agent ask chat conversation ai",       href: "/app/ask",              section: "NAVIGATE", Icon: IcAgent    },
-  { id: "brain",      label: "Brain",                keywords: "brain knowledge memory freshness",     href: "/app/brain",            section: "NAVIGATE", Icon: IcBrain    },
-  { id: "digest",     label: "Weekly Read",          keywords: "weekly digest brain read summary",     href: "/app/brain/digest",     section: "NAVIGATE", Icon: IcBook     },
-  { id: "documents",  label: "Documents",            keywords: "documents files uploads library",      href: "/app/documents",        section: "NAVIGATE", Icon: IcDoc      },
-  { id: "work",       label: "Work",                 keywords: "work apps tools catalog",              href: "/app/apps",             section: "NAVIGATE", Icon: IcWork     },
-  { id: "quote",      label: "Quote / Proposal",     keywords: "quote proposal writer output client",  href: "/app/apps/quote",       section: "NAVIGATE", Icon: IcQuote    },
-  { id: "email",      label: "Email Drafter",        keywords: "email drafter draft write message",    href: "/app/apps/email",       section: "NAVIGATE", Icon: IcMail     },
-  { id: "followups",  label: "Follow-up Radar",      keywords: "follow up radar cold outreach leads",  href: "/app/apps/followups",   section: "NAVIGATE", Icon: IcRadar    },
-  { id: "inbox",      label: "Inbox",                keywords: "inbox messages mail triage",           href: "/app/apps/inbox",       section: "NAVIGATE", Icon: IcInbox    },
-  { id: "calendar",   label: "Calendar",             keywords: "calendar schedule events dates",       href: "/app/apps/calendar",    section: "NAVIGATE", Icon: IcCalendar },
-  { id: "daily",      label: "Daily Brief",          keywords: "daily brief morning summary today",    href: "/app/apps/daily-brief", section: "NAVIGATE", Icon: IcSun      },
-  { id: "community",  label: "Community",            keywords: "community skool members network",      href: "/app/skool",            section: "NAVIGATE", Icon: IcPeople   },
-  { id: "capture",    label: "Capture",              keywords: "capture upload feed brain note",       href: "/app/capture",          section: "NAVIGATE", Icon: IcCapture  },
-  { id: "settings",   label: "Settings",             keywords: "settings account api key config",      href: "/app/settings",         section: "NAVIGATE", Icon: IcSettings },
+  // Navigate — order mirrors the side rail
+  { id: "agent",      label: "Agent",                keywords: "agent ask chat conversation ai",                          href: "/app/ask",              section: "NAVIGATE", Icon: IcAgent       },
+  { id: "inbox",      label: "Inbox",                keywords: "inbox messages approvals queue triage mail",              href: "/app/apps/inbox",       section: "NAVIGATE", Icon: IcInbox       },
+  { id: "tasks",      label: "Tasks",                keywords: "tasks todos actions to do",                               href: "/app/tasks",            section: "NAVIGATE", Icon: IcWork        },
+  { id: "calendar",   label: "Calendar",             keywords: "calendar schedule events dates google connection",        href: "/app/calendar",         section: "NAVIGATE", Icon: IcCalendar    },
+  { id: "email",      label: "Email",                keywords: "email gmail threads inbox messages mail",                 href: "/app/email",            section: "NAVIGATE", Icon: IcMail        },
+  { id: "brain",      label: "Brain",                keywords: "brain knowledge memory freshness what agent knows",       href: "/app/brain",            section: "NAVIGATE", Icon: IcBrain       },
+  { id: "digest",     label: "Weekly Read",          keywords: "weekly digest brain read summary",                        href: "/app/brain/digest",     section: "NAVIGATE", Icon: IcBook        },
+  { id: "documents",  label: "Documents",            keywords: "documents files uploads library brain",                   href: "/app/documents",        section: "NAVIGATE", Icon: IcDoc         },
+  { id: "apps",       label: "Apps",                 keywords: "apps work tools catalog workbench",                       href: "/app/apps",             section: "NAVIGATE", Icon: IcWork        },
+  { id: "quote",      label: "Quote / Proposal",     keywords: "quote proposal writer output client",                     href: "/app/apps/quote",       section: "NAVIGATE", Icon: IcQuote       },
+  { id: "drafter",    label: "Email Drafter",        keywords: "email drafter draft write message app",                   href: "/app/apps/email",       section: "NAVIGATE", Icon: IcMail        },
+  { id: "followups",  label: "Follow-up Radar",      keywords: "follow up radar cold outreach leads",                     href: "/app/apps/followups",   section: "NAVIGATE", Icon: IcRadar       },
+  { id: "daily",      label: "Daily Brief",          keywords: "daily brief morning summary today",                       href: "/app/apps/daily-brief", section: "NAVIGATE", Icon: IcSun         },
+  { id: "personas",   label: "Personas",             keywords: "personas team agents voices",                             href: "/app/personas",         section: "NAVIGATE", Icon: IcPeople      },
+  { id: "routines",   label: "Routines",             keywords: "routines automations scheduled recurring",                href: "/app/routines",         section: "NAVIGATE", Icon: IcRadar       },
+  { id: "projects",   label: "Projects",             keywords: "projects scaffolds plans milestones scaffolding",         href: "/app/projects",         section: "NAVIGATE", Icon: IcProjects    },
+  { id: "community",  label: "Community",            keywords: "community skool members network",                         href: "/app/skool",            section: "NAVIGATE", Icon: IcPeople      },
+  { id: "connections",label: "Connections",          keywords: "connections integrations oauth gmail slack calendar quickbooks stripe", href: "/app/settings/connections", section: "NAVIGATE", Icon: IcConnections },
+  { id: "capture",    label: "Capture",              keywords: "capture upload feed brain note",                          href: "/app/capture",          section: "NAVIGATE", Icon: IcCapture     },
+  { id: "settings",   label: "Settings",             keywords: "settings account api key config",                         href: "/app/settings",         section: "NAVIGATE", Icon: IcSettings    },
   // Actions
-  { id: "new-conv",   label: "New conversation",     keywords: "new conversation chat start ask",      href: "/app/ask",              section: "ACTIONS",  Icon: IcPlus     },
-  { id: "feed-brain", label: "Feed your brain",      keywords: "feed brain upload document knowledge", href: "/app/capture",          section: "ACTIONS",  Icon: IcUpload   },
+  { id: "new-conv",   label: "New conversation",     keywords: "new conversation chat start ask",                         href: "/app/ask",              section: "ACTIONS",  Icon: IcPlus        },
+  { id: "feed-brain", label: "Feed your brain",      keywords: "feed brain upload document knowledge",                    href: "/app/capture",          section: "ACTIONS",  Icon: IcUpload      },
 ];
 
 // ── Fuzzy match ───────────────────────────────────────────────────────────────

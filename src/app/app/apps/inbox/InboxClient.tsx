@@ -1042,7 +1042,7 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
             href="/app/apps"
             className="text-xs text-slate-600 hover:text-slate-400 transition-colors font-mono"
           >
-            ← Work apps
+            ← Apps
           </Link>
         </div>
 
