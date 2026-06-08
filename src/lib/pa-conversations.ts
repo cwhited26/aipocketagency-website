@@ -172,3 +172,59 @@ export function generateTitle(firstMessage: string): string {
   const clean = firstMessage.trim().replace(/\n+/g, " ");
   return clean.length > 52 ? clean.slice(0, 49) + "…" : clean;
 }
+
+// A short, single-line preview of a message body for the Hub thread list. Collapses
+// whitespace and clips to `max` chars so long or multi-line messages render as one tidy row.
+export function messageSnippet(text: string, max = 80): string {
+  const clean = text.trim().replace(/\s+/g, " ");
+  return clean.length > max ? clean.slice(0, max - 1) + "…" : clean;
+}
+
+export type ConversationThread = Conversation & {
+  // The latest message in the thread, clipped for the Hub preview. Null when the
+  // conversation row exists but has no messages yet.
+  snippet: string | null;
+};
+
+// Lists the owner's conversations with a one-line preview of each thread's most recent
+// message — the data the Hub thread list renders. One batched message query (latest-first,
+// scoped to the listed conversation ids) backs every preview, so it stays a two-request read
+// regardless of how many threads exist.
+export async function listConversationThreads(
+  userId: string,
+): Promise<PaResult<ConversationThread[]>> {
+  const convResult = await listConversations(userId);
+  if (!convResult.ok) return convResult;
+  const convs = convResult.data;
+  if (convs.length === 0) return { ok: true, data: [] };
+
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  // UUID ids only contain [0-9a-f-], so they're URL-safe inside an in.() filter unquoted.
+  const inList = convs.map((c) => c.id).join(",");
+  const endpoint =
+    `${env.url}/rest/v1/pocket_agent_messages` +
+    `?user_id=eq.${encodeURIComponent(userId)}` +
+    `&conversation_id=in.(${inList})` +
+    `&order=created_at.desc&select=conversation_id,content`;
+
+  const res = await fetch(endpoint, {
+    headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },
+    cache: "no-store",
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as { conversation_id: string; content: string }[];
+
+  // Rows arrive newest-first; the first row seen per conversation is its latest message.
+  const latest = new Map<string, string>();
+  for (const row of rows) {
+    if (!latest.has(row.conversation_id)) latest.set(row.conversation_id, row.content);
+  }
+
+  const threads: ConversationThread[] = convs.map((c) => {
+    const last = latest.get(c.id);
+    return { ...c, snippet: last ? messageSnippet(last) : null };
+  });
+  return { ok: true, data: threads };
+}

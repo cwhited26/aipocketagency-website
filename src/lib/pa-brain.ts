@@ -267,6 +267,39 @@ export async function listVoiceMemoFiles(
   return perDir.flat();
 }
 
+export type ScaffoldEntry = {
+  // The directory name under scaffolds/, e.g. "patrick-proposal".
+  slug: string;
+  // The current-plan path: scaffolds/<slug>/scaffolding.md.
+  path: string;
+};
+
+// Lists in-flight Project Scaffolding artifacts (SPEC v5 §9.2a). Each plan lives at
+// scaffolds/<slug>/scaffolding.md in the owner's brain repo. Returns [] when the brain has
+// no scaffolds/ directory yet — the common case until Wave B is live — so the Hub can simply
+// skip the section. Best-effort: any GitHub miss yields [], never a throw.
+export async function listScaffolds(
+  repo: string,
+  token: string | null,
+): Promise<ScaffoldEntry[]> {
+  const hdrs: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "pocket-agent/1.0",
+  };
+  if (token) hdrs.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`https://api.github.com/repos/${repo}/contents/scaffolds`, {
+    headers: hdrs,
+    cache: "no-store",
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as unknown;
+  if (!Array.isArray(data)) return [];
+  return (data as GhContentsItem[])
+    .filter((d) => d.type === "dir")
+    .map((d) => ({ slug: d.name, path: `scaffolds/${d.name}/scaffolding.md` }));
+}
+
 // Deletes a single file from the repo via the Contents API. Resolves the file's
 // blob sha itself (the Contents DELETE requires it) so callers only pass a path.
 export async function deleteRepoFile(params: {

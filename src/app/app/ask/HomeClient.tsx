@@ -598,54 +598,7 @@ function HubView({
           </div>
         </div>
 
-        {/* Setup CTA — shown when no brain connected */}
-        {!brainRepo && (
-          <div className={`rounded-xl border px-5 py-4 ${
-            !hasGithubToken
-              ? "border-[#22d3ee]/30 bg-[#22d3ee]/5"
-              : "border-slate-700/60 bg-slate-900/60"
-          }`}>
-            {!hasGithubToken ? (
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-100">Step 1: Connect GitHub</p>
-                  <p className="text-sm text-slate-300 mt-0.5">
-                    Your agent needs GitHub access to read and write your brain.
-                  </p>
-                </div>
-                <a
-                  href="/api/app/auth/github?next=/app/onboarding"
-                  className="self-start sm:self-auto shrink-0 inline-flex items-center rounded-lg bg-[#22d3ee] px-4 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors min-h-[44px]"
-                >
-                  Connect GitHub →
-                </a>
-              </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-100">Step 2: Connect your brain</p>
-                  <p className="text-sm text-slate-300 mt-0.5">
-                    GitHub connected. Create or link your brain repo so the agent knows your business.
-                  </p>
-                </div>
-                <a
-                  href="/app/onboarding"
-                  className="self-start sm:self-auto shrink-0 inline-flex items-center rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-100 hover:bg-slate-700 transition-colors min-h-[44px]"
-                >
-                  Set up brain →
-                </a>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Status panels — single col on mobile */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <ActivityFeedPanel brainRepo={brainRepo} />
-          <BrainOrganPanel brainRepo={brainRepo} />
-        </div>
-
-        {/* Input */}
+        {/* Input — the primary interaction, first thing under the mascot */}
         {!hasApiKey ? (
           <div className="rounded-xl border border-[#22d3ee]/25 bg-[#22d3ee]/5 px-5 py-5 space-y-3">
             <p className="text-sm font-semibold text-slate-100">Add your Anthropic API key to start.</p>
@@ -706,6 +659,53 @@ function HubView({
             </div>
           </div>
         )}
+
+        {/* Setup CTA — shown when no brain connected */}
+        {!brainRepo && (
+          <div className={`rounded-xl border px-5 py-4 ${
+            !hasGithubToken
+              ? "border-[#22d3ee]/30 bg-[#22d3ee]/5"
+              : "border-slate-700/60 bg-slate-900/60"
+          }`}>
+            {!hasGithubToken ? (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-100">Step 1: Connect GitHub</p>
+                  <p className="text-sm text-slate-300 mt-0.5">
+                    Your agent needs GitHub access to read and write your brain.
+                  </p>
+                </div>
+                <a
+                  href="/api/app/auth/github?next=/app/onboarding"
+                  className="self-start sm:self-auto shrink-0 inline-flex items-center rounded-lg bg-[#22d3ee] px-4 py-3 text-sm font-semibold text-[#031820] hover:bg-[#06b6d4] transition-colors min-h-[44px]"
+                >
+                  Connect GitHub →
+                </a>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold text-slate-100">Step 2: Connect your brain</p>
+                  <p className="text-sm text-slate-300 mt-0.5">
+                    GitHub connected. Create or link your brain repo so the agent knows your business.
+                  </p>
+                </div>
+                <a
+                  href="/app/onboarding"
+                  className="self-start sm:self-auto shrink-0 inline-flex items-center rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-sm font-semibold text-slate-100 hover:bg-slate-700 transition-colors min-h-[44px]"
+                >
+                  Set up brain →
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* What your agent knows — brain status tiles, below the Ask box */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ActivityFeedPanel brainRepo={brainRepo} />
+          <BrainOrganPanel brainRepo={brainRepo} />
+        </div>
 
         {/* Work surface — single col on mobile */}
         <div>
@@ -829,36 +829,64 @@ export default function HomeClient({
   hasApiKey,
   hasGithubToken,
   initialConversations,
+  initialConversationId,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
   hasGithubToken: boolean;
   initialConversations: Conversation[];
+  // When the owner deep-links from the Hub (/app/ask?c=<id>), this restores that thread on load.
+  initialConversationId: string | null;
 }) {
+  const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
-  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [activeConvId, setActiveConvId] = useState<string | null>(initialConversationId);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [threadError, setThreadError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Load (restore) the active thread's full history. A failed load surfaces a visible notice
+  // instead of a silent catch, so a stale ?c= link never strands the owner on a blank thread.
   useEffect(() => {
-    if (!activeConvId) { setMessages([]); return; }
+    if (!activeConvId) { setMessages([]); setThreadError(null); return; }
+    setThreadError(null);
     fetch(`/api/app/conversations/${activeConvId}`)
-      .then((r) => (r.ok ? (r.json() as Promise<ConversationDetail>) : Promise.reject()))
+      .then((r) =>
+        r.ok
+          ? (r.json() as Promise<ConversationDetail>)
+          : Promise.reject(new Error(`Failed to load thread (${r.status})`)),
+      )
       .then((data) => setMessages(data.messages ?? []))
-      .catch(() => {});
+      .catch(() => {
+        setMessages([]);
+        setThreadError("Couldn't load this thread. It may have been removed.");
+      });
+  }, [activeConvId]);
+
+  // Keep the URL in sync with the open thread (without a server round-trip) so a refresh or the
+  // browser back button restores the same conversation, and the Hub round-trip stays truthful.
+  useEffect(() => {
+    const url = activeConvId ? `/app/ask?c=${activeConvId}` : "/app/ask";
+    window.history.replaceState(null, "", url);
   }, [activeConvId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  function goToHub() {
+  // Start a fresh thread in place (used by the desktop rail + the in-thread "+ New" action).
+  function startNewThread() {
     setActiveConvId(null);
     setInputValue("");
     setTimeout(() => textareaRef.current?.focus(), 80);
+  }
+
+  // The "Hub" breadcrumb is a real destination: the thread list at /app/agent/hub.
+  function goToHub() {
+    router.push("/app/agent/hub");
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -953,7 +981,7 @@ export default function HomeClient({
         conversations={conversations}
         activeConvId={activeConvId}
         onSelect={(id) => setActiveConvId(id)}
-        onNew={goToHub}
+        onNew={startNewThread}
       />
 
       <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
@@ -973,7 +1001,7 @@ export default function HomeClient({
               <span className="text-slate-700">·</span>
               <span className="text-sm text-slate-300 truncate">{activeConv?.title ?? "Conversation"}</span>
               <button
-                onClick={goToHub}
+                onClick={startNewThread}
                 className="ml-auto text-[11px] font-mono text-slate-500 hover:text-[#22d3ee] transition-colors"
               >
                 + New
@@ -982,6 +1010,14 @@ export default function HomeClient({
 
             <div className="flex-1 overflow-y-auto px-5 py-6 min-h-0">
               <div className="max-w-2xl mx-auto space-y-6">
+                {threadError && (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-200/90">
+                    {threadError}{" "}
+                    <button onClick={goToHub} className="underline hover:text-amber-100">
+                      Back to Hub
+                    </button>
+                  </div>
+                )}
                 {messages.map((msg) => {
                   const citations =
                     msg.role === "assistant"

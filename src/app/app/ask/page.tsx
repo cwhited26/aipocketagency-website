@@ -4,7 +4,12 @@ import { listConversations } from "@/lib/pa-conversations";
 import { redirect } from "next/navigation";
 import HomeClient from "./HomeClient";
 
-export default async function AskPage() {
+export default async function AskPage({
+  searchParams,
+}: {
+  // ?c=<conversationId> deep-links into a thread (set by the Hub thread list).
+  searchParams: { c?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -28,6 +33,7 @@ export default async function AskPage() {
       hasApiKey={!!paUser.anthropic_api_key}
       hasGithubToken={!!paUser.github_token}
       initialConversations={initialConversations}
+      initialConversationId={searchParams.c ?? null}
     />
   );
 }

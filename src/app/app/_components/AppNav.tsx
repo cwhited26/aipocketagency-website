@@ -186,7 +186,8 @@ export default function AppNav() {
       .catch(() => { /* badge stays hidden on error */ });
   }, []);
 
-  const isAgent = pathname.startsWith("/app/ask");
+  const isAgent =
+    pathname.startsWith("/app/ask") || pathname.startsWith("/app/agent");
   const isBrain =
     pathname.startsWith("/app/brain") || pathname.startsWith("/app/onboarding");
   const isWork = pathname.startsWith("/app/apps");
