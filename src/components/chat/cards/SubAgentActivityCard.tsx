@@ -2,9 +2,9 @@
 
 // SubAgentActivityCard — LIVE (PA v5 Wave B). When the orchestrator dispatches a run, the chat
 // send route appends one of these with the plan label + current phase. It renders the 7-phase
-// Algorithm with the active phase lit, plus a link into the Tasks/Inbox surfaces where live
+// Algorithm with the active phase lit, plus a link into the Tasks / Mission Control surfaces where live
 // progress + approvals land. (The inline card is schema-scoped to label/phase/note — the live,
-// per-run timeline lives at /app/apps/inbox via the orchestrator run API.)
+// per-run timeline lives at /app/mission-control via the orchestrator run API.)
 
 import Link from "next/link";
 import CardShell from "./CardShell";
@@ -53,7 +53,7 @@ export default function SubAgentActivityCard({
       </div>
 
       <Link
-        href="/app/apps/inbox"
+        href="/app/mission-control"
         className="mt-3 inline-block text-[11px] font-mono text-[#22d3ee]/80 hover:text-[#22d3ee] transition-colors"
       >
         Track progress + approvals →

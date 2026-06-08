@@ -1,10 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
 import { affordancesFor, type InboxItemKind } from "@/lib/inbox-affordances";
-import { TabGuide } from "../../_components/TabGuide";
+import type {
+  LedgerStatus,
+  MissionControlSnapshot,
+  RunLedgerEntry,
+  ScheduledEntry,
+} from "@/lib/mission-control/projection";
+
+// Mission Control — the unified live pane (PA-MC-1). One screen for everything the agent fleet
+// is running, scheduled, or waiting on you for, sectioned by urgency: Attention → Active right
+// now → Awaiting your decision → Scheduled → Done. Refetches every 8s while the tab is focused
+// (paused on blur via the Page Visibility API) so the pane stays live without a manual reload.
+
+// ─── Shared inbox-card model (unchanged from the old Inbox queue) ──────────────
 
 type TriageDetail = {
   threadId: string;
@@ -13,8 +25,6 @@ type TriageDetail = {
   snippet: string;
   url: string;
   receivedAt: string | null;
-  // RFC 2822 Message-ID of the triaged message — passed as in_reply_to when a reply
-  // is staged so the send threads back into the original conversation.
   inReplyTo: string;
 };
 
@@ -24,8 +34,6 @@ type ActionApprovalDetail = {
   subAgentRunId: string | null;
 };
 
-// Mirrors the normalized card from GET /api/app/inbox. Kind union is kept in lockstep
-// with InboxItemKind (the affordance source of truth) so the render switch stays exhaustive.
 type InboxCard = {
   id: string;
   system: "inbox" | "legacy";
@@ -45,6 +53,7 @@ type InboxCard = {
 };
 
 type InboxResponse = { cards: InboxCard[]; provisioned: boolean };
+type MissionControlResponse = MissionControlSnapshot & { runsProvisioned: boolean };
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -54,6 +63,18 @@ function relativeTime(iso: string): string {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
+}
+
+// Countdown to a future ISO time, for the Scheduled section ("in 3h 12m" / "due now").
+function countdownTo(iso: string): string {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (!Number.isFinite(diff) || diff <= 0) return "due now";
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 60) return `in ${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `in ${hrs}h ${mins % 60}m`;
+  const days = Math.floor(hrs / 24);
+  return `in ${days}d ${hrs % 24}h`;
 }
 
 function approveEndpoint(card: InboxCard): string {
@@ -76,20 +97,10 @@ async function postDecision(url: string): Promise<void> {
   }
 }
 
-// Which queue section a kind renders in. Exhaustive with a `never` guard: a new
-// InboxItemKind must be slotted into a section here (and given affordances in
-// inbox-affordances.ts) or the build fails — no kind can silently fall through to
-// the wrong card and inherit the wrong buttons.
-type InboxSection =
-  | "triage"
-  | "actions"
-  | "drafts"
-  | "decisions"
-  | "briefs"
-  | "activity"
-  | "hidden";
+// Which "Awaiting your decision" sub-section a kind renders in. Exhaustive with a `never` guard.
+type AwaitingSection = "triage" | "actions" | "drafts" | "decisions" | "briefs" | "activity" | "hidden";
 
-function sectionFor(kind: InboxItemKind): InboxSection {
+function sectionFor(kind: InboxItemKind): AwaitingSection {
   switch (kind) {
     case "email_triage":
       return "triage";
@@ -103,7 +114,6 @@ function sectionFor(kind: InboxItemKind): InboxSection {
       return "briefs";
     case "sub_agent_activity":
       return "activity";
-    // Persona leads live on the Personas surface, not the approval queue.
     case "persona_lead":
       return "hidden";
     default: {
@@ -113,7 +123,213 @@ function sectionFor(kind: InboxItemKind): InboxSection {
   }
 }
 
-// ─── Draft card ───────────────────────────────────────────────────────────────
+// ─── Count-up hook (PA-MC-3) ──────────────────────────────────────────────────
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+// Eased count-up from the last displayed value to the new target. Respects reduced-motion (jumps
+// straight to the target). Drives the header stat tiles when live counts change.
+function useCountUp(value: number, durationMs = 600): number {
+  const [display, setDisplay] = useState(value);
+  const displayRef = useRef(value);
+
+  useEffect(() => {
+    const from = displayRef.current;
+    if (from === value) return;
+    if (prefersReducedMotion()) {
+      displayRef.current = value;
+      setDisplay(value);
+      return;
+    }
+    let raf = 0;
+    let start = 0;
+    const step = (ts: number) => {
+      if (start === 0) start = ts;
+      const t = Math.min(1, (ts - start) / durationMs);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const next = Math.round(from + (value - from) * eased);
+      displayRef.current = next;
+      setDisplay(next);
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value, durationMs]);
+
+  return display;
+}
+
+// ─── Stat tile strip ──────────────────────────────────────────────────────────
+
+type TileTone = "amber" | "cyan" | "violet" | "blue" | "emerald" | "muted";
+
+const TILE_TONE: Record<TileTone, { value: string; label: string; ring: string }> = {
+  amber: { value: "text-amber-300", label: "text-amber-400/70", ring: "border-amber-500/30" },
+  cyan: { value: "text-[#22d3ee]", label: "text-[#22d3ee]/60", ring: "border-[#22d3ee]/25" },
+  violet: { value: "text-violet-300", label: "text-violet-300/60", ring: "border-violet-500/25" },
+  blue: { value: "text-sky-300", label: "text-sky-300/60", ring: "border-sky-500/25" },
+  emerald: { value: "text-emerald-300", label: "text-emerald-400/60", ring: "border-emerald-500/25" },
+  muted: { value: "text-slate-300", label: "text-slate-500", ring: "border-slate-700/50" },
+};
+
+function StatTile({ count, label, tone }: { count: number; label: string; tone: TileTone }) {
+  const shown = useCountUp(count);
+  const t = TILE_TONE[tone];
+  return (
+    <div className={`rounded-xl border ${t.ring} bg-slate-900/50 px-2.5 py-3 text-center`}>
+      <div className={`text-xl sm:text-2xl font-bold tabular-nums ${t.value}`}>{shown}</div>
+      <div className={`mt-0.5 text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.12em] ${t.label}`}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function StatStrip({ counts }: { counts: MissionControlSnapshot["counts"] }) {
+  const tiles: { key: string; label: string; tone: TileTone; count: number }[] = [
+    { key: "attention", label: "Attention", tone: "amber", count: counts.attention },
+    { key: "active", label: "Active", tone: "cyan", count: counts.active },
+    { key: "verifying", label: "Verifying", tone: "violet", count: counts.verifying },
+    { key: "scheduled", label: "Scheduled", tone: "blue", count: counts.scheduled },
+    { key: "done", label: "Done", tone: "emerald", count: counts.done },
+    { key: "idle", label: "Idle", tone: "muted", count: counts.idle },
+  ];
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-8">
+      {tiles.map((tile) => (
+        <StatTile key={tile.key} count={tile.count} label={tile.label} tone={tile.tone} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Attention card (failed / zombie / needs-human runs) ───────────────────────
+
+const LEDGER_LABEL: Record<LedgerStatus, string> = {
+  running: "Running",
+  verifying: "Verifying",
+  blocked: "Parked for your decision",
+  zombie: "Lost contact — no heartbeat",
+  failed: "Failed",
+  done: "Done",
+};
+
+function AttentionRunCard({ entry }: { entry: RunLedgerEntry }) {
+  // needs_human (PA-MC-5) gets the amber "Parked for your decision" treatment; zombie/failed are
+  // amber-accented too — every Attention item is something the machine has stopped progressing on.
+  const label = entry.needsHuman ? "Parked for your decision" : LEDGER_LABEL[entry.ledgerStatus];
+  return (
+    <div className="rounded-2xl border border-amber-500/30 bg-amber-950/10 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-amber-400/80 uppercase tracking-[0.18em]">
+          {entry.slot} · {label}
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(entry.updatedAt)}</span>
+      </div>
+
+      <p className="text-[15px] font-semibold text-slate-100 leading-snug">{entry.title}</p>
+
+      {entry.resultSummary && (
+        <p className="mt-2 text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">
+          {entry.resultSummary}
+        </p>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 font-mono">
+        {entry.ledgerStatus === "zombie" && entry.lastHeartbeatAt && (
+          <span>last heartbeat {relativeTime(entry.lastHeartbeatAt)}</span>
+        )}
+        {entry.retryBudget !== null && (
+          <span>
+            retries {entry.retriesUsed ?? 0}/{entry.retryBudget}
+          </span>
+        )}
+        {entry.verificationVerdict && <span>verification: {entry.verificationVerdict}</span>}
+      </div>
+
+      <p className="mt-3 text-[11px] text-amber-300/70 leading-relaxed">
+        Pocket Agent stopped here and is waiting on you — nothing more runs on this until you decide.
+      </p>
+    </div>
+  );
+}
+
+// ─── Active-right-now card (running sub-agent, PA-MC-4) ─────────────────────────
+
+function ActiveRunCard({ entry }: { entry: RunLedgerEntry }) {
+  return (
+    <div className="rounded-2xl border border-[#22d3ee]/20 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="flex items-center gap-2 text-[10px] font-mono text-[#22d3ee]/80 uppercase tracking-[0.18em]">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22d3ee]/70" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[#22d3ee]" />
+          </span>
+          {entry.slot} · running
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">
+          started {relativeTime(entry.startedAt ?? entry.createdAt)}
+        </span>
+      </div>
+
+      <p className="text-[15px] font-semibold text-slate-100 leading-snug">{entry.title}</p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 font-mono">
+        {entry.phase && <span className="text-[#22d3ee]/70">phase: {entry.phase}</span>}
+        <span>heartbeat {entry.lastHeartbeatAt ? relativeTime(entry.lastHeartbeatAt) : "—"}</span>
+        {entry.retryBudget !== null && (
+          <span>
+            retries {entry.retriesUsed ?? 0}/{entry.retryBudget}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Verifying card (second-opinion gate in flight) ────────────────────────────
+
+function VerifyingRunCard({ entry }: { entry: RunLedgerEntry }) {
+  return (
+    <div className="rounded-2xl border border-violet-500/20 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-violet-300/80 uppercase tracking-[0.18em]">
+          {entry.slot} · verifying
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(entry.updatedAt)}</span>
+      </div>
+      <p className="text-[15px] font-semibold text-slate-100 leading-snug">{entry.title}</p>
+      <p className="mt-2 text-[11px] text-violet-300/70 leading-relaxed">
+        Second-opinion check running before this is marked done.
+      </p>
+    </div>
+  );
+}
+
+// ─── Scheduled row (next routine runs with countdown) ──────────────────────────
+
+function ScheduledRow({ entry }: { entry: ScheduledEntry }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-3 border-b border-slate-800/50 last:border-0">
+      <div className="min-w-0">
+        <p className="text-sm text-slate-200 truncate">{entry.label}</p>
+        <p className="text-[11px] text-slate-600 font-mono">{entry.scheduleCron}</p>
+      </div>
+      <div className="shrink-0 text-right">
+        <p className="text-[11px] font-mono text-sky-300/80">{countdownTo(entry.nextRunAt)}</p>
+        <p className="text-[10px] text-slate-600">{new Date(entry.nextRunAt).toLocaleString()}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Draft card (unchanged) ────────────────────────────────────────────────────
 
 function DraftCard({
   card,
@@ -126,7 +342,6 @@ function DraftCard({
   const [editing, setEditing] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Local, editable copy of the email so the user can tweak before sending.
   const [to, setTo] = useState(card.email?.to ?? "");
   const [subject, setSubject] = useState(card.email?.subject ?? "");
   const [body, setBody] = useState(card.email?.body ?? card.bodyMd);
@@ -137,9 +352,6 @@ function DraftCard({
     setBusy("approve");
     setErr(null);
     try {
-      // For email drafts, send the (possibly edited) recipient / subject / body so
-      // the server sends the final version live via the Gmail connector — AS the user,
-      // threaded into the original conversation, no external mail-app hand-off.
       const init: RequestInit = { method: "POST", cache: "no-store" };
       if (isEmail) {
         init.headers = { "Content-Type": "application/json" };
@@ -250,10 +462,8 @@ function DraftCard({
   );
 }
 
-// ─── Email triage card ────────────────────────────────────────────────────────
+// ─── Email triage card (unchanged) ─────────────────────────────────────────────
 
-// Gmail's From header is `"Name" <addr@host>` or a bare address. Show the name
-// when present, else the address.
 function senderLabel(from: string): string {
   const match = from.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
   if (match) {
@@ -276,7 +486,6 @@ async function postTriageAction(threadId: string, action: "handle" | "archive"):
   }
 }
 
-// Pull the bare address out of a Gmail From header (`"Name" <addr>` or `addr`).
 function addressOf(from: string): string {
   const match = from.match(/<([^>]+)>/);
   return (match ? match[1] : from).trim();
@@ -288,8 +497,6 @@ function replySubject(subject: string): string {
   return /^re:/i.test(s) ? s : `Re: ${s}`;
 }
 
-// The brief handed to the Email Drafter for an in-Inbox reply — mirrors what the
-// old /app/capture/draft hop built server-side, now built right where the user is.
 function buildReplyBrief(triage: TriageDetail): string {
   const sender = senderLabel(triage.from);
   const parts = [
@@ -307,8 +514,6 @@ function TriageCard({
   onDraftStaged,
 }: {
   card: InboxCard;
-  // A reply drafted from within the Inbox for this thread, rendered inline below
-  // (source_surface='inbox'). Null until the user taps "Draft me a reply".
   replyDraft: InboxCard | null;
   onResolved: (id: string, status: "approved" | "rejected") => void;
   onDraftStaged: (card: InboxCard) => void;
@@ -333,9 +538,6 @@ function TriageCard({
     }
   }
 
-  // Draft the reply right here in the Inbox: generate with the Email Drafter, then
-  // stage it tagged source_surface='inbox' so it renders inline on this thread
-  // (never buried in the generic drafts list). No navigation, no scroll-hunting.
   async function draftReply() {
     if (drafting || replyDraft) return;
     setDrafting(true);
@@ -417,13 +619,7 @@ function TriageCard({
         </span>
       </div>
 
-      {/* Tappable header opens the thread in Gmail */}
-      <a
-        href={triage.url || "#"}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block group"
-      >
+      <a href={triage.url || "#"} target="_blank" rel="noopener noreferrer" className="block group">
         <p className="text-[13px] text-slate-400 truncate">{senderLabel(triage.from)}</p>
         <p className="text-[15px] font-semibold text-slate-100 leading-snug group-hover:text-[#22d3ee] transition-colors">
           {triage.subject || "(no subject)"}
@@ -464,7 +660,6 @@ function TriageCard({
 
       {draftErr && <p className="mt-3 text-xs text-red-400 font-mono">{draftErr}</p>}
 
-      {/* The reply drafted from here approves inline — never re-staged to the bottom of the Inbox. */}
       {replyDraft && (
         <div className="mt-4 border-t border-slate-800/60 pt-4">
           <p className="text-[10px] font-mono text-[#22d3ee]/70 uppercase tracking-[0.18em] mb-2">
@@ -477,7 +672,7 @@ function TriageCard({
   );
 }
 
-// ─── Decision card ────────────────────────────────────────────────────────────
+// ─── Decision card (unchanged) ─────────────────────────────────────────────────
 
 function DecisionCard({
   card,
@@ -553,11 +748,8 @@ function DecisionCard({
   );
 }
 
-// ─── Action-approval card (PA v5 Wave B orchestrator) ──────────────────────────
+// ─── Action-approval card (unchanged) ──────────────────────────────────────────
 
-// One-tap Approve / Reject / Edit for a connector write-action a sub-agent staged. Approving
-// fires the runtime's blocked tool call (server-side) and, once an action type clears the
-// trust window, surfaces the auto-approve unlock nudge.
 function ActionApprovalCard({
   card,
   onResolved,
@@ -701,13 +893,8 @@ function ActionApprovalCard({
   );
 }
 
-// ─── Routine output card (Daily Brief / Weekly Digest / Follow-up Sweep) ───────
+// ─── Routine output card (unchanged) ───────────────────────────────────────────
 
-// An informational routine result. NOT an action — nothing fired and nothing will,
-// so there is no Approve and no Reject. The brief content previews inline (a "Read
-// full ↓" expander reveals the rest right in the card) so the user can read it, keep
-// it, and move on without opening a separate page. Buttons come from the affordance
-// source of truth (Mark as read / Save to brain / Dismiss).
 const ROUTINE_PREVIEW_CHARS = 600;
 
 function RoutineOutputCard({
@@ -726,8 +913,6 @@ function RoutineOutputCard({
   const full = card.bodyMd.trim() || card.preview;
   const isLong = full.length > ROUTINE_PREVIEW_CHARS;
   const shown = expanded || !isLong ? full : `${full.slice(0, ROUTINE_PREVIEW_CHARS).trimEnd()}…`;
-  // Save-to-brain commits to the brain repo, which only the new pa_inbox_items rows
-  // carry the linkage for. Legacy rows can still be read + dismissed.
   const canSave = card.system === "inbox";
 
   async function markRead() {
@@ -809,7 +994,6 @@ function RoutineOutputCard({
 
       <p className="text-[15px] font-semibold text-slate-100 leading-snug">{card.title}</p>
 
-      {/* The brief reads inline — no separate page, no scroll-then-approve dance. */}
       <div className="mt-3 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{shown}</div>
 
       {isLong && (
@@ -858,10 +1042,8 @@ function RoutineOutputCard({
   );
 }
 
-// ─── Sub-agent activity card (PA v5 Wave B progress) ───────────────────────────
+// ─── Sub-agent activity card (unchanged) ───────────────────────────────────────
 
-// A dismissible progress card for a running sub-agent. Informational — there is
-// nothing to approve, only to clear once read.
 function SubAgentActivityCard({
   card,
   onResolved,
@@ -917,7 +1099,7 @@ function SubAgentActivityCard({
   );
 }
 
-// ─── Resolved row ─────────────────────────────────────────────────────────────
+// ─── Resolved row (unchanged) ──────────────────────────────────────────────────
 
 function ResolvedRow({ card }: { card: InboxCard }) {
   const label: Record<InboxCard["status"], string> = {
@@ -949,57 +1131,114 @@ function ResolvedRow({ card }: { card: InboxCard }) {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Section header ────────────────────────────────────────────────────────────
 
-export default function InboxClient({ brainRepo }: { brainRepo: string | null }) {
+function SectionHeader({ label, count, tone }: { label: string; count: number; tone?: string }) {
+  return (
+    <div className={`text-[11px] font-mono uppercase tracking-wider mb-3 ${tone ?? "text-slate-600"}`}>
+      {label} · {count}
+    </div>
+  );
+}
+
+// ─── Page ──────────────────────────────────────────────────────────────────────
+
+const EMPTY_COUNTS: MissionControlSnapshot["counts"] = {
+  attention: 0,
+  active: 0,
+  verifying: 0,
+  scheduled: 0,
+  done: 0,
+  idle: 0,
+};
+
+export default function MissionControlClient({ brainRepo: _brainRepo }: { brainRepo: string | null }) {
   const [cards, setCards] = useState<InboxCard[]>([]);
+  const [snapshot, setSnapshot] = useState<MissionControlSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [showResolved, setShowResolved] = useState(false);
+  // First load shows the Mascot; subsequent 8s polls refresh in place without a flash.
+  const firstLoad = useRef(true);
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/app/inbox", { cache: "no-store" });
-      if (!res.ok) throw new Error(`Failed to load inbox (${res.status})`);
-      const data = (await res.json()) as InboxResponse;
-      setCards(data.cards);
+      const [inboxRes, mcRes] = await Promise.all([
+        fetch("/api/app/inbox", { cache: "no-store" }),
+        fetch("/api/app/mission-control", { cache: "no-store" }),
+      ]);
+      if (!inboxRes.ok) throw new Error(`Failed to load queue (${inboxRes.status})`);
+      if (!mcRes.ok) throw new Error(`Failed to load fleet (${mcRes.status})`);
+      const inbox = (await inboxRes.json()) as InboxResponse;
+      const mc = (await mcRes.json()) as MissionControlResponse;
+      setCards(inbox.cards);
+      setSnapshot(mc);
+      setFetchError(null);
     } catch (e) {
-      setFetchError(e instanceof Error ? e.message : "Failed to load");
+      // On a background poll, keep the last good snapshot and surface the error quietly; only the
+      // very first load promotes the error to the full-pane state.
+      if (firstLoad.current) setFetchError(e instanceof Error ? e.message : "Failed to load");
     } finally {
-      setLoading(false);
+      if (firstLoad.current) {
+        setLoading(false);
+        firstLoad.current = false;
+      }
     }
   }, []);
 
+  // Live updates (PA-MC-2): poll every 8s, but only while the tab is visible. The Page Visibility
+  // API pauses the timer on blur and fires an immediate refresh on return, so a backgrounded tab
+  // costs nothing and a foregrounded one is never stale.
   useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const stop = () => {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+    const start = () => {
+      if (timer === null) timer = setInterval(() => void load(), 8000);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void load();
+        start();
+      } else {
+        stop();
+      }
+    };
+
     void load();
+    if (document.visibilityState === "visible") start();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      stop();
+    };
   }, [load]);
 
   function onResolved(id: string, status: "approved" | "rejected") {
     setCards((prev) =>
-      prev.map((c) =>
-        c.id === id ? { ...c, status, resolvedAt: new Date().toISOString() } : c,
-      ),
+      prev.map((c) => (c.id === id ? { ...c, status, resolvedAt: new Date().toISOString() } : c)),
     );
   }
 
-  // A reply just drafted from within the Inbox: drop it in so its TriageCard
-  // renders it inline immediately, no refetch and no scroll.
   function onDraftStaged(card: InboxCard) {
     setCards((prev) => [card, ...prev]);
   }
 
+  const counts = snapshot?.counts ?? EMPTY_COUNTS;
+
   const pending = cards.filter((c) => c.status === "pending");
-  const inSection = (s: InboxSection) => pending.filter((c) => sectionFor(c.kind) === s);
+  const inSection = (s: AwaitingSection) => pending.filter((c) => sectionFor(c.kind) === s);
   const triage = inSection("triage");
   const actions = inSection("actions");
   const decisions = inSection("decisions");
   const briefs = inSection("briefs");
   const activity = inSection("activity");
 
-  // Replies drafted from within the Inbox (source_surface='inbox') render inline on
-  // their originating triage thread instead of in the generic drafts list. Map them
-  // by thread for the still-pending triage cards; anything orphaned (its thread was
-  // already resolved) falls back to the generic drafts list so it never vanishes.
   const pendingTriageThreadIds = new Set(
     triage.map((c) => c.triage?.threadId).filter((t): t is string => Boolean(t)),
   );
@@ -1021,16 +1260,21 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
       c.status === "pending" &&
       !(c.sourceSurface === "inbox" && c.threadId && pendingTriageThreadIds.has(c.threadId)),
   );
-  const resolved = cards
-    .filter((c) => c.status !== "pending")
-    .slice(0, 20);
+  const resolved = cards.filter((c) => c.status !== "pending").slice(0, 20);
+
+  const attention = snapshot?.attention ?? [];
+  const active = snapshot?.active ?? [];
+  const verifying = snapshot?.verifying ?? [];
+  const scheduled = snapshot?.scheduled ?? [];
+  const recentlyDone = snapshot?.recentlyDone ?? [];
+
+  const awaitingCount =
+    triage.length + actions.length + drafts.length + decisions.length + briefs.length + activity.length;
   const allClear =
-    triage.length === 0 &&
-    actions.length === 0 &&
-    drafts.length === 0 &&
-    decisions.length === 0 &&
-    briefs.length === 0 &&
-    activity.length === 0;
+    attention.length === 0 &&
+    active.length === 0 &&
+    verifying.length === 0 &&
+    awaitingCount === 0;
 
   return (
     <div className="h-full overflow-y-auto bg-[#05070a]">
@@ -1043,33 +1287,26 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
             href="/app/apps"
             className="text-xs text-slate-600 hover:text-slate-400 transition-colors font-mono"
           >
-            ← Apps
+            ← Work apps
           </Link>
         </div>
 
         <div className="mb-7">
           <div className="text-[10px] text-[#22d3ee]/60 font-mono tracking-[0.2em] uppercase mb-2">
-            Agent desk · Approval queue
+            Agent desk · Live
           </div>
-          <h1 className="text-2xl font-bold text-slate-100">Inbox</h1>
+          <h1 className="text-2xl font-bold text-slate-100">Mission Control</h1>
           <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-            Where you approve anything your agent wants to do in the outside world.
+            One live view of your whole agent fleet — what needs you, what&apos;s running right now,
+            what&apos;s scheduled, and what just finished. It refreshes itself every few seconds.
+            Nothing sends or saves without your explicit go-ahead.
           </p>
         </div>
-
-        <p className="text-sm text-slate-300 leading-relaxed mb-7">
-          Your agent reads and drafts on its own, but it never sends, books, or pays without you.
-          When it wants to do something that touches the outside world — fire off a reply about a
-          storm-damage rebuild, put a site visit on your calendar, send an invoice — it stages
-          the action right here and waits. You see exactly what it&apos;s about to do, change
-          anything that&apos;s off, and tap once to let it go. Routines that run on their own, like
-          your Daily Brief, land here too. Nothing leaves without your tap.
-        </p>
 
         {loading ? (
           <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 px-6 py-10 flex flex-col items-center gap-3">
             <Mascot state="working" size={80} />
-            <p className="text-[12px] font-mono text-slate-500">checking your desk…</p>
+            <p className="text-[12px] font-mono text-slate-500">syncing your fleet…</p>
           </div>
         ) : fetchError ? (
           <div className="rounded-2xl border border-red-900/40 bg-red-950/20 px-6 py-6">
@@ -1077,12 +1314,48 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
           </div>
         ) : (
           <>
-            {/* Incoming email to triage */}
+            <StatStrip counts={counts} />
+
+            {/* 1 · Attention — failed / lost-contact / parked sub-agents */}
+            {attention.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader label="Attention" count={attention.length} tone="text-amber-400/80" />
+                <div className="flex flex-col gap-3">
+                  {attention.map((entry) => (
+                    <AttentionRunCard key={entry.id} entry={entry} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* 2 · Active right now — running sub-agents with heartbeat + retry budget */}
+            {active.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader label="Active right now" count={active.length} tone="text-[#22d3ee]/70" />
+                <div className="flex flex-col gap-3">
+                  {active.map((entry) => (
+                    <ActiveRunCard key={entry.id} entry={entry} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* 3 · Verifying — second-opinion gate in flight */}
+            {verifying.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader label="Verifying" count={verifying.length} tone="text-violet-300/70" />
+                <div className="flex flex-col gap-3">
+                  {verifying.map((entry) => (
+                    <VerifyingRunCard key={entry.id} entry={entry} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* 4 · Awaiting your decision — the original kind-grouped approval queue */}
             {triage.length > 0 && (
               <section className="mb-8">
-                <div className="text-[11px] font-mono text-slate-600 uppercase tracking-wider mb-3">
-                  Email to triage · {triage.length}
-                </div>
+                <SectionHeader label="Email to triage" count={triage.length} />
                 <div className="flex flex-col gap-3">
                   {triage.map((card) => (
                     <TriageCard
@@ -1099,12 +1372,9 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
               </section>
             )}
 
-            {/* Connector actions awaiting approval (orchestrator) */}
             {actions.length > 0 && (
               <section className="mb-8">
-                <div className="text-[11px] font-mono text-slate-600 uppercase tracking-wider mb-3">
-                  Actions awaiting approval · {actions.length}
-                </div>
+                <SectionHeader label="Actions awaiting approval" count={actions.length} />
                 <div className="flex flex-col gap-3">
                   {actions.map((card) => (
                     <ActionApprovalCard key={card.id} card={card} onResolved={onResolved} />
@@ -1113,12 +1383,9 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
               </section>
             )}
 
-            {/* Drafts awaiting approval */}
             {drafts.length > 0 && (
               <section className="mb-8">
-                <div className="text-[11px] font-mono text-slate-600 uppercase tracking-wider mb-3">
-                  Drafts awaiting approval · {drafts.length}
-                </div>
+                <SectionHeader label="Drafts awaiting approval" count={drafts.length} />
                 <div className="flex flex-col gap-3">
                   {drafts.map((card) => (
                     <DraftCard key={card.id} card={card} onResolved={onResolved} />
@@ -1127,15 +1394,46 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
               </section>
             )}
 
-            {/* Quick decisions */}
             {decisions.length > 0 && (
               <section className="mb-8">
-                <div className="text-[11px] font-mono text-slate-600 uppercase tracking-wider mb-3">
-                  Quick decisions · {decisions.length}
-                </div>
+                <SectionHeader label="Quick decisions" count={decisions.length} />
                 <div className="flex flex-col gap-3">
                   {decisions.map((card) => (
                     <DecisionCard key={card.id} card={card} onResolved={onResolved} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {briefs.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader label="Briefs to read" count={briefs.length} />
+                <div className="flex flex-col gap-3">
+                  {briefs.map((card) => (
+                    <RoutineOutputCard key={card.id} card={card} onResolved={onResolved} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {activity.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader label="Sub-agent activity" count={activity.length} />
+                <div className="flex flex-col gap-3">
+                  {activity.map((card) => (
+                    <SubAgentActivityCard key={card.id} card={card} onResolved={onResolved} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* 5 · Scheduled — next routine runs with countdown */}
+            {scheduled.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader label="Scheduled" count={scheduled.length} tone="text-sky-300/70" />
+                <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 px-5">
+                  {scheduled.map((entry) => (
+                    <ScheduledRow key={entry.kind} entry={entry} />
                   ))}
                 </div>
               </section>
@@ -1146,11 +1444,10 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
               <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 px-6 py-10 flex flex-col items-center gap-4">
                 <Mascot state="inbox" size={104} />
                 <div className="text-center max-w-sm">
-                  <div className="text-slate-100 text-base font-semibold mb-2">All caught up</div>
+                  <div className="text-slate-100 text-base font-semibold mb-2">Fleet&apos;s all clear</div>
                   <p className="text-slate-500 text-sm leading-relaxed">
-                    Cards land here as your agent does work — a drafted reply ready to send, a
-                    meeting staged for your calendar, a brief delivered, or a quick yes/no it needs
-                    from you. Nothing leaves without your tap.
+                    Nothing needs you and nothing&apos;s mid-flight. The moment a sub-agent kicks off,
+                    a draft is staged, or a routine has something for you, it shows up here — live.
                   </p>
                 </div>
                 <Link
@@ -1162,17 +1459,34 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
               </div>
             )}
 
-            {/* Recently resolved */}
-            {resolved.length > 0 && (
+            {/* 6 · Done — recently resolved (collapsed) */}
+            {(recentlyDone.length > 0 || resolved.length > 0) && (
               <section className="mt-2">
                 <button
                   onClick={() => setShowResolved((v) => !v)}
                   className="text-[11px] font-mono text-slate-600 hover:text-slate-400 uppercase tracking-wider transition-colors"
                 >
-                  Recently resolved · {resolved.length} {showResolved ? "▲" : "▼"}
+                  Recently resolved · {recentlyDone.length + resolved.length}{" "}
+                  {showResolved ? "▲" : "▼"}
                 </button>
                 {showResolved && (
                   <div className="mt-3 rounded-2xl border border-slate-800/60 bg-slate-900/40 px-5">
+                    {recentlyDone.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="flex items-center justify-between gap-3 py-3 border-b border-slate-800/50 last:border-0"
+                      >
+                        <span className="text-sm text-slate-400 truncate">{entry.title}</span>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400/80">
+                            Done
+                          </span>
+                          <span className="text-[11px] text-slate-600">
+                            {relativeTime(entry.updatedAt)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                     {resolved.map((card) => (
                       <ResolvedRow key={`${card.system}-${card.id}`} card={card} />
                     ))}
@@ -1202,72 +1516,6 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
               </p>
             </div>
           </div>
-        </div>
-
-        {/* First-touch guide — what to try, what this connects to, and a sample card */}
-        <div className="mt-8">
-          <TabGuide
-            promptsHeading="Want something to land here? Try one of these"
-            prompts={[
-              "Draft a reply to the storm-damage rebuild thread and stage it for me to approve",
-              "Find a 30-minute slot next week for the Reyes site visit and stage the calendar invite",
-              "Catch me up — what's waiting on my approval right now?",
-            ]}
-            worksWith={[
-              {
-                href: "/app/email",
-                label: "Email",
-                blurb: "Replies your agent drafts in your voice show up here before they send.",
-              },
-              {
-                href: "/app/calendar",
-                label: "Calendar",
-                blurb: "Meetings your agent wants to book wait here until you approve them.",
-              },
-              {
-                href: "/app/settings/connections",
-                label: "Connections",
-                blurb: "Every action on a connected tool — Gmail, QuickBooks, Slack — stages here first.",
-              },
-              {
-                href: "/app/routines",
-                label: "Routines",
-                blurb: "Scheduled work like your Daily Brief drops here when it runs.",
-              },
-            ]}
-            exampleLabel="See an example approval"
-            exampleNote="This is a sample. Your real drafts and decisions appear above the moment your agent stages them."
-          >
-            <div className="rounded-xl border border-amber-500/20 bg-slate-950/50 p-4">
-              <div className="text-[10px] font-mono text-amber-400/70 uppercase tracking-[0.18em]">
-                Draft awaiting approval
-              </div>
-              <p className="mt-1.5 text-sm font-semibold text-slate-100">
-                Reply to Maria Reyes — &ldquo;Re: storm-damage rebuild scope + timeline&rdquo;
-              </p>
-              <p className="mt-0.5 text-[11px] font-mono text-slate-500">to maria.reyes@email.com</p>
-              <pre className="mt-2 whitespace-pre-wrap rounded-lg border border-slate-800/40 bg-slate-950/60 p-3 text-xs leading-relaxed text-slate-400 font-mono">
-{`Hi Maria —
-
-Good talking Tuesday. Here's the scope we landed on, with
-the timeline and the line-item pricing attached.
-
-One question left: do you want the gutter work bundled in
-or quoted separately? Reply with either and I'll lock it.`}
-              </pre>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded-lg bg-[#22d3ee] px-3 py-1.5 text-xs font-semibold text-[#031820]">
-                  Approve &amp; send
-                </span>
-                <span className="rounded-lg border border-slate-700/60 px-3 py-1.5 text-xs font-medium text-slate-300">
-                  Edit first
-                </span>
-                <span className="rounded-lg border border-slate-700/60 px-3 py-1.5 text-xs font-medium text-slate-300">
-                  Discard
-                </span>
-              </div>
-            </div>
-          </TabGuide>
         </div>
       </div>
     </div>

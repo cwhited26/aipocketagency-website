@@ -31,7 +31,7 @@ const EXAMPLE = {
       n: 3,
       title: "Stage everything for approval",
       tasks: [
-        "Drop all fifteen drafts in your Inbox",
+        "Drop all fifteen drafts in Mission Control",
         "You read, edit, and approve before anything sends",
       ],
     },

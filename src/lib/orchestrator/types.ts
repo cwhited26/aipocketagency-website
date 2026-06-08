@@ -9,10 +9,15 @@
 import { z } from "zod";
 
 // ── Run status ────────────────────────────────────────────────────────────────────────
+// 'verifying' (Mission Control) = a completed run undergoing the second-opinion gate.
+// 'zombie' = the Watchdog reclaimed it after the heartbeat went stale (>60s). Both are
+// deliberately NON-terminal: a late run_complete can still revive a zombie and reconcile it.
 export const RUN_STATUSES = [
   "planning",
   "running",
   "paused",
+  "verifying",
+  "zombie",
   "done",
   "failed",
   "canceled",
@@ -20,11 +25,17 @@ export const RUN_STATUSES = [
 export const RunStatusSchema = z.enum(RUN_STATUSES);
 export type RunStatus = z.infer<typeof RunStatusSchema>;
 
-/** Statuses a run can still leave (not yet terminal). */
+/** Statuses a run can still leave (not yet terminal). zombie stays non-terminal on purpose. */
 export const TERMINAL_STATUSES: readonly RunStatus[] = ["done", "failed", "canceled"];
 export function isTerminalStatus(s: RunStatus): boolean {
   return TERMINAL_STATUSES.includes(s);
 }
+
+// ── Verification verdict (advisory second-opinion gate, PA-MC-7) ────────────────────────
+// Mirrors the pa_verification_log + pa_sub_agent_runs.verification_verdict CHECK.
+export const VERIFICATION_VERDICTS = ["pass", "fail", "abstain"] as const;
+export const VerificationVerdictSchema = z.enum(VERIFICATION_VERDICTS);
+export type VerificationVerdict = z.infer<typeof VerificationVerdictSchema>;
 
 // ── 7-phase Algorithm (PAI / PA-ORCH-8) ─────────────────────────────────────────────────
 export const PHASES = [
@@ -108,6 +119,9 @@ export const ScaffoldSchema = z.object({
 export type Scaffold = z.infer<typeof ScaffoldSchema>;
 
 // ── pa_sub_agent_runs row (as PostgREST returns it) ─────────────────────────────────────
+// The Mission Control telemetry columns (migration 038) are `.optional()` so a row read from a
+// project that hasn't applied 038 yet still parses — PostgREST omits unknown columns and the
+// projection treats them as null/0. Never widen this to `any`; add a typed field instead.
 export const SubAgentRunRowSchema = z.object({
   id: z.string(),
   business_id: z.string(),
@@ -123,6 +137,12 @@ export const SubAgentRunRowSchema = z.object({
   agent_minutes: z.coerce.number(),
   created_at: z.string(),
   updated_at: z.string(),
+  // Mission Control telemetry (migration 038).
+  last_heartbeat_at: z.string().nullable().optional(),
+  retries_used: z.number().int().nullable().optional(),
+  retry_budget: z.number().int().nullable().optional(),
+  verification_verdict: VerificationVerdictSchema.nullable().optional(),
+  needs_human: z.boolean().optional(),
 });
 export type SubAgentRunRow = z.infer<typeof SubAgentRunRowSchema>;
 

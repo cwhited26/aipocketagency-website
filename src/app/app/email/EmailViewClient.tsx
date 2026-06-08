@@ -84,7 +84,7 @@ export default function EmailViewClient({
             <p className="text-slate-500 text-sm mt-2 leading-relaxed">
               {connected
                 ? `Recent mail${accountEmail ? ` in ${accountEmail}` : ""}. Your agent triages incoming threads in the Inbox and never sends a reply without your tap.`
-                : "Connect Gmail and your agent reads incoming mail, triages it in your Inbox, and drafts replies in your voice — every send waits for your approval."}
+                : "Connect Gmail and your agent reads incoming mail, triages it in Mission Control, and drafts replies in your voice — every send waits for your approval."}
             </p>
           </div>
           {connected && (
@@ -101,7 +101,7 @@ export default function EmailViewClient({
           Connect Gmail and your agent reads your mail the way you would. Ask it to summarize the
           back-and-forth with a couple about their fall wedding and it gives you the short version.
           Ask it to draft a follow-up to the three couples who stopped by your booth and it writes
-          each one in your voice — then stages them in your Inbox so you read, tweak, and send with
+          each one in your voice — then stages them in Mission Control so you read, tweak, and send with
           one tap. Incoming mail gets triaged there too, so the stuff that needs you rises to the
           top. It reads and drafts on its own; it never sends without you.
         </p>
@@ -119,7 +119,7 @@ export default function EmailViewClient({
         {connected && (
           <p className="text-xs text-slate-600 mb-5">
             Need to act on a thread?{" "}
-            <Link href="/app/apps/inbox" className="text-[#22d3ee]/80 hover:text-[#22d3ee]">
+            <Link href="/app/mission-control" className="text-[#22d3ee]/80 hover:text-[#22d3ee]">
               Open Inbox triage →
             </Link>
           </p>
@@ -201,8 +201,8 @@ export default function EmailViewClient({
             ]}
             worksWith={[
               {
-                href: "/app/apps/inbox",
-                label: "Inbox",
+                href: "/app/mission-control",
+                label: "Mission Control",
                 blurb: "Every reply your agent drafts lands there for you to read and send.",
               },
               {
@@ -217,7 +217,7 @@ export default function EmailViewClient({
               },
             ]}
             exampleLabel="See an example draft"
-            exampleNote="This is a sample. Your real drafts land in your Inbox for approval before they send."
+            exampleNote="This is a sample. Your real drafts land in Mission Control for approval before they send."
           >
             <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 p-4">
               <p className="text-[11px] font-mono text-slate-500">

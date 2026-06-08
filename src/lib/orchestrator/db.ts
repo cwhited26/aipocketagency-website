@@ -10,6 +10,7 @@ import {
   type Phase,
   type RunStatus,
   type SubAgentRunRow,
+  type VerificationVerdict,
 } from "./types";
 
 export class OrchestratorDbError extends Error {
@@ -161,6 +162,12 @@ export type RunPatch = Partial<{
   resultSummary: string | null;
   tokenCost: number;
   agentMinutes: number;
+  // Mission Control telemetry (migration 038).
+  lastHeartbeatAt: string;
+  retriesUsed: number;
+  retryBudget: number;
+  verificationVerdict: VerificationVerdict | null;
+  needsHuman: boolean;
 }>;
 
 export async function updateRun(id: string, patch: RunPatch): Promise<SubAgentRunRow | null> {
@@ -171,6 +178,11 @@ export async function updateRun(id: string, patch: RunPatch): Promise<SubAgentRu
   if (patch.resultSummary !== undefined) body.result_summary = patch.resultSummary;
   if (patch.tokenCost !== undefined) body.token_cost = patch.tokenCost;
   if (patch.agentMinutes !== undefined) body.agent_minutes = patch.agentMinutes;
+  if (patch.lastHeartbeatAt !== undefined) body.last_heartbeat_at = patch.lastHeartbeatAt;
+  if (patch.retriesUsed !== undefined) body.retries_used = patch.retriesUsed;
+  if (patch.retryBudget !== undefined) body.retry_budget = patch.retryBudget;
+  if (patch.verificationVerdict !== undefined) body.verification_verdict = patch.verificationVerdict;
+  if (patch.needsHuman !== undefined) body.needs_human = patch.needsHuman;
 
   const rows = await rest<unknown[]>(`pa_sub_agent_runs?id=eq.${enc(id)}`, {
     method: "PATCH",
@@ -179,6 +191,67 @@ export async function updateRun(id: string, patch: RunPatch): Promise<SubAgentRu
   });
   const row = Array.isArray(rows) ? rows[0] : null;
   return row ? SubAgentRunRowSchema.parse(row) : null;
+}
+
+/**
+ * Stamp a run's heartbeat to now() — called by the runtime webhook on every event so the
+ * Watchdog can tell a live run from a silent one. Best-effort by design (a heartbeat miss must
+ * not fail the webhook), so callers handle the throw rather than this swallowing it.
+ */
+export async function touchHeartbeat(runId: string, nowIso: string): Promise<void> {
+  await rest<undefined>(`pa_sub_agent_runs?id=eq.${enc(runId)}`, {
+    method: "PATCH",
+    prefer: "return=minimal",
+    body: { last_heartbeat_at: nowIso, updated_at: nowIso },
+  });
+}
+
+/**
+ * Watchdog sweep (PA-MC-6): reclaim every live run whose heartbeat is older than `staleBeforeIso`
+ * — or that has no heartbeat yet but started before the cutoff — to 'zombie' + needs_human. The
+ * status filter excludes already-terminal/zombie runs, so a run is reclaimed at most once.
+ * Returns the rows it flipped (for the cron's response + reconciliation).
+ */
+export async function flipStaleRunsToZombie(
+  staleBeforeIso: string,
+  nowIso: string,
+): Promise<SubAgentRunRow[]> {
+  const stale = enc(staleBeforeIso);
+  const query =
+    `pa_sub_agent_runs?status=in.(planning,running,paused,verifying)` +
+    `&or=(last_heartbeat_at.lt.${stale},and(last_heartbeat_at.is.null,started_at.lt.${stale}))`;
+  const rows = await rest<unknown[]>(query, {
+    method: "PATCH",
+    prefer: "return=representation",
+    body: { status: "zombie", needs_human: true, updated_at: nowIso },
+  });
+  return Array.isArray(rows) ? rows.map((r) => SubAgentRunRowSchema.parse(r)) : [];
+}
+
+// ── pa_verification_log (advisory second-opinion gate, PA-MC-7) ──────────────────────────
+
+export async function insertVerificationLog(input: {
+  subAgentRunId: string;
+  verdict: VerificationVerdict;
+  reason: string | null;
+}): Promise<void> {
+  await rest<undefined>("pa_verification_log", {
+    method: "POST",
+    prefer: "return=minimal",
+    body: {
+      sub_agent_run_id: input.subAgentRunId,
+      verdict: input.verdict,
+      reason: input.reason,
+    },
+  });
+}
+
+/** Count 'fail' verdicts logged against a run — drives the 2+-strike needs_human flip. */
+export async function countVerificationFailures(runId: string): Promise<number> {
+  const rows = await rest<{ id: string }[]>(
+    `pa_verification_log?sub_agent_run_id=eq.${enc(runId)}&verdict=eq.fail&select=id`,
+  );
+  return Array.isArray(rows) ? rows.length : 0;
 }
 
 // ── pa_sub_agent_phase_log ─────────────────────────────────────────────────────────────

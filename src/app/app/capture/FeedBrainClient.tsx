@@ -260,8 +260,8 @@ export default function FeedBrainClient({
               blurb: "The files you send in land here, viewable any time.",
             },
             {
-              href: "/app/apps/inbox",
-              label: "Inbox",
+              href: "/app/mission-control",
+              label: "Mission Control",
               blurb: "Things shared from your phone show up to triage before they're filed.",
             },
           ]}

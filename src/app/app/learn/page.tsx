@@ -214,9 +214,9 @@ export default async function LearnPage() {
               tag="Reads Brain"
             />
             <AppRow
-              label="Inbox"
+              label="Mission Control"
               desc="Agent proposals staged here for your approval. Nothing executes without your yes."
-              href="/app/apps/inbox"
+              href="/app/mission-control"
               tag="Queue"
             />
             <AppRow
@@ -234,7 +234,7 @@ export default async function LearnPage() {
             <p className="text-sm text-slate-300 leading-relaxed mb-3">
               When your agent decides something is worth writing into your brain — a new client
               detail you mentioned, a decision you made — it doesn&apos;t write it directly.
-              Instead it stages a proposal in your Inbox.
+              Instead it stages a proposal in Mission Control.
             </p>
             <p className="text-sm text-slate-300 leading-relaxed mb-3">
               You see exactly what it wants to write and where. You Approve or Reject. Only after
@@ -247,10 +247,10 @@ export default async function LearnPage() {
             </div>
             <div className="mt-3">
               <Link
-                href="/app/apps/inbox"
+                href="/app/mission-control"
                 className="inline-flex items-center gap-1.5 text-sm text-[#22d3ee] hover:underline font-mono min-h-[44px]"
               >
-                Go to Inbox →
+                Go to Mission Control →
               </Link>
             </div>
           </Card>

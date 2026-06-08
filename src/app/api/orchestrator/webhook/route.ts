@@ -13,6 +13,7 @@ import {
   logPhaseEnter,
   markConnectorActionStatusByRun,
   reconcileAgentMinutes,
+  touchHeartbeat,
   updateRun,
 } from "@/lib/orchestrator/db";
 import { resolveInboxItem } from "@/lib/pa-inbox-items";
@@ -21,6 +22,7 @@ import { executeConnectorAction } from "@/lib/connectors/registry";
 import { notifyApprovalNeeded } from "@/lib/connectors/system";
 import { ConnectorScopeError } from "@/lib/orchestrator/containment-guard";
 import { verifyWebhookSecret } from "@/lib/orchestrator/runtime-client";
+import { applyVerificationGate } from "@/lib/orchestrator/verification";
 import { monthKey } from "@/lib/orchestrator/tier-caps";
 import { WebhookEventSchema, isTerminalStatus } from "@/lib/orchestrator/types";
 import { NextResponse } from "next/server";
@@ -53,6 +55,18 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const run = await fetchRun(event.runId);
   if (!run) return NextResponse.json({ error: "Run not found" }, { status: 404 });
+
+  // Heartbeat: any event from the runtime proves the run is alive, so stamp it before handling.
+  // Best-effort — a heartbeat write must never fail the callback, but the miss is logged (not
+  // swallowed) so a systemic heartbeat failure is visible rather than silently zombifying runs.
+  try {
+    await touchHeartbeat(run.id, new Date().toISOString());
+  } catch (e) {
+    console.error("[orchestrator/webhook] heartbeat stamp failed", {
+      runId: run.id,
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
 
   switch (event.type) {
     case "phase_enter": {
@@ -169,7 +183,26 @@ export async function POST(req: Request): Promise<NextResponse> {
         actual: event.agentMinutes,
         cost,
       });
-      return NextResponse.json({ ok: true });
+
+      // Advisory verification gate (PA-MC-7): log a second-opinion verdict before Mission Control
+      // honours the completion. v1 never blocks — a failure only records the verdict and, on a
+      // 2+-strike, parks the run in Attention. A gate error must not fail the (already-completed)
+      // callback, so it's caught + logged, not swallowed.
+      let verification: { verdict: string; needsHuman: boolean } | undefined;
+      try {
+        const outcome = await applyVerificationGate(
+          { ...run, status: event.status },
+          { status: event.status, resultSummary: event.resultSummary ?? null },
+        );
+        verification = { verdict: outcome.verdict, needsHuman: outcome.needsHuman };
+      } catch (e) {
+        console.error("[orchestrator/webhook] verification gate failed", {
+          runId: run.id,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+
+      return NextResponse.json({ ok: true, verification });
     }
   }
 }

@@ -245,7 +245,7 @@ export default function RoutinesClient() {
           start with what&apos;s on the radar. A follow-up sweep every Sunday night so nothing goes
           cold. A weekly read on what moved and what stalled. Flip a routine on and your agent runs
           it on its own, pulls from your brain, and drops the result in your{" "}
-          <Link href="/app/apps/inbox" className="text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors">
+          <Link href="/app/mission-control" className="text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors">
             Inbox
           </Link>{" "}
           for you to read. The fresher your brain, the better each run. (Soon you&apos;ll be able to
@@ -311,8 +311,8 @@ export default function RoutinesClient() {
           ]}
           worksWith={[
             {
-              href: "/app/apps/inbox",
-              label: "Inbox",
+              href: "/app/mission-control",
+              label: "Mission Control",
               blurb: "Whatever a routine produces lands there for you to read and clear.",
             },
             {
@@ -327,7 +327,7 @@ export default function RoutinesClient() {
             },
           ]}
           exampleLabel="See an example Daily Brief"
-          exampleNote="This is a sample. Turn a routine on above and its real output lands in your Inbox."
+          exampleNote="This is a sample. Turn a routine on above and its real output lands in Mission Control."
         >
           <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 p-4">
             <div className="text-[10px] font-mono text-[#22d3ee]/60 uppercase tracking-[0.18em]">

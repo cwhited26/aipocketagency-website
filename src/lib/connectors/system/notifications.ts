@@ -30,7 +30,7 @@ function appBaseUrl(): string {
 }
 
 function inboxLink(inboxItemId?: string): string {
-  const base = `${appBaseUrl()}/app/apps/inbox`;
+  const base = `${appBaseUrl()}/app/mission-control`;
   return inboxItemId ? `${base}#${encodeURIComponent(inboxItemId)}` : base;
 }
 
@@ -77,11 +77,11 @@ export async function notifyDailyBriefReady(input: {
     idempotencyKey: `daily_brief:${input.userId}:${input.dateKey}`,
     text:
       `Your Daily Brief for ${input.dateLabel} is ready.\n\n${summary}\n\n` +
-      `Open it in your Inbox: ${link}`,
+      `Open it in Mission Control: ${link}`,
     html: shell(
       `<p>Your Daily Brief for <strong>${esc(input.dateLabel)}</strong> is ready.</p>` +
         `<p style="color:#475569">${esc(summary)}</p>` +
-        `<p><a href="${link}">Open it in your Inbox</a></p>`,
+        `<p><a href="${link}">Open it in Mission Control</a></p>`,
     ),
   });
 }

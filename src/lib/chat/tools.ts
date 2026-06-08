@@ -34,7 +34,7 @@ import { OrchestratorDbError } from "@/lib/orchestrator/db";
 import type { ChatInventory, ChatConnector, LiveConnector } from "./connection-inventory";
 import { hasConnector } from "./connection-inventory";
 
-const INBOX_HREF = "/app/apps/inbox";
+const INBOX_HREF = "/app/mission-control";
 // Deep link to the owner's Gmail Drafts (the Gmail API draft id isn't a URL-addressable
 // compose key, so we link the folder rather than a specific draft).
 const GMAIL_DRAFTS_URL = "https://mail.google.com/mail/u/0/#drafts";
@@ -772,7 +772,7 @@ async function stageWrite(
   // in-process on approval, but we never imply it already fired.
   const runtimeOffNote = orchestratorEnabled()
     ? ""
-    : "\n\n(The Wave B runtime is off — this is queued in your Approval Inbox and will run when you approve it.)";
+    : "\n\n(The Wave B runtime is off — this is queued in Mission Control and will run when you approve it.)";
 
   try {
     await stageConnectorAction({
@@ -791,7 +791,7 @@ async function stageWrite(
       return { status: "error", label: title, summary: e.userMessage, forModel: `ERROR: ${e.userMessage}` };
     }
     if (e instanceof OrchestratorDbError && e.schemaNotProvisioned) {
-      const msg = "The Approval Inbox isn't provisioned yet (migration 021 pending). I couldn't queue that write.";
+      const msg = "Mission Control isn't provisioned yet (migration 021 pending). I couldn't queue that write.";
       return { status: "error", label: title, summary: msg, forModel: `ERROR: ${msg}` };
     }
     const message = e instanceof Error ? e.message : "Could not stage the action.";
@@ -805,7 +805,7 @@ async function stageWrite(
     detail: `${preview}${runtimeOffNote}`,
     openHref: INBOX_HREF,
     forModel:
-      `STAGED: this write is now waiting in the owner's Approval Inbox. Do NOT claim it was sent/posted/created. ` +
-      `Tell the owner it's queued and they can approve it in the Inbox.`,
+      `STAGED: this write is now waiting in the owner's Mission Control queue. Do NOT claim it was sent/posted/created. ` +
+      `Tell the owner it's queued and they can approve it in Mission Control.`,
   };
 }

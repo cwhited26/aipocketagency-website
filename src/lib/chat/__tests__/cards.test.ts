@@ -33,7 +33,7 @@ const VALID_PAYLOADS: Record<CardKind, unknown> = {
     status: "ok",
     summary: "Found 5 messages.",
     detail: "1. patrick@… — Re: roof",
-    openHref: "/app/apps/inbox",
+    openHref: "/app/mission-control",
   },
 };
 

@@ -118,8 +118,8 @@ export default async function ProjectsPage() {
               blurb: "Give your agent a big ask and it writes the plan you approve here.",
             },
             {
-              href: "/app/apps/inbox",
-              label: "Inbox",
+              href: "/app/mission-control",
+              label: "Mission Control",
               blurb: "Anything the project sends or books waits there for your approval as it runs.",
             },
             {

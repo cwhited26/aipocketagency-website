@@ -362,7 +362,7 @@ export default function TasksClient({ brainRepo }: { brainRepo: string | null })
                 </div>
                 <p className="text-[11px] font-mono text-slate-600 mt-3 leading-relaxed">
                   Full history in{" "}
-                  <Link href="/app/apps/inbox" className="text-[#22d3ee]/60 hover:text-[#22d3ee] transition-colors">
+                  <Link href="/app/mission-control" className="text-[#22d3ee]/60 hover:text-[#22d3ee] transition-colors">
                     Inbox →
                   </Link>
                 </p>
@@ -403,8 +403,8 @@ export default function TasksClient({ brainRepo }: { brainRepo: string | null })
               blurb: "Setup steps here fill the gaps in what your agent knows about your business.",
             },
             {
-              href: "/app/apps/inbox",
-              label: "Inbox",
+              href: "/app/mission-control",
+              label: "Mission Control",
               blurb: "Approvals waiting on you live here too — the full queue with every draft.",
             },
           ]}

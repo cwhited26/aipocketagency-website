@@ -241,7 +241,7 @@ export default function AppNav() {
 
   // Promoted Inbox / Connections live under /app/apps and /app/settings respectively,
   // so their parent ("Apps", "Settings") must not also light up when they're active.
-  const isInbox = pathname.startsWith("/app/apps/inbox");
+  const isInbox = pathname.startsWith("/app/mission-control");
   const isConnections = pathname.startsWith("/app/settings/connections");
 
   const isAgent =
@@ -284,7 +284,7 @@ export default function AppNav() {
           <CommandPaletteButton />
         </div>
         <NavItem href="/app/ask" active={isAgent} icon={<AgentIcon />} label="Agent" onClick={close} />
-        <NavItem href="/app/apps/inbox" active={isInbox} icon={<InboxIcon />} label="Inbox" badge={inboxCount} onClick={close} />
+        <NavItem href="/app/mission-control" active={isInbox} icon={<InboxIcon />} label="Mission Control" badge={inboxCount} onClick={close} />
         <NavItem href="/app/tasks" active={isTasks} icon={<TasksIcon />} label="Tasks" badge={taskCount} onClick={close} />
         <NavItem href="/app/calendar" active={isCalendar} icon={<CalendarIcon />} label="Calendar" onClick={close} />
         <NavItem href="/app/email" active={isEmail} icon={<EmailIcon />} label="Email" onClick={close} />

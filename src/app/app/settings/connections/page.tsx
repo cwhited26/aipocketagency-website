@@ -264,7 +264,7 @@ export default async function ConnectionsPage({
           Connect Google Calendar and it can see your schedule and propose times. Connect
           QuickBooks and it can draft invoices; Slack and it can post for you. Reads happen on
           their own — but every action that changes something out there waits in your{" "}
-          <a href="/app/apps/inbox" className="text-[#22d3ee] hover:underline">
+          <a href="/app/mission-control" className="text-[#22d3ee] hover:underline">
             Inbox
           </a>{" "}
           for your approval first. Nothing sends, books, or charges without your tap.
@@ -413,8 +413,8 @@ export default async function ConnectionsPage({
               blurb: "Google Calendar powers the Calendar tab — reading and proposing events.",
             },
             {
-              href: "/app/apps/inbox",
-              label: "Inbox",
+              href: "/app/mission-control",
+              label: "Mission Control",
               blurb: "Every action on a connected tool stages here for your approval before it runs.",
             },
           ]}

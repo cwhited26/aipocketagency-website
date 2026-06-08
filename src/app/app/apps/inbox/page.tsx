@@ -1,20 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
-import { fetchPaUser } from "@/lib/pa-supabase";
-import { redirect } from "next/navigation";
-import InboxClient from "./InboxClient";
+import { permanentRedirect } from "next/navigation";
 
-export default async function InboxPage() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/app/login");
-
-  const result = await fetchPaUser(user.id);
-  const paUser = result.ok ? result.data : null;
-
-  if (!paUser) redirect("/app/onboarding");
-
-  return <InboxClient brainRepo={paUser.brain_repo} />;
+// The Inbox became Mission Control (PA-MC-1). This route is kept only as a permanent (308)
+// redirect so existing links, bookmarks, and the connector approval-email deep links don't break.
+export default function InboxRedirectPage() {
+  permanentRedirect("/app/mission-control");
 }

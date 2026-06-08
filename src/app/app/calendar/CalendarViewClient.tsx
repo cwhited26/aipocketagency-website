@@ -91,7 +91,7 @@ export default function CalendarViewClient({
         <p className="text-sm text-slate-300 leading-relaxed mb-8">
           Once your calendar is connected, your agent can read it like you do. Ask it to find a
           30-minute slot next week and propose a showing to a buyer, and it checks for conflicts and
-          stages the invite in your Inbox. Ask what you should prep for tomorrow&apos;s walkthrough and
+          stages the invite in Mission Control. Ask what you should prep for tomorrow&apos;s walkthrough and
           it pulls your notes from the last one. It can create, move, or cancel events — but every
           change waits for your approval before it touches your real calendar. Nothing gets booked
           behind your back.
@@ -203,8 +203,8 @@ export default function CalendarViewClient({
                 blurb: "Once you approve an invite, your agent can send it from your Gmail.",
               },
               {
-                href: "/app/apps/inbox",
-                label: "Inbox",
+                href: "/app/mission-control",
+                label: "Mission Control",
                 blurb: "Every event your agent wants to create or move waits there for your tap.",
               },
               {

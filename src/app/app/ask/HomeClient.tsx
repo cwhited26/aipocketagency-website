@@ -450,8 +450,8 @@ function MascotNavHub({
     },
     {
       id: "inbox",
-      label: "Inbox",
-      href: "/app/apps/inbox",
+      label: "Mission",
+      href: "/app/mission-control",
       connected: false,
       svgX: 96, svgY: 265,
       tendrilD: "M 190 184 C 158 208 122 246 96 265",
@@ -681,7 +681,7 @@ function HubView({
           you&apos;d text a sharp assistant. Ask it to draft a recap from this morning&apos;s job
           walk-through, write follow-ups to everyone who stopped by your booth, or pull where a
           deal stands. It reads your brain for context, does the work, and stages anything that
-          leaves your hands — an email, a meeting, an invoice — in your Inbox for you to approve.
+          leaves your hands — an email, a meeting, an invoice — in Mission Control for you to approve.
           Big asks with several steps become a plan you sign off on first.
         </p>
 
@@ -811,8 +811,8 @@ function HubView({
         <WorksWithPanel
           items={[
             {
-              href: "/app/apps/inbox",
-              label: "Inbox",
+              href: "/app/mission-control",
+              label: "Mission Control",
               blurb: "Anything your agent wants to send or book waits here for your approval.",
             },
             {
@@ -936,7 +936,7 @@ your Inbox so you can look it over before it sends.`}
                 </pre>
                 <p className="mt-2 text-[13px] text-slate-400">
                   Staged the recap email in your{" "}
-                  <span className="text-[#22d3ee]/80">Inbox</span> — approve it whenever you&apos;re ready.
+                  <span className="text-[#22d3ee]/80">Mission Control</span> — approve it whenever you&apos;re ready.
                 </p>
               </div>
             </div>

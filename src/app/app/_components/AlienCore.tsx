@@ -75,8 +75,8 @@ export default function AlienCore({ brainRepo }: { brainRepo: string | null }) {
     {
       // ~225° clockwise from top
       id: "inbox",
-      label: "Inbox",
-      href: "/app/apps/inbox",
+      label: "Mission",
+      href: "/app/mission-control",
       x: 76, y: 224,
       connected: false,
       cx1: 100, cy1: 180, cx2: 85, cy2: 208,

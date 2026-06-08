@@ -198,8 +198,8 @@ export default async function AppsPage() {
                 blurb: "When an app's work has several steps, it runs as a plan you approve first.",
               },
               {
-                href: "/app/apps/inbox",
-                label: "Inbox",
+                href: "/app/mission-control",
+                label: "Mission Control",
                 blurb: "Whatever an app drafts — an email, a proposal — stages there for your approval.",
               },
             ]}
@@ -226,7 +226,7 @@ export default async function AppsPage() {
                 </li>
               </ul>
               <p className="mt-3 text-[11px] font-mono text-slate-500">
-                All three drafts staged in your Inbox →
+                All three drafts staged in Mission Control →
               </p>
             </div>
           </TabGuide>

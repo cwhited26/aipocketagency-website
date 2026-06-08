@@ -128,9 +128,9 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
   {
     name: "inbox",
     aliases: [],
-    label: "Inbox",
+    label: "Mission Control",
     filterTag: "inbox",
-    href: "/app/apps/inbox",
+    href: "/app/mission-control",
     description: "Drafts and decisions awaiting you",
     iconKey: "inbox",
     inRail: true,

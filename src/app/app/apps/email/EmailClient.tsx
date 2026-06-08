@@ -470,10 +470,10 @@ export default function EmailClient({
             <div className="rounded-xl border border-[#22d3ee]/20 bg-[#22d3ee]/[0.04] px-5 py-4">
               {staged ? (
                 <div className="space-y-1">
-                  <p className="text-sm font-semibold text-[#22d3ee]">Staged in your Inbox ✓</p>
+                  <p className="text-sm font-semibold text-[#22d3ee]">Staged in Mission Control ✓</p>
                   <p className="text-sm text-slate-400">
                     Approve it from the{" "}
-                    <Link href="/app/apps/inbox" className="underline hover:text-[#22d3ee]">
+                    <Link href="/app/mission-control" className="underline hover:text-[#22d3ee]">
                       Inbox
                     </Link>{" "}
                     to send — nothing goes out until you say so.
