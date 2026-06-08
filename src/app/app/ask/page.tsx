@@ -8,7 +8,8 @@ export default async function AskPage({
   searchParams,
 }: {
   // ?c=<conversationId> deep-links into a thread (set by the Hub thread list).
-  searchParams: { c?: string };
+  // ?q=<text> pre-fills the composer (set by the Projects page starter prompts).
+  searchParams: { c?: string; q?: string };
 }) {
   const supabase = createClient();
   const {
@@ -34,6 +35,7 @@ export default async function AskPage({
       hasGithubToken={!!paUser.github_token}
       initialConversations={initialConversations}
       initialConversationId={searchParams.c ?? null}
+      initialQuery={searchParams.q ?? null}
     />
   );
 }

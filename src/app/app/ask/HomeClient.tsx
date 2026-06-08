@@ -830,6 +830,7 @@ export default function HomeClient({
   hasGithubToken,
   initialConversations,
   initialConversationId,
+  initialQuery,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
@@ -837,13 +838,16 @@ export default function HomeClient({
   initialConversations: Conversation[];
   // When the owner deep-links from the Hub (/app/ask?c=<id>), this restores that thread on load.
   initialConversationId: string | null;
+  // When the owner taps a starter prompt on the Projects page (/app/ask?q=<text>), this seeds
+  // the composer so they land with the ask already typed and can edit before sending.
+  initialQuery: string | null;
 }) {
   const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [activeConvId, setActiveConvId] = useState<string | null>(initialConversationId);
   const [messages, setMessages] = useState<Message[]>([]);
   const [threadError, setThreadError] = useState<string | null>(null);
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState(initialQuery ?? "");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
