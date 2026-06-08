@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
+import { affordancesFor, type InboxItemKind } from "@/lib/inbox-affordances";
 
 type TriageDetail = {
   threadId: string;
@@ -19,11 +20,12 @@ type ActionApprovalDetail = {
   subAgentRunId: string | null;
 };
 
-// Mirrors the normalized card from GET /api/app/inbox.
+// Mirrors the normalized card from GET /api/app/inbox. Kind union is kept in lockstep
+// with InboxItemKind (the affordance source of truth) so the render switch stays exhaustive.
 type InboxCard = {
   id: string;
   system: "inbox" | "legacy";
-  kind: "draft" | "decision" | "email_triage" | "persona_lead" | "action_approval";
+  kind: InboxItemKind;
   status: "pending" | "approved" | "rejected" | "expired" | "failed";
   title: string;
   source: string;
@@ -67,6 +69,43 @@ async function postDecision(url: string): Promise<void> {
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(body.error ?? `Request failed (${res.status})`);
+  }
+}
+
+// Which queue section a kind renders in. Exhaustive with a `never` guard: a new
+// InboxItemKind must be slotted into a section here (and given affordances in
+// inbox-affordances.ts) or the build fails — no kind can silently fall through to
+// the wrong card and inherit the wrong buttons.
+type InboxSection =
+  | "triage"
+  | "actions"
+  | "drafts"
+  | "decisions"
+  | "briefs"
+  | "activity"
+  | "hidden";
+
+function sectionFor(kind: InboxItemKind): InboxSection {
+  switch (kind) {
+    case "email_triage":
+      return "triage";
+    case "action_approval":
+      return "actions";
+    case "draft":
+      return "drafts";
+    case "decision":
+      return "decisions";
+    case "routine_output":
+      return "briefs";
+    case "sub_agent_activity":
+      return "activity";
+    // Persona leads live on the Personas surface, not the approval queue.
+    case "persona_lead":
+      return "hidden";
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
   }
 }
 
@@ -657,6 +696,222 @@ function ActionApprovalCard({
   );
 }
 
+// ─── Routine output card (Daily Brief / Weekly Digest / Follow-up Sweep) ───────
+
+// An informational routine result. NOT an action — nothing fired and nothing will,
+// so there is no Approve and no Reject. The brief content previews inline (a "Read
+// full ↓" expander reveals the rest right in the card) so the user can read it, keep
+// it, and move on without opening a separate page. Buttons come from the affordance
+// source of truth (Mark as read / Save to brain / Dismiss).
+const ROUTINE_PREVIEW_CHARS = 600;
+
+function RoutineOutputCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState<"read" | "save" | "dismiss" | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [savedNote, setSavedNote] = useState<string | null>(null);
+
+  const set = affordancesFor("routine_output");
+  const full = card.bodyMd.trim() || card.preview;
+  const isLong = full.length > ROUTINE_PREVIEW_CHARS;
+  const shown = expanded || !isLong ? full : `${full.slice(0, ROUTINE_PREVIEW_CHARS).trimEnd()}…`;
+  // Save-to-brain commits to the brain repo, which only the new pa_inbox_items rows
+  // carry the linkage for. Legacy rows can still be read + dismissed.
+  const canSave = card.system === "inbox";
+
+  async function markRead() {
+    setBusy("read");
+    setErr(null);
+    try {
+      await postDecision(approveEndpoint(card));
+      onResolved(card.id, "approved");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  async function dismiss() {
+    setBusy("dismiss");
+    setErr(null);
+    try {
+      await postDecision(rejectEndpoint(card));
+      onResolved(card.id, "rejected");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  async function saveToBrain() {
+    setBusy("save");
+    setErr(null);
+    try {
+      const res = await fetch(`/api/app/inbox/${card.id}/save-to-brain`, {
+        method: "POST",
+        cache: "no-store",
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? `Save failed (${res.status})`);
+      setSavedNote("Saved to your brain.");
+      onResolved(card.id, "approved");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  const handlers: Record<string, () => void> = {
+    mark_read: () => void markRead(),
+    save_to_brain: () => void saveToBrain(),
+    dismiss: () => void dismiss(),
+  };
+
+  const primary = set.affordances.find((a) => a.role === "primary");
+  const secondary = set.affordances.filter(
+    (a) => a.role === "secondary" && (a.key !== "save_to_brain" || canSave),
+  );
+  const destructive = set.affordances.find((a) => a.role === "destructive");
+
+  if (savedNote) {
+    return (
+      <div className="rounded-2xl border border-emerald-500/20 bg-slate-900/60 p-4 sm:p-5">
+        <p className="text-sm text-emerald-300/90 leading-relaxed">{savedNote}</p>
+        <Link
+          href="/app/documents"
+          className="mt-3 inline-block text-xs font-mono text-[#22d3ee]/80 hover:text-[#22d3ee]"
+        >
+          View in your brain →
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-slate-700/40 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-slate-400/80 uppercase tracking-[0.18em]">
+          {card.source} · brief
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
+      </div>
+
+      <p className="text-[15px] font-semibold text-slate-100 leading-snug">{card.title}</p>
+
+      {/* The brief reads inline — no separate page, no scroll-then-approve dance. */}
+      <div className="mt-3 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{shown}</div>
+
+      {isLong && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 text-xs font-mono text-[#22d3ee]/80 hover:text-[#22d3ee] transition-colors"
+        >
+          {expanded ? "Show less ↑" : "Read full ↓"}
+        </button>
+      )}
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <div className="mt-4 flex items-center gap-2">
+        {primary && (
+          <button
+            onClick={handlers[primary.key]}
+            disabled={busy !== null}
+            className="flex-1 min-h-[44px] py-3 px-4 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-slate-200 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {busy === "read" ? "…" : primary.label}
+          </button>
+        )}
+        {secondary.map((a) => (
+          <button
+            key={a.key}
+            onClick={handlers[a.key]}
+            disabled={busy !== null}
+            className="min-h-[44px] px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {busy === "save" && a.key === "save_to_brain" ? "Saving…" : a.label}
+          </button>
+        ))}
+        {destructive && (
+          <button
+            onClick={handlers[destructive.key]}
+            disabled={busy !== null}
+            aria-label="Dismiss brief"
+            className="min-h-[44px] px-4 rounded-xl text-slate-500 text-sm hover:text-slate-300 transition-colors disabled:opacity-50"
+          >
+            {busy === "dismiss" ? "…" : destructive.label}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Sub-agent activity card (PA v5 Wave B progress) ───────────────────────────
+
+// A dismissible progress card for a running sub-agent. Informational — there is
+// nothing to approve, only to clear once read.
+function SubAgentActivityCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const set = affordancesFor("sub_agent_activity");
+  const dismissLabel = set.affordances.find((a) => a.key === "dismiss")?.label ?? "Dismiss";
+
+  async function dismiss() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await postDecision(rejectEndpoint(card));
+      onResolved(card.id, "rejected");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-violet-500/20 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-violet-300/70 uppercase tracking-[0.18em]">
+          Sub-agent · in progress
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
+      </div>
+
+      <p className="text-[15px] font-semibold text-slate-100 leading-snug">{card.title}</p>
+      {card.preview && (
+        <p className="mt-2 text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">
+          {card.preview}
+        </p>
+      )}
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <div className="mt-4 flex items-center justify-end">
+        <button
+          onClick={() => void dismiss()}
+          disabled={busy}
+          className="min-h-[44px] px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors disabled:opacity-50"
+        >
+          {busy ? "…" : dismissLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Resolved row ─────────────────────────────────────────────────────────────
 
 function ResolvedRow({ card }: { card: InboxCard }) {
@@ -728,9 +983,13 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
     setCards((prev) => [card, ...prev]);
   }
 
-  const triage = cards.filter((c) => c.kind === "email_triage" && c.status === "pending");
-  const actions = cards.filter((c) => c.kind === "action_approval" && c.status === "pending");
-  const decisions = cards.filter((c) => c.kind === "decision" && c.status === "pending");
+  const pending = cards.filter((c) => c.status === "pending");
+  const inSection = (s: InboxSection) => pending.filter((c) => sectionFor(c.kind) === s);
+  const triage = inSection("triage");
+  const actions = inSection("actions");
+  const decisions = inSection("decisions");
+  const briefs = inSection("briefs");
+  const activity = inSection("activity");
 
   // Replies drafted from within the Inbox (source_surface='inbox') render inline on
   // their originating triage thread instead of in the generic drafts list. Map them
@@ -764,7 +1023,9 @@ export default function InboxClient({ brainRepo }: { brainRepo: string | null })
     triage.length === 0 &&
     actions.length === 0 &&
     drafts.length === 0 &&
-    decisions.length === 0;
+    decisions.length === 0 &&
+    briefs.length === 0 &&
+    activity.length === 0;
 
   return (
     <div className="h-full overflow-y-auto bg-[#05070a]">

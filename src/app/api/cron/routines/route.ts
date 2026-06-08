@@ -13,7 +13,7 @@ import {
   generateWeeklyDigest,
 } from "@/lib/pa-drafts";
 import type { DigestPayload } from "@/lib/pa-drafts";
-import { createPendingAction } from "@/lib/pa-actions";
+import { createInboxItem } from "@/lib/pa-inbox-items";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -95,30 +95,35 @@ export async function GET(req: Request): Promise<NextResponse> {
       continue;
     }
 
-    // Write result to the approval inbox
+    // Stage the result in the Inbox as an INFORMATIONAL item. A routine output is an
+    // output, not an action — nothing fires if the owner never taps — so it lands as
+    // kind='routine_output' (Mark as read / Save to brain / Dismiss), never as a
+    // draft/decision with a misleading Approve. The brief content rides inline in
+    // body_md so the card previews it without a second fetch.
     const today = new Date().toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
-    const actionResult = await createPendingAction({
+    const inboxResult = await createInboxItem({
       userId: routine.user_id,
-      actionType: "routine_output",
+      kind: "routine_output",
       title: `${def.label} — ${today}`,
-      summary: `Your ${def.label.toLowerCase()} is ready. Read it, then dismiss.`,
-      payload: { kind, content },
+      bodyMd: content,
+      source: "routine",
+      payload: { routineKind: kind, label: def.label, content },
     });
 
-    const runError = actionResult.ok
+    const runError = inboxResult.ok
       ? null
-      : `Pending action write failed: ${actionResult.error}`;
+      : `Inbox write failed: ${inboxResult.error}`;
 
     await markRoutineRun(routine.id, { lastRunAt: now, nextRunAt, lastError: runError });
     results.push({
       id: routine.id,
       kind,
       userId: routine.user_id,
-      status: actionResult.ok ? "ok" : "error",
+      status: inboxResult.ok ? "ok" : "error",
       reason: runError ?? undefined,
     });
   }

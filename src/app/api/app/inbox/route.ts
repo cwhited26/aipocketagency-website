@@ -19,7 +19,9 @@ export type InboxCardKind =
   | "decision"
   | "email_triage"
   | "persona_lead"
-  | "action_approval";
+  | "action_approval"
+  | "sub_agent_activity"
+  | "routine_output";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -64,6 +66,7 @@ const SOURCE_LABELS: Record<string, string> = {
   "voice-memo": "Voice Memo",
   "auto-suggest": "Auto-suggest",
   gmail: "Gmail",
+  routine: "Routine",
 };
 
 function previewOf(text: string, max = 180): string {
@@ -129,8 +132,11 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
 }
 
 // Legacy pocket_agent_pending_actions (the Phase-3c brain-memory approval gate)
-// are surfaced as drafts so they don't disappear from the Inbox. Their execution
-// still runs through /api/app/actions/[id]/approve|reject.
+// are surfaced so they don't disappear from the Inbox. Their execution still runs
+// through /api/app/actions/[id]/approve|reject. A brain-memory proposal is a draft
+// (Approve to commit); a routine_output is informational (read it, never approve it),
+// so it carries the routine_output kind even though the cron now writes new outputs
+// straight to pa_inbox_items.
 function normalizeLegacyAction(action: PendingAction): InboxCard {
   const statusMap: Record<PendingAction["status"], InboxCardStatus> = {
     pending: "pending",
@@ -141,13 +147,14 @@ function normalizeLegacyAction(action: PendingAction): InboxCard {
     failed: "failed",
   };
   const content = str(action.payload.content) || action.summary;
+  const isRoutine = action.action_type === "routine_output";
   return {
     id: action.id,
     system: "legacy",
-    kind: "draft",
+    kind: isRoutine ? "routine_output" : "draft",
     status: statusMap[action.status],
     title: action.title,
-    source: action.action_type === "routine_output" ? "Routine" : "Auto-suggest",
+    source: isRoutine ? "Routine" : "Auto-suggest",
     preview: previewOf(action.summary || content),
     bodyMd: content,
     createdAt: action.created_at,

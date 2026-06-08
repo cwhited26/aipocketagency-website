@@ -1,0 +1,136 @@
+// inbox-affordances.ts — the single source of truth for what buttons each Inbox
+// item kind is allowed to show.
+//
+// The rule this encodes: affordances must be honest about the primitive. An
+// `action_approval` only fires on Approve, so it gets Approve. A Daily Brief is an
+// *output* — nothing happens if the user never taps — so it must NEVER show Approve
+// or Reject. Putting Approve on an informational item lies about what it is.
+//
+// `affordancesFor` is an exhaustive switch with a `never` check: adding a new
+// InboxItemKind without giving it an affordance set is a compile error. The Inbox
+// card renderer and the affordance unit test both read from here, so the buttons a
+// user sees can never silently drift from the buttons we test.
+
+export type InboxItemKind =
+  | "draft"
+  | "decision"
+  | "email_triage"
+  | "persona_lead"
+  | "action_approval"
+  | "sub_agent_activity"
+  | "routine_output";
+
+export type AffordanceRole = "primary" | "secondary" | "destructive";
+
+export type Affordance = {
+  /** Stable identifier — what the renderer and tests key off (never user-facing copy). */
+  key: string;
+  /** User-visible button label. */
+  label: string;
+  role: AffordanceRole;
+};
+
+export type AffordanceSet = {
+  /**
+   * True when the primary affordance commits an external or otherwise irreversible
+   * write that only happens BECAUSE the user approved it — sending an email, firing a
+   * connector write-action, committing an owner-approved plan. Informational kinds
+   * (routine_output, sub_agent_activity) are false: nothing fires either way.
+   */
+  hasApproval: boolean;
+  affordances: Affordance[];
+};
+
+// Affordance keys that represent a commit-on-approve action. No informational kind
+// may include one of these — `isInformational` enforces it and the test asserts it.
+const APPROVAL_KEYS = new Set(["approve", "reject"]);
+
+export function affordancesFor(kind: InboxItemKind): AffordanceSet {
+  switch (kind) {
+    // Connector write-action a sub-agent staged. The blocked tool call fires only on
+    // Approve. Edit lets the user tweak the payload first.
+    case "action_approval":
+      return {
+        hasApproval: true,
+        affordances: [
+          { key: "approve", label: "Approve", role: "primary" },
+          { key: "edit", label: "Edit", role: "secondary" },
+          { key: "reject", label: "Reject", role: "destructive" },
+        ],
+      };
+
+    // An email / message draft PA produced. Approving sends it live.
+    case "draft":
+      return {
+        hasApproval: true,
+        affordances: [
+          { key: "approve", label: "Approve & send", role: "primary" },
+          { key: "edit", label: "Edit", role: "secondary" },
+          { key: "reject", label: "Reject", role: "destructive" },
+        ],
+      };
+
+    // A Project Scaffolding plan the owner approves before PA dispatches lanes.
+    case "decision":
+      return {
+        hasApproval: true,
+        affordances: [
+          { key: "approve", label: "Approve plan", role: "primary" },
+          { key: "reject", label: "Reject", role: "destructive" },
+        ],
+      };
+
+    // Incoming email to triage. No "approve" — the user handles, drafts a reply, or
+    // archives. (Approving a drafted reply happens on the inline draft card, not here.)
+    case "email_triage":
+      return {
+        hasApproval: false,
+        affordances: [
+          { key: "draft_reply", label: "Draft me a reply", role: "primary" },
+          { key: "handle", label: "I'll handle", role: "secondary" },
+          { key: "archive", label: "Archive", role: "destructive" },
+        ],
+      };
+
+    // A captured persona lead. Surfaced and managed on the Personas surface, not in
+    // the approval queue — no affordances render here.
+    case "persona_lead":
+      return { hasApproval: false, affordances: [] };
+
+    // Sub-agent progress card. Informational — dismissible, never approvable.
+    case "sub_agent_activity":
+      return {
+        hasApproval: false,
+        affordances: [{ key: "dismiss", label: "Dismiss", role: "secondary" }],
+      };
+
+    // Routine output (Daily Brief, Weekly Digest, Follow-up Sweep summary). An output,
+    // not an action. Read it, optionally keep it, move on. NO Approve, NO Reject.
+    case "routine_output":
+      return {
+        hasApproval: false,
+        affordances: [
+          { key: "mark_read", label: "Mark as read", role: "primary" },
+          { key: "save_to_brain", label: "Save to brain", role: "secondary" },
+          { key: "dismiss", label: "Dismiss", role: "destructive" },
+        ],
+      };
+
+    default: {
+      // Exhaustiveness guard — a new InboxItemKind without an affordance set fails the
+      // type-check right here, forcing this file to be updated before it can ship.
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
+  }
+}
+
+/**
+ * True for kinds that are pure outputs the user reads and clears — never an action
+ * that fires on approval. Such kinds must carry no approve/reject affordance; this
+ * is the invariant the affordance test pins.
+ */
+export function isInformational(kind: InboxItemKind): boolean {
+  const set = affordancesFor(kind);
+  return !set.hasApproval && !set.affordances.some((a) => APPROVAL_KEYS.has(a.key));
+}

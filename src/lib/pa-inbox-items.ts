@@ -15,13 +15,17 @@
 // blocks in the brain repo). This file is the action-staging Inbox.
 
 // 'action_approval' (PA v5 Wave B) stages a connector write-action for one-tap approval; its
-// action-specific detail lives in pa_action_approvals (migration 021).
+// action-specific detail lives in pa_action_approvals (migration 021). 'sub_agent_activity'
+// is a dismissible progress card. 'routine_output' (migration 023) is an informational
+// routine result (Daily Brief / Weekly Digest / Follow-up Sweep) — read it, never approve it.
 export type InboxKind =
   | "draft"
   | "decision"
   | "email_triage"
   | "persona_lead"
-  | "action_approval";
+  | "action_approval"
+  | "sub_agent_activity"
+  | "routine_output";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {
