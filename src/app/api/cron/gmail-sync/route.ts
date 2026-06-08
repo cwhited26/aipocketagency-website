@@ -16,6 +16,7 @@ import {
   createInboxItem,
   fetchGmailTriageThreadIds,
 } from "@/lib/pa-inbox-items";
+import { notifyConnectionReauthNeeded } from "@/lib/connectors/system";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,7 +78,26 @@ function receivedAtIso(internalDate: string | null): string | null {
 async function syncConnection(conn: GmailConnectionFull): Promise<SyncResult> {
   const token = await ensureFreshAccessToken(conn);
   if (!token.ok) {
-    if (token.authError) await markGmailConnectionError(conn.id);
+    if (token.authError) {
+      await markGmailConnectionError(conn.id);
+      // OAuth refresh failed — the connection needs re-authorization. Email the owner a reconnect
+      // link. Best-effort + idempotent (connection_reauth:<connectionId>) so a failing sync cron
+      // pings once, not every 5 minutes; the Connections card is the durable signal.
+      const notice = await notifyConnectionReauthNeeded({
+        userId: conn.user_id,
+        connector: "Gmail",
+        connectionId: conn.id,
+        toEmail: conn.email,
+      });
+      if (!notice.ok) {
+        console.error("[cron/gmail-sync] reauth email failed", {
+          userId: conn.user_id,
+          connectionId: conn.id,
+          status: notice.status,
+          error: notice.error,
+        });
+      }
+    }
     return { userId: conn.user_id, status: "error", reason: `auth: ${token.error}` };
   }
 

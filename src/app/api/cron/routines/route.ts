@@ -14,6 +14,7 @@ import {
 } from "@/lib/pa-drafts";
 import type { DigestPayload } from "@/lib/pa-drafts";
 import { createInboxItem } from "@/lib/pa-inbox-items";
+import { notifyDailyBriefReady } from "@/lib/connectors/system";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -119,6 +120,27 @@ export async function GET(req: Request): Promise<NextResponse> {
       : `Inbox write failed: ${inboxResult.error}`;
 
     await markRoutineRun(routine.id, { lastRunAt: now, nextRunAt, lastError: runError });
+
+    // Daily Brief nudge: when the brief lands in the Inbox, email the owner so they catch it while
+    // out of the app. Best-effort + idempotent (daily_brief:<user>:<date>) — the Inbox card is the
+    // durable record. Other routine kinds stay in-app only.
+    if (kind === "daily_brief" && inboxResult.ok) {
+      const notice = await notifyDailyBriefReady({
+        userId: routine.user_id,
+        dateKey: now.slice(0, 10),
+        dateLabel: today,
+        summary: content,
+        inboxItemId: inboxResult.data.id,
+      });
+      if (!notice.ok) {
+        console.error("[cron/routines] daily brief email failed", {
+          userId: routine.user_id,
+          status: notice.status,
+          error: notice.error,
+        });
+      }
+    }
+
     results.push({
       id: routine.id,
       kind,
