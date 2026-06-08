@@ -13,7 +13,11 @@ import {
   listAutoApproveSettings,
   setAutoApproveEnabled,
 } from "@/lib/orchestrator/db";
-import { AUTO_APPROVE_TRUST_WINDOW, autoApproveUnlocked } from "@/lib/orchestrator/tier-caps";
+import {
+  AUTO_APPROVE_TRUST_WINDOW,
+  autoApproveUnlockedFor,
+  connectorActionTrustWindow,
+} from "@/lib/orchestrator/tier-caps";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -34,7 +38,9 @@ export async function GET(): Promise<NextResponse> {
       action: r.action,
       enabled: r.enabled,
       successCount: r.success_count,
-      unlocked: autoApproveUnlocked(r.success_count),
+      // Per-action window: money actions (QuickBooks) are tightened above the default.
+      trustWindow: connectorActionTrustWindow(r.connector, r.action),
+      unlocked: autoApproveUnlockedFor(r.connector, r.action, r.success_count),
       lastToggledAt: r.last_toggled_at,
     }));
     return NextResponse.json({ settings, trustWindow: AUTO_APPROVE_TRUST_WINDOW });
@@ -72,18 +78,21 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  // Enabling requires the trust window to be cleared; disabling is always allowed.
+  // Enabling requires the trust window to be cleared; disabling is always allowed. The window is
+  // per-action — money actions (QuickBooks create_invoice/record_payment) are tightened above
+  // the default.
   if (input.enabled) {
     const current = await fetchAutoApproveSetting(user.id, input.connector, input.action);
     const count = current?.success_count ?? 0;
-    if (!autoApproveUnlocked(count)) {
+    const window = connectorActionTrustWindow(input.connector, input.action);
+    if (!autoApproveUnlockedFor(input.connector, input.action, count)) {
       return NextResponse.json(
         {
           error:
             `Auto-approve for ${input.connector} · ${input.action} unlocks after ` +
-            `${AUTO_APPROVE_TRUST_WINDOW} approvals (you're at ${count}).`,
+            `${window} approvals (you're at ${count}).`,
           successCount: count,
-          trustWindow: AUTO_APPROVE_TRUST_WINDOW,
+          trustWindow: window,
         },
         { status: 403 },
       );
@@ -101,6 +110,6 @@ export async function POST(req: Request): Promise<NextResponse> {
     action: row.action,
     enabled: row.enabled,
     successCount: row.success_count,
-    unlocked: autoApproveUnlocked(row.success_count),
+    unlocked: autoApproveUnlockedFor(row.connector, row.action, row.success_count),
   });
 }

@@ -15,7 +15,7 @@ import {
   updateActionApprovalPayload,
 } from "@/lib/orchestrator/db";
 import { notifyApproval } from "@/lib/orchestrator/runtime-client";
-import { autoApproveUnlocked } from "@/lib/orchestrator/tier-caps";
+import { autoApproveUnlockedFor } from "@/lib/orchestrator/tier-caps";
 import { executeConnectorAction } from "@/lib/connectors/registry";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -84,6 +84,9 @@ export async function POST(
       payload: approval.payload,
       subAgentRunId: approval.sub_agent_run_id,
       ownerEmail: user.email ?? null,
+      // Deterministic idempotency seed for financial writes (QuickBooks Request-Id) — a retry
+      // of the same approval can't double-post an invoice or payment.
+      requestId: approval.id,
     });
     if (exec && !exec.ok) {
       return NextResponse.json({ error: exec.error }, { status: exec.status });
@@ -113,7 +116,7 @@ export async function POST(
     return NextResponse.json({
       status: "approved",
       trustCount,
-      autoApproveUnlocked: autoApproveUnlocked(trustCount),
+      autoApproveUnlocked: autoApproveUnlockedFor(approval.connector, approval.action, trustCount),
       connector: approval.connector,
       action: approval.action,
       executed: exec ? exec.ok : false,

@@ -13,6 +13,8 @@ type Setting = {
   action: string;
   enabled: boolean;
   successCount: number;
+  // Per-action unlock threshold (money actions are tightened above the default).
+  trustWindow: number;
   unlocked: boolean;
   lastToggledAt: string | null;
 };
@@ -113,7 +115,9 @@ export default function AutoApproveClient() {
           <div className="flex flex-col gap-3">
             {settings.map((s) => {
               const key = `${s.connector}:${s.action}`;
-              const progress = Math.min(100, Math.round((s.successCount / trustWindow) * 100));
+              // Each action carries its own window — money actions (QuickBooks) need more.
+              const window = s.trustWindow || trustWindow;
+              const progress = Math.min(100, Math.round((s.successCount / window) * 100));
               return (
                 <div
                   key={key}
@@ -127,7 +131,7 @@ export default function AutoApproveClient() {
                       <p className="text-xs text-slate-500 mt-0.5">
                         {s.unlocked
                           ? "Unlocked — you can let this run on its own."
-                          : `${s.successCount} of ${trustWindow} approvals toward unlocking`}
+                          : `${s.successCount} of ${window} approvals toward unlocking`}
                       </p>
                     </div>
                     <button
@@ -136,7 +140,7 @@ export default function AutoApproveClient() {
                       aria-pressed={s.enabled}
                       title={
                         !s.unlocked && !s.enabled
-                          ? `Unlocks after ${trustWindow} approvals`
+                          ? `Unlocks after ${window} approvals`
                           : undefined
                       }
                       className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${

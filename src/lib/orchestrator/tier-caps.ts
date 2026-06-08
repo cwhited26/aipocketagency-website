@@ -41,6 +41,24 @@ export const MAX_SUBAGENTS_PER_TASK: Record<Tier, number | null> = {
 // unlocks (SPEC §9.4 "after 10 successful Approves … trust me to send … on my own?").
 export const AUTO_APPROVE_TRUST_WINDOW = 10;
 
+// Per-(connector, action) overrides that HARD-TIGHTEN the default trust window for actions that
+// move real money (QuickBooks mini-spec, roadmap §2.3). An action absent from this map uses
+// AUTO_APPROVE_TRUST_WINDOW. record_payment carries the highest bar in the whole connector set:
+// even after clearing 20 approvals it stays opt-in / default-off (the owner must deliberately
+// flip the toggle; the higher count only makes that option available).
+export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> = {
+  "quickbooks:create_invoice": 10,
+  "quickbooks:record_payment": 20,
+};
+
+/** The trust window for a specific (connector, action), honoring the money-action overrides. */
+export function connectorActionTrustWindow(connector: string, action: string): number {
+  return (
+    CONNECTOR_ACTION_TRUST_OVERRIDES[`${connector.trim().toLowerCase()}:${action.trim().toLowerCase()}`] ??
+    AUTO_APPROVE_TRUST_WINDOW
+  );
+}
+
 export type CapDecision = { ok: boolean; reason: string };
 
 // ── Pure decision functions ──────────────────────────────────────────────────────────────
@@ -125,6 +143,20 @@ export function evaluateSubAgentFanout(tier: Tier, leafCount: number): CapDecisi
 /** Pure: has this (connector, action) cleared the trust window so auto-approve can unlock? */
 export function autoApproveUnlocked(successCount: number): boolean {
   return successCount >= AUTO_APPROVE_TRUST_WINDOW;
+}
+
+/**
+ * Pure: has this SPECIFIC (connector, action) cleared its trust window? Honors the money-action
+ * overrides (e.g. quickbooks:record_payment needs 20), falling back to the default window. Use
+ * this anywhere a connector + action is known; autoApproveUnlocked() stays for the connector-
+ * agnostic callers that only have a count.
+ */
+export function autoApproveUnlockedFor(
+  connector: string,
+  action: string,
+  successCount: number,
+): boolean {
+  return successCount >= connectorActionTrustWindow(connector, action);
 }
 
 // ── DB-backed wrapper ────────────────────────────────────────────────────────────────────

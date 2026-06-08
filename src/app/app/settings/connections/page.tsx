@@ -2,11 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchGmailConnectionPublic } from "@/lib/pa-gmail-connections";
 import { fetchCalendarConnectionPublic } from "@/lib/pa-calendar-connections";
 import { fetchSlackConnectionPublic } from "@/lib/pa-slack-connections";
+import { fetchQuickBooksConnectionPublic } from "@/lib/pa-quickbooks-connections";
 import { isSlackOAuthConfigured } from "@/lib/connectors/slack/oauth";
+import { isQuickBooksOAuthConfigured } from "@/lib/connectors/quickbooks/oauth";
 import { redirect } from "next/navigation";
 import GmailConnectionCard from "./GmailConnectionCard";
 import CalendarConnectionCard from "./CalendarConnectionCard";
 import SlackConnectionCard from "./SlackConnectionCard";
+import QuickBooksConnectionCard from "./QuickBooksConnectionCard";
 
 export const dynamic = "force-dynamic";
 
@@ -69,10 +72,33 @@ const SLACK_MESSAGES: Record<string, { title: string; body: string; kind: "succe
   },
 };
 
+const QUICKBOOKS_MESSAGES: Record<string, { title: string; body: string; kind: "success" | "error" }> = {
+  connected: {
+    title: "QuickBooks connected",
+    body: "Your agent can now draft invoices, record payments, and pull reports. Every invoice and payment is staged for your approval first — nothing posts to your books on its own.",
+    kind: "success",
+  },
+  not_configured: {
+    title: "QuickBooks sign-in unavailable",
+    body: "QuickBooks OAuth isn't configured for this deployment yet. Add INTUIT_CLIENT_ID, INTUIT_CLIENT_SECRET, and INTUIT_ENVIRONMENT in Vercel to switch it on.",
+    kind: "error",
+  },
+  missing_scope: {
+    title: "QuickBooks permission not granted",
+    body: "The connection went through but didn't include accounting access. Reconnect and approve the QuickBooks permission to finish.",
+    kind: "error",
+  },
+  error: {
+    title: "QuickBooks connection failed",
+    body: "Something went wrong connecting QuickBooks. Try again, or contact support if it keeps happening.",
+    kind: "error",
+  },
+};
+
 export default async function ConnectionsPage({
   searchParams,
 }: {
-  searchParams: { connection?: string; calendar?: string; slack?: string };
+  searchParams: { connection?: string; calendar?: string; slack?: string; quickbooks?: string };
 }) {
   const supabase = createClient();
   const {
@@ -80,21 +106,27 @@ export default async function ConnectionsPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/app/login");
 
-  const [gmailResult, calendarResult, slackResult] = await Promise.all([
+  const [gmailResult, calendarResult, slackResult, quickbooksResult] = await Promise.all([
     fetchGmailConnectionPublic(user.id),
     fetchCalendarConnectionPublic(user.id),
     fetchSlackConnectionPublic(user.id),
+    fetchQuickBooksConnectionPublic(user.id),
   ]);
   const gmail = gmailResult.ok ? gmailResult.data : null;
   const calendar = calendarResult.ok ? calendarResult.data : null;
   const slack = slackResult.ok ? slackResult.data : null;
+  const quickbooks = quickbooksResult.ok ? quickbooksResult.data : null;
   const slackOAuthConfigured = isSlackOAuthConfigured();
+  const quickBooksOAuthConfigured = isQuickBooksOAuthConfigured();
 
   const message = searchParams.connection ? MESSAGES[searchParams.connection] ?? null : null;
   const calendarMessage = searchParams.calendar
     ? CALENDAR_MESSAGES[searchParams.calendar] ?? null
     : null;
   const slackMessage = searchParams.slack ? SLACK_MESSAGES[searchParams.slack] ?? null : null;
+  const quickbooksMessage = searchParams.quickbooks
+    ? QUICKBOOKS_MESSAGES[searchParams.quickbooks] ?? null
+    : null;
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">
@@ -158,18 +190,37 @@ export default async function ConnectionsPage({
           </div>
         )}
 
+        {quickbooksMessage && (
+          <div
+            className={`rounded-xl border px-5 py-4 space-y-1 ${
+              quickbooksMessage.kind === "success"
+                ? "border-[#22d3ee]/25 bg-[#22d3ee]/5"
+                : "border-slate-700/60 bg-slate-900/50"
+            }`}
+          >
+            <p className="text-sm font-semibold text-slate-100">{quickbooksMessage.title}</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{quickbooksMessage.body}</p>
+          </div>
+        )}
+
         <GmailConnectionCard connection={gmail} />
 
         <CalendarConnectionCard connection={calendar} />
 
         <SlackConnectionCard connection={slack} oauthConfigured={slackOAuthConfigured} />
 
+        <QuickBooksConnectionCard
+          connection={quickbooks}
+          oauthConfigured={quickBooksOAuthConfigured}
+        />
+
         <p className="text-xs text-slate-600 leading-relaxed">
           Gmail access lets your agent read incoming mail and archive a thread when you tap
           “I’ll handle” or “Archive.” Calendar access lets it read your schedule and propose,
-          create, or reschedule events. Slack access lets it post, reply in threads, and DM. It
-          never sends, deletes, or writes anything on its own — replies and calendar changes are
-          always staged for your approval first.
+          create, or reschedule events. Slack access lets it post, reply in threads, and DM.
+          QuickBooks access lets it draft invoices, record payments, and pull reports. It never
+          sends, deletes, or writes anything on its own — replies, calendar changes, and every
+          invoice or payment are always staged for your approval first.
         </p>
       </div>
     </div>
