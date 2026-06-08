@@ -4,7 +4,7 @@ import { SiteHeader, SiteFooter } from "@/components/marketing/site-nav";
 import { PrimaryCTA, SecondaryCTA, MONO_FONT } from "@/components/marketing/cta";
 import { ChatMock, ScaffoldMock, PersonaSpecMock } from "@/components/marketing/mocks";
 
-const PAGE_URL = "https://aipocketagency.com/pocket-agent";
+const PAGE_URL = "https://aipocketagent.com/pocket-agent";
 const DESCRIPTION =
   "How Pocket Agent works: you tell it what needs doing in plain words, it lays out a plan, does the work across your tools, and shows you before anything goes out. You approve. It executes.";
 

@@ -64,13 +64,13 @@ export type GmailResult<T> =
 // redirect_uri on the auth request (start route) and the token exchange (callback
 // route) are a bit-exact match for an Authorized redirect URI in the GCP OAuth
 // client. NEVER derive this from the request host: the prod deploy also answers on
-// the apex domain and *.vercel.app aliases, none of which are registered. Both
+// the `app.` subdomain and *.vercel.app aliases, none of which are registered. Both
 // routes call gmailRedirectUri() so the value is identical on each call.
-const DEFAULT_OAUTH_REDIRECT_BASE = "https://app.aipocketagency.com";
+const DEFAULT_OAUTH_REDIRECT_BASE = "https://aipocketagent.com";
 
 /**
  * The OAuth callback URL, built verbatim from PA_OAUTH_REDIRECT_BASE (read at
- * request time). Set this env to a registered origin: https://app.aipocketagency.com
+ * request time). Set this env to a registered origin: https://aipocketagent.com
  * in prod, http://localhost:3000 for local dev.
  */
 export function gmailRedirectUri(): string {

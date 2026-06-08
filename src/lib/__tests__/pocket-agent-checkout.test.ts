@@ -32,7 +32,7 @@ describe("buildPocketAgentCheckoutParams", () => {
   const base = {
     email: "owner@example.com",
     name: "Chase",
-    origin: "https://aipocketagency.com",
+    origin: "https://aipocketagent.com",
     userId: "user-123",
   };
 

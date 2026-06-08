@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SiteHeader, SiteFooter } from "@/components/marketing/site-nav";
 import { PrimaryCTA } from "@/components/marketing/cta";
 
-const PAGE_URL = "https://aipocketagency.com/about";
+const PAGE_URL = "https://aipocketagent.com/about";
 const DESCRIPTION =
   "AI Pocket Agency is the studio behind Pocket Agent — the one chat that runs your business with you. Built by an operator who runs his own businesses on it.";
 

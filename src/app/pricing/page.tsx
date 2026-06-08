@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SiteHeader, SiteFooter } from "@/components/marketing/site-nav";
 import { PrimaryCTA, MONO_FONT } from "@/components/marketing/cta";
 
-const PAGE_URL = "https://aipocketagency.com/pricing";
+const PAGE_URL = "https://aipocketagent.com/pricing";
 const DESCRIPTION =
   "Start where you are, move up when the business does. Starter $37, Pro $97, Pro+ $149, Studio $297, Studio+ $497, Enterprise. Every plan earns its price by turning on the next thing you can hand off. 14-day free trial.";
 

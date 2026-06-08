@@ -37,9 +37,9 @@ function isAuthFailure(status: number, slackError: string | null): boolean {
 // Slack rejects the token exchange with bad_redirect_uri unless the redirect_uri on the
 // authorize request and the token exchange are a bit-exact match for a Redirect URL
 // registered on the Slack app. Both routes call slackRedirectUri() so the value is identical.
-// NEVER derive this from the request host — prod also answers on the apex + *.vercel.app
+// NEVER derive this from the request host — prod also answers on the `app.` subdomain + *.vercel.app
 // aliases, none of which are registered.
-const DEFAULT_OAUTH_REDIRECT_BASE = "https://app.aipocketagency.com";
+const DEFAULT_OAUTH_REDIRECT_BASE = "https://aipocketagent.com";
 
 export function slackRedirectUri(): string {
   const base = (process.env.PA_OAUTH_REDIRECT_BASE ?? DEFAULT_OAUTH_REDIRECT_BASE).replace(

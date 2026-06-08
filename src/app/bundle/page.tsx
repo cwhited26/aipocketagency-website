@@ -10,7 +10,7 @@ import {
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
-const PAGE_URL = "https://aipocketagency.com/bundle";
+const PAGE_URL = "https://aipocketagent.com/bundle";
 
 export const metadata: Metadata = {
   title: "The APA Bundle — All 5 kits, $60 | AI Pocket Agency",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "https://aipocketagency.com/og-share.png",
+        url: "https://aipocketagent.com/og-share.png",
         width: 1200,
         height: 630,
         alt: "AI Pocket Agency — the bundle of 5 kits",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     title: "The APA Bundle — All 5 kits, $60",
     description:
       "All 5 AI Pocket Agency kits bundled — $60 instead of $75 buying them one at a time.",
-    images: ["https://aipocketagency.com/og-share.png"],
+    images: ["https://aipocketagent.com/og-share.png"],
   },
 };
 

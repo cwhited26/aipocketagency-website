@@ -67,7 +67,7 @@ export function isQuickBooksOAuthConfigured(): boolean {
 // Bit-exact match required between the auth request (start route) and the token exchange
 // (callback route), and it must be a Redirect URI on the Intuit app. Derived from
 // PA_OAUTH_REDIRECT_BASE (the same env every connector uses), never the host.
-const DEFAULT_OAUTH_REDIRECT_BASE = "https://app.aipocketagency.com";
+const DEFAULT_OAUTH_REDIRECT_BASE = "https://aipocketagent.com";
 
 export function quickBooksRedirectUri(): string {
   const base = (process.env.PA_OAUTH_REDIRECT_BASE ?? DEFAULT_OAUTH_REDIRECT_BASE).replace(

@@ -8,7 +8,7 @@ function baseUrl(): string {
   const raw =
     process.env.PA_PERSONAS_PUBLIC_BASE_URL ??
     process.env.NEXT_PUBLIC_SITE_URL ??
-    "https://aipocketagency.com";
+    "https://aipocketagent.com";
   return raw.replace(/\/$/, "");
 }
 

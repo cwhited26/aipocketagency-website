@@ -55,7 +55,7 @@ export function platformSecretKey(): string | null {
 // Bit-exact match required between the authorize request and the token exchange, and it must be
 // a registered redirect URI on the Connect application. Derived from PA_OAUTH_REDIRECT_BASE (the
 // same env every other connector uses), never the request host.
-const DEFAULT_OAUTH_REDIRECT_BASE = "https://app.aipocketagency.com";
+const DEFAULT_OAUTH_REDIRECT_BASE = "https://aipocketagent.com";
 
 export function stripeRedirectUri(): string {
   const base = (process.env.PA_OAUTH_REDIRECT_BASE ?? DEFAULT_OAUTH_REDIRECT_BASE).replace(

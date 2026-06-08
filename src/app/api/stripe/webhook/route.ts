@@ -37,7 +37,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const STRIPE_SIGNATURE_TOLERANCE_SECONDS = 5 * 60;
-const SITE_ORIGIN = "https://aipocketagency.com";
+const SITE_ORIGIN = "https://aipocketagent.com";
 const FROM = "Chase Whited <chase@aipocketagency.com>";
 
 type StripeEvent = {
@@ -122,7 +122,7 @@ function singleKitDeliveryHtml(kit: KitConfig, pdfUrl: string): string {
 <p>Read it cover to cover. Try one thing from it next time you sit down at your desk. The first clean run is the day this stops feeling theoretical.</p>
 <p>If the PDF doesn't open, <a href="${pdfUrl}" style="color:#6ee7b7;">download it directly here</a>.</p>
 <p>If you want the live system around the kits — the brain pattern, the community, the operators trading patterns weekly — that's at:</p>
-<p><a href="${SITE_ORIGIN}" style="color:#6ee7b7;">aipocketagency.com</a></p>
+<p><a href="${SITE_ORIGIN}" style="color:#6ee7b7;">aipocketagent.com</a></p>
 <p style="margin-top:32px;">&mdash; Chase</p>
 </div>
 </body></html>`;
@@ -157,7 +157,7 @@ function pairKitDeliveryHtml(
 <p><strong>${primary.fullName}</strong> — <a href="${primaryUrl}" style="color:#6ee7b7;">download direct</a></p>
 <p><strong>${bump.fullName}</strong> — <a href="${bumpUrl}" style="color:#6ee7b7;">download direct</a></p>
 <p>Pick one and read it cover to cover this week. The kits compound, but one good read beats two half-skims.</p>
-<p>The live system around the kits — the brain pattern, the community, the operators trading patterns weekly — is at <a href="${SITE_ORIGIN}" style="color:#6ee7b7;">aipocketagency.com</a>.</p>
+<p>The live system around the kits — the brain pattern, the community, the operators trading patterns weekly — is at <a href="${SITE_ORIGIN}" style="color:#6ee7b7;">aipocketagent.com</a>.</p>
 <p style="margin-top:32px;">&mdash; Chase</p>
 </div>
 </body></html>`;
@@ -194,7 +194,7 @@ function bundleDeliveryHtml(kits: KitConfig[]): string {
 <p>You took the bundle. All five APA kits are attached.</p>
 ${lines}
 <p>The order matters less than picking one and shipping a lane this week. The Dispatch Playbook is the foundation — start there if you don't know where to start.</p>
-<p>The live system around the kits — three calls a week, the brain pattern, the operators trading patterns weekly — is at <a href="${SITE_ORIGIN}/skool-invite" style="color:#6ee7b7;">aipocketagency.com</a>.</p>
+<p>The live system around the kits — three calls a week, the brain pattern, the operators trading patterns weekly — is at <a href="${SITE_ORIGIN}/skool-invite" style="color:#6ee7b7;">aipocketagent.com</a>.</p>
 <p style="margin-top:32px;">&mdash; Chase</p>
 </div>
 </body></html>`;
@@ -641,7 +641,7 @@ async function handlePocketAgentTrialWillEnd(
 <p>Hey${name ? ` ${name}` : ""} —</p>
 <p>Your Pocket Agent free trial ends on <strong>${trialEndDate}</strong>. After that, your card will be charged $37/mo.</p>
 <p>If you want to cancel before then, you can do it any time from your billing portal. Just reply to this email and I'll send you the link.</p>
-<p>If you're still getting set up, the brain template is at <a href="https://aipocketagency.com" style="color:#6ee7b7;">aipocketagency.com</a> — everything you need is there.</p>
+<p>If you're still getting set up, the brain template is at <a href="https://aipocketagent.com" style="color:#6ee7b7;">aipocketagent.com</a> — everything you need is there.</p>
 <p style="margin-top:32px;">&mdash; Chase</p>
 </div>
 </body></html>`;
@@ -652,7 +652,7 @@ Your Pocket Agent free trial ends on ${trialEndDate}. After that, your card will
 
 If you want to cancel before then, you can do it any time from your billing portal. Just reply to this email and I'll send you the link.
 
-If you're still getting set up, the brain template is at https://aipocketagency.com
+If you're still getting set up, the brain template is at https://aipocketagent.com
 
 — Chase`;
 

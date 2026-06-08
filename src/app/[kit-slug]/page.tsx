@@ -17,7 +17,7 @@ export function generateMetadata({
   const slug = params["kit-slug"];
   const kit = getKitConfig(slug);
   if (!kit) return {};
-  const pageUrl = `https://aipocketagency.com/${kit.slug}`;
+  const pageUrl = `https://aipocketagent.com/${kit.slug}`;
   const title = `${kit.fullName} — $15 Instant Download | AI Pocket Agency`;
   const description = kit.blurb;
   return {
@@ -32,7 +32,7 @@ export function generateMetadata({
       type: "website",
       images: [
         {
-          url: "https://aipocketagency.com/og-share.png",
+          url: "https://aipocketagent.com/og-share.png",
           width: 1200,
           height: 630,
           alt: kit.ogAlt,
@@ -43,7 +43,7 @@ export function generateMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: ["https://aipocketagency.com/og-share.png"],
+      images: ["https://aipocketagent.com/og-share.png"],
     },
   };
 }

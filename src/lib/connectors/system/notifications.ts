@@ -20,10 +20,10 @@ function esc(s: string): string {
   );
 }
 
-// The app (not the apex marketing site) origin — deep links target app.aipocketagency.com.
+// The PA app origin — deep links target aipocketagent.com (apex; no `app.` subdomain).
 // Matches the OAuth redirect base the Connections lane uses, so all PA app links agree.
 function appBaseUrl(): string {
-  return (process.env.PA_OAUTH_REDIRECT_BASE ?? "https://app.aipocketagency.com").replace(
+  return (process.env.PA_OAUTH_REDIRECT_BASE ?? "https://aipocketagent.com").replace(
     /\/+$/,
     "",
   );

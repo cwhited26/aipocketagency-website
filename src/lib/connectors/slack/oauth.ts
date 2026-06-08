@@ -133,7 +133,7 @@ const REAUTH_FROM = "Pocket Agent <agent@aipocketagency.com>";
  */
 export async function notifySlackReauthNeeded(ownerEmail: string | null): Promise<void> {
   if (!ownerEmail) return;
-  const reconnectUrl = `${(process.env.PA_OAUTH_REDIRECT_BASE ?? "https://app.aipocketagency.com").replace(/\/+$/, "")}/app/settings/connections`;
+  const reconnectUrl = `${(process.env.PA_OAUTH_REDIRECT_BASE ?? "https://aipocketagent.com").replace(/\/+$/, "")}/app/settings/connections`;
   await sendEmail({
     from: REAUTH_FROM,
     to: ownerEmail,

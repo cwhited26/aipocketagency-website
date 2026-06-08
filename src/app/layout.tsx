@@ -19,17 +19,17 @@ export const metadata: Metadata = {
   title: "Pocket Agent — by AI Pocket Agency",
   description:
     "AI Pocket Agency — home of Pocket Agent. We give your business a memory. $37/mo, 14-day free trial.",
-  metadataBase: new URL("https://aipocketagency.com"),
+  metadataBase: new URL("https://aipocketagent.com"),
   openGraph: {
     title: "Pocket Agent — by AI Pocket Agency",
     description:
       "AI Pocket Agency — home of Pocket Agent. We give your business a memory. $37/mo, 14-day free trial.",
-    url: "https://aipocketagency.com",
+    url: "https://aipocketagent.com",
     siteName: "AI Pocket Agency",
     type: "website",
     images: [
       {
-        url: "https://aipocketagency.com/og-share.png",
+        url: "https://aipocketagent.com/og-share.png",
         width: 1200,
         height: 630,
         alt: "Pocket Agent — AI Pocket Agency",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     title: "Pocket Agent — by AI Pocket Agency",
     description:
       "AI Pocket Agency — home of Pocket Agent. We give your business a memory. $37/mo, 14-day free trial.",
-    images: ["https://aipocketagency.com/og-share.png"],
+    images: ["https://aipocketagent.com/og-share.png"],
   },
   icons: {
     icon: [

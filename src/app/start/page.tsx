@@ -8,7 +8,7 @@ import {
 } from "@/lib/personas/tier-caps";
 import StartForm from "./StartForm";
 
-const PAGE_URL = "https://aipocketagency.com/start";
+const PAGE_URL = "https://aipocketagent.com/start";
 const DESCRIPTION =
   "Start your 14-day free trial of Pocket Agent. $37/mo after the trial. Cancel anytime.";
 

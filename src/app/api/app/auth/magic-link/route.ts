@@ -25,7 +25,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const next = safePath(body.next);
-  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aipocketagency.com";
+  const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aipocketagent.com";
 
   const supabase = createClient();
   const { error } = await supabase.auth.signInWithOtp({

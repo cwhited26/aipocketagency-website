@@ -47,7 +47,7 @@ export class ReauthNeededError extends Error {
 // Bit-exact match required between the auth request (start route) and the token exchange
 // (callback route), and it must be an Authorized redirect URI on the GCP OAuth client.
 // Derived from PA_OAUTH_REDIRECT_BASE (the same env the Gmail flow uses), never the host.
-const DEFAULT_OAUTH_REDIRECT_BASE = "https://app.aipocketagency.com";
+const DEFAULT_OAUTH_REDIRECT_BASE = "https://aipocketagent.com";
 
 export function calendarRedirectUri(): string {
   const base = (process.env.PA_OAUTH_REDIRECT_BASE ?? DEFAULT_OAUTH_REDIRECT_BASE).replace(
@@ -236,7 +236,7 @@ export async function ensureFreshCalendarAccessToken(
 // failure never masks the underlying auth error the caller already returns.
 
 const REAUTH_FROM = "Pocket Agent <notifications@aipocketagency.com>";
-const RECONNECT_URL = "https://app.aipocketagency.com/app/settings/connections";
+const RECONNECT_URL = "https://aipocketagent.com/app/settings/connections";
 
 async function sendCalendarReauthEmail(toEmail: string | null): Promise<void> {
   if (!toEmail) return;

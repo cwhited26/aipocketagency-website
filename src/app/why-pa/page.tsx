@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SiteHeader, SiteFooter } from "@/components/marketing/site-nav";
 import { PrimaryCTA } from "@/components/marketing/cta";
 
-const PAGE_URL = "https://aipocketagency.com/why-pa";
+const PAGE_URL = "https://aipocketagent.com/why-pa";
 const DESCRIPTION =
   "Honest answers to 'how is this different from ChatGPT, a VA, or my CRM?' Where each one fits, and where Pocket Agent picks up.";
 

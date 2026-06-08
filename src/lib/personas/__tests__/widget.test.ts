@@ -71,7 +71,7 @@ describe("buildWidgetLoaderJs", () => {
   it("JSON-encodes config values so they can't break out of the JS string", () => {
     const js = buildWidgetLoaderJs({
       token: "tok",
-      baseUrl: "https://aipocketagency.com",
+      baseUrl: "https://aipocketagent.com",
       personaName: 'Sales "Pro" </script>',
       greeting: "Hi",
       bubbleColor: "#22d3ee",

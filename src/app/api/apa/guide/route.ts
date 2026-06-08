@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const FROM = "Chase Whited <chase@aipocketagency.com>";
 const GUIDE_URL =
-  "https://aipocketagency.com/guide/how-i-run-4-businesses-from-my-phone.pdf";
-const START_URL = "https://aipocketagency.com/start";
+  "https://aipocketagent.com/guide/how-i-run-4-businesses-from-my-phone.pdf";
+const START_URL = "https://aipocketagent.com/start";
 
 type GuideBody = { email?: unknown; name?: unknown };
 

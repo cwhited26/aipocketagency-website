@@ -73,7 +73,7 @@ function selfOrigins(): string[] {
   return [
     process.env.PA_PERSONAS_PUBLIC_BASE_URL,
     process.env.NEXT_PUBLIC_SITE_URL,
-    "https://aipocketagency.com",
+    "https://aipocketagent.com",
   ]
     .map((o) => (o ? normalizeOrigin(o) : null))
     .filter((o): o is string => o !== null);

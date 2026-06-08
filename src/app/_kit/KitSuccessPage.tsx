@@ -111,7 +111,7 @@ export default function KitSuccessPage({
                 href="/"
                 className="text-accent underline-offset-4 transition hover:underline"
               >
-                aipocketagency.com
+                aipocketagent.com
               </Link>
             </p>
           </div>

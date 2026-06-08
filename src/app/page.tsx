@@ -10,16 +10,16 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   title: "Pocket Agent — the one chat that does the work",
   description: DESCRIPTION,
-  metadataBase: new URL("https://aipocketagency.com"),
+  metadataBase: new URL("https://aipocketagent.com"),
   openGraph: {
     title: "Pocket Agent — the one chat that does the work",
     description: DESCRIPTION,
-    url: "https://aipocketagency.com",
+    url: "https://aipocketagent.com",
     siteName: "AI Pocket Agency",
     type: "website",
     images: [
       {
-        url: "https://aipocketagency.com/og-share.png",
+        url: "https://aipocketagent.com/og-share.png",
         width: 1200,
         height: 630,
         alt: "Pocket Agent",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Pocket Agent — the one chat that does the work",
     description: DESCRIPTION,
-    images: ["https://aipocketagency.com/og-share.png"],
+    images: ["https://aipocketagent.com/og-share.png"],
   },
 };
 
