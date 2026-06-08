@@ -2,6 +2,12 @@ export type Conversation = {
   id: string;
   user_id: string;
   title: string;
+  // Which project this thread belongs to (migration 035). Null = a loose thread not in a project.
+  // When set, the agent loop prepends the project's Instructions + references + memory to its
+  // system prompt so the conversation runs inside the project's context.
+  project_id: string | null;
+  // Pin a thread to the top of its project's Conversations list (migration 035).
+  pinned: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -64,6 +70,8 @@ export async function listConversations(
 export async function createConversation(
   userId: string,
   title = "New conversation",
+  // When provided, the new thread is linked to this project and inherits its context.
+  projectId?: string,
 ): Promise<PaResult<Conversation>> {
   const env = paEnv();
   if ("error" in env) return { ok: false, status: 500, error: env.error };
@@ -72,7 +80,11 @@ export async function createConversation(
   const res = await fetch(endpoint, {
     method: "POST",
     headers: headers(env.key),
-    body: JSON.stringify({ user_id: userId, title }),
+    body: JSON.stringify({
+      user_id: userId,
+      title,
+      ...(projectId ? { project_id: projectId } : {}),
+    }),
     cache: "no-store",
   });
   if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
@@ -156,10 +168,17 @@ export async function insertMessage(msg: {
 export async function updateConversation(
   id: string,
   userId: string,
-  patch: { title?: string },
+  // title: rename. pinned: pin/unpin within a project. projectId: link (id) or remove from project
+  // (null) — passing `projectId: null` is how "Remove from project" unlinks a thread.
+  patch: { title?: string; pinned?: boolean; projectId?: string | null },
 ): Promise<PaResult<void>> {
   const env = paEnv();
   if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const body: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (patch.title !== undefined) body.title = patch.title;
+  if (patch.pinned !== undefined) body.pinned = patch.pinned;
+  if (patch.projectId !== undefined) body.project_id = patch.projectId;
 
   const endpoint =
     `${env.url}/rest/v1/pocket_agent_conversations` +
@@ -168,11 +187,58 @@ export async function updateConversation(
   const res = await fetch(endpoint, {
     method: "PATCH",
     headers: { apikey: env.key, Authorization: `Bearer ${env.key}`, "Content-Type": "application/json", Prefer: "return=minimal" },
-    body: JSON.stringify({ ...patch, updated_at: new Date().toISOString() }),
+    body: JSON.stringify(body),
     cache: "no-store",
   });
   if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
   return { ok: true, data: undefined };
+}
+
+// Lists the conversations linked to a project with a one-line preview of each thread's latest
+// message — what the project workspace's Conversations tab renders. Pinned threads sort first,
+// then most-recently-updated. Same two-request batched read as listConversationThreads.
+export async function listProjectConversationThreads(
+  userId: string,
+  projectId: string,
+): Promise<PaResult<ConversationThread[]>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const convEndpoint =
+    `${env.url}/rest/v1/pocket_agent_conversations` +
+    `?user_id=eq.${encodeURIComponent(userId)}&project_id=eq.${encodeURIComponent(projectId)}` +
+    `&order=pinned.desc,updated_at.desc&limit=100`;
+  const convRes = await fetch(convEndpoint, {
+    headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },
+    cache: "no-store",
+  });
+  if (!convRes.ok) return { ok: false, status: convRes.status, error: await convRes.text() };
+  const convs = (await convRes.json()) as Conversation[];
+  if (convs.length === 0) return { ok: true, data: [] };
+
+  const inList = convs.map((c) => c.id).join(",");
+  const msgEndpoint =
+    `${env.url}/rest/v1/pocket_agent_messages` +
+    `?user_id=eq.${encodeURIComponent(userId)}` +
+    `&conversation_id=in.(${inList})` +
+    `&order=created_at.desc&select=conversation_id,content`;
+  const msgRes = await fetch(msgEndpoint, {
+    headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },
+    cache: "no-store",
+  });
+  if (!msgRes.ok) return { ok: false, status: msgRes.status, error: await msgRes.text() };
+  const rows = (await msgRes.json()) as { conversation_id: string; content: string }[];
+
+  const latest = new Map<string, string>();
+  for (const row of rows) {
+    if (!latest.has(row.conversation_id)) latest.set(row.conversation_id, row.content);
+  }
+
+  const threads: ConversationThread[] = convs.map((c) => {
+    const last = latest.get(c.id);
+    return { ...c, snippet: last ? messageSnippet(last) : null };
+  });
+  return { ok: true, data: threads };
 }
 
 export function generateTitle(firstMessage: string): string {

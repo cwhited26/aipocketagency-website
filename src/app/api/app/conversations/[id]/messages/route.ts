@@ -8,6 +8,7 @@ import {
   generateTitle,
 } from "@/lib/pa-conversations";
 import { listMemoryFiles, fetchFileContent, parseCitations } from "@/lib/pa-brain";
+import { buildProjectContextBlock, addProjectMemory } from "@/lib/pa-projects";
 import { generateQuoteDraft, generateEmailDraft } from "@/lib/pa-drafts";
 import { createPendingAction } from "@/lib/pa-actions";
 import {
@@ -158,6 +159,22 @@ const AGENT_TOOLS: ToolDefinition[] = [
   },
 ];
 
+// Project-scoped memory tool. Only offered to the agent when the conversation belongs to a project.
+// It writes to the project's own memory (pa_project_memory) — NOT the global brain — so notes from
+// a client engagement stay inside that project and never leak across the owner's other work.
+const SAVE_TO_PROJECT_TOOL: ToolDefinition = {
+  name: "save_to_project",
+  description:
+    "Saves a note to THIS project's scoped memory (not the global brain). Use this to remember a durable fact, decision, or piece of context that should persist across the conversations in this project — e.g. a client preference, a deadline, a naming convention agreed for this project. The note is written immediately and is visible in the project's Memory tab. Keep each note a single, self-contained fact.",
+  input_schema: {
+    type: "object",
+    properties: {
+      note: { type: "string", description: "The single, self-contained fact to remember for this project." },
+    },
+    required: ["note"],
+  },
+};
+
 // ── Zod schemas for tool input validation ────────────────────────────────────
 
 const readBrainFileInputSchema = z.object({
@@ -185,6 +202,10 @@ const proposeBrainUpdateInputSchema = z.object({
   why: z.string().min(1).max(2000),
 });
 
+const saveToProjectInputSchema = z.object({
+  note: z.string().min(1).max(10_000),
+});
+
 // ── Incoming request schema ───────────────────────────────────────────────────
 
 const bodySchema = z.object({
@@ -193,9 +214,12 @@ const bodySchema = z.object({
 
 // ── Agent system prompt ───────────────────────────────────────────────────────
 
-function buildAgentSystemPrompt(hasBrain: boolean): string {
+function buildAgentSystemPrompt(hasBrain: boolean, inProject: boolean): string {
+  const projectNote = inProject
+    ? `\n\nThis conversation belongs to a project. The project's instructions, reference files, and saved memory are provided above and take precedence for project-specific work. When the user shares a durable fact or decision that belongs to THIS project (not their whole business), call save_to_project to remember it in the project's scoped memory instead of proposing a global brain update.`
+    : "";
   if (!hasBrain) {
-    return `You are the user's personal AI business partner. No brain repository is connected yet. If the user asks questions that require their specific business context, let them know once — then help with what you can from the information they provide in the conversation. Be direct; talk like a partner.`;
+    return `You are the user's personal AI business partner. No brain repository is connected yet. If the user asks questions that require their specific business context, let them know once — then help with what you can from the information they provide in the conversation. Be direct; talk like a partner.${projectNote}`;
   }
   return `You are the user's personal AI business partner — their chief of staff. You have access to their brain repository via tools.
 
@@ -217,7 +241,7 @@ BRAIN UPDATE RULES:
 - Only propose updates for genuinely valuable, durable business information — not transient details
 - Always include a clear, honest 'why' so the user understands what they're approving
 - Use mode='append' when adding to an existing topic; 'replace' only when content is stale and should be overwritten entirely
-- Never propose a brain update unless you have read the relevant existing file first (so you know what's already there)`;
+- Never propose a brain update unless you have read the relevant existing file first (so you know what's already there)${projectNote}`;
 }
 
 // ── Tool executor ─────────────────────────────────────────────────────────────
@@ -228,6 +252,8 @@ type AgentToolContext = {
   github_token: string | null;
   anthropic_api_key: string;
   zoneConfig: ZoneConfig;
+  // The project this conversation belongs to, when any — gates the save_to_project tool.
+  projectId: string | null;
 };
 
 async function executeAgentTool(
@@ -342,6 +368,17 @@ async function executeAgentTool(
     return `Proposed — a brain update for ${writePath} (mode: ${parsed.data.mode}) is now pending in the user's Inbox.${tierNote} Nothing has been written yet. The user must review the proposed content and click Approve before anything changes in their brain.`;
   }
 
+  if (name === "save_to_project") {
+    const parsed = saveToProjectInputSchema.safeParse(rawInput);
+    if (!parsed.success) return `Invalid input: ${parsed.error.message}`;
+    if (!ctx.projectId) {
+      return "This conversation isn't part of a project, so there's no project memory to save to.";
+    }
+    const result = await addProjectMemory(ctx.projectId, ctx.userId, parsed.data.note.trim());
+    if (!result.ok) return `Failed to save to project memory: ${result.error}`;
+    return `Saved to this project's memory: "${parsed.data.note.trim()}". It's now visible in the project's Memory tab and will be available to every conversation in this project.`;
+  }
+
   return `Unknown tool: ${name}`;
 }
 
@@ -357,6 +394,8 @@ function describeToolCall(name: string, input: Record<string, unknown>): string 
       return `Drafted email to ${typeof input.recipient === "string" ? input.recipient : "recipient"}`;
     case "propose_brain_update":
       return `Proposed brain update: ${typeof input.path === "string" ? input.path : "memory file"} (${typeof input.mode === "string" ? input.mode : "update"})`;
+    case "save_to_project":
+      return "Saved to project memory";
     default:
       return `Called ${name}`;
   }
@@ -521,14 +560,31 @@ export async function POST(
     ? await loadZoneConfig(brain_repo, github_token)
     : { config: { zones: {} } as ZoneConfig };
 
+  // Project context: when this thread belongs to a project, prepend the project's Instructions,
+  // reference files, and scoped memory to the system prompt so the conversation runs inside the
+  // project's context. (project_id is null on loose threads and undefined until migration 035 lands
+  // — both resolve to no project context, so the agent behaves exactly as before.)
+  const projectId = conversation.project_id ?? null;
+  let projectBlock = "";
+  if (projectId) {
+    const projectContext = await buildProjectContextBlock(projectId, user.id);
+    if (projectContext) projectBlock = projectContext.block;
+  }
+
   const agentCtx: AgentToolContext = {
     userId: user.id,
     brain_repo,
     github_token,
     anthropic_api_key,
     zoneConfig,
+    projectId,
   };
-  const systemPrompt = buildAgentSystemPrompt(Boolean(brain_repo));
+  const baseSystemPrompt = buildAgentSystemPrompt(Boolean(brain_repo), Boolean(projectId));
+  const systemPrompt = projectBlock
+    ? `${projectBlock}\n\n---\n\n${baseSystemPrompt}`
+    : baseSystemPrompt;
+  // Offer the project-scoped memory tool only inside a project.
+  const agentTools = projectId ? [...AGENT_TOOLS, SAVE_TO_PROJECT_TOOL] : AGENT_TOOLS;
   const toolSteps: ToolStep[] = [];
 
   const MAX_ITERATIONS = 6;
@@ -549,7 +605,7 @@ export async function POST(
         model: "claude-sonnet-4-6",
         max_tokens: 4096,
         system: systemPrompt,
-        tools: AGENT_TOOLS,
+        tools: agentTools,
         messages: loopMessages,
       }),
     });

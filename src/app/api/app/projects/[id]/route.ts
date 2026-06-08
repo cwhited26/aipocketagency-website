@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getConversation, getMessages, updateConversation } from "@/lib/pa-conversations";
+import { getProject, updateProject } from "@/lib/pa-projects";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -16,34 +16,17 @@ export async function GET(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id } = params;
-
-  const convResult = await getConversation(id, user.id);
-  if (!convResult.ok) {
-    return NextResponse.json({ error: convResult.error }, { status: convResult.status });
-  }
-  if (!convResult.data) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
-  const msgResult = await getMessages(id, user.id);
-  if (!msgResult.ok) {
-    return NextResponse.json({ error: msgResult.error }, { status: msgResult.status });
-  }
-
-  return NextResponse.json({
-    conversation: convResult.data,
-    messages: msgResult.data,
-  });
+  const result = await getProject(params.id, user.id);
+  if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+  if (!result.data) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json({ project: result.data });
 }
 
-// Rename a thread (title), pin/unpin it within a project (pinned), or remove it from a project
-// (projectId: null) — the actions exposed in the project workspace's Conversations list.
 const patchSchema = z
   .object({
     title: z.string().min(1).max(200).optional(),
-    pinned: z.boolean().optional(),
-    projectId: z.string().uuid().nullable().optional(),
+    goal: z.string().max(2000).nullable().optional(),
+    instructions: z.string().max(20_000).nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: "No fields to update" });
 
@@ -66,11 +49,13 @@ export async function PATCH(
   const parsed = patchSchema.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 422 });
 
-  const result = await updateConversation(params.id, user.id, {
+  const result = await updateProject(params.id, user.id, {
     ...(parsed.data.title !== undefined ? { title: parsed.data.title.trim() } : {}),
-    ...(parsed.data.pinned !== undefined ? { pinned: parsed.data.pinned } : {}),
-    ...(parsed.data.projectId !== undefined ? { projectId: parsed.data.projectId } : {}),
+    ...(parsed.data.goal !== undefined ? { goal: parsed.data.goal?.trim() || null } : {}),
+    ...(parsed.data.instructions !== undefined
+      ? { instructions: parsed.data.instructions?.trim() || null }
+      : {}),
   });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ project: result.data });
 }
