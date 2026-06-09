@@ -1,0 +1,76 @@
+{
+  "name": "Med Spa & Aesthetics",
+  "vertical_slug": "med-spa",
+  "icon": "💆",
+  "tagline": "The med spa growth shows — and they cross-sell straight into loyalty.",
+  "display_description": "The aesthetics-business shows med spa owners follow for marketing, retention, and front-desk conversion. PA listens to every new episode and files the tactics in your brain — the retention plays line up with Buildout Loyalty, so the booking-and-rebooking ideas you hear turn into something you can actually run.",
+  "default_cadence": "weekly",
+  "notes_only_default": false,
+  "recommended_tier": "studio_plus",
+  "shows": [
+    {
+      "show_id": "1340962270",
+      "title": "Medical Spa Insider",
+      "host": "American Med Spa Association (AmSpa)",
+      "feed_url": "https://feed.podbean.com/podcast.americanmedspa.org/feed.xml",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1340962270",
+      "why": "The industry association's show — compliance, regulation, and the business of med spas."
+    },
+    {
+      "show_id": "1455640604",
+      "title": "Med Spa CEO",
+      "host": "Heather Terveen",
+      "feed_url": "https://aestheticsuccess.libsyn.com/rss",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1455640604",
+      "why": "Scaling a med spa — pricing, team, and owner mindset."
+    },
+    {
+      "show_id": "1369597974",
+      "title": "Spa Marketing Made Easy",
+      "host": "Daniela Woerner",
+      "feed_url": "https://addoaesthetics.libsyn.com/rss",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1369597974",
+      "why": "Marketing and retention systems for spa and aesthetics businesses."
+    },
+    {
+      "show_id": "1782312395",
+      "title": "Beyond the Needle: The Aesthetics Business Podcast",
+      "host": "Emily Ruse",
+      "feed_url": "https://rss.buzzsprout.com/2520934.rss",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1782312395",
+      "why": "Running and growing an aesthetics practice, front-desk to P&L."
+    },
+    {
+      "show_id": "1513081459",
+      "title": "Botox and Burpees",
+      "host": "Dr. Sam Rhee",
+      "feed_url": "https://rss.buzzsprout.com/1063975.rss",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1513081459",
+      "why": "Aesthetics practice, leadership, and the operator's life behind the clinic."
+    },
+    {
+      "show_id": "1550173219",
+      "title": "MedShark Insider",
+      "host": "Bill Fukui",
+      "feed_url": "https://rss.buzzsprout.com/1501843.rss",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1550173219",
+      "why": "Digital marketing and lead-gen specifically for med spas."
+    },
+    {
+      "show_id": "1727205613",
+      "title": "Aesthetically Speaking",
+      "host": "Nextech",
+      "feed_url": "https://www.spreaker.com/show/6069898/episodes/feed",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1727205613",
+      "why": "Plastic surgery and med spa marketing, presented by Nextech."
+    },
+    {
+      "show_id": "1712366269",
+      "title": "The Aesthetic Edit",
+      "host": "Social Practice",
+      "feed_url": "https://anchor.fm/s/eb08154c/podcast/rss",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1712366269",
+      "why": "Social-first marketing and brand for aesthetics clinics."
+    }
+  ]
+}

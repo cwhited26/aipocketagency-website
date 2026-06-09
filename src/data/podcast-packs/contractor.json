@@ -1,0 +1,76 @@
+{
+  "name": "Contractor & Home Services",
+  "vertical_slug": "contractor",
+  "icon": "🛠️",
+  "tagline": "The shows roofing and HVAC operators actually run on.",
+  "display_description": "The operations-and-growth shows that the best roofing, HVAC, and home-services owners listen to — pricing, hiring, dispatch, close rates. PA follows all eight, transcribes each new episode, and files the tactics into your voice influences so the playbook lands in your brain without you putting in earbuds.",
+  "default_cadence": "weekly",
+  "notes_only_default": false,
+  "recommended_tier": "studio_plus",
+  "shows": [
+    {
+      "show_id": "1206359648",
+      "title": "The Roofer Show",
+      "host": "Dave Sullivan",
+      "feed_url": "https://feeds.captivate.fm/the-roofer-show/",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1206359648",
+      "why": "Roofing business owners on pricing, sales, and running the crew."
+    },
+    {
+      "show_id": "1483394012",
+      "title": "Roofing Success",
+      "host": "Jim Ahlin",
+      "feed_url": "https://rss.buzzsprout.com/2187966.rss",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1483394012",
+      "why": "Marketing and growth interviews with roofing operators."
+    },
+    {
+      "show_id": "1155660740",
+      "title": "HVAC School - For Techs, By Techs",
+      "host": "Bryan Orr",
+      "feed_url": "https://rss.libsyn.com/shows/87349/destinations/425611.xml",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1155660740",
+      "why": "The trade-standard HVAC show — technical and business both."
+    },
+    {
+      "show_id": "1507789555",
+      "title": "The Successful Contractor",
+      "host": "CertainPath",
+      "feed_url": "https://feeds.transistor.fm/the-successful-contractor",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1507789555",
+      "why": "Operations and management for the trades, by CertainPath."
+    },
+    {
+      "show_id": "1541384174",
+      "title": "Contractor Evolution",
+      "host": "Breakthrough Academy",
+      "feed_url": "https://feeds.cohostpodcasting.com/6z8OBnNG",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1541384174",
+      "why": "Systems and scale for contracting businesses past the owner-operator stage."
+    },
+    {
+      "show_id": "1167667591",
+      "title": "The Wealthy Contractor",
+      "host": "Brian Kaskavalciyan",
+      "feed_url": "https://feeds.redcircle.com/1c10ae14-68c8-46cb-aed1-340910b579f5",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1167667591",
+      "why": "Sales, marketing, and mindset for home-improvement owners."
+    },
+    {
+      "show_id": "1530427467",
+      "title": "Service Business Mastery",
+      "host": "Tersh Blissett & Josh Crouch",
+      "feed_url": "https://rss.libsyn.com/shows/106436/destinations/574473.xml",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1530427467",
+      "why": "HVAC, plumbing, and electrical business operations and tech."
+    },
+    {
+      "show_id": "1543265737",
+      "title": "Waste No Day",
+      "host": "Brian Burton & Nate Minnich",
+      "feed_url": "https://feed.podbean.com/wastenoday/feed.xml",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1543265737",
+      "why": "Home-services sales and motivation — in-home close rates and tickets."
+    }
+  ]
+}

@@ -10,6 +10,7 @@
 // Direct REST, no SDK, typed results, never throws.
 
 import type { PodcastRef } from "./detect";
+import { fetchFeed } from "./rss-parser";
 
 const ITUNES_LOOKUP = "https://itunes.apple.com/lookup";
 
@@ -160,5 +161,55 @@ export async function resolveFeed(ref: PodcastRef): Promise<ResolveResult> {
     show: showMeta,
     episodeGuid,
     episodeTitleHint,
+  };
+}
+
+/** A show resolved well enough to follow: the feed PA polls + the identity the watch row stores. */
+export type WatchShowResolve =
+  | {
+      ok: true;
+      show: { showId: string; feedUrl: string; podcastUrl: string; title: string; artworkUrl: string };
+    }
+  | { ok: false; message: string };
+
+/**
+ * Resolves a pasted link (Apple Podcasts page or RSS feed) into the show metadata a watch needs. A
+ * Spotify link or a single-episode audio link can't be followed as a show — both get an honest refusal.
+ * Enriches an RSS show's title/artwork from the parsed feed when the link itself carried none.
+ */
+export async function resolveShowForWatch(ref: PodcastRef): Promise<WatchShowResolve> {
+  if (ref.kind === "audio") {
+    return {
+      ok: false,
+      message:
+        "That's a link to one episode's audio, not a show. Paste the show's Apple Podcasts page or its RSS feed and I'll follow every new episode.",
+    };
+  }
+  const resolved = await resolveFeed(ref);
+  if (!resolved.ok) return { ok: false, message: resolved.message };
+  if (!resolved.rssUrl) {
+    return { ok: false, message: "I couldn't find a feed to follow for that link." };
+  }
+
+  let title = resolved.show.title;
+  let artworkUrl = resolved.show.artworkUrl;
+  // For a raw RSS link the iTunes lookup didn't run, so the title/artwork come from the feed itself.
+  if (!title || !artworkUrl) {
+    const feed = await fetchFeed(resolved.rssUrl);
+    if (feed.ok) {
+      title = title || feed.feed.show.title;
+      artworkUrl = artworkUrl || feed.feed.show.artworkUrl;
+    }
+  }
+
+  return {
+    ok: true,
+    show: {
+      showId: resolved.show.showId,
+      feedUrl: resolved.rssUrl,
+      podcastUrl: ref.url,
+      title: title || "Untitled show",
+      artworkUrl: artworkUrl || "",
+    },
   };
 }

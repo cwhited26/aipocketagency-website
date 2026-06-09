@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { TryThesePanel, WorksWithPanel } from "../../_components/TabGuide";
+import PodcastWatchClient from "./PodcastWatchClient";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +68,25 @@ export default async function PodcastsPage() {
             the show&apos;s Apple Podcasts or RSS link instead.
           </p>
         </div>
+
+        {/* Show-watch layer (Phase 2): shows you follow, add-a-show, brain-derived suggestions, 24h chip. */}
+        <div className="mt-8">
+          <PodcastWatchClient />
+        </div>
+
+        {/* Vertical curation packs (Phase 4) on-ramp. */}
+        <Link
+          href="/app/apps/podcasts/packs"
+          className="mt-8 block rounded-xl border border-[#22d3ee]/25 bg-[#22d3ee]/5 px-5 py-4 hover:border-[#22d3ee]/45 transition-colors"
+        >
+          <p className="text-sm font-semibold text-slate-100">
+            Don&apos;t want to hunt for shows? Try a pack →
+          </p>
+          <p className="text-sm text-slate-300 mt-1 leading-relaxed">
+            Hand-picked bundles for contractors, med spas, and sales operators — follow a whole
+            vertical&apos;s shows in one tap. A Studio+ add-on.
+          </p>
+        </Link>
 
         <div className="mt-8">
           <TryThesePanel heading="Try one of these" prompts={PODCAST_PROMPTS} />

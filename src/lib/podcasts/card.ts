@@ -14,8 +14,9 @@ export const PODCAST_INGEST_KIND = "podcast_ingest" as const;
 /** The use-case bucket the classifier assigned — drives the card's lead framing + brain routing. */
 export const PODCAST_BUCKETS = ["competitor", "tactic", "testimonial", "industry", "default"] as const;
 
-/** How the episode was processed — Phase 1 is always full_transcript; notes_only is the cheap path. */
+/** How the episode was processed — full transcript (Whisper), or the cheap notes-only Haiku pass. */
 export const PODCAST_MODES = ["full_transcript", "notes_only"] as const;
+export type PodcastMode = (typeof PODCAST_MODES)[number];
 
 export const PodcastIngestEpisodeSchema = z.object({
   episodeId: z.string().min(1).max(500),

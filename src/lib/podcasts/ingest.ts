@@ -17,7 +17,7 @@ import { transcribeEpisode } from "./transcribe";
 import { classifyEpisode, extractBucketDetail, PODCAST_BUCKET_FRAMINGS, type UseCaseBucket } from "./classify";
 import { recordPodcastIngest } from "./log";
 import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
-import { PODCAST_INGEST_KIND, type PodcastIngestEpisode } from "./card";
+import { PODCAST_INGEST_KIND, type PodcastIngestEpisode, type PodcastMode } from "./card";
 import type { PodcastRef } from "./detect";
 import { commitBrainTextFile } from "@/lib/brain/absorb";
 
@@ -29,7 +29,7 @@ const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 // ── Surfaces ─────────────────────────────────────────────────────────────────────
 
-/** Every inbound surface a podcast link can arrive on (the seven shipped text surfaces). */
+/** Every inbound surface a podcast link can arrive on (the seven shipped text surfaces + show-watch). */
 export type InboundSurface =
   | "ask_box"
   | "ios_share"
@@ -37,7 +37,8 @@ export type InboundSurface =
   | "slack_dm"
   | "inbound_email"
   | "bcc"
-  | "sms";
+  | "sms"
+  | "watch";
 
 const SURFACE_LABELS: Record<InboundSurface, string> = {
   ask_box: "the Ask box",
@@ -47,6 +48,7 @@ const SURFACE_LABELS: Record<InboundSurface, string> = {
   inbound_email: "an inbound email",
   bcc: "a BCC'd email",
   sms: "a text message",
+  watch: "a show you're watching",
 };
 
 // ── Results + owner context ────────────────────────────────────────────────────
@@ -165,6 +167,7 @@ function buildNoteMarkdown(params: {
   detailLabel: string;
   bucketDetail: string;
   source: InboundSurface;
+  mode: PodcastMode;
   whisperMinutes: number;
   ingestedAt: string;
 }): string {
@@ -181,7 +184,7 @@ function buildNoteMarkdown(params: {
     yaml("url", params.url),
     yaml("pub_date", params.pubDateIso),
     yaml("duration_seconds", params.durationSeconds),
-    yaml("mode", "full_transcript"),
+    yaml("mode", params.mode),
     yaml("use_case_bucket", params.bucket),
     yaml("source_inbound_surface", params.source),
     yaml("whisper_minutes", params.whisperMinutes),
@@ -195,14 +198,24 @@ function buildNoteMarkdown(params: {
   if (params.host) body.push(`**Host:** ${params.host}`);
   if (params.pubDateIso) body.push(`**Published:** ${params.pubDateIso.slice(0, 10)}`);
   body.push(`**Listen:** ${params.url}`);
-  body.push("", "_Transcribed from the episode audio (Whisper) — there's no free caption track for podcasts._");
+  body.push(
+    "",
+    params.mode === "notes_only"
+      ? "_Read from the show notes only (notes-only mode) — no audio transcription, to keep costs down._"
+      : "_Transcribed from the episode audio (Whisper) — there's no free caption track for podcasts._",
+  );
   // The bucket-specific extraction leads; the generic summary follows for non-default buckets.
   body.push("", `## ${params.detailLabel}`, "", params.bucketDetail);
   if (params.bucket !== "default" && params.summary.trim() && params.summary.trim() !== params.bucketDetail.trim()) {
     body.push("", "## Summary", "", params.summary);
   }
-  if (params.showNotes) body.push("", "## Show notes", "", params.showNotes);
-  body.push("", "## Transcript", "", params.fullText.trim());
+  if (params.mode === "notes_only") {
+    // In notes-only mode fullText IS the show notes — render them once, under their own heading.
+    body.push("", "## Show notes", "", params.fullText.trim());
+  } else {
+    if (params.showNotes) body.push("", "## Show notes", "", params.showNotes);
+    body.push("", "## Transcript", "", params.fullText.trim());
+  }
 
   return `${front}\n\n${body.join("\n")}\n`;
 }
@@ -216,17 +229,19 @@ function buildContextBlock(params: {
   framingHeadline: string;
   detailLabel: string;
   bucketDetail: string;
+  mode: PodcastMode;
   fullText: string;
 }): string {
   const truncated = params.fullText.length > CONTEXT_TRANSCRIPT_CHARS;
-  const transcript = params.fullText.slice(0, CONTEXT_TRANSCRIPT_CHARS);
+  const text = params.fullText.slice(0, CONTEXT_TRANSCRIPT_CHARS);
+  const bodyLabel = params.mode === "notes_only" ? "Show notes" : "Transcript";
   return [
     `[Podcast episode ingested from ${SURFACE_LABELS[params.source]}: "${params.title}" — ${params.show}]`,
     `Listen: ${params.url}`,
     `${params.framingHeadline} Saved to the brain at ${params.brainPath}.`,
     `${params.detailLabel}: ${params.bucketDetail}`,
-    `Transcript${truncated ? " (excerpt — full text is in the brain note)" : ""}:`,
-    transcript,
+    `${bodyLabel}${truncated ? " (excerpt — full text is in the brain note)" : ""}:`,
+    text,
   ].join("\n");
 }
 
@@ -248,8 +263,14 @@ export async function ingestPodcastEpisode(params: {
   source: InboundSurface;
   ctx: PodcastOwnerContext;
   allowLong: boolean;
+  /** Notes-only mode (PA-PC-5): classify the show notes with Haiku, skip Whisper entirely. */
+  notesOnly?: boolean;
+  /** When set (show-watch), ingest exactly this feed episode rather than the newest/link-named one. */
+  episodeGuid?: string;
 }): Promise<PodcastIngestResult> {
   const { ref, source, ctx } = params;
+  const notesOnly = params.notesOnly ?? false;
+  const mode: PodcastMode = notesOnly ? "notes_only" : "full_transcript";
   const ingestedAt = new Date().toISOString();
 
   // 1. Resolve the feed (or refuse honestly for Spotify).
@@ -272,7 +293,11 @@ export async function ingestPodcastEpisode(params: {
   if (resolved.rssUrl) {
     const feedResult = await fetchFeed(resolved.rssUrl);
     if (!feedResult.ok) return { ok: false, url: ref.url, error: `Couldn't read the show's feed: ${feedResult.error}` };
-    const episode = selectEpisode(feedResult.feed.episodes, resolved.episodeGuid, resolved.episodeTitleHint);
+    const episode = selectEpisode(
+      feedResult.feed.episodes,
+      params.episodeGuid ?? resolved.episodeGuid,
+      resolved.episodeTitleHint,
+    );
     if (!episode) return { ok: false, url: ref.url, error: "The show's feed had no episodes I could read." };
     show = show || feedResult.feed.show.title;
     host = host || feedResult.feed.show.host;
@@ -308,17 +333,36 @@ export async function ingestPodcastEpisode(params: {
     idempotencyKey: `podcast:${ctx.ownerId}:${episodeId}:${step}`,
   });
 
-  // 3. Transcribe the audio (Whisper, with the duration + size + SSRF gates).
-  const transcript = await transcribeEpisode({
-    enclosureUrl,
-    enclosureType,
-    enclosureBytes,
-    durationSeconds,
-    allowLong: params.allowLong,
-    cost: costKey("whisper"),
-  });
-  if (!transcript.ok) return { ok: false, url: ref.url, error: transcript.message };
-  const fullText = transcript.fullText;
+  // 3. Get the text to classify: the full Whisper transcript, or — in notes-only mode (PA-PC-5) — the
+  //    episode's show notes, skipping Whisper entirely so the show costs a fraction of a cent to follow.
+  let fullText: string;
+  let whisperMinutes: number;
+  if (notesOnly) {
+    const notes = showNotes.trim();
+    if (notes.length < 40) {
+      return {
+        ok: false,
+        url: ref.url,
+        error:
+          "This episode has no show notes to read, and the show's on notes-only mode (no transcription). Turn off notes-only for this show to have PA listen to the audio.",
+      };
+    }
+    fullText = notes;
+    whisperMinutes = 0;
+  } else {
+    // Transcribe the audio (Whisper, with the duration + size + SSRF gates).
+    const transcript = await transcribeEpisode({
+      enclosureUrl,
+      enclosureType,
+      enclosureBytes,
+      durationSeconds,
+      allowLong: params.allowLong,
+      cost: costKey("whisper"),
+    });
+    if (!transcript.ok) return { ok: false, url: ref.url, error: transcript.message };
+    fullText = transcript.fullText;
+    whisperMinutes = transcript.whisperMinutes;
+  }
 
   // 4. Classify, then summarize + extract in parallel (extraction leads the card; summary backstops).
   const bucket = await classifyEpisode({
@@ -360,7 +404,8 @@ export async function ingestPodcastEpisode(params: {
     detailLabel: framing.detailLabel,
     bucketDetail,
     source,
-    whisperMinutes: transcript.whisperMinutes,
+    mode,
+    whisperMinutes,
     ingestedAt,
   });
   const commit = await commitBrainTextFile({
@@ -380,9 +425,9 @@ export async function ingestPodcastEpisode(params: {
     episodeId,
     episodeTitle: title,
     brainPath,
-    mode: "full_transcript",
+    mode,
     transcriptChars: fullText.length,
-    whisperMinutes: transcript.whisperMinutes,
+    whisperMinutes,
     useCaseBucket: bucket,
     sourceInboundSurface: source,
   });
@@ -401,7 +446,7 @@ export async function ingestPodcastEpisode(params: {
     url: ref.url,
     summary,
     brainPath,
-    mode: "full_transcript",
+    mode,
     transcriptChars: fullText.length,
     durationSeconds,
     transcriptPreview: fullText.slice(0, PREVIEW_TRANSCRIPT_CHARS),
@@ -425,6 +470,7 @@ export async function ingestPodcastEpisode(params: {
       framingHeadline: framing.headline,
       detailLabel: framing.detailLabel,
       bucketDetail,
+      mode,
       fullText,
     }),
   };

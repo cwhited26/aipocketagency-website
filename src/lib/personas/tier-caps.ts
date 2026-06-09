@@ -48,6 +48,15 @@ export function tierAllowsLeadScoutPacks(tier: Tier): boolean {
 }
 
 /**
+ * Can this tier subscribe to a podcast vertical curation pack (PA-PC-14)? Like the Lead Scout packs,
+ * podcast packs are a Studio+/Enterprise add-on — lower tiers can browse the grid and see the upgrade
+ * path, but Subscribe (which spins up a watch per show) only fires at Studio+ and above.
+ */
+export function tierAllowsPodcastPacks(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio_plus");
+}
+
+/**
  * Can this tier run a Decision Roundtable (PA-DR-1)? Three (or four) sub-agent runs per question is
  * 3-4× a normal chat's model spend, so the feature is Studio+/Enterprise only. Free/Pro tiers see a
  * non-actionable teaser inline in chat but can't fire the debate.

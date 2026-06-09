@@ -30,6 +30,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/podcast-watch",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/rag-index",
       "schedule": "0 7 * * *"
     }

@@ -1,0 +1,76 @@
+{
+  "name": "Sales & Offers",
+  "vertical_slug": "sales",
+  "icon": "📈",
+  "tagline": "Hormozi, Brunson, and the operators who teach the close.",
+  "display_description": "The offers, funnels, and sales-operations shows — Hormozi, Brunson, and the operators who break down the actual close. PA transcribes each new episode and pulls the named tactics into your voice influences, so the next pricing play or cold-call framework you hear is in your brain the morning it drops, not three weeks later.",
+  "default_cadence": "daily",
+  "notes_only_default": false,
+  "recommended_tier": "studio_plus",
+  "shows": [
+    {
+      "show_id": "1254720112",
+      "title": "The Game with Alex Hormozi",
+      "host": "Alex Hormozi",
+      "feed_url": "https://feeds.captivate.fm/the-game-alex-hormozi/",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1254720112",
+      "why": "Offers, pricing, and scaling — the operator's playbook, dense and frequent."
+    },
+    {
+      "show_id": "1315130618",
+      "title": "The Russell Brunson Show",
+      "host": "Russell Brunson",
+      "feed_url": "https://rss.introcast.io/1315130618/feeds.megaphone.fm/YAP7634977833",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1315130618",
+      "why": "Funnels, traffic, and offer construction from the ClickFunnels founder."
+    },
+    {
+      "show_id": "1663834553",
+      "title": "Build with Leila Hormozi",
+      "host": "Leila Hormozi",
+      "feed_url": "https://feeds.captivate.fm/build-with-leila-hormozi/",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1663834553",
+      "why": "The operations side of scaling — team, culture, and sales management."
+    },
+    {
+      "show_id": "1510861233",
+      "title": "30 Minutes to President's Club",
+      "host": "Armand Farrokh & Nick Cegelski",
+      "feed_url": "https://feeds.megaphone.fm/30mpc",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1510861233",
+      "why": "No-fluff, tactical B2B sales — scripts, objection handling, real calls."
+    },
+    {
+      "show_id": "219558725",
+      "title": "Sales Gravy",
+      "host": "Jeb Blount",
+      "feed_url": "https://feeds.redcircle.com/18372129-5f8d-4353-a3d6-dc4230186865",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id219558725",
+      "why": "Prospecting and the fundamentals of the close, from Jeb Blount."
+    },
+    {
+      "show_id": "148759439",
+      "title": "The Advanced Selling Podcast",
+      "host": "Bill Caskey & Bryan Neale",
+      "feed_url": "https://rss.buzzsprout.com/2517440.rss",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id148759439",
+      "why": "One of the longest-running B2B sales shows — strategy and mindset."
+    },
+    {
+      "show_id": "1499355853",
+      "title": "Sales Logic",
+      "host": "Mark Hunter & Meridith Elliott Powell",
+      "feed_url": "https://thriveinuncertainty.libsyn.com/rss",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id1499355853",
+      "why": "Selling strategies that work — practical, question-driven episodes."
+    },
+    {
+      "show_id": "327760868",
+      "title": "The Brutal Truth About Sales & Selling",
+      "host": "Brian Burns",
+      "feed_url": "https://feeds.libsyn.com/478476/rss",
+      "apple_url": "https://podcasts.apple.com/us/podcast/id327760868",
+      "why": "Enterprise B2B selling, interviews with top reps and leaders."
+    }
+  ]
+}
