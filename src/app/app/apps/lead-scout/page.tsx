@@ -9,7 +9,7 @@ import LeadScoutClient, { type SourceView } from "./LeadScoutClient";
 
 export const dynamic = "force-dynamic";
 
-// Use cases from the SPEC — Phases 1 + 2 are live, Phase 4 is sign-posted, not faked.
+// Use cases from the SPEC — Phases 1 + 2 + 3 are live (find → sort → draft the outreach).
 const USE_CASES: { phase: string; live: boolean; title: string; body: string }[] = [
   {
     phase: "Live now",
@@ -24,10 +24,10 @@ const USE_CASES: { phase: string; live: boolean; title: string; body: string }[]
     body: "Drop in a list of links — directory pages, a saved search, a spreadsheet column. PA visits each one and pulls back a structured profile.",
   },
   {
-    phase: "Phase 4",
-    live: false,
-    title: "Watch a competitor",
-    body: "Point it at a competitor's site and PA checks back on a schedule, flagging what changed.",
+    phase: "Live now",
+    live: true,
+    title: "Draft the outreach",
+    body: "PA writes a first email to each hot + warm lead in your voice and stages it for your tap — Approve & Send from your Gmail. Set a daily or weekly schedule and the leads + drafts keep coming.",
   },
 ];
 
@@ -93,7 +93,8 @@ export default async function LeadScoutPage() {
             Sweep Google Maps for a category in a place — &ldquo;roofers near Knoxville without a
             website&rdquo; — and PA builds the list itself, the sites-needed businesses worth a pitch.
             Or paste your own URLs. Either way it pulls who they are and how to reach them, sorts them
-            by fit, and stages the batch in Mission Control for your review.
+            by fit, drafts a first email to the hot and warm ones in your voice, and stages each for
+            your tap — read a few, then Approve &amp; Send from your Gmail.
           </p>
         </div>
 

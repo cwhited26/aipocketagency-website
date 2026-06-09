@@ -76,7 +76,7 @@ const apps: AppDef[] = [
     href: "/app/apps/lead-scout",
     label: "Lead Scout",
     description:
-      "Sweep Google Maps for a category in a place — roofers near Knoxville without a website — or paste your own URLs. PA pulls each profile, sorts them by fit, and stages the batch for review.",
+      "Find leads, draft the outreach in your voice, stage them for your tap — the full loop. Sweep Google Maps for a category in a place (roofers near Knoxville without a website) or paste your own URLs; PA sorts them by fit, then writes a personalized first email to each one and stages it for Approve & Send.",
     tag: "Finds Leads",
     tagColor: "cyan",
   },

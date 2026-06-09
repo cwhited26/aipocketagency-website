@@ -18,6 +18,7 @@ function lead(partial: Partial<LeadScoutLead>): LeadScoutLead {
     brain_path: null,
     status: "extracted",
     error: null,
+    outreach_drafted_at: null,
     created_at: "2026-06-08T00:00:00Z",
     ...partial,
   };

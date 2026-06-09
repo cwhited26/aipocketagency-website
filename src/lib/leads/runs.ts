@@ -188,3 +188,42 @@ export async function listLeadsForRun(
   if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
   return { ok: true, data: (await res.json()) as LeadScoutLead[] };
 }
+
+export async function getLead(id: string, ownerId: string): Promise<PaResult<LeadScoutLead | null>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const endpoint =
+    `${env.url}/rest/v1/pa_lead_scout_leads` +
+    `?id=eq.${encodeURIComponent(id)}&owner_id=eq.${encodeURIComponent(ownerId)}&limit=1`;
+  const res = await fetch(endpoint, { headers: readHeaders(env.key), cache: "no-store" });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as LeadScoutLead[];
+  return { ok: true, data: rows[0] ?? null };
+}
+
+// Stamp a lead as having had outreach drafted (Phase 3 idempotency). Service-role write, scoped by
+// owner_id as defense-in-depth. The conditional `&outreach_drafted_at=is.null` makes the stamp a
+// no-op when another concurrent stage already claimed the lead, so a double-run never double-drafts.
+export async function stampOutreachDrafted(
+  leadId: string,
+  ownerId: string,
+): Promise<PaResult<boolean>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const endpoint =
+    `${env.url}/rest/v1/pa_lead_scout_leads` +
+    `?id=eq.${encodeURIComponent(leadId)}&owner_id=eq.${encodeURIComponent(ownerId)}` +
+    `&outreach_drafted_at=is.null`;
+  const res = await fetch(endpoint, {
+    method: "PATCH",
+    headers: { ...writeHeaders(env.key), Prefer: "return=representation" },
+    body: JSON.stringify({ outreach_drafted_at: new Date().toISOString() }),
+    cache: "no-store",
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as LeadScoutLead[];
+  // A non-empty result means this call won the stamp; empty means it was already claimed.
+  return { ok: true, data: rows.length > 0 };
+}

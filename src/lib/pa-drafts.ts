@@ -472,6 +472,144 @@ export async function generateEmailDraft(
   return { draft, citations: parseCitations(draft), hasBrain: memoryBlocks.length > 0 };
 }
 
+// ─── Lead Scout outreach (Phase 3) ───────────────────────────────────────────────
+//
+// The cold/warm outreach drafter for a scraped Lead Scout lead. It reuses the exact same voice
+// loader the Email Drafter uses (buildMemoryBlocks → the owner's brain memory + voice spec), so the
+// owner's voice carries through with no duplicate loading. The only new input is the lead's profile
+// and a tone hint. Unlike generateEmailDraft (which emits only a body), this one also emits a
+// subject line — a cold email needs one — so it returns { subject, body, citations }.
+
+export type OutreachTone = "cold-introduce" | "warm-followup" | "reactivate";
+
+export type LeadOutreachContext = {
+  /** The business / person we're reaching out to. */
+  leadName: string;
+  /** One-line "what they do" summary from the scrape. */
+  leadSummary: string;
+  /** The lead's structured profile fields (phone, website status, category, …) as plain strings. */
+  leadProfile: Record<string, string>;
+  /** The lead's URL or Maps listing — context for the model, never invented. */
+  leadUrl: string;
+  /** The Lead Source's name ("Knoxville no-website roofers") — what the owner is hunting for. */
+  sourceName: string;
+  tone: OutreachTone;
+};
+
+const TONE_DIRECTION: Record<OutreachTone, string> = {
+  "cold-introduce":
+    "This is a COLD first-touch. You have never spoken. Lead with a specific, true observation about " +
+    "THEIR business (pulled from the profile below — e.g. they have strong reviews but no website), then " +
+    "make one concrete offer and one small ask. Never imply a prior relationship that doesn't exist.",
+  "warm-followup":
+    "This is a WARM follow-up — there has been prior contact. Reference the earlier touch lightly, then " +
+    "move the conversation one step forward. Don't restart from scratch.",
+  reactivate:
+    "This is a RE-ACTIVATION of a lead that went quiet. Acknowledge the gap honestly without guilt-tripping, " +
+    "give them a fresh, specific reason to re-engage now, and keep the ask tiny.",
+};
+
+function buildOutreachSystemPrompt(
+  memoryBlocks: MemoryBlock[],
+  ctx: LeadOutreachContext,
+): string {
+  const hasMemory = memoryBlocks.length > 0;
+  const memorySection = hasMemory
+    ? `BRAIN MEMORY FILES (the operator's business context, voice, communication style, what they sell):\n${formatBlocks(memoryBlocks)}\n\n`
+    : `NOTE: No brain memory files are connected yet. Draft the best outreach you can from the lead profile. At the end, note 1-2 things the operator should add to their brain (what they sell, their voice spec) to sharpen future outreach.\n\n`;
+  const avatarLine = avatarNote(memoryBlocks);
+
+  const profileLines = Object.entries(ctx.leadProfile)
+    .filter(([, v]) => v && v.trim())
+    .map(([k, v]) => `- ${k}: ${v}`)
+    .join("\n");
+
+  return `You are drafting a piece of outreach on behalf of an independent operator to a lead their Lead Scout just found. Your job is to write an email that sounds like THEM — not like a polished PR person, not like ChatGPT, not like a mass cold-email template. Like them, writing to one specific business they want to win.
+${avatarLine}
+
+${memorySection}LEAD SCOUT SOURCE: "${ctx.sourceName}"
+
+THE LEAD YOU'RE WRITING TO:
+- Name: ${ctx.leadName || "(unknown)"}
+- What they do: ${ctx.leadSummary || "(unclear from the scrape)"}
+- Link: ${ctx.leadUrl || "(none)"}
+${profileLines ? `Profile:\n${profileLines}` : "Profile: (sparse)"}
+
+TONE FOR THIS DRAFT:
+${TONE_DIRECTION[ctx.tone]}
+
+VOICE RULES (apply these strictly):
+- Read the brain's voice or communication style notes carefully. Write in that voice exactly.
+- If no voice spec is in the brain, default to: short sentences, direct, specific, no padding. The kind of email a busy operator sends between jobs — not a carefully polished business letter.
+- No "I hope this finds you well." No "circling back." No "just checking in." No "at your earliest convenience."
+- Open with the business name or a single-line greeting that fits a first contact. Not "Hi [Name]," — "Name —" or just the name.
+- Frame the reason for the email in the first sentence. Don't build up to it.
+- Specific > vague. Use the real, true details from the profile above. Never invent facts about the lead — if the profile doesn't say it, don't claim it.
+- Close with a single-action CTA. One thing. Not three options.
+- Sign off as the operator does (check the brain for their sign-off pattern; default to "— [FirstName]" if not found).
+- Every factual claim pulled from the operator's memory must be cited: [memory/filename.md:line]. Claims about the LEAD come from the profile above and are not cited.
+
+OUTPUT FORMAT (exactly this — nothing else):
+Line 1: "Subject: " followed by a short, specific subject line (no quotes, under ~60 chars).
+Line 2: blank.
+Line 3 onward: the email body, starting with the greeting line. No preamble, no "here's the draft."`;
+}
+
+export function splitSubjectBody(raw: string): { subject: string; body: string } {
+  const text = raw.trim();
+  const match = text.match(/^subject:\s*(.+?)\s*(?:\n|$)/i);
+  if (!match) {
+    // Model didn't emit a subject line — fall back to a derived one so the draft still stages.
+    return { subject: "", body: text };
+  }
+  const subject = match[1].trim();
+  const body = text.slice(match[0].length).replace(/^\s+/, "");
+  return { subject, body };
+}
+
+export async function generateOutreachDraft(
+  ctx: LeadOutreachContext,
+  anthropicApiKey: string,
+  brainRepo: string | null,
+  githubToken: string | null,
+): Promise<{ subject: string; body: string; citations: Citation[]; hasBrain: boolean }> {
+  const memoryBlocks: MemoryBlock[] = brainRepo
+    ? await buildMemoryBlocks(brainRepo, githubToken)
+    : [];
+
+  const systemPrompt = buildOutreachSystemPrompt(memoryBlocks, ctx);
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": anthropicApiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1500,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content:
+            "Write the outreach now. Start with the Subject line, then a blank line, then the email body.",
+        },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Anthropic error: ${await res.text()}`);
+  }
+
+  const msg = (await res.json()) as AnthropicApiResponse;
+  const draft = msg.content.find((c) => c.type === "text")?.text ?? "";
+  const { subject, body } = splitSubjectBody(draft);
+  return { subject, body, citations: parseCitations(body), hasBrain: memoryBlocks.length > 0 };
+}
+
 // ─── Weekly Digest ─────────────────────────────────────────────────────────────
 
 export type DigestSection = {

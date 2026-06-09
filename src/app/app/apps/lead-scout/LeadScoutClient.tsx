@@ -394,9 +394,20 @@ function SourceRow({ source, connected }: { source: SourceView; connected: boole
           </div>
           <p className="text-[12px] text-slate-500 mt-0.5">
             {source.detail} · {SCHEDULE_LABEL[source.schedule]}
-            {source.lastRun
-              ? ` · ${source.lastRun.leadCount} leads, last run ${relativeTime(source.lastRun.createdAt)}`
-              : " · never run"}
+            {source.lastRun ? (
+              <>
+                {" · "}
+                <Link
+                  href={`/app/apps/lead-scout/runs/${source.lastRun.id}`}
+                  className="text-slate-400 hover:text-[#22d3ee] transition-colors underline decoration-slate-700 hover:decoration-[#22d3ee]"
+                >
+                  {source.lastRun.leadCount} leads
+                </Link>
+                {`, last run ${relativeTime(source.lastRun.createdAt)}`}
+              </>
+            ) : (
+              " · never run"
+            )}
           </p>
         </div>
         {source.projectId && (

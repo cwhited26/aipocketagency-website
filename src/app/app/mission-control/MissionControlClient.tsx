@@ -1221,7 +1221,40 @@ function LeadScoutBatchCard({
 }) {
   const [busy, setBusy] = useState<"read" | "dismiss" | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [drafting, setDrafting] = useState(false);
+  const [draftErr, setDraftErr] = useState<string | null>(null);
+  const [draftedCount, setDraftedCount] = useState<number | null>(null);
   const detail = card.leadScout;
+
+  const warmHot = detail ? detail.breakdown.hot + detail.breakdown.warm : 0;
+
+  // Phase 3: stage personalized outreach in the owner's voice for the run's hot + warm leads. Each
+  // draft lands in the Drafts section as Approve & Send — sending goes through the owner's Gmail.
+  async function generateOutreach() {
+    if (drafting || !detail?.runId) return;
+    setDrafting(true);
+    setDraftErr(null);
+    try {
+      const res = await fetch(
+        `/api/app/apps/lead-scout/runs/${detail.runId}/draft-outreach`,
+        { method: "POST", cache: "no-store" },
+      );
+      const body = (await res.json().catch(() => ({}))) as {
+        count?: number;
+        error?: string;
+        message?: string;
+      };
+      if (!res.ok) {
+        setDraftErr(body.message ?? body.error ?? `Couldn't draft outreach (${res.status}).`);
+        return;
+      }
+      setDraftedCount(body.count ?? 0);
+    } catch (e) {
+      setDraftErr(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setDrafting(false);
+    }
+  }
 
   async function markRead() {
     setBusy("read");
@@ -1300,6 +1333,14 @@ function LeadScoutBatchCard({
             Download CSV
           </a>
         )}
+        {detail?.runId && (
+          <Link
+            href={`/app/apps/lead-scout/runs/${detail.runId}`}
+            className="min-h-[44px] inline-flex items-center px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors"
+          >
+            View all leads →
+          </Link>
+        )}
         {detail?.projectId && (
           <Link
             href={`/app/projects/${detail.projectId}`}
@@ -1308,19 +1349,36 @@ function LeadScoutBatchCard({
             Open project →
           </Link>
         )}
-        <button
-          type="button"
-          disabled
-          title="Outreach drafting arrives in a later phase."
-          className="min-h-[44px] px-4 rounded-xl border border-slate-800/60 text-slate-600 text-sm font-medium cursor-not-allowed"
-        >
-          Generate outreach for hot + warm
-        </button>
+        {draftedCount === null ? (
+          <button
+            type="button"
+            onClick={() => void generateOutreach()}
+            disabled={drafting || warmHot === 0}
+            title={
+              warmHot === 0
+                ? "No hot or warm leads in this batch to draft for."
+                : "Draft outreach in your voice for every hot + warm lead."
+            }
+            className="min-h-[44px] px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#1a1206] text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {drafting ? "Drafting…" : `Draft outreach for hot + warm${warmHot ? ` (${warmHot})` : ""}`}
+          </button>
+        ) : (
+          <Link
+            href="/app/mission-control"
+            className="min-h-[44px] inline-flex items-center px-4 rounded-xl border border-amber-400/40 text-amber-200 text-sm font-medium hover:border-amber-300 transition-colors"
+          >
+            {draftedCount} outreach {draftedCount === 1 ? "draft" : "drafts"} staged → review them ↓
+          </Link>
+        )}
       </div>
 
+      {draftErr && <p className="mt-2 text-[11px] text-red-400 font-mono">{draftErr}</p>}
+
       <p className="mt-2 text-[11px] text-slate-600 leading-relaxed">
-        Drafting outreach to the warm leads is coming. For now, every lead is saved to your brain and
-        in the CSV.
+        {draftedCount === null
+          ? "Drafting writes one email per hot + warm lead in your voice and stages each for your tap. Every lead is also saved to your brain and in the CSV."
+          : "Each draft is in your Drafts below — read the first few, then Approve & Send straight from your Gmail."}
       </p>
 
       <div className="mt-3 flex items-center gap-2">

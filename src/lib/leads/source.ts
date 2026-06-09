@@ -8,6 +8,7 @@
 // Service-role PostgREST scoped by owner_id, matching pa-projects.ts.
 
 import { createProject } from "@/lib/pa-projects";
+import { nextRunFor } from "./schedule";
 import type { LeadScoutSchedule, LeadScoutSource, MapsSweepConfig } from "./types";
 
 type PaResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
@@ -112,6 +113,7 @@ export async function createSourceWithProject(params: {
       extraction_pattern: params.extractionPattern,
       seed_urls: params.seedUrls,
       schedule: params.schedule,
+      next_run_at: nextRunFor(params.schedule),
     }),
     cache: "no-store",
   });
@@ -174,6 +176,7 @@ export async function createMapsSourceWithProject(params: {
       seed_urls: [],
       config_json: params.config,
       schedule: params.schedule,
+      next_run_at: nextRunFor(params.schedule),
     }),
     cache: "no-store",
   });
@@ -200,7 +203,11 @@ export async function updateSource(
   if (patch.name !== undefined) body.name = patch.name;
   if (patch.extractionPattern !== undefined) body.extraction_pattern = patch.extractionPattern;
   if (patch.seedUrls !== undefined) body.seed_urls = patch.seedUrls;
-  if (patch.schedule !== undefined) body.schedule = patch.schedule;
+  if (patch.schedule !== undefined) {
+    body.schedule = patch.schedule;
+    // Re-arm (or clear) the scheduled-run cursor when the cadence changes.
+    body.next_run_at = nextRunFor(patch.schedule);
+  }
 
   const endpoint =
     `${env.url}/rest/v1/pa_lead_scout_sources` +

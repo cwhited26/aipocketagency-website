@@ -99,6 +99,8 @@ export type LeadScoutLead = {
   brain_path: string | null;
   status: "extracted" | "failed";
   error: string | null;
+  /** Null until the Email Drafter has staged an outreach draft for this lead (Phase 3, idempotency). */
+  outreach_drafted_at: string | null;
   created_at: string;
 };
 
