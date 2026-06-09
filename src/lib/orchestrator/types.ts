@@ -221,6 +221,19 @@ export type DispatchOutcome =
       budgetCents: number;
       pct: number;
     }
+  // The Gate Phase held the plan (PA-GATE-1): one or more gates flagged or blocked it. The run is
+  // persisted + paused; a gate_findings Inbox card is staged for the owner. `verdict` is 'flagged'
+  // (≥1 flag) or 'blocked' (≥1 hard_fail/error, fail-closed). `inboxItemId` keys the review card.
+  | {
+      kind: "gated";
+      runId: string;
+      scaffold: Scaffold;
+      verdict: "flagged" | "blocked";
+      inboxItemId: string;
+      passed: number;
+      total: number;
+      reason: string;
+    }
   // The orchestrator is disabled by flag.
   | { kind: "disabled"; reason: string };
 

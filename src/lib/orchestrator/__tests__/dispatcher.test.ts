@@ -76,6 +76,14 @@ function baseDeps(overrides: Partial<DispatcherDeps> = {}): DispatcherDeps {
       pct: 0,
     })),
     stageBudgetGateCard: vi.fn(async () => "gate-card-1"),
+    // Gate Phase off by default → the dispatcher fires exactly as before; gate tests flip it on.
+    gatesEnabled: vi.fn(() => false),
+    runGatePhase: vi.fn(async () => ({
+      verdict: "clean" as const,
+      planVersion: 1,
+      results: [],
+    })),
+    stageGateCard: vi.fn(async () => "inbox-gate-1"),
     ...overrides,
   };
 }
@@ -207,6 +215,64 @@ describe("dispatchUserGoal", () => {
     if (out.kind === "dispatched") expect(out.dispatched).toBe(false);
     expect(deps.releaseReservation).toHaveBeenCalledTimes(1);
     expect(deps.updateRun).toHaveBeenCalledWith("run-1", expect.objectContaining({ status: "failed" }));
+  });
+
+  // ── Gate Phase (PA-GATE-1) ──────────────────────────────────────────────────────────────
+  it("gates on: a clean verdict still fires the leaf tasks", async () => {
+    const deps = baseDeps({
+      gatesEnabled: vi.fn(() => true),
+      runGatePhase: vi.fn(async () => ({ verdict: "clean" as const, planVersion: 1, results: [] })),
+    });
+    const out = await dispatchUserGoal(INPUT, deps);
+    expect(out.kind).toBe("dispatched");
+    expect(deps.runGatePhase).toHaveBeenCalledTimes(1);
+    expect(deps.stageGateCard).not.toHaveBeenCalled();
+    expect(deps.dispatchRuntime).toHaveBeenCalledTimes(1);
+    expect(deps.releaseReservation).not.toHaveBeenCalled();
+  });
+
+  it("gates on: a flag holds the plan, releases the reservation, stages a card, fires nothing", async () => {
+    const deps = baseDeps({
+      gatesEnabled: vi.fn(() => true),
+      runGatePhase: vi.fn(async () => ({
+        verdict: "flagged" as const,
+        planVersion: 1,
+        results: [
+          { gateName: "customer_name" as const, status: "flag" as const, finding: null, actualMs: 5, timeBudgetMs: 60000, overridable: false },
+          { gateName: "voice" as const, status: "pass" as const, finding: null, actualMs: 5, timeBudgetMs: 60000, overridable: false },
+        ],
+      })),
+    });
+    const out = await dispatchUserGoal(INPUT, deps);
+    expect(out.kind).toBe("gated");
+    if (out.kind === "gated") {
+      expect(out.verdict).toBe("flagged");
+      expect(out.inboxItemId).toBe("inbox-gate-1");
+      expect(out.passed).toBe(1);
+      expect(out.total).toBe(2);
+    }
+    expect(deps.stageGateCard).toHaveBeenCalledTimes(1);
+    expect(deps.releaseReservation).toHaveBeenCalledTimes(1);
+    expect(deps.dispatchRuntime).not.toHaveBeenCalled();
+    expect(deps.updateRun).toHaveBeenCalledWith("run-1", expect.objectContaining({ status: "paused" }));
+  });
+
+  it("gates on: a hard_fail/error verdict blocks (fail closed) and never fires", async () => {
+    const deps = baseDeps({
+      gatesEnabled: vi.fn(() => true),
+      runGatePhase: vi.fn(async () => ({
+        verdict: "blocked" as const,
+        planVersion: 1,
+        results: [
+          { gateName: "security" as const, status: "hard_fail" as const, finding: null, actualMs: 5, timeBudgetMs: 60000, overridable: false },
+        ],
+      })),
+    });
+    const out = await dispatchUserGoal(INPUT, deps);
+    expect(out.kind).toBe("gated");
+    if (out.kind === "gated") expect(out.verdict).toBe("blocked");
+    expect(deps.dispatchRuntime).not.toHaveBeenCalled();
+    expect(deps.stageGateCard).toHaveBeenCalledTimes(1);
   });
 });
 

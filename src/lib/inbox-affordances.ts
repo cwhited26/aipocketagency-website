@@ -22,7 +22,8 @@ export type InboxItemKind =
   | "lead_scout_batch"
   | "build_action_approval"
   | "cost_budget_gate"
-  | "skill_evolution_proposal";
+  | "skill_evolution_proposal"
+  | "gate_findings";
 
 export type AffordanceRole = "primary" | "secondary" | "destructive";
 
@@ -169,6 +170,21 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
         affordances: [
           { key: "raise_cap", label: "Raise the cap", role: "primary" },
           { key: "wait", label: "Wait until next period", role: "secondary" },
+        ],
+      };
+
+    // A held Project plan its specialist gates flagged or blocked (PA-GATE-9). The owner's real
+    // choices are Revise (send the plan back to be rewritten — the normal path) or Reject (kill the
+    // Project). "Approve anyway" overrides the flags and fires — but it's gated per-gate behind the
+    // trust window, so the gate card renders it conditionally itself rather than always offering it
+    // here. hasApproval=true: the plan fires ONLY because the owner decided here.
+    case "gate_findings":
+      return {
+        hasApproval: true,
+        affordances: [
+          { key: "revise", label: "Revise plan", role: "primary" },
+          { key: "approve_anyway", label: "Approve anyway", role: "secondary" },
+          { key: "reject_plan", label: "Reject plan", role: "destructive" },
         ],
       };
 

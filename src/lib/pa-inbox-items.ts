@@ -20,6 +20,8 @@
 // it resolves through the same approval route + ActionApprovalCard, themed as a build action.
 // 'sub_agent_activity' is a dismissible progress card. 'routine_output' (migration 023) is an
 // informational routine result (Daily Brief / Weekly Digest / Follow-up Sweep) — read, never approve.
+// 'gate_findings' (migration 060, PA-GATE-9) is a held Project plan its specialist gates flagged or
+// blocked; it resolves via Revise / Reject / Approve-anyway through /api/orchestrator/gates/[id].
 export type InboxKind =
   | "draft"
   | "decision"
@@ -31,7 +33,8 @@ export type InboxKind =
   | "lead_scout_batch"
   | "build_action_approval"
   | "cost_budget_gate"
-  | "skill_evolution_proposal";
+  | "skill_evolution_proposal"
+  | "gate_findings";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

@@ -37,6 +37,31 @@ type ActionApprovalDetail = {
   subAgentRunId: string | null;
 };
 
+type GateFindingDetail = {
+  rule_violated: string;
+  rule_source: string;
+  plan_task_violating: string;
+  severity: "low" | "medium" | "high" | "critical";
+  suggested_fix: string;
+  evidence: string;
+} | null;
+
+type GateCardGate = {
+  name: string;
+  label: string;
+  status: "pass" | "flag" | "hard_fail" | "error";
+  finding: GateFindingDetail;
+  overridable: boolean;
+};
+
+type GateFindingsDetail = {
+  projectId: string;
+  planVersion: number;
+  projectTitle: string;
+  verdict: "flagged" | "blocked";
+  gates: GateCardGate[];
+};
+
 type LeadScoutBatchDetail = {
   runId: string;
   sourceName: string;
@@ -77,6 +102,7 @@ type InboxCard = {
   action: ActionApprovalDetail | null;
   leadScout: LeadScoutBatchDetail | null;
   skillProposal: SkillProposalDetail | null;
+  gate: GateFindingsDetail | null;
   sourceSurface: string | null;
   threadId: string | null;
 };
@@ -132,6 +158,7 @@ async function postDecision(url: string): Promise<void> {
 type AwaitingSection =
   | "triage"
   | "actions"
+  | "gates"
   | "drafts"
   | "decisions"
   | "briefs"
@@ -148,6 +175,8 @@ function sectionFor(kind: InboxItemKind): AwaitingSection {
     case "action_approval":
     case "build_action_approval":
       return "actions";
+    case "gate_findings":
+      return "gates";
     case "draft":
       return "drafts";
     case "decision":
@@ -767,6 +796,7 @@ function TriageCard({
         action: null,
         leadScout: null,
         skillProposal: null,
+        gate: null,
         sourceSurface: "inbox",
         threadId: triage!.threadId,
       });
@@ -1058,6 +1088,161 @@ function ActionApprovalCard({
           {busy === "reject" ? "…" : "Reject"}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ─── Gate findings card (PA-GATE-9) ────────────────────────────────────────────
+// A held Project plan its specialist gates flagged or blocked. Shows every gate result — passed
+// gates too (transparency, Principle 7) — and the flagged ones with the cited rule + where + fix.
+// Revise / Reject / Approve-anyway resolve through /api/orchestrator/gates/[id]; Approve-anyway only
+// renders when EVERY blocking gate cleared its trust window.
+
+const GATE_STATUS_META: Record<
+  GateCardGate["status"],
+  { icon: string; chip: string; label: string }
+> = {
+  pass: { icon: "✅", chip: "border-emerald-500/20 text-emerald-300/90", label: "passed" },
+  flag: { icon: "🚩", chip: "border-amber-500/30 text-amber-300/90", label: "flag" },
+  hard_fail: { icon: "⛔", chip: "border-red-500/30 text-red-300/90", label: "blocked" },
+  error: { icon: "⚠️", chip: "border-red-500/30 text-red-300/90", label: "couldn't run" },
+};
+
+function GateFindingsCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState<"revise" | "reject" | "approve_anyway" | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const gate = card.gate;
+  const gates = gate?.gates ?? [];
+  const passed = gates.filter((g) => g.status === "pass");
+  const blocking = gates.filter((g) => g.status !== "pass");
+  // Approve-anyway is offered only when every blocking gate is individually overridable.
+  const canApproveAnyway = blocking.length > 0 && blocking.every((g) => g.overridable);
+  const blocked = gate?.verdict === "blocked";
+
+  async function decide(decision: "revise" | "reject" | "approve_anyway") {
+    setBusy(decision);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/orchestrator/gates/${card.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision }),
+        cache: "no-store",
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? `Request failed (${res.status})`);
+      onResolved(card.id, decision === "approve_anyway" ? "approved" : "rejected");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div
+      className={`rounded-2xl border ${blocked ? "border-red-500/25" : "border-amber-500/20"} bg-slate-900/60 p-4 sm:p-5`}
+    >
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span
+          className={`text-[10px] font-mono uppercase tracking-[0.18em] ${blocked ? "text-red-400/80" : "text-amber-400/80"}`}
+        >
+          ⚖ Gate Findings · plan v{gate?.planVersion ?? 1} · {blocked ? "blocked" : "waiting on you"}
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
+      </div>
+
+      <p className="text-[15px] font-semibold text-slate-100 leading-snug">{gate?.projectTitle ?? card.title}</p>
+      <p className="mt-1 text-[12px] text-slate-500">
+        {passed.length} of {gates.length} gates passed.{" "}
+        {blocked
+          ? `${blocking.length} blocked this plan before it runs.`
+          : `${blocking.length} flag${blocking.length === 1 ? "" : "s"} to clear.`}
+      </p>
+
+      {passed.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {passed.map((g) => (
+            <span
+              key={g.name}
+              className={`rounded-md border px-2 py-0.5 text-[11px] font-mono ${GATE_STATUS_META.pass.chip}`}
+            >
+              ✅ {g.label}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-col gap-2">
+        {blocking.map((g) => {
+          const meta = GATE_STATUS_META[g.status];
+          return (
+            <div key={g.name} className={`rounded-lg border ${meta.chip} bg-slate-950/40 px-3 py-2.5`}>
+              <p className="text-[12px] font-semibold">
+                {meta.icon} {g.label} — {meta.label}
+                {g.finding ? ` (severity: ${g.finding.severity})` : ""}
+              </p>
+              {g.finding && (
+                <div className="mt-1.5 space-y-1 text-[11px] text-slate-400 leading-relaxed">
+                  <p>
+                    <span className="text-slate-500">Rule:</span> {g.finding.rule_violated}{" "}
+                    <span className="text-slate-600">→ {g.finding.rule_source}</span>
+                  </p>
+                  <p>
+                    <span className="text-slate-500">Where:</span> {g.finding.plan_task_violating}
+                  </p>
+                  <p>
+                    <span className="text-slate-500">Found:</span> {g.finding.evidence}
+                  </p>
+                  <p className="text-slate-300">
+                    <span className="text-slate-500">Suggested fix:</span> {g.finding.suggested_fix}
+                  </p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          onClick={() => void decide("revise")}
+          disabled={busy !== null}
+          className="flex-1 min-h-[44px] py-3 px-4 rounded-xl bg-[#22d3ee] hover:bg-[#06b6d4] text-[#031820] text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {busy === "revise" ? "Sending back…" : "Revise plan"}
+        </button>
+        {canApproveAnyway && (
+          <button
+            onClick={() => void decide("approve_anyway")}
+            disabled={busy !== null}
+            className="min-h-[44px] px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors disabled:opacity-50"
+          >
+            {busy === "approve_anyway" ? "…" : "Approve anyway"}
+          </button>
+        )}
+        <button
+          onClick={() => void decide("reject")}
+          disabled={busy !== null}
+          aria-label="Reject plan"
+          className="min-h-[44px] px-4 rounded-xl text-slate-500 text-sm hover:text-slate-300 transition-colors disabled:opacity-50"
+        >
+          {busy === "reject" ? "…" : "Reject"}
+        </button>
+      </div>
+      {!canApproveAnyway && blocking.length > 0 && (
+        <p className="mt-2 text-[11px] text-slate-600 leading-relaxed">
+          Approve-anyway unlocks per gate after a streak of clean passes. For now, revise the plan or reject it.
+        </p>
+      )}
     </div>
   );
 }
@@ -1793,6 +1978,7 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
   const inSection = (s: AwaitingSection) => pending.filter((c) => sectionFor(c.kind) === s);
   const triage = inSection("triage");
   const actions = inSection("actions");
+  const gateCards = inSection("gates");
   const decisions = inSection("decisions");
   const briefs = inSection("briefs");
   const leads = inSection("leads");
@@ -2117,6 +2303,17 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
                 <div className="flex flex-col gap-3">
                   {actions.map((card) => (
                     <ActionApprovalCard key={card.id} card={card} onResolved={onResolved} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {gateCards.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader label="Plans held at the Gate Phase" count={gateCards.length} />
+                <div className="flex flex-col gap-3">
+                  {gateCards.map((card) => (
+                    <GateFindingsCard key={card.id} card={card} onResolved={onResolved} />
                   ))}
                 </div>
               </section>

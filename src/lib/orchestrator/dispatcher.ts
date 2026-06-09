@@ -33,11 +33,13 @@ import {
 } from "./tier-caps";
 import {
   countActiveRuns,
+  fetchRun,
   insertRun,
   logPhaseEnter,
   reconcileAgentMinutes,
   updateRun,
 } from "./db";
+import { ScaffoldSchema } from "./types";
 import { monthKey } from "./tier-caps";
 import { dispatch as runtimeDispatch, type DispatchJob, type DispatchResult } from "./runtime-client";
 import { completeLlm } from "@/lib/llm/dispatch";
@@ -50,6 +52,10 @@ import {
   type LoadedSkill,
 } from "@/lib/skills/resolve";
 import { appendTriggeredRecord } from "@/lib/skills/store";
+import { projectGatesEnabled } from "./gates/config";
+import { runGatePhase, type GatePhaseInput } from "./gates/runner";
+import { stageGateFindingsCard } from "./gates/card";
+import type { GatePhaseResult } from "./gates/schema";
 
 // The zone a goal-driven owner run is scoped to. Skills are matched + loaded only within this zone
 // (PA-SKILL-7); a future persona-scoped dispatch passes its own `persona-<slug>` zone instead.
@@ -90,6 +96,15 @@ export type DispatcherDeps = {
     ownerId: string,
     gate: Extract<BudgetGate, { status: "block_100" }>,
   ) => Promise<string | null>;
+  // ── Gate Phase (PA-GATE-1, dark behind PA_PROJECT_GATES_ENABLED) ──
+  gatesEnabled: () => boolean;
+  runGatePhase: (input: GatePhaseInput) => Promise<GatePhaseResult>;
+  stageGateCard: (input: {
+    businessId: string;
+    projectId: string;
+    scaffold: Scaffold;
+    phase: GatePhaseResult;
+  }) => Promise<string>;
 };
 
 // Default planner LLM: PA-managed Claude via the BYO dispatcher, keyed by the owner's stored
@@ -158,6 +173,9 @@ export const defaultDeps: DispatcherDeps = {
   timeBudgetSeconds: defaultTimeBudgetSeconds,
   checkBudget: checkBudgetGate,
   stageBudgetGateCard: stageCostBudgetGateCard,
+  gatesEnabled: projectGatesEnabled,
+  runGatePhase,
+  stageGateCard: stageGateFindingsCard,
 };
 
 // Human-readable dollar amounts for the budget-gate copy. Budget is whole-dollar cents; spend is
@@ -348,6 +366,48 @@ export async function dispatchUserGoal(
     );
   }
 
+  // ── GATE PHASE (PA-GATE-1) ──────────────────────────────────────────────────────────────
+  // Between the approved plan and the leaf-task fire, fan out the enabled gates against the plan +
+  // the brain rule-files. Clean → fall through and fire. Flagged/blocked → hold: release the
+  // reservation (no leaves ran), pause the run, stage a gate_findings card, and return 'gated'.
+  // Dark behind PA_PROJECT_GATES_ENABLED — off → the dispatcher fires exactly as before.
+  if (deps.gatesEnabled()) {
+    const phase = await deps.runGatePhase({
+      businessId,
+      projectId: run.id,
+      goal,
+      scaffold,
+      planVersion: 1,
+    });
+    if (phase.verdict !== "clean") {
+      await deps.releaseReservation(businessId, minutes);
+      const passed = phase.results.filter((r) => r.status === "pass").length;
+      await deps.updateRun(run.id, {
+        status: "paused",
+        resultSummary: `Gate Phase ${phase.verdict}: ${passed}/${phase.results.length} gates passed.`,
+      });
+      const inboxItemId = await deps.stageGateCard({
+        businessId,
+        projectId: run.id,
+        scaffold,
+        phase,
+      });
+      return {
+        kind: "gated",
+        runId: run.id,
+        scaffold,
+        verdict: phase.verdict === "blocked" ? "blocked" : "flagged",
+        inboxItemId,
+        passed,
+        total: phase.results.length,
+        reason:
+          phase.verdict === "blocked"
+            ? "I held this plan — a gate blocked it. Check the Gate Findings card before it runs."
+            : "I held this plan — a gate flagged something. Review the Gate Findings card to revise or approve.",
+      };
+    }
+  }
+
   const job: DispatchJob = {
     runId: run.id,
     businessId,
@@ -395,6 +455,62 @@ export async function dispatchUserGoal(
     dispatched: false,
     reason: "I planned the task but couldn't reach the execution runtime. Try again shortly.",
   };
+}
+
+// ── Resume after Approve-anyway (PA-GATE-5) ────────────────────────────────────────────────
+
+export type ResumeOutcome =
+  | { ok: true; fired: boolean; reason: string }
+  | { ok: false; reason: string };
+
+/**
+ * Fires a Project run that the Gate Phase held, after the owner cleared every flag via
+ * Approve-anyway (the route enforces per-gate overridability first — this only fires). Re-reserves
+ * agent-minutes (the hold released the original reservation), rebuilds the run-level ISA from the
+ * persisted plan, and dispatches it at the runtime. Idempotent-ish: a run not in 'paused' is a no-op.
+ */
+export async function resumeRunAfterGate(
+  runId: string,
+  deps: DispatcherDeps = defaultDeps,
+): Promise<ResumeOutcome> {
+  const run = await fetchRun(runId);
+  if (!run) return { ok: false, reason: "Run not found." };
+  if (run.status !== "paused") return { ok: false, reason: `Run is ${run.status}, not held.` };
+
+  const spec = run.spec_json as { goal?: unknown; scaffold?: unknown };
+  const parsedScaffold = ScaffoldSchema.safeParse(spec?.scaffold);
+  if (!parsedScaffold.success) return { ok: false, reason: "Held plan is unreadable." };
+  const goal = typeof spec?.goal === "string" ? spec.goal : parsedScaffold.data.project;
+  const scaffold = parsedScaffold.data;
+
+  const budgetSeconds = deps.timeBudgetSeconds();
+  const minutes = estimateAgentMinutes(scaffold, budgetSeconds);
+  const reservation = await deps.reserveRun(run.business_id, minutes);
+  if (!reservation.ok) return { ok: false, reason: reservation.reason };
+
+  const { brainRepo } = await deps.loadContext(run.business_id);
+  const toolScopes = run.tool_scopes ?? deriveToolScopes(scaffold);
+  const fired = await deps.dispatchRuntime({
+    runId: run.id,
+    businessId: run.business_id,
+    spec: buildRunSpec(goal, scaffold, toolScopes),
+    timeBudgetSeconds: budgetSeconds,
+    brainRepo,
+  });
+
+  if (fired.ok) {
+    await deps.updateRun(run.id, { status: "running", startedAt: new Date().toISOString() });
+    await deps.logPhaseEnter(run.id, "observe", "Run resumed after gate approve-anyway.");
+    return { ok: true, fired: true, reason: "Approved past the gate — the plan is running." };
+  }
+  // Runtime not ready → keep the plan reserved-but-unfired (still demoable); don't release.
+  if (fired.degraded === "not_configured") {
+    await deps.updateRun(run.id, { status: "planning" });
+    return { ok: true, fired: false, reason: "Approved — saved the plan; the runtime isn't switched on yet." };
+  }
+  await deps.releaseReservation(run.business_id, minutes);
+  await deps.updateRun(run.id, { status: "paused" });
+  return { ok: false, reason: `Couldn't reach the runtime: ${fired.error}` };
 }
 
 // Re-exported for the soft pre-check the chat surface can call before committing.

@@ -25,7 +25,8 @@ export type InboxCardKind =
   | "lead_scout_batch"
   | "build_action_approval"
   | "cost_budget_gate"
-  | "skill_evolution_proposal";
+  | "skill_evolution_proposal"
+  | "gate_findings";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -77,6 +78,34 @@ export type SkillProposalDetail = {
   reason: string;
 };
 
+// Gate Phase: a held Project plan its gates flagged/blocked (kind='gate_findings'). The compact
+// per-gate summary is carried on the inbox payload so the card + per-gate detail render without a
+// second read; the full rows live in pa_gate_findings.
+export type GateFindingDetail = {
+  rule_violated: string;
+  rule_source: string;
+  plan_task_violating: string;
+  severity: "low" | "medium" | "high" | "critical";
+  suggested_fix: string;
+  evidence: string;
+} | null;
+
+export type GateCardGate = {
+  name: string;
+  label: string;
+  status: "pass" | "flag" | "hard_fail" | "error";
+  finding: GateFindingDetail;
+  overridable: boolean;
+};
+
+export type GateFindingsDetail = {
+  projectId: string;
+  planVersion: number;
+  projectTitle: string;
+  verdict: "flagged" | "blocked";
+  gates: GateCardGate[];
+};
+
 export type InboxCard = {
   id: string;
   system: InboxCardSystem;
@@ -93,6 +122,7 @@ export type InboxCard = {
   action: ActionApprovalDetail | null;
   leadScout: LeadScoutBatchDetail | null;
   skillProposal: SkillProposalDetail | null;
+  gate: GateFindingsDetail | null;
   // The surface the draft was initiated from. 'inbox' means it was drafted from
   // within the Inbox (a reply to a triaged thread) and is rendered inline on its
   // originating thread instead of in the generic drafts list. threadId links it back.
@@ -179,6 +209,45 @@ function skillProposalOf(item: InboxItem): SkillProposalDetail {
   };
 }
 
+type GateSeverity = "low" | "medium" | "high" | "critical";
+function severityOf(v: unknown): GateSeverity {
+  return v === "low" || v === "high" || v === "critical" ? v : "medium";
+}
+
+// Normalizes the gate_findings payload (the compact summary staged on the inbox item). Shape is
+// validated defensively — a malformed payload yields an empty gate list rather than throwing.
+function gateOf(item: InboxItem): GateFindingsDetail {
+  const p = item.payload as Record<string, unknown>;
+  const rawGates = Array.isArray(p.gates) ? (p.gates as unknown[]) : [];
+  const gates: GateCardGate[] = rawGates.flatMap((g) => {
+    if (!g || typeof g !== "object") return [];
+    const o = g as Record<string, unknown>;
+    const status = str(o.status);
+    if (status !== "pass" && status !== "flag" && status !== "hard_fail" && status !== "error") return [];
+    const f = o.finding;
+    let finding: GateFindingDetail = null;
+    if (f && typeof f === "object") {
+      const fo = f as Record<string, unknown>;
+      finding = {
+        rule_violated: str(fo.rule_violated),
+        rule_source: str(fo.rule_source),
+        plan_task_violating: str(fo.plan_task_violating),
+        severity: severityOf(fo.severity),
+        suggested_fix: str(fo.suggested_fix),
+        evidence: str(fo.evidence),
+      };
+    }
+    return [{ name: str(o.name), label: str(o.label) || str(o.name), status, finding, overridable: o.overridable === true }];
+  });
+  return {
+    projectId: str(p.projectId),
+    planVersion: num(p.planVersion) || 1,
+    projectTitle: str(p.projectTitle) || item.title,
+    verdict: str(p.verdict) === "blocked" ? "blocked" : "flagged",
+    gates,
+  };
+}
+
 function normalizeInboxItem(item: InboxItem): InboxCard {
   const isEmail = item.kind === "draft" && item.source === "email-drafter";
   const isTriage = item.kind === "email_triage";
@@ -191,6 +260,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
   const action = isAction ? actionOf(item) : null;
   const leadScout = item.kind === "lead_scout_batch" ? leadScoutOf(item) : null;
   const skillProposal = item.kind === "skill_evolution_proposal" ? skillProposalOf(item) : null;
+  const gate = item.kind === "gate_findings" ? gateOf(item) : null;
   return {
     id: item.id,
     system: "inbox",
@@ -213,6 +283,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
     action,
     leadScout,
     skillProposal,
+    gate,
     sourceSurface: str(item.payload.sourceSurface) || null,
     threadId: str(item.payload.threadId) || null,
   };
@@ -251,6 +322,7 @@ function normalizeLegacyAction(action: PendingAction): InboxCard {
     action: null,
     leadScout: null,
     skillProposal: null,
+    gate: null,
     sourceSurface: null,
     threadId: null,
   };
