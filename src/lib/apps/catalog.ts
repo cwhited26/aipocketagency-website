@@ -14,6 +14,7 @@ export const APP_IDS = [
   "youtube",
   "podcasts",
   "lead-scout",
+  "follow-up-sweeps",
   "brain-map",
 ] as const;
 
@@ -120,6 +121,17 @@ export const APP_CATALOG: AppDef[] = [
       "New: subscribe to a vertical pack and PA runs the full sweep + outreach loop for you — roofing, HVAC, painting, med spa, law firm, and more, each pre-tuned. Or build your own: sweep Google Maps for a category in a place (roofers near Knoxville without a website) or paste your own URLs. Either way PA sorts them by fit and drafts a first email in your voice for Approve & Send.",
     blurb: "Find businesses that fit and draft the first outreach.",
     tag: "Finds Leads",
+    tagColor: "cyan",
+  },
+  {
+    id: "follow-up-sweeps",
+    href: "/app/apps/follow-up-sweeps",
+    label: "Follow-Up Sweeps",
+    shortLabel: "Follow-Up Sweeps",
+    description:
+      "Closes the loop on every conversation you started and didn't finish. Watches the contacts that have gone quiet — leads who ghosted, customers you haven't checked in on, past clients worth winning back — across your Gmail, your brain's customer files, and your Lead Scout leads. Each week it drafts the next touch in your voice and stages the batch in Mission Control for one tap. Mark anyone \"leave alone\" and it stays off the list.",
+    blurb: "Watch contacts that go quiet and draft the next touch each week.",
+    tag: "Runs Weekly",
     tagColor: "cyan",
   },
   {

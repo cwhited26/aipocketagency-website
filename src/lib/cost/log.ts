@@ -25,7 +25,8 @@ export type CostFeatureSlug =
   | "chat"
   | "email_drafter"
   | "build_tools"
-  | "rag";
+  | "rag"
+  | "follow_up_sweeps";
 
 /**
  * The per-call-site context a metered backend carries: who's paying, which feature area, and a

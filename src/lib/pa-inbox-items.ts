@@ -22,6 +22,8 @@
 // informational routine result (Daily Brief / Weekly Digest / Follow-up Sweep) — read, never approve.
 // 'gate_findings' (migration 060, PA-GATE-9) is a held Project plan its specialist gates flagged or
 // blocked; it resolves via Revise / Reject / Approve-anyway through /api/orchestrator/gates/[id].
+// 'follow_up_sweep_batch' (migration 063, PA-FUS-4) is the informational summary card the weekly
+// Follow-Up Sweeps run stages alongside its per-contact 'draft' cards — read, never approve.
 export type InboxKind =
   | "draft"
   | "decision"
@@ -34,7 +36,8 @@ export type InboxKind =
   | "build_action_approval"
   | "cost_budget_gate"
   | "skill_evolution_proposal"
-  | "gate_findings";
+  | "gate_findings"
+  | "follow_up_sweep_batch";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

@@ -26,7 +26,8 @@ export type InboxCardKind =
   | "build_action_approval"
   | "cost_budget_gate"
   | "skill_evolution_proposal"
-  | "gate_findings";
+  | "gate_findings"
+  | "follow_up_sweep_batch";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -136,6 +137,7 @@ const SOURCE_LABELS: Record<string, string> = {
   "auto-suggest": "Auto-suggest",
   gmail: "Gmail",
   routine: "Routine",
+  "follow-up-sweeps": "Follow-Up Sweeps",
 };
 
 function previewOf(text: string, max = 180): string {

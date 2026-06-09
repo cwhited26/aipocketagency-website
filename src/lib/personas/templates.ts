@@ -294,7 +294,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Your right hand for the daily admin — what's on today, who's waiting on you, and the quick emails that keep things moving.",
     sampleQuestion: "What's on my plate today and who am I behind on?",
     defaultTone: "conversational",
-    defaultApps: ["daily-brief", "upcoming", "email-drafter", "followups"],
+    defaultApps: ["daily-brief", "upcoming", "email-drafter", "followups", "follow-up-sweeps"],
     starterPrompt: "Give me my morning rundown — what's pending and who I'm behind on.",
     fields: {
       problem:
@@ -322,7 +322,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Keeps deals moving — finds the next prospect, drafts the outreach, and chases the quotes that have gone quiet.",
     sampleQuestion: "Draft a first outreach to a prospect who fits our best customers.",
     defaultTone: "direct",
-    defaultApps: ["email-drafter", "followups", "lead-scout", "quote"],
+    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote"],
     starterPrompt: "Draft a first outreach email to a regional homebuilder who'd be a good fit.",
     fields: {
       problem:
@@ -350,7 +350,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Watches for the deals, leads, and relationships that have gone quiet — and drafts the nudge for each one.",
     sampleQuestion: "Which leads have gone cold this week, and what should I send them?",
     defaultTone: "conversational",
-    defaultApps: ["followups", "email-drafter"],
+    defaultApps: ["followups", "follow-up-sweeps", "email-drafter"],
     starterPrompt: "Show me which relationships have gone quiet and draft a nudge for each.",
     fields: {
       problem:
@@ -462,7 +462,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "The wide-angle view — pulls together what's happening across the business and surfaces the one thing to handle next.",
     sampleQuestion: "What across the business needs my attention this week?",
     defaultTone: "direct",
-    defaultApps: ["daily-brief", "upcoming", "followups", "email-drafter", "brain-map"],
+    defaultApps: ["daily-brief", "upcoming", "followups", "follow-up-sweeps", "email-drafter", "brain-map"],
     starterPrompt: "Pull together what's happening across the business and tell me what to handle first.",
     fields: {
       problem:
