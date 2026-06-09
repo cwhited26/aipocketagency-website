@@ -78,6 +78,8 @@ export async function generateOutreachForLead(params: {
   paUser: PaUserLite;
   tone?: OutreachTone;
   sourceName: string;
+  /** Vertical voice hint from the source's pack (Phase 4); steers the angle without overriding voice. */
+  voiceBrief?: string;
 }): Promise<OutreachResult<{ subject: string; body: string; citations: { file: string; line: string }[]; lead: LeadScoutLead; recipient: string }>> {
   if (!params.paUser.anthropic_api_key) {
     return { ok: false, status: 402, error: "no_api_key" };
@@ -96,6 +98,7 @@ export async function generateOutreachForLead(params: {
       leadUrl: lead.url,
       sourceName: params.sourceName,
       tone: params.tone ?? "cold-introduce",
+      voiceBrief: params.voiceBrief,
     },
     params.paUser.anthropic_api_key,
     params.paUser.brain_repo,
@@ -123,6 +126,7 @@ async function stageOutreachForLead(params: {
   paUser: PaUserLite;
   tone?: OutreachTone;
   sourceName: string;
+  voiceBrief?: string;
   force?: boolean;
 }): Promise<OutreachResult<StagedDraft | null>> {
   if (!params.force && params.lead.outreach_drafted_at) {
@@ -142,6 +146,7 @@ async function stageOutreachForLead(params: {
     paUser: params.paUser,
     tone: params.tone,
     sourceName: params.sourceName,
+    voiceBrief: params.voiceBrief,
   });
   if (!generated.ok) return { ok: false, status: generated.status, error: generated.error };
 
@@ -195,6 +200,7 @@ export async function generateOutreachForBatch(params: {
   sourceName: string;
   classification?: LeadClassification[];
   tone?: OutreachTone;
+  voiceBrief?: string;
 }): Promise<OutreachResult<{ staged: StagedDraft[]; skipped: number; candidates: number }>> {
   if (!params.paUser.anthropic_api_key) {
     return { ok: false, status: 402, error: "no_api_key" };
@@ -221,6 +227,7 @@ export async function generateOutreachForBatch(params: {
       paUser: params.paUser,
       tone: params.tone,
       sourceName: params.sourceName,
+      voiceBrief: params.voiceBrief,
     });
     if (!result.ok) {
       // A generation/stage failure for one lead releases its claim so a later run can retry it.
@@ -241,6 +248,7 @@ export async function draftOutreachForSingleLead(params: {
   paUser: PaUserLite;
   sourceName: string;
   tone?: OutreachTone;
+  voiceBrief?: string;
 }): Promise<OutreachResult<StagedDraft>> {
   const found = await getLead(params.leadId, params.ownerId);
   if (!found.ok) return { ok: false, status: found.status, error: found.error };
@@ -253,6 +261,7 @@ export async function draftOutreachForSingleLead(params: {
     paUser: params.paUser,
     tone: params.tone,
     sourceName: params.sourceName,
+    voiceBrief: params.voiceBrief,
     force: true,
   });
   if (!result.ok) return result;

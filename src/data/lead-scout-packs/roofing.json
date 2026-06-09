@@ -1,0 +1,20 @@
+{
+  "name": "Roofing Contractors",
+  "vertical_slug": "roofing",
+  "icon": "🏠",
+  "card_noun": "roofers",
+  "tagline": "Find roofers with the reviews but no website.",
+  "display_description": "Sweeps Google Maps for roofing contractors near you and keeps the ones with real reviews and no site — the crews already winning jobs who'd close more with a page and a quote form. The exact list a $500-site seller builds by hand, built for you in a tap.",
+  "default_google_maps_category": "roofing contractor",
+  "default_radius_miles": 30,
+  "default_filters": {
+    "no_website": true,
+    "min_reviews": 5,
+    "max_reviews": null,
+    "has_phone": true,
+    "has_email": false
+  },
+  "default_outreach_tone": "cold-introduce",
+  "outreach_voice_brief": "Write to a working roofer, not a marketing buyer. Lead with what you saw on their listing — the review count, the years, the fact they're booked but have no website. Make the point that storm-season leads go to whoever shows up first in a search, and right now that isn't them. Keep it short, no jargon, one ask: a quick look at what a page plus a quote form would catch. Talk like a contractor who builds for contractors.",
+  "recommended_tier": "studio"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Law Firms",
+  "vertical_slug": "law-firm",
+  "icon": "⚖️",
+  "card_noun": "law firms",
+  "tagline": "Solo and small firms invisible to searching clients.",
+  "display_description": "Pulls solo practitioners and small firms near you with reviews but no website. A potential client searching for a lawyer at the worst moment of their year finds a name and a phone number and nothing that earns the call. A clean site is the difference.",
+  "default_google_maps_category": "law firm",
+  "default_radius_miles": 20,
+  "default_filters": {
+    "no_website": true,
+    "min_reviews": 8,
+    "max_reviews": null,
+    "has_phone": true,
+    "has_email": false
+  },
+  "default_outreach_tone": "cold-introduce",
+  "outreach_voice_brief": "Write to an attorney who got clients by reputation, not marketing. Lead with the real detail — good reviews, no website. Make the case that someone with a legal problem researches before they call, and a firm with no site reads as a firm that isn't taking new clients. Offer a straightforward, credible site with a contact form. Respectful, plain, one ask. No legal jargon, no hype.",
+  "recommended_tier": "studio_plus"
+}

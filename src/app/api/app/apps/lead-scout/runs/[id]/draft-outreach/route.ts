@@ -3,6 +3,7 @@ import { fetchPaUser } from "@/lib/pa-supabase";
 import { getRun } from "@/lib/leads/runs";
 import { getSource } from "@/lib/leads/source";
 import { generateOutreachForBatch } from "@/lib/leads/outreach";
+import { voiceBriefFor } from "@/lib/leads/packs";
 import { LEAD_CLASSIFICATIONS, type LeadClassification } from "@/lib/leads/types";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -42,7 +43,11 @@ export async function POST(
   if (!runResult.data) return NextResponse.json({ error: "Run not found" }, { status: 404 });
 
   const sourceResult = await getSource(runResult.data.source_id, user.id);
-  const sourceName = sourceResult.ok && sourceResult.data ? sourceResult.data.name : "Lead Scout";
+  const source = sourceResult.ok ? sourceResult.data : null;
+  const sourceName = source ? source.name : "Lead Scout";
+  // A pack-subscribed source carries a vertical voice brief — pass it so the cold email reads
+  // roofing-specific vs law-firm-specific (Phase 4).
+  const voiceBrief = voiceBriefFor(source?.pack_slug) ?? undefined;
 
   const paResult = await fetchPaUser(user.id);
   if (!paResult.ok) return NextResponse.json({ error: paResult.error }, { status: paResult.status });
@@ -64,6 +69,7 @@ export async function POST(
     sourceName,
     classification: body.classification as LeadClassification[] | undefined,
     tone: body.tone,
+    voiceBrief,
   });
   if (!batch.ok) return NextResponse.json({ error: batch.error }, { status: batch.status });
 

@@ -1,0 +1,20 @@
+{
+  "name": "Dental Practices",
+  "vertical_slug": "dentist",
+  "icon": "🦷",
+  "card_noun": "dental practices",
+  "tagline": "Practices with patients but no front door online.",
+  "display_description": "Finds dental practices near you with steady reviews and no website. New patients pick a dentist online and book online — a practice with no site and no scheduling link never makes the short list, no matter how good the chair-side work is.",
+  "default_google_maps_category": "dentist",
+  "default_radius_miles": 20,
+  "default_filters": {
+    "no_website": true,
+    "min_reviews": 10,
+    "max_reviews": null,
+    "has_phone": true,
+    "has_email": false
+  },
+  "default_outreach_tone": "cold-introduce",
+  "outreach_voice_brief": "Write to a dentist who built the practice on referrals. Use the real signal — steady reviews, no website. Make the point that a new patient chooses a dentist online and wants to book online, and a practice with no site and no scheduling link gets skipped before the phone ever rings. Offer a simple site with online scheduling. Friendly, concrete, one ask. No marketing-speak.",
+  "recommended_tier": "studio_plus"
+}

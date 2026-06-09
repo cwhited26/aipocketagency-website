@@ -1,0 +1,20 @@
+{
+  "name": "Painting Contractors",
+  "vertical_slug": "painting",
+  "icon": "🎨",
+  "card_noun": "painters",
+  "tagline": "Painters running on word of mouth alone.",
+  "display_description": "Finds painting crews near you with happy reviews and no website — the ones living on referrals who never show up when a homeowner searches \"painter near me.\" A simple page with a gallery and a quote form is the gap.",
+  "default_google_maps_category": "painting contractor",
+  "default_radius_miles": 25,
+  "default_filters": {
+    "no_website": true,
+    "min_reviews": 3,
+    "max_reviews": null,
+    "has_phone": true,
+    "has_email": false
+  },
+  "default_outreach_tone": "cold-introduce",
+  "outreach_voice_brief": "Write to a painter who's good with a brush, not a browser. Point at the real signal — solid reviews, no site to send people to. Make it concrete: a homeowner wants to see past work before they call, and there's nowhere to send them. Offer a page with a gallery and a quote form. Short, friendly, one ask.",
+  "recommended_tier": "studio"
+}

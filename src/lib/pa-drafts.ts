@@ -494,6 +494,12 @@ export type LeadOutreachContext = {
   /** The Lead Source's name ("Knoxville no-website roofers") — what the owner is hunting for. */
   sourceName: string;
   tone: OutreachTone;
+  /**
+   * A vertical-specific voice hint from a Lead Scout pack (Phase 4) — what to lead with, what the
+   * pain is for this trade, what the one ask should be. Steers the draft so a roofing email reads
+   * roofing-specific and a law-firm email reads law-firm-specific. Absent for a hand-built source.
+   */
+  voiceBrief?: string;
 };
 
 const TONE_DIRECTION: Record<OutreachTone, string> = {
@@ -537,7 +543,11 @@ ${profileLines ? `Profile:\n${profileLines}` : "Profile: (sparse)"}
 
 TONE FOR THIS DRAFT:
 ${TONE_DIRECTION[ctx.tone]}
-
+${
+  ctx.voiceBrief
+    ? `\nVERTICAL BRIEF (this lead's trade — let it shape the angle and the one ask, but never override the operator's own voice from the brain above):\n${ctx.voiceBrief}\n`
+    : ""
+}
 VOICE RULES (apply these strictly):
 - Read the brain's voice or communication style notes carefully. Write in that voice exactly.
 - If no voice spec is in the brain, default to: short sentences, direct, specific, no padding. The kind of email a busy operator sends between jobs — not a carefully polished business letter.

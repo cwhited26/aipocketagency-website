@@ -38,6 +38,15 @@ export function tierRank(tier: Tier): number {
   return TIERS.indexOf(tier);
 }
 
+/**
+ * Can this tier subscribe to a Lead Scout vertical pack? Packs are a Studio+/Enterprise add-on
+ * (PA-LS-11) — lower tiers can browse the packs grid and see the upgrade path, but Subscribe only
+ * fires at Studio+ and above.
+ */
+export function tierAllowsLeadScoutPacks(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio_plus");
+}
+
 // ── Stripe LIVE-mode price → tier mapping (PA-ORCH-10 unified SMB ladder) ────────────
 //
 // Source of truth for the SMB subscription tier a paid Stripe price grants. The

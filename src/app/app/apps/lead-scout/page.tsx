@@ -98,6 +98,28 @@ export default async function LeadScoutPage() {
           </p>
         </div>
 
+        <Link
+          href="/app/apps/lead-scout/packs"
+          className="block mb-8 rounded-2xl border border-[#22d3ee]/30 bg-[#22d3ee]/[0.07] px-5 py-4 hover:border-[#22d3ee]/50 transition-colors"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-mono uppercase tracking-[0.16em] text-[#22d3ee]/80 mb-1">
+                New — vertical packs
+              </p>
+              <p className="text-sm font-semibold text-slate-100">
+                Subscribe to a pack and PA runs the whole loop for you
+              </p>
+              <p className="text-[13px] text-slate-400 mt-1 leading-relaxed">
+                Roofing, HVAC, painting, general contracting, med spa, law firm, dentist — pick your
+                trade and a place. The right category, the right filters, and outreach tuned to that
+                vertical, all dialed in. One tap. <span className="text-slate-500">Studio+</span>
+              </p>
+            </div>
+            <span className="shrink-0 text-[#22d3ee] text-sm font-mono">Browse →</span>
+          </div>
+        </Link>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
           {USE_CASES.map((u) => (
             <div

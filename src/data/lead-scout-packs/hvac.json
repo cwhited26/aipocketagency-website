@@ -1,0 +1,20 @@
+{
+  "name": "HVAC Companies",
+  "vertical_slug": "hvac",
+  "icon": "🌡️",
+  "card_noun": "HVAC companies",
+  "tagline": "Heating and cooling shops missing from search.",
+  "display_description": "Pulls HVAC and air-conditioning companies near you that take calls but have no website. The ones a homeowner can't find at 2pm in July when the unit quits — busy on referrals, invisible to everyone searching right now.",
+  "default_google_maps_category": "HVAC contractor",
+  "default_radius_miles": 30,
+  "default_filters": {
+    "no_website": true,
+    "min_reviews": 5,
+    "max_reviews": null,
+    "has_phone": true,
+    "has_email": false
+  },
+  "default_outreach_tone": "cold-introduce",
+  "outreach_voice_brief": "Write to an HVAC owner who runs trucks, not ads. Open with the real detail from the listing — strong reviews, a phone, no site. Make the point plainly: emergency cooling and heating searches spike in season, and the homeowner books whoever shows up, not whoever's best. Offer a page that takes the call when they're on a roof. One ask, no buzzwords.",
+  "recommended_tier": "studio"
+}

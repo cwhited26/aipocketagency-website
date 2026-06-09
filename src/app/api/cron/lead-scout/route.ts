@@ -12,6 +12,7 @@ import { fetchDueLeadSources, markLeadSourceRun } from "@/lib/leads/schedule";
 import { runScout } from "@/lib/leads/scout";
 import { runMapsSweep } from "@/lib/leads/google-maps-sweep";
 import { generateOutreachForBatch } from "@/lib/leads/outreach";
+import { voiceBriefFor } from "@/lib/leads/packs";
 import { screenUrlList } from "@/lib/leads/denylist";
 import { resolveBrightData } from "@/lib/pa-lead-scout-connections";
 import { getCurrentTier } from "@/lib/personas/tier-caps";
@@ -112,6 +113,7 @@ export async function GET(req: Request): Promise<NextResponse> {
         ownerId: source.owner_id,
         paUser: paResult.data,
         sourceName: source.name,
+        voiceBrief: voiceBriefFor(source.pack_slug) ?? undefined,
       });
       if (batch.ok) drafts = batch.data.staged.length;
     }

@@ -1,0 +1,20 @@
+{
+  "name": "General Contractors",
+  "vertical_slug": "general-contracting",
+  "icon": "🔨",
+  "card_noun": "contractors",
+  "tagline": "Remodelers and builders with no place to point a lead.",
+  "display_description": "Sweeps for general contractors and remodelers near you who have the reviews but no website. Big-ticket work, decided on trust — and right now a homeowner researching a $40k remodel finds nothing to back them up.",
+  "default_google_maps_category": "general contractor",
+  "default_radius_miles": 30,
+  "default_filters": {
+    "no_website": true,
+    "min_reviews": 4,
+    "max_reviews": null,
+    "has_phone": true,
+    "has_email": false
+  },
+  "default_outreach_tone": "cold-introduce",
+  "outreach_voice_brief": "Write to a builder who closes jobs on a handshake. Use the real detail — years of reviews, no website. Make the case that remodels are high-trust buys and the homeowner Googles the name before they sign; an empty result costs them the job to whoever has a page. Offer a site that shows past projects and takes a quote request. Plain, direct, one ask.",
+  "recommended_tier": "studio"
+}

@@ -152,6 +152,8 @@ export async function createMapsSourceWithProject(params: {
   name: string;
   config: MapsSweepConfig;
   schedule: LeadScoutSchedule;
+  /** Set when the source was subscribed from a vertical pack (Phase 4); omit for a hand-built sweep. */
+  packSlug?: string;
 }): Promise<PaResult<LeadScoutSource>> {
   const env = paEnv();
   if ("error" in env) return { ok: false, status: 500, error: env.error };
@@ -175,6 +177,9 @@ export async function createMapsSourceWithProject(params: {
       extraction_pattern: "",
       seed_urls: [],
       config_json: params.config,
+      // Only include pack_slug when subscribing from a pack, so a hand-built Maps source keeps
+      // applying cleanly on a database where migration 052 hasn't landed yet.
+      ...(params.packSlug ? { pack_slug: params.packSlug } : {}),
       schedule: params.schedule,
       next_run_at: nextRunFor(params.schedule),
     }),

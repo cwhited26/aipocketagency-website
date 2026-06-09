@@ -1,0 +1,20 @@
+{
+  "name": "Med Spas",
+  "vertical_slug": "med-spa",
+  "icon": "💆",
+  "card_noun": "med spas",
+  "tagline": "Med spas booking on Instagram, losing the rest.",
+  "display_description": "Finds med spas and aesthetics clinics near you running on social posts with no real website — booking through DMs, leaking everyone who wants to book at midnight. A site with online booking and a loyalty program is the upgrade, and it cross-sells straight into Buildout Loyalty.",
+  "default_google_maps_category": "med spa",
+  "default_radius_miles": 20,
+  "default_filters": {
+    "no_website": true,
+    "min_reviews": 10,
+    "max_reviews": null,
+    "has_phone": true,
+    "has_email": false
+  },
+  "default_outreach_tone": "cold-introduce",
+  "outreach_voice_brief": "Write to a med spa owner who lives on Instagram. Note the real signal — strong reviews, an active following, but no website and no online booking. Make the point that a client ready to book at 11pm has nowhere to go and books a competitor by morning. Offer a booking page and, if it fits, a loyalty program that brings them back. Warm but specific, one ask, no clinical jargon.",
+  "recommended_tier": "studio_plus"
+}

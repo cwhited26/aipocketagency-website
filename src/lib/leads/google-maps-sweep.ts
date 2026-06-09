@@ -252,11 +252,24 @@ async function collectBusinesses(params: {
   return { kept, seen, capped, fetchError };
 }
 
+/**
+ * Pack framing for the batch card (Phase 4). When a source was subscribed from a vertical pack, the
+ * card leads with the pack name + a reader-friendly noun ("roofers") instead of the raw category,
+ * and points at the outreach step, so the card reads pack-specific.
+ */
+export type PackFraming = {
+  packSlug: string;
+  packName: string;
+  /** Reader-friendly plural — "roofers", "med spas". */
+  noun: string;
+};
+
 function buildCardBody(params: {
   config: MapsSweepConfig;
   breakdown: LeadBreakdown;
   outcomes: SweepOutcome[];
   noWebsiteCount: number;
+  framing?: PackFraming;
 }): string {
   const b = params.breakdown;
   const headline = params.config.filters.noWebsite
@@ -272,12 +285,25 @@ function buildCardBody(params: {
       classification: o.classification,
     })),
   );
-  return [headline, "", breakdownLine, "", block].join("\n");
+  const lines = [headline, "", breakdownLine, "", block];
+  if (params.framing) {
+    lines.push(
+      "",
+      `Your first sweep from the **${params.framing.packName}** pack. Tap Generate outreach and PA writes a first email to each hot and warm lead in your voice, tuned for ${params.framing.noun}.`,
+    );
+  }
+  return lines.join("\n");
 }
 
-// Card title — "47 roofers in Knoxville without websites" when the no-website filter is on.
-function cardTitle(config: MapsSweepConfig, leadCount: number, noWebsiteCount: number): string {
-  const noun = config.category.trim() || "businesses";
+// Card title — "47 roofers in Knoxville without websites" when the no-website filter is on. A pack
+// source uses the pack's reader-friendly noun; a hand-built source falls back to the raw category.
+function cardTitle(
+  config: MapsSweepConfig,
+  leadCount: number,
+  noWebsiteCount: number,
+  framing?: PackFraming,
+): string {
+  const noun = framing?.noun || config.category.trim() || "businesses";
   if (config.filters.noWebsite) {
     return `${noWebsiteCount} ${noun} in ${config.location} without websites`;
   }
@@ -299,6 +325,8 @@ export async function runMapsSweep(params: {
   paUser: PaUserLite;
   brightDataKey: string;
   tier: string;
+  /** Set when the run is a pack subscription's first sweep — frames the card pack-specific (Phase 4). */
+  framing?: PackFraming;
 }): Promise<SweepResult> {
   const cap = mapsSweepCap(params.tier);
 
@@ -352,8 +380,14 @@ export async function runMapsSweep(params: {
   await createInboxItem({
     userId: params.ownerId,
     kind: "lead_scout_batch",
-    title: cardTitle(params.config, leadCount, noWebsiteCount),
-    bodyMd: buildCardBody({ config: params.config, breakdown, outcomes, noWebsiteCount }),
+    title: cardTitle(params.config, leadCount, noWebsiteCount, params.framing),
+    bodyMd: buildCardBody({
+      config: params.config,
+      breakdown,
+      outcomes,
+      noWebsiteCount,
+      framing: params.framing,
+    }),
     source: "lead-scout",
     payload: {
       runId: run.id,
@@ -366,6 +400,9 @@ export async function runMapsSweep(params: {
       category: params.config.category,
       location: params.config.location,
       noWebsiteCount,
+      ...(params.framing
+        ? { packSlug: params.framing.packSlug, packName: params.framing.packName }
+        : {}),
       csvPath: `/api/app/apps/lead-scout/runs/${run.id}/csv`,
       runPath: `/api/app/apps/lead-scout/runs/${run.id}`,
     },

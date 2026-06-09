@@ -56,6 +56,8 @@ export type LeadScoutSource = {
   seed_urls: string[];
   /** Sweep criteria for a google_maps source; null for url_list. */
   config_json: MapsSweepConfig | null;
+  /** The vertical pack this source was subscribed from (Phase 4); null for a hand-built source. */
+  pack_slug: string | null;
   schedule: LeadScoutSchedule;
   created_at: string;
   updated_at: string;

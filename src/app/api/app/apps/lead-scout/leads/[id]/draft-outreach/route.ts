@@ -3,6 +3,7 @@ import { fetchPaUser } from "@/lib/pa-supabase";
 import { getLead } from "@/lib/leads/runs";
 import { getSource } from "@/lib/leads/source";
 import { draftOutreachForSingleLead } from "@/lib/leads/outreach";
+import { voiceBriefFor } from "@/lib/leads/packs";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -38,7 +39,9 @@ export async function POST(
   if (!leadResult.data) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
 
   const sourceResult = await getSource(leadResult.data.source_id, user.id);
-  const sourceName = sourceResult.ok && sourceResult.data ? sourceResult.data.name : "Lead Scout";
+  const source = sourceResult.ok ? sourceResult.data : null;
+  const sourceName = source ? source.name : "Lead Scout";
+  const voiceBrief = voiceBriefFor(source?.pack_slug) ?? undefined;
 
   const paResult = await fetchPaUser(user.id);
   if (!paResult.ok) return NextResponse.json({ error: paResult.error }, { status: paResult.status });
@@ -59,6 +62,7 @@ export async function POST(
     paUser: paResult.data,
     sourceName,
     tone: body.tone,
+    voiceBrief,
   });
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
 
