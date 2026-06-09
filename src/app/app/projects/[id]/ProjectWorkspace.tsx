@@ -5,8 +5,13 @@ import { useRouter } from "next/navigation";
 import type { Project, ProjectMemoryEntry, ProjectReference } from "@/lib/pa-projects";
 import type { ConversationThread } from "@/lib/pa-conversations";
 import type { ScaffoldEntry } from "@/lib/pa-brain";
+import type {
+  ComputedWorkspaceStatus,
+  ProjectWorkspace as ProjectWorkspaceRow,
+  WorkspaceStatus,
+} from "@/lib/projects/workspace-types";
 
-type Tab = "plan" | "conversations" | "references" | "memory";
+type Tab = "plan" | "conversations" | "references" | "memory" | "workspace";
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -26,12 +31,16 @@ export default function ProjectWorkspace({
   references: initialReferences,
   memory: initialMemory,
   scaffolds,
+  workspace,
+  workspaceStatus,
 }: {
   project: Project;
   threads: ConversationThread[];
   references: ProjectReference[];
   memory: ProjectMemoryEntry[];
   scaffolds: ScaffoldEntry[];
+  workspace: ProjectWorkspaceRow | null;
+  workspaceStatus: ComputedWorkspaceStatus;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("plan");
@@ -118,6 +127,12 @@ export default function ProjectWorkspace({
             label="Memory"
             count={memory.length}
           />
+          <TabButton
+            active={tab === "workspace"}
+            onClick={() => setTab("workspace")}
+            label="Workspace"
+            count={workspaceStatus.provisionedCount}
+          />
         </div>
 
         {/* Tab body */}
@@ -141,6 +156,9 @@ export default function ProjectWorkspace({
         )}
         {tab === "memory" && (
           <MemoryTab projectId={project.id} memory={memory} setMemory={setMemory} />
+        )}
+        {tab === "workspace" && (
+          <WorkspaceTab workspace={workspace} status={workspaceStatus} />
         )}
       </div>
 
@@ -731,6 +749,217 @@ function MemoryTab({
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+// ── Workspace tab ─────────────────────────────────────────────────────────────────
+
+const WORKSPACE_STATUS_COPY: Record<WorkspaceStatus, { label: string; className: string }> = {
+  provisioning: {
+    label: "Building",
+    className: "border-amber-500/30 bg-amber-500/10 text-amber-300",
+  },
+  live: {
+    label: "Live",
+    className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  },
+  failed: {
+    label: "Needs attention",
+    className: "border-rose-500/30 bg-rose-500/10 text-rose-300",
+  },
+  archived: {
+    label: "Archived",
+    className: "border-slate-600/40 bg-slate-700/20 text-slate-400",
+  },
+};
+
+function WorkspaceTab({
+  workspace,
+  status,
+}: {
+  workspace: ProjectWorkspaceRow | null;
+  status: ComputedWorkspaceStatus;
+}) {
+  const statusCopy = WORKSPACE_STATUS_COPY[status.stored];
+  const vercelLiveUrl = workspace?.vercel_project_name
+    ? `https://${workspace.vercel_project_name}.vercel.app`
+    : null;
+  const supabaseDashboardUrl = workspace?.supabase_project_ref
+    ? `https://supabase.com/dashboard/project/${workspace.supabase_project_ref}`
+    : null;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-slate-300 leading-relaxed">
+        When your agent builds something real for this project — a code repository, a live website, a
+        database, a place to run the build — every piece shows up here, on your own accounts. One place
+        that answers &ldquo;where did this end up,&rdquo; each one a tappable link to the real thing.
+      </p>
+
+      {/* Overall status */}
+      <div className="flex flex-wrap items-center gap-3">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold ${statusCopy.className}`}
+        >
+          {statusCopy.label}
+        </span>
+        <span className="text-[12px] font-mono text-slate-500">
+          {status.provisionedCount} of {status.total} pieces set up
+        </span>
+      </div>
+
+      {status.provisionedCount === 0 && (
+        <p className="text-sm text-slate-500 italic leading-relaxed">
+          Nothing built yet. Hand your agent a build plan from the Plan tab — once it creates a repo,
+          deploys a site, or provisions a database, the pieces land here.
+        </p>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* GitHub */}
+        <ArtifactCard
+          icon="❮❯"
+          title="Code repository"
+          provider="GitHub"
+          provisioned={status.artifacts.github}
+          primary={
+            workspace?.github_repo_url
+              ? {
+                  label: workspace.github_repo_full_name ?? "Open repository",
+                  href: workspace.github_repo_url,
+                }
+              : null
+          }
+          emptyHint="Your agent creates one when a build plan needs code."
+        />
+
+        {/* Vercel */}
+        <ArtifactCard
+          icon="▲"
+          title="Live website"
+          provider="Vercel"
+          provisioned={status.artifacts.vercel}
+          primary={
+            vercelLiveUrl
+              ? { label: vercelLiveUrl.replace(/^https:\/\//, ""), href: vercelLiveUrl }
+              : workspace?.vercel_project_name
+                ? { label: workspace.vercel_project_name, href: "https://vercel.com/dashboard" }
+                : null
+          }
+          secondary={
+            status.artifacts.vercel
+              ? { label: "Open in Vercel →", href: "https://vercel.com/dashboard" }
+              : null
+          }
+          emptyHint="The deployed site appears here once your agent ships it."
+        />
+
+        {/* Supabase */}
+        <ArtifactCard
+          icon="⬡"
+          title="Database"
+          provider="Supabase"
+          provisioned={status.artifacts.supabase}
+          primary={
+            supabaseDashboardUrl
+              ? {
+                  label: workspace?.supabase_project_name ?? "Open dashboard",
+                  href: supabaseDashboardUrl,
+                }
+              : null
+          }
+          emptyHint="Provisioned on your own Supabase when the build needs data."
+        />
+
+        {/* Modal */}
+        <ArtifactCard
+          icon="◷"
+          title="Build sandbox"
+          provider="Modal"
+          provisioned={status.artifacts.modal}
+          primary={
+            workspace?.modal_container_id
+              ? { label: "Container running", href: "https://modal.com/apps" }
+              : null
+          }
+          subtle={workspace?.modal_container_id ?? null}
+          emptyHint="A throwaway container spins up to run installs, builds, and tests."
+        />
+      </div>
+    </div>
+  );
+}
+
+function ArtifactCard({
+  icon,
+  title,
+  provider,
+  provisioned,
+  primary,
+  secondary,
+  subtle,
+  emptyHint,
+}: {
+  icon: string;
+  title: string;
+  provider: string;
+  provisioned: boolean;
+  primary: { label: string; href: string } | null;
+  secondary?: { label: string; href: string } | null;
+  subtle?: string | null;
+  emptyHint: string;
+}) {
+  return (
+    <div
+      className={`rounded-xl border p-4 flex flex-col gap-2.5 ${
+        provisioned
+          ? "border-slate-700/60 bg-slate-900/60"
+          : "border-slate-800/60 bg-slate-900/30"
+      }`}
+    >
+      <div className="flex items-center gap-2.5">
+        <span className={`text-sm shrink-0 ${provisioned ? "text-[#22d3ee]/70" : "text-slate-600"}`}>
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-200 leading-tight">{title}</p>
+          <p className="text-[10px] font-mono text-slate-500 uppercase tracking-[0.12em] mt-0.5">
+            {provider}
+          </p>
+        </div>
+        {provisioned && (
+          <span className="shrink-0 h-2 w-2 rounded-full bg-emerald-400/80" title="Provisioned" />
+        )}
+      </div>
+
+      {primary ? (
+        <a
+          href={primary.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[13px] font-medium text-[#22d3ee] hover:text-[#67e8f9] transition-colors break-all"
+        >
+          {primary.label} →
+        </a>
+      ) : (
+        <p className="text-[12px] text-slate-500 leading-relaxed">{emptyHint}</p>
+      )}
+
+      {subtle && (
+        <p className="text-[10px] font-mono text-slate-600 break-all">{subtle}</p>
+      )}
+
+      {secondary && (
+        <a
+          href={secondary.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] font-mono text-slate-500 hover:text-slate-300 transition-colors"
+        >
+          {secondary.label}
+        </a>
       )}
     </div>
   );

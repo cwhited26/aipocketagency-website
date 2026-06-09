@@ -12,6 +12,11 @@ import {
   type ConversationThread,
 } from "@/lib/pa-conversations";
 import { listScaffolds, type ScaffoldEntry } from "@/lib/pa-brain";
+import { computeWorkspaceStatus, getWorkspace } from "@/lib/projects/workspace";
+import type {
+  ComputedWorkspaceStatus,
+  ProjectWorkspace as ProjectWorkspaceRow,
+} from "@/lib/projects/workspace-types";
 import { redirect, notFound } from "next/navigation";
 import ProjectWorkspace from "./ProjectWorkspace";
 
@@ -43,14 +48,17 @@ export default async function ProjectWorkspacePage({ params }: { params: { id: s
   if (!projectResult.ok || !projectResult.data) notFound();
   const project = projectResult.data;
 
-  const [threadsResult, refsResult, memResult] = await Promise.all([
+  const [threadsResult, refsResult, memResult, workspaceResult] = await Promise.all([
     listProjectConversationThreads(user.id, params.id),
     listProjectReferences(params.id, user.id),
     listProjectMemory(params.id, user.id),
+    getWorkspace(params.id, user.id),
   ]);
   const threads: ConversationThread[] = threadsResult.ok ? threadsResult.data : [];
   const references: ProjectReference[] = refsResult.ok ? refsResult.data : [];
   const memory: ProjectMemoryEntry[] = memResult.ok ? memResult.data : [];
+  const workspace: ProjectWorkspaceRow | null = workspaceResult.ok ? workspaceResult.data : null;
+  const workspaceStatus: ComputedWorkspaceStatus = computeWorkspaceStatus(workspace);
 
   // The Plan tab shows the brain scaffolds (milestones + tasks) — the execution side of a project.
   let scaffolds: ScaffoldEntry[] = [];
@@ -65,6 +73,8 @@ export default async function ProjectWorkspacePage({ params }: { params: { id: s
       references={references}
       memory={memory}
       scaffolds={scaffolds}
+      workspace={workspace}
+      workspaceStatus={workspaceStatus}
     />
   );
 }
