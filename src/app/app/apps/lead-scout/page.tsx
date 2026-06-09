@@ -9,19 +9,19 @@ import LeadScoutClient, { type SourceView } from "./LeadScoutClient";
 
 export const dynamic = "force-dynamic";
 
-// Three example use cases from the SPEC — Phase 1 is live, Phases 2 + 4 are sign-posted, not faked.
+// Use cases from the SPEC — Phases 1 + 2 are live, Phase 4 is sign-posted, not faked.
 const USE_CASES: { phase: string; live: boolean; title: string; body: string }[] = [
+  {
+    phase: "Live now",
+    live: true,
+    title: "Sweep Google Maps",
+    body: "Pick a category and a place — \"roofers within 25 miles of Knoxville without a website\" — and PA builds the list itself, the sites-needed businesses to pitch.",
+  },
   {
     phase: "Live now",
     live: true,
     title: "Paste a list of URLs",
     body: "Drop in a list of links — directory pages, a saved search, a spreadsheet column. PA visits each one and pulls back a structured profile.",
-  },
-  {
-    phase: "Phase 2",
-    live: false,
-    title: "Pull from Google Maps",
-    body: "Hand it a place and a radius — \"roofers within 25 miles of Knoxville\" — and PA builds the list itself.",
   },
   {
     phase: "Phase 4",
@@ -54,12 +54,17 @@ export default async function LeadScoutPage() {
     sources.map(async (s): Promise<SourceView> => {
       const runs = await listRunsForSource(s.id, user.id);
       const last = runs.ok ? runs.data[0] ?? null : null;
+      const detail =
+        s.kind === "google_maps" && s.config_json
+          ? `${s.config_json.category} · ${s.config_json.location}`
+          : `${s.seed_urls.length} ${s.seed_urls.length === 1 ? "URL" : "URLs"}`;
       return {
         id: s.id,
         name: s.name,
+        kind: s.kind,
         schedule: s.schedule,
         projectId: s.project_id,
-        urlCount: s.seed_urls.length,
+        detail,
         lastRun: last
           ? { id: last.id, createdAt: last.created_at, leadCount: last.lead_count, status: last.status }
           : null,
@@ -85,9 +90,10 @@ export default async function LeadScoutPage() {
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Lead Scout</h1>
           <p className="text-slate-300 text-sm mt-2 leading-relaxed">
-            Paste URLs, get back structured profiles + outreach drafts. PA visits each page, pulls out
-            who they are and how to reach them, sorts them by fit, and stages the batch in Mission
-            Control for your review.
+            Sweep Google Maps for a category in a place — &ldquo;roofers near Knoxville without a
+            website&rdquo; — and PA builds the list itself, the sites-needed businesses worth a pitch.
+            Or paste your own URLs. Either way it pulls who they are and how to reach them, sorts them
+            by fit, and stages the batch in Mission Control for your review.
           </p>
         </div>
 

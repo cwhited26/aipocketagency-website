@@ -5,6 +5,7 @@ import { resolveBrightData } from "@/lib/pa-lead-scout-connections";
 import { getCurrentTier } from "@/lib/personas/tier-caps";
 import { screenUrlList } from "@/lib/leads/denylist";
 import { runScout } from "@/lib/leads/scout";
+import { runMapsSweep } from "@/lib/leads/google-maps-sweep";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -41,6 +42,44 @@ export async function POST(
   }
   const source = sourceResult.data;
   if (!source) return NextResponse.json({ error: "Lead Source not found" }, { status: 404 });
+
+  // ── Google Maps sweep (Phase 2) ─────────────────────────────────────────────────────────────
+  // A maps source has no URL list to screen — it reads Google's public local pack (PA-LS-5). Resolve
+  // the Bright Data key + the owner's Anthropic key + tier and hand off to the sweep.
+  if (source.kind === "google_maps") {
+    if (!source.config_json) {
+      return NextResponse.json(
+        { error: "This Google Maps source has no criteria yet — edit it and set a category + location." },
+        { status: 422 },
+      );
+    }
+    const brightDataMaps = await resolveBrightData(user.id);
+    if (!brightDataMaps.ok) {
+      return NextResponse.json({ error: brightDataMaps.error }, { status: brightDataMaps.status });
+    }
+    const paMaps = await fetchPaUser(user.id);
+    if (!paMaps.ok) return NextResponse.json({ error: paMaps.error }, { status: paMaps.status });
+    if (!paMaps.data) return NextResponse.json({ error: "Account not found" }, { status: 404 });
+    if (!paMaps.data.anthropic_api_key) {
+      return NextResponse.json(
+        {
+          error: "no_api_key",
+          message: "Add your Anthropic API key in Settings — Lead Scout uses it to sort each business by fit.",
+        },
+        { status: 402 },
+      );
+    }
+    const sweep = await runMapsSweep({
+      source,
+      config: source.config_json,
+      ownerId: user.id,
+      paUser: paMaps.data,
+      brightDataKey: brightDataMaps.apiKey,
+      tier: await getCurrentTier(user.id),
+    });
+    if (!sweep.ok) return NextResponse.json({ error: sweep.error }, { status: sweep.status });
+    return NextResponse.json({ run: sweep.run }, { status: 201 });
+  }
 
   const inputUrls = body.urls ?? source.seed_urls;
   if (inputUrls.length === 0) {

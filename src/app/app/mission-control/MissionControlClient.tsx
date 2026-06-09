@@ -44,6 +44,10 @@ type LeadScoutBatchDetail = {
   breakdown: { hot: number; warm: number; cold: number; wrong_fit: number; needs_research: number };
   csvPath: string;
   runPath: string;
+  sweepKind: "google_maps" | null;
+  category: string;
+  location: string;
+  noWebsiteCount: number;
 };
 
 type InboxCard = {
@@ -1250,12 +1254,20 @@ function LeadScoutBatchCard({
     <div className="rounded-2xl border border-[#22d3ee]/15 bg-slate-900/60 p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3 mb-2">
         <span className="text-[10px] font-mono text-[#22d3ee]/70 uppercase tracking-[0.18em]">
-          Lead Scout · {detail?.sourceName ?? "batch"}
+          {detail?.sweepKind === "google_maps" ? "Lead Scout · Google Maps" : "Lead Scout"} ·{" "}
+          {detail?.sourceName ?? "batch"}
         </span>
         <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
       </div>
 
       <p className="text-[15px] font-semibold text-slate-100 leading-snug">{card.title}</p>
+
+      {detail?.sweepKind === "google_maps" && (
+        <p className="mt-1 text-[13px] text-slate-400 leading-relaxed">
+          {detail.noWebsiteCount} of {detail.leadCount} {detail.category || "businesses"} in{" "}
+          {detail.location} have no website on their Maps listing — the ones to pitch a site.
+        </p>
+      )}
 
       {detail && (
         <div className="mt-3 flex flex-wrap gap-1.5">
@@ -1316,7 +1328,7 @@ function LeadScoutBatchCard({
           disabled={busy !== null}
           className="flex-1 min-h-[44px] py-3 px-4 rounded-xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/60 text-slate-200 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {busy === "read" ? "…" : "Mark as read"}
+          {busy === "read" ? "…" : "Mark for follow-up later"}
         </button>
         <button
           onClick={() => void dismiss()}

@@ -54,6 +54,11 @@ export type LeadScoutBatchDetail = {
   breakdown: { hot: number; warm: number; cold: number; wrong_fit: number; needs_research: number };
   csvPath: string;
   runPath: string;
+  // Google Maps sweep framing (Phase 2) — null on a url_list batch.
+  sweepKind: "google_maps" | null;
+  category: string;
+  location: string;
+  noWebsiteCount: number;
 };
 
 export type InboxCard = {
@@ -137,6 +142,10 @@ function leadScoutOf(item: InboxItem): LeadScoutBatchDetail {
     },
     csvPath: str(item.payload.csvPath),
     runPath: str(item.payload.runPath),
+    sweepKind: str(item.payload.sweepKind) === "google_maps" ? "google_maps" : null,
+    category: str(item.payload.category),
+    location: str(item.payload.location),
+    noWebsiteCount: num(item.payload.noWebsiteCount),
   };
 }
 

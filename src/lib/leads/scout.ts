@@ -13,6 +13,7 @@ import { fetchViaUnlocker } from "./brightdata";
 import { extractProfile, htmlToText } from "./extract";
 import { classifyLead } from "./classify";
 import { createRun, finishRun, insertLead } from "./runs";
+import { CLASSIFICATION_LABEL, slug, topLeadsBlock } from "./card";
 import {
   batchUrlCap,
   emptyBreakdown,
@@ -26,23 +27,6 @@ import {
 // How many URLs we process at once. Small enough to be polite to Bright Data + the owner's Anthropic
 // rate limit, large enough that a batch of a few dozen finishes in a sensible window.
 const CONCURRENCY = 4;
-
-const CLASSIFICATION_LABEL: Record<LeadClassification, string> = {
-  hot: "Hot",
-  warm: "Warm",
-  cold: "Cold",
-  wrong_fit: "Wrong fit",
-  needs_research: "Needs research",
-};
-
-// Sort order for the "top leads" preview — warmest first.
-const CLASSIFICATION_RANK: Record<LeadClassification, number> = {
-  hot: 0,
-  warm: 1,
-  needs_research: 2,
-  cold: 3,
-  wrong_fit: 4,
-};
 
 type PaUserLite = {
   brain_repo: string | null;
@@ -59,16 +43,6 @@ type LeadOutcome = {
   classification: LeadClassification;
   status: "extracted" | "failed";
 };
-
-function slug(value: string): string {
-  return (
-    value
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 60) || "source"
-  );
-}
 
 function buildBrainNote(params: {
   sourceName: string;
@@ -273,19 +247,18 @@ function buildCardBody(params: {
 }): string {
   const b = params.breakdown;
   const breakdownLine = `${b.hot} hot · ${b.warm} warm · ${b.cold} cold · ${b.wrong_fit} wrong-fit · ${b.needs_research} needs research`;
-  const top = [...params.outcomes]
-    .filter((o) => o.status === "extracted")
-    .sort((a, c) => CLASSIFICATION_RANK[a.classification] - CLASSIFICATION_RANK[c.classification])
-    .slice(0, 5);
-  const topLines = top.length
-    ? top
-        .map(
-          (o) =>
-            `- **${o.name || o.domain}** (${CLASSIFICATION_LABEL[o.classification]}) — ${o.summary || o.url}`,
-        )
-        .join("\n")
-    : "_No profiles extracted this run._";
-  return [`${breakdownLine}`, "", "**Top leads**", "", topLines].join("\n");
+  const block = topLeadsBlock(
+    params.outcomes
+      .filter((o) => o.status === "extracted")
+      .map((o) => ({
+        name: o.name,
+        domain: o.domain,
+        summary: o.summary,
+        url: o.url,
+        classification: o.classification,
+      })),
+  );
+  return [breakdownLine, "", block].join("\n");
 }
 
 export type ScoutResult =

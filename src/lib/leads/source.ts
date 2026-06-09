@@ -8,7 +8,7 @@
 // Service-role PostgREST scoped by owner_id, matching pa-projects.ts.
 
 import { createProject } from "@/lib/pa-projects";
-import type { LeadScoutSchedule, LeadScoutSource } from "./types";
+import type { LeadScoutSchedule, LeadScoutSource, MapsSweepConfig } from "./types";
 
 type PaResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
 
@@ -111,6 +111,68 @@ export async function createSourceWithProject(params: {
       kind: "url_list",
       extraction_pattern: params.extractionPattern,
       seed_urls: params.seedUrls,
+      schedule: params.schedule,
+    }),
+    cache: "no-store",
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as LeadScoutSource[];
+  if (!rows[0]) return { ok: false, status: 500, error: "No source row returned" };
+  return { ok: true, data: rows[0] };
+}
+
+// The Project Instructions text we seed from a Google Maps sweep, so a conversation started inside
+// the Project knows what the source is hunting for.
+function mapsInstructionsFor(name: string, config: MapsSweepConfig): string {
+  const filters: string[] = [];
+  if (config.filters.noWebsite) filters.push("no real website (a Facebook page doesn't count)");
+  if (config.filters.minReviews != null) filters.push(`at least ${config.filters.minReviews} reviews`);
+  if (config.filters.maxReviews != null) filters.push(`no more than ${config.filters.maxReviews} reviews`);
+  if (config.filters.hasPhone) filters.push("a published phone number");
+  if (config.filters.hasEmail) filters.push("a published email");
+  return [
+    `This project backs the Lead Scout source "${name}".`,
+    "",
+    `It sweeps Google Maps for ${config.category} within about ${config.radiusMiles} miles of ${config.location}.`,
+    filters.length ? `Keep only businesses with: ${filters.join("; ")}.` : "Keep every business found.",
+    "",
+    "Stay in the owner's voice when you draft any outreach to these leads.",
+  ].join("\n");
+}
+
+/**
+ * Create a Google Maps sweep source AND its backing Project in one call (Phase 2). The sweep criteria
+ * live in config_json; extraction_pattern + seed_urls stay empty (they're url_list concepts). Mirrors
+ * createSourceWithProject — the Project's Instructions are seeded from the sweep description.
+ */
+export async function createMapsSourceWithProject(params: {
+  ownerId: string;
+  name: string;
+  config: MapsSweepConfig;
+  schedule: LeadScoutSchedule;
+}): Promise<PaResult<LeadScoutSource>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const project = await createProject(params.ownerId, {
+    title: params.name,
+    goal: `Find and qualify ${params.config.category} leads near ${params.config.location}.`,
+    instructions: mapsInstructionsFor(params.name, params.config),
+    scaffoldSlug: null,
+  });
+  const projectId = project.ok ? project.data.id : null;
+
+  const res = await fetch(`${env.url}/rest/v1/pa_lead_scout_sources`, {
+    method: "POST",
+    headers: writeHeaders(env.key),
+    body: JSON.stringify({
+      owner_id: params.ownerId,
+      project_id: projectId,
+      name: params.name,
+      kind: "google_maps",
+      extraction_pattern: "",
+      seed_urls: [],
+      config_json: params.config,
       schedule: params.schedule,
     }),
     cache: "no-store",
