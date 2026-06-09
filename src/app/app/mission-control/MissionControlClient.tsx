@@ -130,6 +130,7 @@ function sectionFor(kind: InboxItemKind): AwaitingSection {
     case "email_triage":
       return "triage";
     case "action_approval":
+    case "build_action_approval":
       return "actions";
     case "draft":
       return "drafts";

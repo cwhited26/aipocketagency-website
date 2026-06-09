@@ -19,7 +19,8 @@ export type InboxItemKind =
   | "action_approval"
   | "sub_agent_activity"
   | "routine_output"
-  | "lead_scout_batch";
+  | "lead_scout_batch"
+  | "build_action_approval";
 
 export type AffordanceRole = "primary" | "secondary" | "destructive";
 
@@ -51,6 +52,19 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
     // Connector write-action a sub-agent staged. The blocked tool call fires only on
     // Approve. Edit lets the user tweak the payload first.
     case "action_approval":
+      return {
+        hasApproval: true,
+        affordances: [
+          { key: "approve", label: "Approve", role: "primary" },
+          { key: "edit", label: "Edit", role: "secondary" },
+          { key: "reject", label: "Reject", role: "destructive" },
+        ],
+      };
+
+    // A BUILD connector write-action a sub-agent staged (create repo, push code, branch, PR).
+    // Same commit-on-approve primitive as action_approval — the build fires only on Approve, and
+    // the human reads the diff first. push_files in particular can never auto-approve (SPEC §11).
+    case "build_action_approval":
       return {
         hasApproval: true,
         affordances: [

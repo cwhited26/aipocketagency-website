@@ -22,7 +22,8 @@ export type InboxCardKind =
   | "action_approval"
   | "sub_agent_activity"
   | "routine_output"
-  | "lead_scout_batch";
+  | "lead_scout_batch"
+  | "build_action_approval";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -152,7 +153,10 @@ function leadScoutOf(item: InboxItem): LeadScoutBatchDetail {
 function normalizeInboxItem(item: InboxItem): InboxCard {
   const isEmail = item.kind === "draft" && item.source === "email-drafter";
   const isTriage = item.kind === "email_triage";
-  const isAction = item.kind === "action_approval";
+  // Both the productivity (action_approval) and build (build_action_approval) connector kinds carry
+  // a connector/action detail and render via the same ActionApprovalCard.
+  const isAction =
+    item.kind === "action_approval" || item.kind === "build_action_approval";
   const body = item.body_md ?? "";
   const triage = isTriage ? triageOf(item) : null;
   const action = isAction ? actionOf(item) : null;

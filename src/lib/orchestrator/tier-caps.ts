@@ -77,14 +77,30 @@ export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> 
   "calendly:cancel_scheduled_event": 25,
   "modal_sandbox:spawn_container": 10,
   "modal_sandbox:run_command": 10,
+  // GitHub Build (Build Tools SPEC §11): push_files is Infinity — an UNREACHABLE window, like
+  // stripe:refund_charge. Writing code to a repo is the prime prompt-injection target (a sub-agent
+  // could draft exfiltrating code), so NO number of prior approvals ever unlocks auto-approve.
+  // Every push surfaces its diff for one human tap, forever. create_repo / create_branch /
+  // open_pull_request clear at the default window (10).
+  "github_build:push_files": Number.POSITIVE_INFINITY,
 };
 
-/** The trust window for a specific (connector, action), honoring the money-action overrides. */
+/** The trust window for a specific (connector, action), honoring the money/build overrides. */
 export function connectorActionTrustWindow(connector: string, action: string): number {
   return (
     CONNECTOR_ACTION_TRUST_OVERRIDES[`${connector.trim().toLowerCase()}:${action.trim().toLowerCase()}`] ??
     AUTO_APPROVE_TRUST_WINDOW
   );
+}
+
+/**
+ * True iff this (connector, action) can NEVER become auto-approve eligible regardless of approval
+ * count — its trust window is infinite (stripe:refund_charge, github_build:push_files). The staging
+ * middleware uses this as a belt-and-suspenders so even a stale "enabled" settings row can't
+ * auto-fire such an action.
+ */
+export function isConnectorActionNeverAutoApprove(connector: string, action: string): boolean {
+  return !Number.isFinite(connectorActionTrustWindow(connector, action));
 }
 
 export type CapDecision = { ok: boolean; reason: string };

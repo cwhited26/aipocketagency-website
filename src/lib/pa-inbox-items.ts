@@ -15,9 +15,11 @@
 // blocks in the brain repo). This file is the action-staging Inbox.
 
 // 'action_approval' (PA v5 Wave B) stages a connector write-action for one-tap approval; its
-// action-specific detail lives in pa_action_approvals (migration 021). 'sub_agent_activity'
-// is a dismissible progress card. 'routine_output' (migration 023) is an informational
-// routine result (Daily Brief / Weekly Digest / Follow-up Sweep) — read it, never approve it.
+// action-specific detail lives in pa_action_approvals (migration 021). 'build_action_approval'
+// is the same primitive for the BUILD connectors (GitHub Build et al., Build Tools SPEC §9.3) —
+// it resolves through the same approval route + ActionApprovalCard, themed as a build action.
+// 'sub_agent_activity' is a dismissible progress card. 'routine_output' (migration 023) is an
+// informational routine result (Daily Brief / Weekly Digest / Follow-up Sweep) — read, never approve.
 export type InboxKind =
   | "draft"
   | "decision"
@@ -26,7 +28,8 @@ export type InboxKind =
   | "action_approval"
   | "sub_agent_activity"
   | "routine_output"
-  | "lead_scout_batch";
+  | "lead_scout_batch"
+  | "build_action_approval";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

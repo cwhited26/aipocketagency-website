@@ -9,14 +9,14 @@
 // unit-tested (positive + negative cases) without a DB.
 
 import { createHash } from "node:crypto";
-import { createInboxItem } from "@/lib/pa-inbox-items";
+import { createInboxItem, type InboxKind } from "@/lib/pa-inbox-items";
 import {
   fetchAutoApproveSetting,
   insertActionApproval,
   logConnectorAction,
 } from "./db";
 import { assertActionAllowed } from "./containment-guard";
-import { AUTO_APPROVE_TRUST_WINDOW } from "./tier-caps";
+import { AUTO_APPROVE_TRUST_WINDOW, isConnectorActionNeverAutoApprove } from "./tier-caps";
 import type { ActionStatus } from "./types";
 
 // The action-path ContainmentGuard (scope matching + ConnectorScopeError) is the single
@@ -78,6 +78,10 @@ export type StageActionInput = {
   title: string;
   // A longer preview of the action's effect (e.g. the email subject + body).
   preview: string;
+  // The Inbox card kind. Defaults to 'action_approval' (the productivity connectors). Build
+  // connectors stage 'build_action_approval' so the Inbox can theme them as build actions; both
+  // kinds resolve through the same approval route + ActionApprovalCard.
+  kind?: Extract<InboxKind, "action_approval" | "build_action_approval">;
 };
 
 export type StageActionResult = {
@@ -100,18 +104,22 @@ export async function stageConnectorAction(
   assertActionAllowed(input.connector, input.action, input.declaredScopes);
 
   // 2. Auto-approve eligibility (the toggle only flips on after the trust window; the
-  //    settings route enforces the unlock, so reading `enabled` here is sufficient).
+  //    settings route enforces the unlock, so reading `enabled` here is sufficient). An action
+  //    with an infinite trust window (github_build:push_files, stripe:refund_charge) can NEVER
+  //    auto-fire regardless of a settings row — belt-and-suspenders against a stale toggle.
   const setting = await fetchAutoApproveSetting(
     input.userId,
     input.connector,
     input.action,
   );
-  const autoApproved = setting?.enabled === true;
+  const autoApproved =
+    setting?.enabled === true &&
+    !isConnectorActionNeverAutoApprove(input.connector, input.action);
 
   // 3. Inbox row drives the queue + badge.
   const inbox = await createInboxItem({
     userId: input.userId,
-    kind: "action_approval",
+    kind: input.kind ?? "action_approval",
     title: input.title,
     bodyMd: input.preview,
     source: `orchestrator:${input.connector}`,

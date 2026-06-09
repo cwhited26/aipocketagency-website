@@ -4,11 +4,13 @@ import { fetchCalendarConnectionPublic } from "@/lib/pa-calendar-connections";
 import { fetchSlackConnectionPublic } from "@/lib/pa-slack-connections";
 import { fetchQuickBooksConnectionPublic } from "@/lib/pa-quickbooks-connections";
 import { fetchStripeConnectionPublic } from "@/lib/pa-stripe-connections";
+import { fetchGithubBuildConnectionPublic } from "@/lib/pa-github-build-connections";
 import { fetchZoomConnectionPublic } from "@/lib/pa-zoom-connections";
 import { fetchCalendlyConnectionPublic } from "@/lib/pa-calendly-connections";
 import { isSlackOAuthConfigured } from "@/lib/connectors/slack/oauth";
 import { isQuickBooksOAuthConfigured } from "@/lib/connectors/quickbooks/oauth";
 import { isStripeConnectConfigured } from "@/lib/connectors/stripe/oauth";
+import { isGithubBuildOAuthConfigured } from "@/lib/connectors/github-build/oauth";
 import { isZoomOAuthConfigured } from "@/lib/connectors/zoom/oauth";
 import { isCalendlyOAuthConfigured } from "@/lib/connectors/calendly/oauth";
 import { isSandboxRuntimeConfigured } from "@/lib/connectors/modal-sandbox/client";
@@ -29,6 +31,7 @@ import CalendarConnectionCard from "./CalendarConnectionCard";
 import SlackConnectionCard from "./SlackConnectionCard";
 import QuickBooksConnectionCard from "./QuickBooksConnectionCard";
 import StripeConnectionCard from "./StripeConnectionCard";
+import GithubBuildConnectionCard from "./GithubBuildConnectionCard";
 import ZoomConnectionCard from "./ZoomConnectionCard";
 import CalendlyConnectionCard from "./CalendlyConnectionCard";
 import SmsConnectionCard from "./SmsConnectionCard";
@@ -174,6 +177,24 @@ const CALENDLY_MESSAGES: Record<string, { title: string; body: string; kind: "su
   },
 };
 
+const GITHUB_BUILD_MESSAGES: Record<string, { title: string; body: string; kind: "success" | "error" }> = {
+  connected: {
+    title: "GitHub Build connected",
+    body: "Your agent can now create repositories, push code, branch, and open pull requests on your GitHub. Every write is staged for your approval first — and pushing code always shows you the diff before anything lands.",
+    kind: "success",
+  },
+  not_configured: {
+    title: "GitHub Build not enabled",
+    body: "GitHub Build OAuth isn't configured for this deployment yet. Add GITHUB_BUILD_OAUTH_CLIENT_ID and GITHUB_BUILD_OAUTH_CLIENT_SECRET in Vercel to switch it on.",
+    kind: "error",
+  },
+  error: {
+    title: "GitHub connection failed",
+    body: "Something went wrong connecting GitHub. Try again, or contact support if it keeps happening.",
+    kind: "error",
+  },
+};
+
 const SMS_MESSAGES: Record<string, { title: string; body: string; kind: "success" | "error" }> = {
   connected: {
     title: "Your PA number is live",
@@ -201,6 +222,7 @@ export default async function ConnectionsPage({
     slack?: string;
     quickbooks?: string;
     stripe?: string;
+    github_build?: string;
     zoom?: string;
     calendly?: string;
     sms?: string;
@@ -218,6 +240,7 @@ export default async function ConnectionsPage({
     slackResult,
     quickbooksResult,
     stripeResult,
+    githubBuildResult,
     zoomResult,
     calendlyResult,
     smsNumberResult,
@@ -229,6 +252,7 @@ export default async function ConnectionsPage({
       fetchSlackConnectionPublic(user.id),
       fetchQuickBooksConnectionPublic(user.id),
       fetchStripeConnectionPublic(user.id),
+      fetchGithubBuildConnectionPublic(user.id),
       fetchZoomConnectionPublic(user.id),
       fetchCalendlyConnectionPublic(user.id),
       fetchActiveSmsNumber(user.id),
@@ -239,6 +263,7 @@ export default async function ConnectionsPage({
   const slack = slackResult.ok ? slackResult.data : null;
   const quickbooks = quickbooksResult.ok ? quickbooksResult.data : null;
   const stripe = stripeResult.ok ? stripeResult.data : null;
+  const githubBuild = githubBuildResult.ok ? githubBuildResult.data : null;
   const zoom = zoomResult.ok ? zoomResult.data : null;
   const calendly = calendlyResult.ok ? calendlyResult.data : null;
   const smsNumber = smsNumberResult.ok ? smsNumberResult.data : null;
@@ -254,6 +279,7 @@ export default async function ConnectionsPage({
   const slackOAuthConfigured = isSlackOAuthConfigured();
   const quickBooksOAuthConfigured = isQuickBooksOAuthConfigured();
   const stripeConfigured = isStripeConnectConfigured();
+  const githubBuildConfigured = isGithubBuildOAuthConfigured();
   const zoomOAuthConfigured = isZoomOAuthConfigured();
   const calendlyOAuthConfigured = isCalendlyOAuthConfigured();
   const smsConfigured = isSmsConfigured();
@@ -281,6 +307,9 @@ export default async function ConnectionsPage({
     ? QUICKBOOKS_MESSAGES[searchParams.quickbooks] ?? null
     : null;
   const stripeMessage = searchParams.stripe ? STRIPE_MESSAGES[searchParams.stripe] ?? null : null;
+  const githubBuildMessage = searchParams.github_build
+    ? GITHUB_BUILD_MESSAGES[searchParams.github_build] ?? null
+    : null;
   const zoomMessage = searchParams.zoom ? ZOOM_MESSAGES[searchParams.zoom] ?? null : null;
   const calendlyMessage = searchParams.calendly
     ? CALENDLY_MESSAGES[searchParams.calendly] ?? null
@@ -383,6 +412,19 @@ export default async function ConnectionsPage({
           </div>
         )}
 
+        {githubBuildMessage && (
+          <div
+            className={`rounded-xl border px-5 py-4 space-y-1 ${
+              githubBuildMessage.kind === "success"
+                ? "border-[#22d3ee]/25 bg-[#22d3ee]/5"
+                : "border-slate-700/60 bg-slate-900/50"
+            }`}
+          >
+            <p className="text-sm font-semibold text-slate-100">{githubBuildMessage.title}</p>
+            <p className="text-sm text-slate-300 leading-relaxed">{githubBuildMessage.body}</p>
+          </div>
+        )}
+
         {zoomMessage && (
           <div
             className={`rounded-xl border px-5 py-4 space-y-1 ${
@@ -438,6 +480,8 @@ export default async function ConnectionsPage({
         />
 
         <StripeConnectionCard connection={stripe} configured={stripeConfigured} />
+
+        <GithubBuildConnectionCard connection={githubBuild} configured={githubBuildConfigured} />
 
         <ZoomConnectionCard connection={zoom} oauthConfigured={zoomOAuthConfigured} />
 
@@ -509,7 +553,8 @@ export default async function ConnectionsPage({
               { tool: "Stripe", does: "Drafts invoices, payment links, and refunds — refunds always ask first." },
               { tool: "Zoom", does: "Schedules the call and adds the join link to your calendar invite + emails — new meetings on approval." },
               { tool: "Calendly", does: "Sends prospects a booking link with the right meeting type — links and cancellations on approval." },
-              { tool: "GitHub", does: "Connects the repo that holds your brain so your agent can read and update it." },
+              { tool: "GitHub (brain)", does: "Connects the repo that holds your brain so your agent can read and update it." },
+              { tool: "GitHub Build", does: "Creates repos, pushes code, branches, and opens pull requests on your GitHub — every write on approval, code pushes always show the diff." },
             ].map((c) => (
               <li
                 key={c.tool}
