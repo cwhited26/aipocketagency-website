@@ -89,6 +89,11 @@ export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> 
   // pointing a custom domain moves real DNS-routed traffic: it is single-approval FOREVER and can
   // never become auto-approve eligible. Every attach is an explicit owner tap.
   "vercel:attach_domain": Number.POSITIVE_INFINITY,
+  // Supabase (Build Tools SPEC §7.3): apply_migration is Infinity — an UNREACHABLE window, like
+  // github_build:push_files. A migration is an irreversible change to the owner's live data layer,
+  // so NO number of prior approvals ever unlocks auto-approve — every migration is one human tap on
+  // the full SQL, forever. create_project / seed_data clear at the default window (10).
+  "supabase:apply_migration": Number.POSITIVE_INFINITY,
 };
 
 /** The trust window for a specific (connector, action), honoring the money/build overrides. */

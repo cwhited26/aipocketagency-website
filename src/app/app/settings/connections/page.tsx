@@ -20,6 +20,7 @@ import {
   tierAllowsSharedBrightData,
 } from "@/lib/pa-lead-scout-connections";
 import { fetchVercelConnectionPublic } from "@/lib/pa-vercel-connections";
+import { fetchSupabaseConnectionPublic } from "@/lib/pa-supabase-connections";
 import { getCurrentTier } from "@/lib/personas/tier-caps";
 import { fetchActiveSmsNumber } from "@/lib/pa-sms-numbers";
 import { fetchRecentSmsActivity } from "@/lib/pa-conversations";
@@ -40,6 +41,7 @@ import InboundEmailCard from "./InboundEmailCard";
 import LeadScoutConnectionCard from "./LeadScoutConnectionCard";
 import VercelConnectionCard from "./VercelConnectionCard";
 import ModalSandboxCard from "./ModalSandboxCard";
+import SupabaseConnectionCard from "./SupabaseConnectionCard";
 
 export const dynamic = "force-dynamic";
 
@@ -272,13 +274,16 @@ export default async function ConnectionsPage({
   const smsActivity = smsActivityResult.ok ? smsActivityResult.data : [];
 
   // Lead Scout (Bright Data key) connection + whether this owner's tier unlocks the shared account.
-  const [leadScoutResult, vercelResult, tier] = await Promise.all([
+  // Vercel + Supabase build connectors ride alongside.
+  const [leadScoutResult, vercelResult, tier, supabaseResult] = await Promise.all([
     fetchLeadScoutConnectionPublic(user.id),
     fetchVercelConnectionPublic(user.id),
     getCurrentTier(user.id),
+    fetchSupabaseConnectionPublic(user.id),
   ]);
   const leadScout = leadScoutResult.ok ? leadScoutResult.data : null;
   const vercel = vercelResult.ok ? vercelResult.data : null;
+  const supabaseConn = supabaseResult.ok ? supabaseResult.data : null;
   const leadScoutSharedEligible = tierAllowsSharedBrightData(tier);
   const slackOAuthConfigured = isSlackOAuthConfigured();
   const quickBooksOAuthConfigured = isQuickBooksOAuthConfigured();
@@ -496,18 +501,20 @@ export default async function ConnectionsPage({
           sharedEligible={leadScoutSharedEligible}
         />
 
-        {/* Build Tools — what the agent uses to stand up and ship real projects. Vercel connects
-            with a pasted token; the Modal sandbox is built-in (status-only). */}
+        {/* Build Tools — what the agent uses to stand up and ship real projects. Vercel and
+            Supabase connect with a pasted token; the Modal sandbox is built-in (status-only). */}
         <div className="pt-2">
           <div className="text-[11px] text-[#a78bfa]/60 font-mono tracking-[0.18em] uppercase mb-1">
             Build Tools
           </div>
           <p className="text-sm text-slate-400 leading-relaxed mb-4">
-            What your agent uses to build things for you. Connect your own Vercel to deploy on your
-            account; the build sandbox comes built in — nothing to connect.
+            What your agent uses to build things for you. Connect your own Vercel and Supabase so
+            what it deploys and provisions lives on your accounts; the build sandbox comes built in
+            — nothing to connect.
           </p>
           <div className="space-y-7">
             <VercelConnectionCard connection={vercel} />
+            <SupabaseConnectionCard connection={supabaseConn} />
             <ModalSandboxCard configured={sandboxConfigured} />
           </div>
         </div>

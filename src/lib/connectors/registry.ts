@@ -26,6 +26,11 @@ import {
   VERCEL_CONNECTOR,
   type VercelExecuteResult,
 } from "./vercel/execute";
+import {
+  executeSupabaseConnectorAction,
+  SUPABASE_CONNECTOR,
+  type SupabaseExecuteResult,
+} from "./supabase";
 
 // All in-process executors share the same terminal result shape ({ok,summary,data} |
 // {ok,status,error}); the union keeps that explicit as more connectors register.
@@ -36,7 +41,8 @@ export type ConnectorExecuteResult =
   | ZoomExecuteResult
   | ModalSandboxExecuteResult
   | GithubBuildExecuteResult
-  | VercelExecuteResult;
+  | VercelExecuteResult
+  | SupabaseExecuteResult;
 
 export type ExecuteConnectorActionInput = {
   connector: string;
@@ -129,6 +135,16 @@ export async function executeConnectorAction(
       payload: input.payload,
       subAgentRunId: input.subAgentRunId ?? null,
       ownerEmail: input.ownerEmail ?? null,
+    });
+  }
+  if (input.connector === SUPABASE_CONNECTOR) {
+    // Supabase resolves its own connection + decrypts the PAT internally, decrypts the staged
+    // db_pass at run time, and links a created project back to the Project Workspace.
+    return executeSupabaseConnectorAction({
+      userId: input.userId,
+      action: input.action,
+      payload: input.payload,
+      subAgentRunId: input.subAgentRunId ?? null,
     });
   }
   return undefined;
