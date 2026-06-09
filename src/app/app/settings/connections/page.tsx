@@ -11,6 +11,7 @@ import { isQuickBooksOAuthConfigured } from "@/lib/connectors/quickbooks/oauth";
 import { isStripeConnectConfigured } from "@/lib/connectors/stripe/oauth";
 import { isZoomOAuthConfigured } from "@/lib/connectors/zoom/oauth";
 import { isCalendlyOAuthConfigured } from "@/lib/connectors/calendly/oauth";
+import { isSandboxRuntimeConfigured } from "@/lib/connectors/modal-sandbox/client";
 import { isSmsConfigured } from "@/lib/connectors/sms/config";
 import {
   fetchLeadScoutConnectionPublic,
@@ -33,6 +34,7 @@ import CalendlyConnectionCard from "./CalendlyConnectionCard";
 import SmsConnectionCard from "./SmsConnectionCard";
 import InboundEmailCard from "./InboundEmailCard";
 import LeadScoutConnectionCard from "./LeadScoutConnectionCard";
+import ModalSandboxCard from "./ModalSandboxCard";
 
 export const dynamic = "force-dynamic";
 
@@ -255,6 +257,7 @@ export default async function ConnectionsPage({
   const zoomOAuthConfigured = isZoomOAuthConfigured();
   const calendlyOAuthConfigured = isCalendlyOAuthConfigured();
   const smsConfigured = isSmsConfigured();
+  const sandboxConfigured = isSandboxRuntimeConfigured();
 
   // Inbound-email addresses: ensure both exist (idempotent) and resolve them for display.
   const seedName =
@@ -444,6 +447,17 @@ export default async function ConnectionsPage({
           connection={leadScout}
           sharedEligible={leadScoutSharedEligible}
         />
+
+        {/* Build Tools — platform infrastructure the owner doesn't connect; status-only. */}
+        <div className="pt-2">
+          <div className="text-[11px] text-[#a78bfa]/60 font-mono tracking-[0.18em] uppercase mb-1">
+            Build Tools
+          </div>
+          <p className="text-sm text-slate-400 leading-relaxed mb-4">
+            What your agent uses to build things for you. These come built in — nothing to connect.
+          </p>
+          <ModalSandboxCard configured={sandboxConfigured} />
+        </div>
 
         <p className="text-xs text-slate-600 leading-relaxed">
           Gmail access lets your agent read incoming mail and archive a thread when you tap

@@ -55,6 +55,14 @@ export const AUTO_APPROVE_TRUST_WINDOW = 10;
 // generating a join link has no real-world side effect until someone joins. update_meeting and
 // cancel_meeting carry a higher bar (20) because they alter / remove a meeting already on the
 // books and notify attendees.
+//
+// Modal Sandbox (Build Tools Roadmap §7.4, PA-BUILD-12): spawn_container and an ORDINARY
+// run_command (pnpm install / build / test, npm run lint) clear at the default window (10, listed
+// for intent). The dangerous-command bar — run_command with a shell-special char or a
+// network/destructive tool is single-approval FOREVER — CANNOT be expressed in this (connector,
+// action) map because it depends on the command PAYLOAD, not the action name. That guardrail lives
+// in lib/connectors/modal-sandbox (isModalSandboxNeverAutoApprove + the per-command gate), which
+// the staging + auto-approve-toggle layers consult; this map only sets the ordinary-command floor.
 export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> = {
   "quickbooks:create_invoice": 10,
   "quickbooks:record_payment": 20,
@@ -67,6 +75,8 @@ export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> 
   // longer (25) before auto-approve can even be offered.
   "calendly:create_one_off_link": 10,
   "calendly:cancel_scheduled_event": 25,
+  "modal_sandbox:spawn_container": 10,
+  "modal_sandbox:run_command": 10,
 };
 
 /** The trust window for a specific (connector, action), honoring the money-action overrides. */

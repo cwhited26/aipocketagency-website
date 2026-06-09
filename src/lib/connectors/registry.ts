@@ -11,6 +11,11 @@ import {
 } from "./quickbooks/execute";
 import { executeStripeAction, STRIPE_CONNECTOR, type StripeExecuteResult } from "./stripe";
 import { executeZoomAction, ZOOM_CONNECTOR, type ZoomExecuteResult } from "./zoom";
+import {
+  executeModalSandboxConnectorAction,
+  MODAL_SANDBOX_CONNECTOR,
+  type ModalSandboxExecuteResult,
+} from "./modal-sandbox/execute";
 
 // All in-process executors share the same terminal result shape ({ok,summary,data} |
 // {ok,status,error}); the union keeps that explicit as more connectors register.
@@ -18,7 +23,8 @@ export type ConnectorExecuteResult =
   | SlackExecuteResult
   | QuickBooksExecuteResult
   | StripeExecuteResult
-  | ZoomExecuteResult;
+  | ZoomExecuteResult
+  | ModalSandboxExecuteResult;
 
 export type ExecuteConnectorActionInput = {
   connector: string;
@@ -74,6 +80,18 @@ export async function executeConnectorAction(
   }
   if (input.connector === ZOOM_CONNECTOR) {
     return executeZoomAction({
+      userId: input.userId,
+      action: input.action,
+      payload: input.payload,
+      subAgentRunId: input.subAgentRunId ?? null,
+      ownerEmail: input.ownerEmail ?? null,
+    });
+  }
+  if (input.connector === MODAL_SANDBOX_CONNECTOR) {
+    // Code execution against the Wave B Modal app. spawn_container also records its container id
+    // back to the Project Workspace; run_command with a shell-special command is single-approval
+    // forever (lib/connectors/modal-sandbox/commands.ts).
+    return executeModalSandboxConnectorAction({
       userId: input.userId,
       action: input.action,
       payload: input.payload,
