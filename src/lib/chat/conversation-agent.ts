@@ -15,6 +15,7 @@
 // Slack thread is never a project thread, so the route-only `save_to_project` tool isn't offered.
 
 import { z } from "zod";
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
 import { listMemoryFiles, fetchFileContent } from "@/lib/pa-brain";
 import { generateQuoteDraft, generateEmailDraft } from "@/lib/pa-drafts";
 import { createPendingAction } from "@/lib/pa-actions";
@@ -58,6 +59,7 @@ export type AnthropicLoopMessage =
 type AnthropicApiResponse = {
   content: AnthropicAssistantBlock[];
   stop_reason: string;
+  usage?: { input_tokens?: number; output_tokens?: number };
 };
 
 export type ToolStep = {
@@ -378,6 +380,8 @@ export async function runAgentLoop(opts: {
   systemPrompt: string;
   ctx: AgentToolContext;
   maxIterations?: number;
+  /** When set, one anthropic cost event is logged per loop iteration (key suffixed by iteration). */
+  cost?: CostContext;
 }): Promise<AgentLoopResult> {
   const loopMessages = [...opts.loopMessages];
   const toolSteps: ToolStep[] = [];
@@ -411,6 +415,15 @@ export async function runAgentLoop(opts: {
     }
 
     const response = (await anthropicRes.json()) as AnthropicApiResponse;
+
+    if (opts.cost) {
+      await logCostFromUsage(
+        { ...opts.cost, idempotencyKey: `${opts.cost.idempotencyKey}:${iteration}` },
+        "anthropic",
+        "claude-sonnet-4-6",
+        { tokensInput: response.usage?.input_tokens ?? 0, tokensOutput: response.usage?.output_tokens ?? 0 },
+      );
+    }
 
     if (response.stop_reason === "end_turn") {
       finalAnswer = response.content.find((c) => c.type === "text")?.text ?? "";
@@ -510,6 +523,13 @@ export async function runConversationTurn(opts: {
     loopMessages,
     systemPrompt: buildAgentSystemPrompt(Boolean(brain_repo)),
     ctx: { userId, brain_repo, github_token, anthropic_api_key, zoneConfig },
+    cost: {
+      ownerId: userId,
+      featureSlug: "chat",
+      // Deterministic per-turn anchor: the conversation + this turn's position in history.
+      idempotencyKey: `chat:${conversationId}:${priorMessages.length}`,
+      conversationId,
+    },
   });
   if (!loop.ok) return loop;
 

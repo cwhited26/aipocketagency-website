@@ -10,6 +10,8 @@
 // Cost ceiling (PA-YT-4): Whisper is metered, so we SKIP videos longer than 30 minutes unless the
 // caller passes allowLong. A skip is a typed result the caller surfaces to the owner — never silent.
 
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
+
 const WHISPER_URL = "https://api.openai.com/v1/audio/transcriptions";
 
 /** Videos longer than this skip Whisper unless allowLong is set (PA-YT-4 cost ceiling). */
@@ -110,6 +112,8 @@ export async function transcribeYouTubeAudio(params: {
   durationSeconds: number | null;
   allowLong: boolean;
   openaiApiKey: string | null;
+  /** When set, one openai (Whisper) cost event is logged on a successful transcription. */
+  cost?: CostContext;
 }): Promise<WhisperFallbackResult> {
   if (!params.openaiApiKey) {
     return {
@@ -194,6 +198,12 @@ export async function transcribeYouTubeAudio(params: {
   const data = (await res.json()) as { text?: string };
   const full_text = (data.text ?? "").trim();
   if (!full_text) return { ok: false, reason: "empty", message: "Whisper found no speech in the audio." };
+
+  // Whisper billed by audio length — price off the video's known duration (0 when metadata lacked it).
+  if (params.cost) {
+    const audioMinutes = params.durationSeconds != null ? params.durationSeconds / 60 : 0;
+    await logCostFromUsage(params.cost, "openai", "whisper-1", { audioMinutes });
+  }
 
   return { ok: true, full_text };
 }

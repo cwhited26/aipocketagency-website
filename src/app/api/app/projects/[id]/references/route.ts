@@ -111,7 +111,16 @@ export async function POST(
         { status: 402 },
       );
     }
-    const ocr = await runVisionOcr({ apiKey, mimeType: file.type, buffer });
+    const ocr = await runVisionOcr({
+      apiKey,
+      mimeType: file.type,
+      buffer,
+      cost: {
+        ownerId: user.id,
+        featureSlug: "chat",
+        idempotencyKey: `vision:ref:${user.id}:${fileName}:${buffer.byteLength}`,
+      },
+    });
     if (!ocr.ok) {
       // Surface the real reason instead of silently storing an unreadable file.
       return NextResponse.json({ error: `Could not read ${fileName}: ${ocr.error}` }, { status: 422 });

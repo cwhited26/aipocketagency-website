@@ -81,6 +81,11 @@ export async function runBccWatchPass(params: {
         paUser.anthropic_api_key,
         paUser.brain_repo,
         paUser.github_token,
+        {
+          ownerId: params.userId,
+          featureSlug: "email_drafter",
+          idempotencyKey: `email_reply:${watch.id}:${candidate.id}`,
+        },
       );
       draftText = result.draft;
     } catch {

@@ -72,11 +72,17 @@ export async function processChatUploads(params: {
       continue;
     }
 
-    // 3. Read it with Claude vision; log the attempt (success or failure) to pa_vision_log.
+    // 3. Read it with Claude vision; log the attempt (success or failure) to pa_vision_log + the cost
+    //    ledger (keyed by the stored asset path so a re-upload of the same file collapses to one row).
     const ocr = await runVisionOcr({
       apiKey: params.anthropicApiKey,
       mimeType: file.mimeType,
       buffer: file.buffer,
+      cost: {
+        ownerId: params.userId,
+        featureSlug: "chat",
+        idempotencyKey: `vision:${params.userId}:${assetPath || file.fileName}`,
+      },
     });
 
     if (ocr.ok) {

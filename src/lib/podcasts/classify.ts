@@ -7,6 +7,7 @@
 // testimonial route to the same shared brain areas as YouTube so a competitor claim sits next to the
 // competitor claims from video, regardless of where it was said.
 
+import type { CostContext } from "@/lib/cost/log";
 import {
   classifyBucket,
   extractBucketDetail,
@@ -41,6 +42,8 @@ export async function classifyEpisode(params: {
   show: string;
   host: string;
   transcriptHead: string;
+  /** When set, one anthropic (Haiku) cost event is logged for this classify call. */
+  cost?: CostContext;
 }): Promise<UseCaseBucket> {
   // The YouTube classifier takes (title, channel) — pass the show + host as the "channel" so a podcast
   // gets the same author signal a YouTube channel does.
@@ -50,5 +53,6 @@ export async function classifyEpisode(params: {
     title: params.episodeTitle,
     channel,
     transcriptHead: params.transcriptHead,
+    cost: params.cost,
   });
 }

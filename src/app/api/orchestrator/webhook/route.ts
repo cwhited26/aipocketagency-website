@@ -24,6 +24,7 @@ import { ConnectorScopeError } from "@/lib/orchestrator/containment-guard";
 import { verifyWebhookSecret } from "@/lib/orchestrator/runtime-client";
 import { applyVerificationGate } from "@/lib/orchestrator/verification";
 import { monthKey } from "@/lib/orchestrator/tier-caps";
+import { logCostFromUsage } from "@/lib/cost/log";
 import { WebhookEventSchema, isTerminalStatus } from "@/lib/orchestrator/types";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -183,6 +184,21 @@ export async function POST(req: Request): Promise<NextResponse> {
         actual: event.agentMinutes,
         cost,
       });
+
+      // Log the Modal compute cost for this sub-agent run (priced off measured agent-minutes — the
+      // price table approximates active-CPU-seconds). One event per run, keyed by run id; run_complete
+      // is already guarded to fire once (the isTerminalStatus check above).
+      await logCostFromUsage(
+        {
+          ownerId: run.business_id,
+          featureSlug: "build_tools",
+          idempotencyKey: `modal:${run.id}`,
+          subAgentRunId: run.id,
+        },
+        "modal",
+        null,
+        { cpuSeconds: event.agentMinutes * 60 },
+      );
 
       // Advisory verification gate (PA-MC-7): log a second-opinion verdict before Mission Control
       // honours the completion. v1 never blocks — a failure only records the verdict and, on a

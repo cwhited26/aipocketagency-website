@@ -16,6 +16,7 @@
 
 import { createInboxItem } from "@/lib/pa-inbox-items";
 import { commitBrainTextFile } from "@/lib/brain/absorb";
+import { logCostFromUsage } from "@/lib/cost/log";
 import { fetchMapsViaSerp, type MapsBusiness } from "./brightdata";
 import { classifyLead } from "./classify";
 import { domainOf } from "./denylist";
@@ -146,6 +147,12 @@ async function processBusiness(params: {
     apiKey: paUser.anthropic_api_key,
     extractionPattern: patternFor(config),
     profile: businessProfile(business),
+    cost: {
+      ownerId,
+      featureSlug: "lead_scout",
+      idempotencyKey: `${runId}:${businessKey(business)}:classify`,
+      subAgentRunId: runId,
+    },
   });
 
   // Brain note (best-effort — a commit hiccup keeps the lead, just without a brain path).
@@ -216,13 +223,21 @@ async function collectBusinesses(params: {
   apiKey: string;
   config: MapsSweepConfig;
   cap: number;
-}): Promise<{ kept: MapsBusiness[]; seen: number; capped: boolean; fetchError: string | null }> {
+}): Promise<{
+  kept: MapsBusiness[];
+  seen: number;
+  capped: boolean;
+  fetchError: string | null;
+  /** Billed SERP pages — Bright Data charges per request; the caller logs the aggregate cost. */
+  pagesFetched: number;
+}> {
   const query = queryFor(params.config);
   const seenKeys = new Set<string>();
   const kept: MapsBusiness[] = [];
   let seen = 0;
   let capped = false;
   let fetchError: string | null = null;
+  let pagesFetched = 0;
 
   for (let page = 0; page < MAX_PAGES; page++) {
     const res = await fetchMapsViaSerp({ apiKey: params.apiKey, query, page });
@@ -232,6 +247,7 @@ async function collectBusinesses(params: {
       if (page === 0) fetchError = res.error;
       break;
     }
+    pagesFetched += 1; // this page returned 200 — it billed
     if (res.businesses.length === 0) break; // ran dry
 
     for (const b of res.businesses) {
@@ -249,7 +265,7 @@ async function collectBusinesses(params: {
     if (kept.length >= params.cap) break;
   }
 
-  return { kept, seen, capped, fetchError };
+  return { kept, seen, capped, fetchError, pagesFetched };
 }
 
 /**
@@ -355,6 +371,17 @@ export async function runMapsSweep(params: {
   });
   if (!created.ok) return { ok: false, status: created.status, error: created.error };
   const run = created.data;
+
+  // One aggregate bright_data cost event for every SERP page this sweep billed (keyed by the run so
+  // re-sweeps of the same source never collide). Per-business classify cost is logged in processBusiness.
+  if (collected.pagesFetched > 0) {
+    await logCostFromUsage(
+      { ownerId: params.ownerId, featureSlug: "lead_scout", idempotencyKey: `${run.id}:maps:serp`, subAgentRunId: run.id },
+      "bright_data",
+      null,
+      { requests: collected.pagesFetched },
+    );
+  }
 
   const outcomes = await runPool(collected.kept, (business) =>
     processBusiness({

@@ -1,0 +1,101 @@
+// TODO [2026-06-09] verify Bright Data + Modal rates against current invoice; Anthropic + OpenAI rates verified 2026-06-09.
+//
+// prices.ts — the hand-maintained price table for every metered backend PA fires (Cost Observability
+// SPEC §9, the "Pricing reference" the Cost tab shows). getCostCents() turns a provider's usage
+// payload into a realized cost in cents. Anthropic + OpenAI bill per token / per audio-hour and the
+// rates are published; Bright Data + Modal are flat-rate estimates the table approximates until a real
+// invoice is reconciled (the TODO above). Pure + dependency-free so the cost math is unit-tested in
+// isolation (lib/cost/__tests__/prices.test.ts).
+//
+// All rates live here as named constants so a provider price change is a one-line edit, and the Cost
+// tab can render the table verbatim. Unknown model/backend degrades to 0 cents + a structured warn —
+// never a throw, never a silent guess that double-counts or invents cost.
+
+export type CostBackend = "anthropic" | "openai" | "bright_data" | "modal" | "twilio" | "resend";
+
+/** The usage payload a metered call returns. Every field optional — each backend reads what it needs. */
+export type CostUsage = {
+  /** LLM input (prompt) tokens. */
+  tokensInput?: number;
+  /** LLM output (completion) tokens. */
+  tokensOutput?: number;
+  /** Flat-rate request count (Bright Data Web Unlocker / SERP). */
+  requests?: number;
+  /** Whisper audio length in minutes. */
+  audioMinutes?: number;
+  /** Modal active CPU time in seconds. */
+  cpuSeconds?: number;
+  /** Modal provisioned memory in GB-hours. */
+  memoryGbHours?: number;
+};
+
+// ── Anthropic (USD per 1M tokens, published 2026-06-09) ───────────────────────────────────
+const ANTHROPIC_RATES_USD_PER_MTOK: Record<string, { input: number; output: number }> = {
+  // claude-sonnet-4-6 — the house model (chat, drafters, extract, vision OCR).
+  "claude-sonnet-4-6": { input: 3, output: 15 },
+  // claude-haiku-4-5 — the cheap classifier (lead fit, YouTube/podcast bucket).
+  "claude-haiku-4-5": { input: 0.8, output: 4 },
+};
+
+/** Resolve a concrete model id (e.g. "claude-haiku-4-5-20251001") to its rate by longest-prefix match. */
+function anthropicRate(model: string | null): { input: number; output: number } | null {
+  if (!model) return null;
+  if (ANTHROPIC_RATES_USD_PER_MTOK[model]) return ANTHROPIC_RATES_USD_PER_MTOK[model];
+  for (const key of Object.keys(ANTHROPIC_RATES_USD_PER_MTOK)) {
+    if (model.startsWith(key)) return ANTHROPIC_RATES_USD_PER_MTOK[key];
+  }
+  return null;
+}
+
+// ── OpenAI Whisper (USD per audio-hour, published 2026-06-09) ──────────────────────────────
+const WHISPER_USD_PER_HOUR = 6;
+
+// ── Bright Data Web Unlocker / SERP (flat estimate — see TODO) ─────────────────────────────
+// ~$3 per 1,000 requests.
+const BRIGHT_DATA_USD_PER_REQUEST = 3 / 1000;
+
+// ── Modal Sandbox (approximate — see TODO) ─────────────────────────────────────────────────
+// ~$0.000131 active-CPU-second + ~$0.00000667 per GB-second of provisioned memory (~$0.024/GB-hr).
+const MODAL_USD_PER_CPU_SECOND = 0.000131;
+const MODAL_USD_PER_GB_HOUR = 0.024;
+
+const USD_TO_CENTS = 100;
+
+/**
+ * Realized cost of one metered call, in cents (may be fractional — the ledger rounds on write so the
+ * public figure keeps sub-cent precision for aggregation). Unknown backend / unknown Anthropic model
+ * degrades to 0 cents + a structured warn so a missing rate surfaces in logs instead of silently
+ * mispricing the ledger.
+ */
+export function getCostCents(backend: CostBackend, model: string | null, usage: CostUsage): number {
+  switch (backend) {
+    case "anthropic": {
+      const rate = anthropicRate(model);
+      if (!rate) {
+        console.warn("[cost/prices] unknown Anthropic model — pricing as 0 cents", { model });
+        return 0;
+      }
+      const inputUsd = ((usage.tokensInput ?? 0) / 1_000_000) * rate.input;
+      const outputUsd = ((usage.tokensOutput ?? 0) / 1_000_000) * rate.output;
+      return (inputUsd + outputUsd) * USD_TO_CENTS;
+    }
+    case "openai": {
+      // whisper-1 is the only OpenAI backend PA fires today.
+      const minutes = usage.audioMinutes ?? 0;
+      return (minutes / 60) * WHISPER_USD_PER_HOUR * USD_TO_CENTS;
+    }
+    case "bright_data": {
+      const requests = usage.requests ?? 0;
+      return requests * BRIGHT_DATA_USD_PER_REQUEST * USD_TO_CENTS;
+    }
+    case "modal": {
+      const cpuUsd = (usage.cpuSeconds ?? 0) * MODAL_USD_PER_CPU_SECOND;
+      const memUsd = (usage.memoryGbHours ?? 0) * MODAL_USD_PER_GB_HOUR;
+      return (cpuUsd + memUsd) * USD_TO_CENTS;
+    }
+    default: {
+      console.warn("[cost/prices] no price model for backend — pricing as 0 cents", { backend });
+      return 0;
+    }
+  }
+}

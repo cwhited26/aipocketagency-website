@@ -13,6 +13,8 @@
 // The house model — matches lib/llm/types.ts PA_MANAGED_MODEL and the rest of the repo. The task
 // brief named claude-sonnet-4-5-20250929; verified against the codebase + current model lineup —
 // 4.6 is the current Sonnet, so we use the house string rather than a stale pin.
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
+
 export const VISION_MODEL = "claude-sonnet-4-6";
 
 // Published Sonnet rates (USD per million tokens). Used to stamp pa_vision_log.cost_usd.
@@ -122,6 +124,8 @@ export async function runVisionOcr(params: {
   buffer: Buffer;
   /** Network abort, ms. Vision on a large screenshot can be slow; default 60s. */
   timeoutMs?: number;
+  /** When set, one anthropic (Sonnet) cost event is logged for this OCR call. */
+  cost?: CostContext;
 }): Promise<VisionOcrResult> {
   const content = buildOcrContent(params.mimeType, params.buffer.toString("base64"));
   if (!content) {
@@ -166,6 +170,14 @@ export async function runVisionOcr(params: {
   }
 
   const data = (await res.json()) as AnthropicResponse;
+  const promptTokens = data.usage?.input_tokens ?? 0;
+  const completionTokens = data.usage?.output_tokens ?? 0;
+  if (params.cost) {
+    await logCostFromUsage(params.cost, "anthropic", VISION_MODEL, {
+      tokensInput: promptTokens,
+      tokensOutput: completionTokens,
+    });
+  }
   const text = data.content.find((c) => c.type === "text")?.text ?? "";
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) return { ok: false, error: "Vision returned an unexpected format." };
@@ -183,8 +195,8 @@ export async function runVisionOcr(params: {
     text: (parsed.text ?? "").trim(),
     structured_description: (parsed.structured_description ?? "").trim(),
     confidence,
-    promptTokens: data.usage?.input_tokens ?? 0,
-    completionTokens: data.usage?.output_tokens ?? 0,
+    promptTokens,
+    completionTokens,
   };
 }
 

@@ -1,5 +1,8 @@
 import { buildMemoryBlocks, parseCitations, listMemoryFiles } from "./pa-brain";
 import type { Citation, MemoryBlock } from "./pa-brain";
+import { logCostFromUsage, type CostContext } from "./cost/log";
+
+const DRAFT_MODEL = "claude-sonnet-4-6";
 
 function formatBlocks(blocks: MemoryBlock[]): string {
   return blocks
@@ -141,7 +144,10 @@ Output ONLY the email. No preamble, no "here's the draft:" wrapper, no restating
 }
 
 type AnthropicTextBlock = { type: "text"; text: string };
-type AnthropicApiResponse = { content: AnthropicTextBlock[] };
+type AnthropicApiResponse = {
+  content: AnthropicTextBlock[];
+  usage?: { input_tokens?: number; output_tokens?: number };
+};
 
 export async function generateQuoteDraft(
   params: {
@@ -426,6 +432,7 @@ export async function generateEmailDraft(
   anthropicApiKey: string,
   brainRepo: string | null,
   githubToken: string | null,
+  cost?: CostContext,
 ): Promise<{ draft: string; citations: Citation[]; hasBrain: boolean }> {
   const memoryBlocks: MemoryBlock[] = brainRepo
     ? await buildMemoryBlocks(brainRepo, githubToken)
@@ -468,6 +475,12 @@ export async function generateEmailDraft(
   }
 
   const msg = (await res.json()) as AnthropicApiResponse;
+  if (cost) {
+    await logCostFromUsage(cost, "anthropic", DRAFT_MODEL, {
+      tokensInput: msg.usage?.input_tokens ?? 0,
+      tokensOutput: msg.usage?.output_tokens ?? 0,
+    });
+  }
   const draft = msg.content.find((c) => c.type === "text")?.text ?? "";
   return { draft, citations: parseCitations(draft), hasBrain: memoryBlocks.length > 0 };
 }
@@ -582,6 +595,7 @@ export async function generateOutreachDraft(
   anthropicApiKey: string,
   brainRepo: string | null,
   githubToken: string | null,
+  cost?: CostContext,
 ): Promise<{ subject: string; body: string; citations: Citation[]; hasBrain: boolean }> {
   const memoryBlocks: MemoryBlock[] = brainRepo
     ? await buildMemoryBlocks(brainRepo, githubToken)
@@ -615,6 +629,12 @@ export async function generateOutreachDraft(
   }
 
   const msg = (await res.json()) as AnthropicApiResponse;
+  if (cost) {
+    await logCostFromUsage(cost, "anthropic", DRAFT_MODEL, {
+      tokensInput: msg.usage?.input_tokens ?? 0,
+      tokensOutput: msg.usage?.output_tokens ?? 0,
+    });
+  }
   const draft = msg.content.find((c) => c.type === "text")?.text ?? "";
   const { subject, body } = splitSubjectBody(draft);
   return { subject, body, citations: parseCitations(body), hasBrain: memoryBlocks.length > 0 };

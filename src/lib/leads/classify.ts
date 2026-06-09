@@ -6,6 +6,7 @@
 // judged against the owner's own extraction pattern (which encodes who they're looking for), not a
 // generic notion of quality.
 
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
 import type { ExtractedProfile } from "./extract";
 import { LEAD_CLASSIFICATIONS, type LeadClassification } from "./types";
 
@@ -26,7 +27,10 @@ const CLASSIFY_PROMPT = `You sort one extracted business lead into ONE fit bucke
 
 Answer with one word from: hot, warm, cold, wrong_fit, needs_research.`;
 
-type AnthropicResponse = { content?: Array<{ type: string; text?: string }> };
+type AnthropicResponse = {
+  content?: Array<{ type: string; text?: string }>;
+  usage?: { input_tokens?: number; output_tokens?: number };
+};
 
 /**
  * Pick the fit bucket for one lead. Degrades to "needs_research" on no-key / API error / unparseable
@@ -36,6 +40,8 @@ export async function classifyLead(params: {
   apiKey: string | null;
   extractionPattern: string;
   profile: ExtractedProfile;
+  /** When set, one anthropic (Haiku) cost event is logged for this classify call. */
+  cost?: CostContext;
 }): Promise<LeadClassification> {
   if (!params.apiKey) return "needs_research";
 
@@ -74,6 +80,12 @@ export async function classifyLead(params: {
   if (!res.ok) return "needs_research";
 
   const data = (await res.json()) as AnthropicResponse;
+  if (params.cost) {
+    await logCostFromUsage(params.cost, "anthropic", CLASSIFY_MODEL, {
+      tokensInput: data.usage?.input_tokens ?? 0,
+      tokensOutput: data.usage?.output_tokens ?? 0,
+    });
+  }
   const word = (data.content?.find((c) => c.type === "text")?.text ?? "")
     .toLowerCase()
     .replace(/[^a-z_]/g, "");

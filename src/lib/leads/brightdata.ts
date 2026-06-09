@@ -9,6 +9,8 @@
 // Typed result, hard timeout, no silent catch — a fetch failure becomes a clean { ok:false } the
 // orchestrator records on the lead row, never an unhandled throw that fails the whole batch.
 
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
+
 const BRIGHT_DATA_REQUEST_URL = "https://api.brightdata.com/request";
 
 function unlockerZone(): string {
@@ -36,6 +38,8 @@ export async function fetchViaUnlocker(params: {
   url: string;
   /** Network abort, ms. Rendering a heavy page through the proxy is slow; default 45s. */
   timeoutMs?: number;
+  /** When set, one bright_data cost event is logged per successful (billed) request. */
+  cost?: CostContext;
 }): Promise<UnlockerResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), params.timeoutMs ?? 45_000);
@@ -75,6 +79,8 @@ export async function fetchViaUnlocker(params: {
   if (!html.trim()) {
     return { ok: false, status: 502, error: "Bright Data returned an empty page." };
   }
+  // The request billed — log one flat-rate cost event (Bright Data doesn't return per-call cost).
+  if (params.cost) await logCostFromUsage(params.cost, "bright_data", null, { requests: 1 });
   return { ok: true, html };
 }
 
@@ -197,6 +203,8 @@ export async function fetchMapsViaSerp(params: {
   query: string;
   page?: number;
   timeoutMs?: number;
+  /** When set, one bright_data cost event is logged per successful (billed) SERP page. */
+  cost?: CostContext;
 }): Promise<MapsSerpResult> {
   const start = (params.page ?? 0) * 20;
   // Google Maps "search" with brd_json=1 makes Bright Data return parsed SERP JSON, including the
@@ -242,6 +250,9 @@ export async function fetchMapsViaSerp(params: {
   } catch {
     return { ok: false, status: 502, error: "Bright Data returned an unexpected (non-JSON) result." };
   }
+
+  // The SERP page billed — log one flat-rate cost event before returning the parsed businesses.
+  if (params.cost) await logCostFromUsage(params.cost, "bright_data", null, { requests: 1 });
 
   const businesses = extractRecords(envelope)
     .map(normalizeBusiness)

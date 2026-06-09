@@ -105,7 +105,11 @@ async function processUrl(params: {
     status: "failed",
   });
 
-  const fetched = await fetchViaUnlocker({ apiKey: brightDataKey, url });
+  const fetched = await fetchViaUnlocker({
+    apiKey: brightDataKey,
+    url,
+    cost: { ownerId, featureSlug: "lead_scout", idempotencyKey: `${runId}:${url}:unlock`, subAgentRunId: runId },
+  });
   if (!fetched.ok) {
     await insertLead({
       runId,
@@ -149,6 +153,7 @@ async function processUrl(params: {
     html: fetched.html,
     extractionPattern: source.extraction_pattern,
     url,
+    cost: { ownerId, featureSlug: "lead_scout", idempotencyKey: `${runId}:${url}:extract`, subAgentRunId: runId },
   });
   if (!extracted.ok) {
     await insertLead({
@@ -173,6 +178,7 @@ async function processUrl(params: {
     apiKey: paUser.anthropic_api_key,
     extractionPattern: source.extraction_pattern,
     profile: extracted.profile,
+    cost: { ownerId, featureSlug: "lead_scout", idempotencyKey: `${runId}:${url}:classify`, subAgentRunId: runId },
   });
 
   // Write the brain note (best-effort — a commit failure keeps the lead, just without a brain path).

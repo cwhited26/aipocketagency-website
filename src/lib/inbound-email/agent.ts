@@ -5,6 +5,7 @@
 // prompt); direct REST, no SDK.
 
 import { buildMemoryBlocks, type MemoryBlock } from "@/lib/pa-brain";
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
 import type { ParsedInboundEmail } from "./parse";
 
 function formatBlocks(blocks: MemoryBlock[]): string {
@@ -54,7 +55,10 @@ ${body}${attachmentNote}`;
 }
 
 type AnthropicTextBlock = { type: "text"; text: string };
-type AnthropicApiResponse = { content: AnthropicTextBlock[] };
+type AnthropicApiResponse = {
+  content: AnthropicTextBlock[];
+  usage?: { input_tokens?: number; output_tokens?: number };
+};
 
 export type InboundReplyResult =
   | { ok: true; reply: string; hasBrain: boolean }
@@ -66,6 +70,8 @@ export async function generateInboundReply(params: {
   brainRepo: string | null;
   githubToken: string | null;
   email: ParsedInboundEmail;
+  /** When set, one anthropic cost event is logged for this reply generation. */
+  cost?: CostContext;
 }): Promise<InboundReplyResult> {
   const blocks: MemoryBlock[] = params.brainRepo
     ? await buildMemoryBlocks(params.brainRepo, params.githubToken)
@@ -91,6 +97,12 @@ export async function generateInboundReply(params: {
     return { ok: false, status: 502, error: `Anthropic error: ${(await res.text()).slice(0, 200)}` };
   }
   const data = (await res.json()) as AnthropicApiResponse;
+  if (params.cost) {
+    await logCostFromUsage(params.cost, "anthropic", "claude-sonnet-4-6", {
+      tokensInput: data.usage?.input_tokens ?? 0,
+      tokensOutput: data.usage?.output_tokens ?? 0,
+    });
+  }
   const reply = data.content.find((c) => c.type === "text")?.text ?? "";
   if (!reply.trim()) return { ok: false, status: 502, error: "Empty reply from the model." };
   return { ok: true, reply, hasBrain: blocks.length > 0 };

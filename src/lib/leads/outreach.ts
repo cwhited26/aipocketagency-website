@@ -103,6 +103,11 @@ export async function generateOutreachForLead(params: {
     params.paUser.anthropic_api_key,
     params.paUser.brain_repo,
     params.paUser.github_token,
+    {
+      ownerId: params.ownerId,
+      featureSlug: "email_drafter",
+      idempotencyKey: `outreach:${params.ownerId}:${params.leadId}`,
+    },
   );
 
   return {

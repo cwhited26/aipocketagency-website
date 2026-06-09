@@ -13,6 +13,7 @@
 // owner id use the maybe* helper. Both honor the brand-wide hard rules — direct REST, no `any`, no
 // silent catch.
 
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
 import { extractYouTubeIds, watchUrl, defaultThumbnailUrl } from "@/lib/youtube/detect";
 import { fetchTranscript } from "@/lib/youtube/transcript";
 import { fetchVideoMetadata, type YouTubeMetadata } from "@/lib/youtube/metadata";
@@ -152,6 +153,7 @@ const SUMMARY_PROMPT = `Summarize the following YouTube video transcript in ONE 
 async function summarizeTranscript(
   apiKey: string | null,
   video: { title: string; channel: string; fullText: string },
+  cost?: CostContext,
 ): Promise<string> {
   const excerptFallback = (): string => {
     const head = video.fullText.replace(/\s+/g, " ").trim().slice(0, 400);
@@ -190,7 +192,16 @@ async function summarizeTranscript(
   }
   if (!res.ok) return excerptFallback();
 
-  const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
+  const data = (await res.json()) as {
+    content?: Array<{ type: string; text?: string }>;
+    usage?: { input_tokens?: number; output_tokens?: number };
+  };
+  if (cost) {
+    await logCostFromUsage(cost, "anthropic", "claude-sonnet-4-6", {
+      tokensInput: data.usage?.input_tokens ?? 0,
+      tokensOutput: data.usage?.output_tokens ?? 0,
+    });
+  }
   const text = data.content?.find((c) => c.type === "text")?.text?.trim();
   return text || excerptFallback();
 }
@@ -298,6 +309,12 @@ export async function ingestYouTubeVideo(params: {
   const { videoId, source, ctx } = params;
   const url = watchUrl(videoId);
   const ingestedAt = new Date().toISOString();
+  // Per-video cost keys (deterministic — videoId is unique per owner; a re-ingest collapses to one row).
+  const costKey = (step: string): CostContext => ({
+    ownerId: ctx.ownerId,
+    featureSlug: "youtube",
+    idempotencyKey: `youtube:${ctx.ownerId}:${videoId}:${step}`,
+  });
 
   // 1. Metadata (best-effort enrichment — never blocks the ingest).
   const metaResult = await fetchVideoMetadata(videoId, process.env.YOUTUBE_API_KEY ?? null);
@@ -322,6 +339,7 @@ export async function ingestYouTubeVideo(params: {
       durationSeconds: meta?.durationSeconds ?? null,
       allowLong: params.allowLong,
       openaiApiKey: ctx.openaiApiKey,
+      cost: costKey("whisper"),
     });
     if (!whisper.ok) {
       return { ok: false, videoId, url, error: whisper.message };
@@ -337,9 +355,10 @@ export async function ingestYouTubeVideo(params: {
     title,
     channel,
     transcriptHead: fullText.slice(0, 500),
+    cost: costKey("classify"),
   });
   const detailTranscript = segments.length > 0 ? timestampedTranscript(segments) : fullText;
-  const summary = await summarizeTranscript(ctx.anthropicApiKey, { title, channel, fullText });
+  const summary = await summarizeTranscript(ctx.anthropicApiKey, { title, channel, fullText }, costKey("summary"));
   // For non-default buckets, the detail is the tailored extraction; default reuses the summary
   // (extractBucketDetail short-circuits to genericSummary for the default bucket — no extra call).
   const bucketDetail = await extractBucketDetail({
@@ -349,6 +368,7 @@ export async function ingestYouTubeVideo(params: {
     channel,
     transcript: detailTranscript,
     genericSummary: summary,
+    cost: costKey("extract"),
   });
   const framing = BUCKET_FRAMINGS[bucket];
 

@@ -5,6 +5,7 @@
 // a typed { ok:false } so the route can answer the Shortcut in plain text (no silent catch).
 
 import { z } from "zod";
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
 import { listMemoryFiles, fetchFileContent } from "@/lib/pa-brain";
 import { generateQuoteDraft, generateEmailDraft } from "@/lib/pa-drafts";
 import { createPendingAction } from "@/lib/pa-actions";
@@ -42,6 +43,7 @@ type AnthropicLoopMessage =
 type AnthropicApiResponse = {
   content: AnthropicAssistantBlock[];
   stop_reason: string;
+  usage?: { input_tokens?: number; output_tokens?: number };
 };
 
 type ToolDefinition = {
@@ -344,6 +346,8 @@ export async function runAgentTurn(params: {
   userContent: string;
   priorTurns: PriorTurn[];
   ctx: AgentToolContext;
+  /** When set, one anthropic cost event is logged per loop iteration (key suffixed by iteration). */
+  cost?: CostContext;
 }): Promise<AgentRunResult> {
   const { ctx } = params;
   const loopMessages: AnthropicLoopMessage[] = [
@@ -382,6 +386,15 @@ export async function runAgentTurn(params: {
     }
 
     const response = (await res.json()) as AnthropicApiResponse;
+
+    if (params.cost) {
+      await logCostFromUsage(
+        { ...params.cost, idempotencyKey: `${params.cost.idempotencyKey}:${iteration}` },
+        "anthropic",
+        AGENT_MODEL,
+        { tokensInput: response.usage?.input_tokens ?? 0, tokensOutput: response.usage?.output_tokens ?? 0 },
+      );
+    }
 
     if (response.stop_reason === "end_turn") {
       finalAnswer = response.content.find((c) => c.type === "text")?.text ?? "";

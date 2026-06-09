@@ -139,7 +139,17 @@ export async function handleInboundForward(params: {
   // When a video or podcast episode was ingested, give the reply agent the transcript by augmenting
   // the email body.
   const emailForReply = ytContext ? { ...email, text: bodyWithVideo } : email;
-  const generated = await generateInboundReply({ anthropicApiKey, brainRepo, githubToken, email: emailForReply });
+  const generated = await generateInboundReply({
+    anthropicApiKey,
+    brainRepo,
+    githubToken,
+    email: emailForReply,
+    cost: {
+      ownerId,
+      featureSlug: "chat",
+      idempotencyKey: `inbound_email:${ownerId}:${email.messageId || email.subject}`,
+    },
+  });
   if (!generated.ok) return { ok: false, status: generated.status, error: generated.error };
 
   const asstMsg = await insertMessage({

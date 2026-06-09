@@ -141,6 +141,11 @@ export async function POST(req: Request): Promise<NextResponse> {
         mimeType: fetched.data.contentType,
         buffer: fetched.data.buffer,
         timeoutMs: SMS_OCR_TIMEOUT_MS,
+        cost: {
+          ownerId,
+          featureSlug: "chat",
+          idempotencyKey: `vision:sms:${ownerId}:${media.url}`,
+        },
       });
       // Log every attempt (success + failure) — no silent catch (mirrors the chat-upload path).
       await logVisionAttempt({

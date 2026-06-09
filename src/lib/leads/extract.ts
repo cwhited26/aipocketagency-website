@@ -7,6 +7,8 @@
 // blow the context. Direct REST, typed result, no silent catch — a failure returns { ok:false } and
 // the lead is recorded as failed rather than crashing the batch.
 
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
+
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const EXTRACT_MODEL = "claude-sonnet-4-6";
 const MAX_TEXT_CHARS = 30_000;
@@ -82,6 +84,8 @@ export async function extractProfile(params: {
   html: string;
   extractionPattern: string;
   url: string;
+  /** When set, one anthropic cost event is logged for this extraction. */
+  cost?: CostContext;
 }): Promise<ExtractResult> {
   const text = htmlToText(params.html);
   if (!text) return { ok: false, status: 422, error: "Page had no readable text to extract from." };
@@ -118,6 +122,14 @@ export async function extractProfile(params: {
   }
 
   const data = (await res.json()) as AnthropicResponse;
+  const promptTokens = data.usage?.input_tokens ?? 0;
+  const completionTokens = data.usage?.output_tokens ?? 0;
+  if (params.cost) {
+    await logCostFromUsage(params.cost, "anthropic", EXTRACT_MODEL, {
+      tokensInput: promptTokens,
+      tokensOutput: completionTokens,
+    });
+  }
   const raw = data.content?.find((c) => c.type === "text")?.text ?? "";
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) return { ok: false, status: 502, error: "Claude returned an unexpected format." };
@@ -137,7 +149,7 @@ export async function extractProfile(params: {
       summary: typeof parsed.summary === "string" ? parsed.summary.trim() : "",
       fields: coerceFields(parsed.fields),
     },
-    promptTokens: data.usage?.input_tokens ?? 0,
-    completionTokens: data.usage?.output_tokens ?? 0,
+    promptTokens,
+    completionTokens,
   };
 }

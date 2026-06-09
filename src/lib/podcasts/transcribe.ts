@@ -13,6 +13,7 @@
 //   • Whisper's per-request limit is 25 MB; an episode over that is chunked (MP3 only — MP3 frames are
 //     individually decodable, so byte-chunks transcribe; non-MP3 over the limit is refused honestly).
 
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
 import { transcribeAudio, WHISPER_MAX_BYTES } from "@/lib/voice/transcribe";
 
 /** Episodes longer than this skip Whisper unless allowLong is set (PA-PC-6 cost ceiling). */
@@ -76,6 +77,8 @@ export async function transcribeEpisode(params: {
   enclosureBytes: number;
   durationSeconds: number;
   allowLong: boolean;
+  /** When set, one openai (Whisper) cost event is logged on a successful transcription. */
+  cost?: CostContext;
 }): Promise<EpisodeTranscribeResult> {
   const { enclosureUrl, enclosureType, durationSeconds, allowLong } = params;
 
@@ -147,7 +150,9 @@ export async function transcribeEpisode(params: {
   if (buffer.byteLength <= WHISPER_MAX_BYTES) {
     const result = await transcribeAudio({ buffer, fileName, mimeType: mime });
     if (!result.ok) return { ok: false, reason: "whisper_error", message: result.error };
-    return { ok: true, fullText: result.text, whisperMinutes: minutesFor(durationSeconds, result.text) };
+    const whisperMinutes = minutesFor(durationSeconds, result.text);
+    if (params.cost) await logCostFromUsage(params.cost, "openai", "whisper-1", { audioMinutes: whisperMinutes });
+    return { ok: true, fullText: result.text, whisperMinutes };
   }
 
   // Over the per-request limit. Chunk MP3 (frame-decodable); refuse other containers honestly.
@@ -170,7 +175,9 @@ export async function transcribeEpisode(params: {
   }
   const fullText = parts.join(" ").trim();
   if (!fullText) return { ok: false, reason: "empty", message: "Whisper found no speech in the audio." };
-  return { ok: true, fullText, whisperMinutes: minutesFor(durationSeconds, fullText) };
+  const whisperMinutes = minutesFor(durationSeconds, fullText);
+  if (params.cost) await logCostFromUsage(params.cost, "openai", "whisper-1", { audioMinutes: whisperMinutes });
+  return { ok: true, fullText, whisperMinutes };
 }
 
 /** Minutes billed to Whisper: the episode duration when known, else estimated from transcript length. */

@@ -171,7 +171,16 @@ export async function POST(req: Request): Promise<Response> {
     anthropic_api_key,
     zoneConfig,
   };
-  const run = await runAgentTurn({ userContent: effectiveContent, priorTurns, ctx });
+  const run = await runAgentTurn({
+    userContent: effectiveContent,
+    priorTurns,
+    ctx,
+    cost: {
+      ownerId: userId,
+      featureSlug: "chat",
+      idempotencyKey: `mobile:${userId}:${priorTurns.length}`,
+    },
+  });
   if (!run.ok) {
     return text(`The agent hit an error: ${run.error}`, 500);
   }

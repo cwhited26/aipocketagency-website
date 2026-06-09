@@ -16,6 +16,7 @@ import { fetchFeed, selectEpisode } from "./rss-parser";
 import { transcribeEpisode } from "./transcribe";
 import { classifyEpisode, extractBucketDetail, PODCAST_BUCKET_FRAMINGS, type UseCaseBucket } from "./classify";
 import { recordPodcastIngest } from "./log";
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
 import { PODCAST_INGEST_KIND, type PodcastIngestEpisode } from "./card";
 import type { PodcastRef } from "./detect";
 import { commitBrainTextFile } from "@/lib/brain/absorb";
@@ -102,6 +103,7 @@ const SUMMARY_PROMPT = `Summarize the following podcast episode in ONE tight par
 async function summarizeEpisode(
   apiKey: string | null,
   episode: { title: string; show: string; fullText: string },
+  cost?: CostContext,
 ): Promise<string> {
   const excerptFallback = (): string => {
     const head = episode.fullText.replace(/\s+/g, " ").trim().slice(0, 400);
@@ -131,7 +133,16 @@ async function summarizeEpisode(
     return excerptFallback(); // deliberate degrade, not a swallow
   }
   if (!res.ok) return excerptFallback();
-  const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
+  const data = (await res.json()) as {
+    content?: Array<{ type: string; text?: string }>;
+    usage?: { input_tokens?: number; output_tokens?: number };
+  };
+  if (cost) {
+    await logCostFromUsage(cost, "anthropic", SUMMARY_MODEL, {
+      tokensInput: data.usage?.input_tokens ?? 0,
+      tokensOutput: data.usage?.output_tokens ?? 0,
+    });
+  }
   const text = data.content?.find((c) => c.type === "text")?.text?.trim();
   return text || excerptFallback();
 }
@@ -290,6 +301,13 @@ export async function ingestPodcastEpisode(params: {
     return { ok: false, url: ref.url, error: "I couldn't resolve an episode to transcribe from that link." };
   }
 
+  // Per-episode cost keys (deterministic — episodeId is unique per owner; a re-ingest collapses to one row).
+  const costKey = (step: string): CostContext => ({
+    ownerId: ctx.ownerId,
+    featureSlug: "podcast",
+    idempotencyKey: `podcast:${ctx.ownerId}:${episodeId}:${step}`,
+  });
+
   // 3. Transcribe the audio (Whisper, with the duration + size + SSRF gates).
   const transcript = await transcribeEpisode({
     enclosureUrl,
@@ -297,6 +315,7 @@ export async function ingestPodcastEpisode(params: {
     enclosureBytes,
     durationSeconds,
     allowLong: params.allowLong,
+    cost: costKey("whisper"),
   });
   if (!transcript.ok) return { ok: false, url: ref.url, error: transcript.message };
   const fullText = transcript.fullText;
@@ -308,8 +327,9 @@ export async function ingestPodcastEpisode(params: {
     show,
     host,
     transcriptHead: fullText.slice(0, 500),
+    cost: costKey("classify"),
   });
-  const summary = await summarizeEpisode(ctx.anthropicApiKey, { title, show, fullText });
+  const summary = await summarizeEpisode(ctx.anthropicApiKey, { title, show, fullText }, costKey("summary"));
   const bucketDetail = await extractBucketDetail({
     apiKey: ctx.anthropicApiKey,
     bucket,
@@ -317,6 +337,7 @@ export async function ingestPodcastEpisode(params: {
     channel: host ? `${show} — ${host}` : show,
     transcript: fullText,
     genericSummary: summary,
+    cost: costKey("extract"),
   });
   const framing = PODCAST_BUCKET_FRAMINGS[bucket];
 

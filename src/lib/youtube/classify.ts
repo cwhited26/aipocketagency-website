@@ -15,6 +15,8 @@
 // channel + first 500 chars) and one Sonnet extraction tailored to the bucket. Direct REST, no SDK,
 // typed results, no silent catch — a failure degrades to the generic summary.
 
+import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
+
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const CLASSIFY_MODEL = "claude-haiku-4-5-20251001"; // cheap — this is just a 1-word bucket pick
 const EXTRACT_MODEL = "claude-sonnet-4-6";
@@ -77,7 +79,10 @@ const CLASSIFY_PROMPT = `You sort a YouTube video into ONE use-case bucket for a
 
 Answer with one word from: competitor, tactic, testimonial, industry, default.`;
 
-type AnthropicResponse = { content?: Array<{ type: string; text?: string }> };
+type AnthropicResponse = {
+  content?: Array<{ type: string; text?: string }>;
+  usage?: { input_tokens?: number; output_tokens?: number };
+};
 
 /**
  * Picks the use-case bucket via a cheap Haiku call on title + channel + the first 500 transcript
@@ -88,6 +93,8 @@ export async function classifyBucket(params: {
   title: string;
   channel: string;
   transcriptHead: string;
+  /** When set, one anthropic (Haiku) cost event is logged for this classify call. */
+  cost?: CostContext;
 }): Promise<UseCaseBucket> {
   if (!params.apiKey) return "default";
 
@@ -115,6 +122,12 @@ export async function classifyBucket(params: {
   if (!res.ok) return "default";
 
   const data = (await res.json()) as AnthropicResponse;
+  if (params.cost) {
+    await logCostFromUsage(params.cost, "anthropic", CLASSIFY_MODEL, {
+      tokensInput: data.usage?.input_tokens ?? 0,
+      tokensOutput: data.usage?.output_tokens ?? 0,
+    });
+  }
   const word = (data.content?.find((c) => c.type === "text")?.text ?? "")
     .toLowerCase()
     .replace(/[^a-z]/g, "");
@@ -142,6 +155,8 @@ export async function extractBucketDetail(params: {
   channel: string;
   transcript: string;
   genericSummary: string;
+  /** When set, one anthropic (Sonnet) cost event is logged for this extraction call. */
+  cost?: CostContext;
 }): Promise<string> {
   if (params.bucket === "default" || !params.apiKey) return params.genericSummary;
 
@@ -175,6 +190,12 @@ export async function extractBucketDetail(params: {
   if (!res.ok) return params.genericSummary;
 
   const data = (await res.json()) as AnthropicResponse;
+  if (params.cost) {
+    await logCostFromUsage(params.cost, "anthropic", EXTRACT_MODEL, {
+      tokensInput: data.usage?.input_tokens ?? 0,
+      tokensOutput: data.usage?.output_tokens ?? 0,
+    });
+  }
   const text = data.content?.find((c) => c.type === "text")?.text?.trim();
   return text || params.genericSummary;
 }
