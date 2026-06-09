@@ -265,7 +265,9 @@ export function parseFrontmatter(content: string): Frontmatter {
 
 // First real paragraph of a markdown body (after frontmatter), heading stripped,
 // clipped — used as a node summary when there's no frontmatter description.
-function firstParagraph(content: string): string {
+// Exported so the folder-mode extractor (graph-folders.ts) shares one excerpt
+// implementation rather than duplicating it.
+export function firstParagraph(content: string): string {
   const body = content.replace(/^---\n[\s\S]*?\n---\n?/, "");
   for (const block of body.split(/\n\s*\n/)) {
     const text = block
@@ -279,12 +281,12 @@ function firstParagraph(content: string): string {
 
 // ── Classification helpers ───────────────────────────────────────────────────────
 
-function slugFromPath(path: string): string {
+export function slugFromPath(path: string): string {
   const base = path.split("/").pop() ?? path;
   return base.replace(/\.mdx?$/i, "");
 }
 
-function humanizeSlug(slug: string): string {
+export function humanizeSlug(slug: string): string {
   const underIdx = slug.indexOf("_");
   const rest = underIdx === -1 ? slug : slug.slice(underIdx + 1);
   const words = rest.replace(/[-_]/g, " ").replace(/\d{4}-\d{2}-\d{2}/g, "").trim();
