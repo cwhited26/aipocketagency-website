@@ -1,15 +1,20 @@
 // TODO [2026-06-09] verify Bright Data + Modal rates against current invoice; Anthropic + OpenAI rates verified 2026-06-09.
 //
 // prices.ts — the hand-maintained price table for every metered backend PA fires (Cost Observability
-// SPEC §9, the "Pricing reference" the Cost tab shows). getCostCents() turns a provider's usage
-// payload into a realized cost in cents. Anthropic + OpenAI bill per token / per audio-hour and the
-// rates are published; Bright Data + Modal are flat-rate estimates the table approximates until a real
-// invoice is reconciled (the TODO above). Pure + dependency-free so the cost math is unit-tested in
-// isolation (lib/cost/__tests__/prices.test.ts).
+// SPEC §9, the "Pricing reference" the Cost tab shows). getCostMicroCents() turns a provider's usage
+// payload into a realized cost in MICRO-CENTS (1/10,000 of a cent; 1 USD = 1,000,000 micro-cents — the
+// Stripe `unit_amount_decimal` / AWS-billing / ad-tech standard, PA-COST-9). Micro-cents is the ledger's
+// storage unit precisely so sub-cent events — a single Haiku fit-classify (~0.08 cent), one Bright Data
+// request (0.3 cent) — stay lossless instead of rounding to zero. Anthropic + OpenAI bill per token /
+// per audio-hour and the rates are published; Bright Data + Modal are flat-rate estimates the table
+// approximates until a real invoice is reconciled (the TODO above). Pure + dependency-free so the cost
+// math is unit-tested in isolation (lib/cost/__tests__/prices.test.ts).
 //
 // All rates live here as named constants so a provider price change is a one-line edit, and the Cost
-// tab can render the table verbatim. Unknown model/backend degrades to 0 cents + a structured warn —
-// never a throw, never a silent guess that double-counts or invents cost.
+// tab can render the table verbatim. Unknown model/backend degrades to 0 micro-cents + a structured
+// warn — never a throw, never a silent guess that double-counts or invents cost. The return value may
+// be fractional (e.g. one Haiku input token = 0.8 micro-cents); the ledger writer rounds to the integer
+// BIGINT column on write — rounding to whole micro-cents, never to whole cents, is the whole point.
 
 export type CostBackend = "anthropic" | "openai" | "bright_data" | "modal" | "twilio" | "resend";
 
@@ -59,42 +64,44 @@ const BRIGHT_DATA_USD_PER_REQUEST = 3 / 1000;
 const MODAL_USD_PER_CPU_SECOND = 0.000131;
 const MODAL_USD_PER_GB_HOUR = 0.024;
 
-const USD_TO_CENTS = 100;
+// 1 USD = 100 cents = 1,000,000 micro-cents (1 cent = 10,000 micro-cents).
+const USD_TO_MICRO_CENTS = 1_000_000;
 
 /**
- * Realized cost of one metered call, in cents (may be fractional — the ledger rounds on write so the
- * public figure keeps sub-cent precision for aggregation). Unknown backend / unknown Anthropic model
- * degrades to 0 cents + a structured warn so a missing rate surfaces in logs instead of silently
- * mispricing the ledger.
+ * Realized cost of one metered call, in micro-cents (1/10,000 of a cent). May be fractional (e.g. one
+ * Haiku input token = 0.8 micro-cents) — the ledger writer rounds to the integer BIGINT column on write,
+ * rounding to whole micro-cents (never to whole cents), so sub-cent calls stay lossless and summable as
+ * pure integer math. Unknown backend / unknown Anthropic model degrades to 0 micro-cents + a structured
+ * warn so a missing rate surfaces in logs instead of silently mispricing the ledger.
  */
-export function getCostCents(backend: CostBackend, model: string | null, usage: CostUsage): number {
+export function getCostMicroCents(backend: CostBackend, model: string | null, usage: CostUsage): number {
   switch (backend) {
     case "anthropic": {
       const rate = anthropicRate(model);
       if (!rate) {
-        console.warn("[cost/prices] unknown Anthropic model — pricing as 0 cents", { model });
+        console.warn("[cost/prices] unknown Anthropic model — pricing as 0 micro-cents", { model });
         return 0;
       }
       const inputUsd = ((usage.tokensInput ?? 0) / 1_000_000) * rate.input;
       const outputUsd = ((usage.tokensOutput ?? 0) / 1_000_000) * rate.output;
-      return (inputUsd + outputUsd) * USD_TO_CENTS;
+      return (inputUsd + outputUsd) * USD_TO_MICRO_CENTS;
     }
     case "openai": {
       // whisper-1 is the only OpenAI backend PA fires today.
       const minutes = usage.audioMinutes ?? 0;
-      return (minutes / 60) * WHISPER_USD_PER_HOUR * USD_TO_CENTS;
+      return (minutes / 60) * WHISPER_USD_PER_HOUR * USD_TO_MICRO_CENTS;
     }
     case "bright_data": {
       const requests = usage.requests ?? 0;
-      return requests * BRIGHT_DATA_USD_PER_REQUEST * USD_TO_CENTS;
+      return requests * BRIGHT_DATA_USD_PER_REQUEST * USD_TO_MICRO_CENTS;
     }
     case "modal": {
       const cpuUsd = (usage.cpuSeconds ?? 0) * MODAL_USD_PER_CPU_SECOND;
       const memUsd = (usage.memoryGbHours ?? 0) * MODAL_USD_PER_GB_HOUR;
-      return (cpuUsd + memUsd) * USD_TO_CENTS;
+      return (cpuUsd + memUsd) * USD_TO_MICRO_CENTS;
     }
     default: {
-      console.warn("[cost/prices] no price model for backend — pricing as 0 cents", { backend });
+      console.warn("[cost/prices] no price model for backend — pricing as 0 micro-cents", { backend });
       return 0;
     }
   }

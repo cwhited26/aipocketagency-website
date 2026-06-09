@@ -5,12 +5,17 @@
 // idempotency_key is swallowed silently — that's the design (a retry of the same realized cost must
 // not double-count), not an error.
 //
+// Storage unit is MICRO-CENTS (1/10,000 of a cent; 1 USD = 1,000,000 micro-cents — PA-COST-9) so sub-cent
+// events (a single Haiku classify, one Bright Data request) stay lossless instead of rounding to zero.
+// The BIGINT cost_micro_cents column carries the precise value; the legacy unit_cost_cents column is
+// GENERATED (floor of micro/10000) by migration 056, so we never write it.
+//
 // Two entry points:
-//   logCostEvent(...)     — the SPEC §5.2 primitive. Caller supplies the already-computed costCents.
+//   logCostEvent(...)     — the SPEC §5.2 primitive. Caller supplies the already-computed costMicroCents.
 //   logCostFromUsage(...) — the ergonomic wrapper call sites use: pass the CostContext + the raw usage
 //                           payload and it prices via lib/cost/prices and forwards to logCostEvent.
 
-import { getCostCents, type CostBackend, type CostUsage } from "./prices";
+import { getCostMicroCents, type CostBackend, type CostUsage } from "./prices";
 
 export type CostFeatureSlug =
   | "podcast"
@@ -43,8 +48,8 @@ export type LogCostEventInput = {
   featureSlug: CostFeatureSlug;
   backend: CostBackend;
   model?: string;
-  /** Realized cost in cents (may be fractional — rounded to the integer column on write). */
-  costCents: number;
+  /** Realized cost in micro-cents (may be fractional — rounded to the integer BIGINT column on write). */
+  costMicroCents: number;
   tokensInput?: number;
   tokensOutput?: number;
   idempotencyKey: string;
@@ -94,9 +99,10 @@ export async function logCostEvent(input: LogCostEventInput): Promise<void> {
     feature_slug: input.featureSlug,
     backend: input.backend,
     model: input.model ?? null,
-    // The column is INTEGER cents; round here so sub-cent calls (a Haiku classify, one Bright Data
-    // request) don't carry a fractional value the column can't hold.
-    unit_cost_cents: Math.round(input.costCents),
+    // The column is BIGINT micro-cents; round to whole micro-cents here (the price math can be fractional,
+    // e.g. one Haiku input token = 0.8 micro-cents) — never to whole cents, which is the rounding-to-zero
+    // bug 056 fixes. unit_cost_cents is GENERATED from this in Postgres, so it's never written here.
+    cost_micro_cents: Math.round(input.costMicroCents),
     tokens_input: input.tokensInput ?? null,
     tokens_output: input.tokensOutput ?? null,
     metadata,
@@ -153,7 +159,7 @@ export async function logCostFromUsage(
     featureSlug: cost.featureSlug,
     backend,
     model: model ?? undefined,
-    costCents: getCostCents(backend, model, usage),
+    costMicroCents: getCostMicroCents(backend, model, usage),
     tokensInput: usage.tokensInput,
     tokensOutput: usage.tokensOutput,
     idempotencyKey: cost.idempotencyKey,

@@ -16,11 +16,12 @@ const EMBED_USD_PER_MTOK: Record<string, number> = {
   "text-embedding-ada-002": 0.1,
 };
 const EMBED_DEFAULT_USD_PER_MTOK = EMBED_USD_PER_MTOK["text-embedding-3-small"];
-const USD_TO_CENTS = 100;
+// 1 USD = 1,000,000 micro-cents (the ledger's storage unit, PA-COST-9).
+const USD_TO_MICRO_CENTS = 1_000_000;
 
-function embedCostCents(model: string, tokens: number): number {
+function embedCostMicroCents(model: string, tokens: number): number {
   const rate = EMBED_USD_PER_MTOK[model] ?? EMBED_DEFAULT_USD_PER_MTOK;
-  return (tokens / 1_000_000) * rate * USD_TO_CENTS;
+  return (tokens / 1_000_000) * rate * USD_TO_MICRO_CENTS;
 }
 
 /** One cost-ledger row for an embedding batch (build) or a single query embed. Never throws. */
@@ -35,7 +36,7 @@ export async function logRagEmbedCost(input: {
     featureSlug: "rag",
     backend: "openai",
     model: input.embeddingModel,
-    costCents: embedCostCents(input.embeddingModel, input.tokens),
+    costMicroCents: embedCostMicroCents(input.embeddingModel, input.tokens),
     tokensInput: input.tokens,
     idempotencyKey: input.idempotencyKey,
   });
