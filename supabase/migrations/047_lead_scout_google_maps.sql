@@ -1,5 +1,5 @@
--- 046_lead_scout_google_maps.sql — Lead Scout Phase 2 (the Google Maps sweep).
--- (Renumbered 045 -> 046: a sibling project-workspaces lane took 045 during this build.)
+-- 047_lead_scout_google_maps.sql — Lead Scout Phase 2 (the Google Maps sweep).
+-- (Renumbered 045 -> 047: concurrent sibling lanes took 045 (project-workspaces) and 046 (github-build).)
 --
 -- Apply to: PA Supabase project (POCKET_AGENT_SUPABASE_URL — project haizcnyywvewjygzeaaf).
 -- Apply AFTER 044_lead_scout.sql (which creates pa_lead_scout_sources). Both are still pending if
