@@ -3,6 +3,10 @@
 // memory, reference docs, and linked conversations. Every read/write goes through PostgREST with
 // the service-role key scoped by owner_id — the same pattern as pa-conversations.ts.
 
+import { queryRag } from "@/lib/rag/query";
+import { ensureRagIndex } from "@/lib/rag/db";
+import { DEFAULT_EMBEDDING_MODEL } from "@/lib/rag/types";
+
 export type Project = {
   id: string;
   owner_id: string;
@@ -179,6 +183,10 @@ export async function addProjectMemory(
   const rows = (await res.json()) as ProjectMemoryEntry[];
   const row = rows[0];
   if (!row) return { ok: false, status: 500, error: "No row returned" };
+  // Register the project-memory zone so the daily RAG cron can index it (it builds only once the zone
+  // crosses the vector threshold). Idempotent upsert; never throws — a registration miss just means
+  // the zone keeps its existing read-all behavior until the next write registers it.
+  await ensureRagIndex(ownerId, `project/${projectId}/memory`, DEFAULT_EMBEDDING_MODEL, "project");
   return { ok: true, data: row };
 }
 
@@ -245,6 +253,8 @@ export async function addProjectReference(
   const rows = (await res.json()) as ProjectReference[];
   const row = rows[0];
   if (!row) return { ok: false, status: 500, error: "No row returned" };
+  // Register the project-references zone for the daily RAG cron (same posture as project memory).
+  await ensureRagIndex(ownerId, `project/${projectId}/references`, DEFAULT_EMBEDDING_MODEL, "project");
   return { ok: true, data: row };
 }
 
@@ -278,9 +288,54 @@ export async function deleteProjectReference(
 const MAX_REFERENCE_CHARS = 4000;
 const MAX_MEMORY_ENTRIES = 30;
 
+/**
+ * Re-orders an already-loaded list to the turbovec relevance ranking for `query` when the zone's index
+ * is built and over the vector threshold; returns the list unchanged otherwise (queryRag yields a
+ * `fallback` signal below threshold or before the index exists). So a small project behaves exactly as
+ * before, and a large one surfaces the most relevant items first. The items are passed by reference —
+ * queryRag only embeds the query and searches the prebuilt index, so this adds no extra read and no
+ * embedding cost beyond the one query. Items the index didn't rank keep their original order at the end.
+ */
+async function rerankByRag<T>(
+  ownerId: string,
+  zonePath: string,
+  query: string,
+  items: T[],
+  idOf: (it: T) => string,
+): Promise<T[]> {
+  if (items.length === 0) return items;
+  const rag = await queryRag({
+    ownerId,
+    zonePath,
+    query,
+    topN: items.length,
+    // The live count drives the threshold even before the catalog row reflects this build.
+    docCount: items.length,
+  });
+  if (rag.source !== "turbovec" || rag.hits.length === 0) return items;
+
+  const order = new Map<string, number>();
+  rag.hits.forEach((h, i) => {
+    const id = h.docPath.split("/").pop();
+    if (id) order.set(id, i);
+  });
+  return [...items].sort((a, b) => {
+    const ra = order.get(idOf(a));
+    const rb = order.get(idOf(b));
+    if (ra === undefined && rb === undefined) return 0;
+    if (ra === undefined) return 1; // unranked items sink below ranked ones, original order otherwise
+    if (rb === undefined) return -1;
+    return ra - rb;
+  });
+}
+
 export async function buildProjectContextBlock(
   projectId: string,
   ownerId: string,
+  // The chat turn driving this context build. When present, project references + memory over the
+  // vector threshold are ordered by relevance (turbovec) instead of dumped newest-first; absent or
+  // below threshold → unchanged.
+  query?: string,
 ): Promise<{ block: string; project: Project } | null> {
   const projectResult = await getProject(projectId, ownerId);
   if (!projectResult.ok || !projectResult.data) return null;
@@ -290,8 +345,16 @@ export async function buildProjectContextBlock(
     listProjectReferences(projectId, ownerId),
     listProjectMemory(projectId, ownerId),
   ]);
-  const references = refsResult.ok ? refsResult.data : [];
-  const memory = memResult.ok ? memResult.data.slice(0, MAX_MEMORY_ENTRIES) : [];
+  let references = refsResult.ok ? refsResult.data : [];
+  let memory = memResult.ok ? memResult.data.slice(0, MAX_MEMORY_ENTRIES) : [];
+
+  const trimmedQuery = query?.trim();
+  if (trimmedQuery) {
+    [references, memory] = await Promise.all([
+      rerankByRag(ownerId, `project/${projectId}/references`, trimmedQuery, references, (r) => r.id),
+      rerankByRag(ownerId, `project/${projectId}/memory`, trimmedQuery, memory, (m) => m.id),
+    ]);
+  }
 
   const sections: string[] = [
     `You are working inside the project "${project.title}". Everything below is project-scoped — it applies to this conversation and stays with this project; it is NOT part of the owner's global brain.`,

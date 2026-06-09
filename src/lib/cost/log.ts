@@ -41,6 +41,8 @@ export type CostContext = {
   subAgentRunId?: string;
   /** The conversation this cost is attributable to, for chat-surface forensics. */
   conversationId?: string;
+  /** Extra forensic tags merged into the event metadata (e.g. `{ rag_fallback: "exact_cosine" }`). */
+  metadata?: Record<string, string>;
 };
 
 export type LogCostEventInput = {
@@ -55,6 +57,8 @@ export type LogCostEventInput = {
   idempotencyKey: string;
   subAgentRunId?: string;
   conversationId?: string;
+  /** Extra forensic tags merged into the event metadata (e.g. `{ rag_fallback: "exact_cosine" }`). */
+  metadata?: Record<string, string>;
 };
 
 const TABLE = "pa_cost_events";
@@ -93,6 +97,8 @@ export async function logCostEvent(input: LogCostEventInput): Promise<void> {
   const metadata: Record<string, string> = { idempotency_key: input.idempotencyKey };
   if (input.subAgentRunId) metadata.sub_agent_run_id = input.subAgentRunId;
   if (input.conversationId) metadata.conversation_id = input.conversationId;
+  // Caller-supplied forensic tags last — they can't shadow the reserved keys above (distinct names).
+  if (input.metadata) Object.assign(metadata, input.metadata);
 
   const row = {
     owner_id: input.ownerId,
@@ -165,5 +171,6 @@ export async function logCostFromUsage(
     idempotencyKey: cost.idempotencyKey,
     subAgentRunId: cost.subAgentRunId,
     conversationId: cost.conversationId,
+    metadata: cost.metadata,
   });
 }

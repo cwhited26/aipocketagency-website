@@ -359,7 +359,7 @@ def sandbox_api():
 # for a zone can only ever open that zone's index directory (rag.zone_dir), and a stored-zone vs
 # requested-zone mismatch raises OutOfZoneError → HTTP 403.
 
-rag_image = image.pip_install("turbovec>=0.1", "numpy>=1.26").add_local_python_source("rag")
+rag_image = image.pip_install("turbovec>=0.1", "numpy>=1.26").add_local_python_source("rag", "rag_fallback")
 rag_volume = modal.Volume.from_name("pa-rag-indexes", create_if_missing=True)
 RAG_VOLUME_ROOT = "/indexes"
 
@@ -453,6 +453,8 @@ def rag_api():
             "results": [{"docPath": h.doc_path, "score": h.score, "snippet": h.snippet} for h in result.hits],
             "embeddingTokens": result.embedding_tokens,
             "cpuSeconds": result.cpu_seconds,
+            # True when turbovec was unusable and the exact-cosine fallback served this query (PA-RAG-8).
+            "fallback": result.fallback,
         }
 
     return web

@@ -601,7 +601,9 @@ export async function POST(
   const projectId = conversation.project_id ?? null;
   let projectBlock = "";
   if (projectId) {
-    const projectContext = await buildProjectContextBlock(projectId, user.id);
+    // Pass the user's turn so a large project's references + memory are ordered by relevance (turbovec)
+    // rather than newest-first; small projects fall back to the existing order.
+    const projectContext = await buildProjectContextBlock(projectId, user.id, effectiveContent);
     if (projectContext) projectBlock = projectContext.block;
   }
 

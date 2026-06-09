@@ -30,6 +30,8 @@ import httpx
 import numpy as np
 from turbovec import IdMapIndex, TurboQuantIndex
 
+import rag_fallback
+
 # turbovec bit width — 4 bits gives ~8x compression at near-FAISS recall (SPEC §3.5, TurboQuant).
 BIT_WIDTH = 4
 # Per-doc char cap so one giant file can't blow the embedding token budget; snippet shown in results.
@@ -171,6 +173,9 @@ def build_index(
     os.makedirs(out_dir, exist_ok=True)
     id_index.write(os.path.join(out_dir, "index.tvim"))
     simple_index.write(os.path.join(out_dir, "index.tq"))
+    # Recovery store: the same float32 vectors, row-major, for the exact-cosine fallback at query time
+    # if turbovec can't load/search the index (PA-RAG-8). Row order matches meta.json's docs (id = i+1).
+    rag_fallback.write_fallback_vectors(out_dir, matrix.tolist())
 
     token_count = sum(_approx_tokens(d["text"]) for d in clean)
     meta = {
@@ -209,6 +214,9 @@ class QueryResult:
     hits: list[QueryHit]
     embedding_tokens: int
     cpu_seconds: float
+    # True when the search ran off the exact-cosine fallback because turbovec was unusable. The Node
+    # tier stamps this onto the cost-event metadata so Mission Control surfaces the degraded path.
+    fallback: bool = False
 
 
 def _load_meta(out_dir: str) -> dict[str, Any]:
@@ -250,16 +258,20 @@ def query_index(
     if str(meta.get("owner_id_hash", "")) != expected_owner:
         raise OutOfZoneError("index owner mismatch")
 
-    by_id: dict[int, dict[str, Any]] = {int(d["id"]): d for d in meta.get("docs", [])}
-    index = IdMapIndex.load(index_path)
+    docs_meta = meta.get("docs", [])
+    by_id: dict[int, dict[str, Any]] = {int(d["id"]): d for d in docs_meta}
 
     qvec, embedding_tokens = embed_texts([query], embedding_model)
     if not qvec:
         raise EmbeddingError("query produced no embedding")
-    scores, result_ids = index.search(_to_matrix(qvec)[0], k=max(1, top_n))
+
+    # Primary path: turbovec. If loading or searching the index throws — a version mismatch, an
+    # index-format change, a package upgrade — fall back to an exact cosine over the same embedded docs
+    # (PA-RAG-8). Same ranking, just O(n); a broken turbovec deploy degrades to slow, never to down.
+    ranked, used_fallback = _search(index_path, out_dir, qvec[0], int(meta.get("dim", 0)), len(docs_meta), top_n)
 
     hits: list[QueryHit] = []
-    for score, doc_id in zip(np.asarray(scores).tolist(), np.asarray(result_ids).tolist()):
+    for doc_id, score in ranked:
         doc = by_id.get(int(doc_id))
         if doc is None:
             continue
@@ -273,4 +285,34 @@ def query_index(
         hits=hits,
         embedding_tokens=embedding_tokens,
         cpu_seconds=round(time.monotonic() - start, 4),
+        fallback=used_fallback,
     )
+
+
+def _search(
+    index_path: str,
+    out_dir: str,
+    query_vec: list[float],
+    dim: int,
+    doc_count: int,
+    top_n: int,
+) -> tuple[list[tuple[int, float]], bool]:
+    """Returns (ranked [(doc_id, score)], used_fallback). Tries turbovec first; on any turbovec error
+    scores the recovery vector store with exact cosine. doc_id is the 1-based id the build assigned
+    (row index + 1), matching meta.json's docs and the recovery store's row order."""
+    try:
+        index = IdMapIndex.load(index_path)
+        scores, result_ids = index.search(_to_matrix([query_vec])[0], k=max(1, top_n))
+        return (
+            [(int(i), float(s)) for s, i in zip(np.asarray(scores).tolist(), np.asarray(result_ids).tolist())],
+            False,
+        )
+    except Exception:  # noqa: BLE001 — any turbovec failure degrades to the exact fallback, by design.
+        vectors = rag_fallback.load_fallback_vectors(out_dir, dim)
+        if not vectors:
+            # No recovery store (an index built before PA-RAG-8) and turbovec is broken — re-raise so
+            # the endpoint reports a real error rather than silently returning nothing.
+            raise
+        ranked = rag_fallback.exact_cosine_search(vectors[:doc_count], query_vec, top_n)
+        # Recovery row index → the build's 1-based doc id.
+        return ([(row + 1, score) for row, score in ranked], True)

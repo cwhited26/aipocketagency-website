@@ -42,16 +42,22 @@ export async function logRagEmbedCost(input: {
   });
 }
 
-/** One cost-ledger row for the Modal compute a build / query consumed. Never throws. */
+/**
+ * One cost-ledger row for the Modal compute a build / query consumed. Never throws. `metadata` tags
+ * the event for Mission Control — e.g. `{ rag_fallback: "exact_cosine" }` when the query ran off the
+ * runtime's exact-cosine fallback instead of turbovec.
+ */
 export async function logRagModalCost(input: {
   ownerId: string;
   cpuSeconds: number;
   idempotencyKey: string;
+  metadata?: Record<string, string>;
 }): Promise<void> {
   const ctx: CostContext = {
     ownerId: input.ownerId,
     featureSlug: "rag",
     idempotencyKey: input.idempotencyKey,
+    metadata: input.metadata,
   };
   await logCostFromUsage(ctx, "modal", null, { cpuSeconds: input.cpuSeconds });
 }

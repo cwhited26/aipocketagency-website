@@ -107,7 +107,9 @@ export async function ragBuildRemote(input: {
 }
 
 export type RagQueryResult =
-  | { ok: true; hits: RagHit[]; embeddingTokens: number; cpuSeconds: number }
+  // `fallback` is true when the runtime answered off its exact-cosine path because turbovec was
+  // unavailable (version mismatch / index-format change) — same hits, slower; surfaced for the ledger.
+  | { ok: true; hits: RagHit[]; embeddingTokens: number; cpuSeconds: number; fallback: boolean }
   | { ok: false; degraded: "not_configured" }
   | { ok: false; degraded: "not_built" }
   | { ok: false; degraded: "out_of_zone"; error: string }
@@ -162,6 +164,7 @@ export async function ragQueryRemote(input: {
       results?: { docPath?: string; score?: number; snippet?: string }[];
       embeddingTokens?: number;
       cpuSeconds?: number;
+      fallback?: boolean;
       error?: string;
     };
     if (data.code === "not_built") return { ok: false, degraded: "not_built" };
@@ -180,6 +183,7 @@ export async function ragQueryRemote(input: {
       hits,
       embeddingTokens: data.embeddingTokens ?? 0,
       cpuSeconds: data.cpuSeconds ?? 0,
+      fallback: data.fallback === true,
     };
   } catch (e) {
     return { ok: false, degraded: "error", error: e instanceof Error ? e.message : "Query dispatch failed" };

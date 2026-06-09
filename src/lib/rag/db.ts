@@ -7,19 +7,34 @@
 // only when it is NOT already building, so two concurrent dispatches can't both fire a Modal build.
 
 import { normalizeZonePath } from "./types";
+import { ragLog } from "./log";
 
 export type RagIndexStatus = "idle" | "building" | "ready" | "error";
+
+// 'file' = a brain-repo zone (memory, persona knowledge); 'project' = a database-backed zone
+// (pa_project_memory / pa_project_references rows). Selects the cron's change-detection (migration 055).
+export type RagZoneType = "file" | "project";
+
+// Per-zone-type change-detection state (migration 055, change_cursor jsonb): the latest brain commit
+// SHA that touched a file zone, or the newest row timestamp of a project zone. The cron compares the
+// current cursor to the stored one and skips a rebuild when they match.
+export type RagChangeCursor = {
+  commitSha?: string;
+  rowTimestamp?: string;
+};
 
 export type RagIndexRow = {
   id: string;
   owner_id: string;
   zone_path: string;
+  zone_type: RagZoneType;
   embedding_model: string;
   doc_count: number;
   token_count: number;
   status: RagIndexStatus;
   last_built_at: string | null;
   last_error: string | null;
+  change_cursor: RagChangeCursor;
   created_at: string;
   updated_at: string;
 };
@@ -64,21 +79,32 @@ export async function getRagIndex(ownerId: string, zonePath: string): Promise<Ra
   return rows[0] ?? null;
 }
 
-/** Lists every 'ready' catalog row across all owners (cron entry point). */
-export async function listReadyRagIndexes(): Promise<RagIndexRow[]> {
+/**
+ * Lists every catalog row the daily cron should consider: 'ready' zones (refresh on change) and
+ * 'idle' zones (never built — a registered zone awaiting its first index). 'building' and 'error'
+ * rows are left alone. NULLs-first ordering puts never-built zones at the front of the cycle.
+ */
+export async function listBuildableRagIndexes(): Promise<RagIndexRow[]> {
   const env = paEnv();
   if (!env) return [];
-  const url = `${env.url}/rest/v1/${TABLE}?status=eq.ready&order=last_built_at.asc&limit=2000`;
+  const url =
+    `${env.url}/rest/v1/${TABLE}` +
+    `?status=in.(ready,idle)&order=last_built_at.asc.nullsfirst&limit=2000`;
   const res = await fetch(url, { headers: headers(env.key), cache: "no-store" });
   if (!res.ok) return [];
   return (await res.json()) as RagIndexRow[];
 }
 
-/** Ensures a catalog row exists for a (owner, zone). Idempotent upsert on the unique index. */
+/**
+ * Ensures a catalog row exists for a (owner, zone). Idempotent upsert on the unique index. `zoneType`
+ * stamps whether the zone is brain-repo-backed ('file') or database-backed ('project') so the cron
+ * picks the right change-detection — merge-duplicates keeps an existing row's other fields intact.
+ */
 export async function ensureRagIndex(
   ownerId: string,
   zonePath: string,
   embeddingModel: string,
+  zoneType: RagZoneType = "file",
 ): Promise<void> {
   const env = paEnv();
   if (!env) return;
@@ -89,13 +115,14 @@ export async function ensureRagIndex(
     body: JSON.stringify({
       owner_id: ownerId,
       zone_path: zone,
+      zone_type: zoneType,
       embedding_model: embeddingModel,
       updated_at: new Date().toISOString(),
     }),
     cache: "no-store",
   });
   if (!res.ok && res.status !== 409) {
-    console.warn("[rag/db] ensureRagIndex failed", { status: res.status });
+    ragLog.warn("ensureRagIndex failed", { status: res.status });
   }
 }
 
@@ -111,10 +138,11 @@ export async function claimBuild(
   ownerId: string,
   zonePath: string,
   embeddingModel: string,
+  zoneType: RagZoneType = "file",
 ): Promise<{ claimed: boolean }> {
   const env = paEnv();
   if (!env) return { claimed: false };
-  await ensureRagIndex(ownerId, zonePath, embeddingModel);
+  await ensureRagIndex(ownerId, zonePath, embeddingModel, zoneType);
 
   const zone = normalizeZonePath(zonePath);
   const url =
@@ -134,18 +162,27 @@ export async function claimBuild(
     cache: "no-store",
   });
   if (!res.ok) {
-    console.warn("[rag/db] claimBuild patch failed", { status: res.status });
+    ragLog.warn("claimBuild patch failed", { status: res.status });
     return { claimed: false };
   }
   const rows = (await res.json()) as RagIndexRow[];
   return { claimed: rows.length > 0 };
 }
 
-/** Stamp a finished build: status → 'ready', corpus size, last_built_at. */
+/**
+ * Stamp a finished build: status → 'ready', corpus size, last_built_at. `changeCursor` records the
+ * zone's change-detection state at build time (latest commit SHA for a file zone, newest row
+ * timestamp for a project zone) so the next cron pass can skip a zone nothing has touched since.
+ */
 export async function markReady(
   ownerId: string,
   zonePath: string,
-  fields: { docCount: number; tokenCount: number; embeddingModel: string },
+  fields: {
+    docCount: number;
+    tokenCount: number;
+    embeddingModel: string;
+    changeCursor?: RagChangeCursor;
+  },
 ): Promise<void> {
   const env = paEnv();
   if (!env) return;
@@ -154,21 +191,25 @@ export async function markReady(
   const url =
     `${env.url}/rest/v1/${TABLE}` +
     `?owner_id=eq.${encodeURIComponent(ownerId)}&zone_path=eq.${encodeURIComponent(zone)}`;
+  const body: Record<string, unknown> = {
+    status: "ready",
+    doc_count: fields.docCount,
+    token_count: fields.tokenCount,
+    embedding_model: fields.embeddingModel,
+    last_built_at: now,
+    last_error: null,
+    updated_at: now,
+  };
+  // Only overwrite the cursor when the caller computed one — a build with no cursor leaves the prior
+  // value intact rather than clobbering it to empty (which would force a needless rebuild next cycle).
+  if (fields.changeCursor) body.change_cursor = fields.changeCursor;
   const res = await fetch(url, {
     method: "PATCH",
     headers: headers(env.key, { Prefer: "return=minimal" }),
-    body: JSON.stringify({
-      status: "ready",
-      doc_count: fields.docCount,
-      token_count: fields.tokenCount,
-      embedding_model: fields.embeddingModel,
-      last_built_at: now,
-      last_error: null,
-      updated_at: now,
-    }),
+    body: JSON.stringify(body),
     cache: "no-store",
   });
-  if (!res.ok) console.warn("[rag/db] markReady failed", { status: res.status });
+  if (!res.ok) ragLog.warn("markReady failed", { status: res.status });
 }
 
 /** Record a failed build: status → 'error', last_error. Releases the claim. */
@@ -189,5 +230,5 @@ export async function markError(ownerId: string, zonePath: string, error: string
     }),
     cache: "no-store",
   });
-  if (!res.ok) console.warn("[rag/db] markError failed", { status: res.status });
+  if (!res.ok) ragLog.warn("markError failed", { status: res.status });
 }

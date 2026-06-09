@@ -257,3 +257,53 @@ describe("integration: 150-doc zone vector query", () => {
     expect(calls.filter((c) => c.url.includes("/rest/v1/pa_cost_events")).length).toBe(2);
   });
 });
+
+// ── 5. Modal exact-cosine fallback surfaces on the cost ledger ──────────────────────────────────
+
+describe("queryRag stamps the exact-cosine fallback onto the Modal cost event", () => {
+  beforeEach(setRuntimeEnv);
+
+  it("writes rag_fallback metadata when the runtime served the query off the fallback path", async () => {
+    const costBodies: Array<Record<string, unknown>> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+        const url = typeof input === "string" ? input : input.toString();
+        if (url.includes("/rest/v1/pa_rag_indexes")) {
+          return new Response(JSON.stringify([catalogRow()]), { status: 200 });
+        }
+        if (url.includes("/rag/query")) {
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              results: [{ docPath: "memory/a.md", score: 0.9, snippet: "" }],
+              embeddingTokens: 12,
+              cpuSeconds: 0.5,
+              fallback: true, // turbovec was unusable; the runtime used exact cosine
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/rest/v1/pa_cost_events")) {
+          costBodies.push(JSON.parse(String(init?.body ?? "{}")));
+          return new Response(null, { status: 201 });
+        }
+        return new Response(JSON.stringify({}), { status: 200 });
+      }),
+    );
+
+    const out = await queryRag({ ownerId: OWNER, zonePath: "memory", query: "anything" });
+    expect(out.source).toBe("turbovec");
+
+    const modalRow = costBodies.find(
+      (b) => (b.metadata as Record<string, string> | undefined)?.rag_fallback === "exact_cosine",
+    );
+    expect(modalRow).toBeDefined();
+    expect((modalRow!.metadata as Record<string, string>).rag_fallback).toBe("exact_cosine");
+    // The embed row carries no fallback tag — only the Modal compute row does.
+    const embedRows = costBodies.filter(
+      (b) => (b.metadata as Record<string, string> | undefined)?.rag_fallback === undefined,
+    );
+    expect(embedRows.length).toBe(1);
+  });
+});
