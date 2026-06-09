@@ -21,6 +21,11 @@ import {
   GITHUB_BUILD_CONNECTOR,
   type GithubBuildExecuteResult,
 } from "./github-build/actions";
+import {
+  executeVercelConnectorAction,
+  VERCEL_CONNECTOR,
+  type VercelExecuteResult,
+} from "./vercel/execute";
 
 // All in-process executors share the same terminal result shape ({ok,summary,data} |
 // {ok,status,error}); the union keeps that explicit as more connectors register.
@@ -30,7 +35,8 @@ export type ConnectorExecuteResult =
   | StripeExecuteResult
   | ZoomExecuteResult
   | ModalSandboxExecuteResult
-  | GithubBuildExecuteResult;
+  | GithubBuildExecuteResult
+  | VercelExecuteResult;
 
 export type ExecuteConnectorActionInput = {
   connector: string;
@@ -107,6 +113,17 @@ export async function executeConnectorAction(
   }
   if (input.connector === GITHUB_BUILD_CONNECTOR) {
     return executeGithubBuildAction({
+      userId: input.userId,
+      action: input.action,
+      payload: input.payload,
+      subAgentRunId: input.subAgentRunId ?? null,
+      ownerEmail: input.ownerEmail ?? null,
+    });
+  }
+  if (input.connector === VERCEL_CONNECTOR) {
+    // Vercel (build connector #2) executes in-process via direct REST. createProject writes its new
+    // project back to the originating PA project's Workspace row inside the executor.
+    return executeVercelConnectorAction({
       userId: input.userId,
       action: input.action,
       payload: input.payload,

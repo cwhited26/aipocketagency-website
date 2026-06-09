@@ -83,6 +83,12 @@ export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> 
   // Every push surfaces its diff for one human tap, forever. create_repo / create_branch /
   // open_pull_request clear at the default window (10).
   "github_build:push_files": Number.POSITIVE_INFINITY,
+  // Vercel (Build Tools Roadmap §7.2, §11): create_project / set_env_var / trigger_deploy clear at
+  // the default window (10) — reversible (delete the project, change the var, redeploy).
+  // attach_domain is Infinity — an UNREACHABLE window, like github_build:push_files — because
+  // pointing a custom domain moves real DNS-routed traffic: it is single-approval FOREVER and can
+  // never become auto-approve eligible. Every attach is an explicit owner tap.
+  "vercel:attach_domain": Number.POSITIVE_INFINITY,
 };
 
 /** The trust window for a specific (connector, action), honoring the money/build overrides. */
