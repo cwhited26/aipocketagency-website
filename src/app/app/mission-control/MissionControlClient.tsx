@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
+import CostTab from "./CostTab";
 import { affordancesFor, type InboxItemKind } from "@/lib/inbox-affordances";
 import type {
   LedgerStatus,
@@ -1515,7 +1516,12 @@ const EMPTY_COUNTS: MissionControlSnapshot["counts"] = {
   idle: 0,
 };
 
+type MissionTab = "operations" | "cost";
+
 export default function MissionControlClient({ brainRepo: _brainRepo }: { brainRepo: string | null }) {
+  // Two tabs on one cockpit (PA-COST-1): Operations (the live fleet pane below) + Cost (the read-only
+  // spend dashboard). Both auto-refresh on focus; Operations only polls while its tab is active.
+  const [tab, setTab] = useState<MissionTab>("operations");
   const [cards, setCards] = useState<InboxCard[]>([]);
   const [snapshot, setSnapshot] = useState<MissionControlSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1565,6 +1571,10 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
   // API pauses the timer on blur and fires an immediate refresh on return, so a backgrounded tab
   // costs nothing and a foregrounded one is never stale.
   useEffect(() => {
+    // Only the Operations tab polls the fleet; the Cost tab owns its own refresh loop, so we don't
+    // burn a request every 8s on a snapshot the user isn't looking at.
+    if (tab !== "operations") return;
+
     let timer: ReturnType<typeof setInterval> | null = null;
 
     const stop = () => {
@@ -1592,7 +1602,7 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
       document.removeEventListener("visibilitychange", onVisibility);
       stop();
     };
-  }, [load]);
+  }, [load, tab]);
 
   function onResolved(id: string, status: "approved" | "rejected") {
     setCards((prev) =>
@@ -1783,7 +1793,7 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
           </Link>
         </div>
 
-        <div className="mb-7">
+        <div className="mb-5">
           <div className="text-[10px] text-[#22d3ee]/60 font-mono tracking-[0.2em] uppercase mb-2">
             Agent desk · Live
           </div>
@@ -1795,6 +1805,31 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
           </p>
         </div>
 
+        {/* Operations | Cost (PA-COST-1) — one cockpit, two tabs */}
+        <div role="tablist" aria-label="Mission Control views" className="flex items-center gap-1.5 mb-7">
+          {(["operations", "cost"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              role="tab"
+              aria-selected={tab === t}
+              onClick={() => setTab(t)}
+              className={[
+                "min-h-[44px] px-4 rounded-xl text-sm font-medium transition-colors capitalize",
+                tab === t
+                  ? "bg-slate-800/80 text-slate-100 border border-slate-700"
+                  : "border border-transparent text-slate-500 hover:text-slate-300",
+              ].join(" ")}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {tab === "cost" ? (
+          <CostTab />
+        ) : (
+          <>
         {loading ? (
           <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 px-6 py-10 flex flex-col items-center gap-3">
             <Mascot state="working" size={80} />
@@ -2064,6 +2099,8 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
             </div>
           </div>
         </div>
+          </>
+        )}
       </div>
 
       {/* Tap-an-empty-tile toast (PA-MC-10) — there's no section to scroll to, so we say so. */}

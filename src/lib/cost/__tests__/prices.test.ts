@@ -4,7 +4,7 @@
 // a missing rate surfaces in logs instead of silently mispricing the ledger.
 
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getCostMicroCents } from "../prices";
+import { getCostMicroCents, priceReference } from "../prices";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -92,5 +92,28 @@ describe("getCostMicroCents — backend without a price model", () => {
     expect(getCostMicroCents("resend", null, {})).toBe(0);
     expect(warn).toHaveBeenCalledTimes(2);
     expect(warn.mock.calls[0]?.[0]).toContain("no price model for backend");
+  });
+});
+
+describe("priceReference — the Cost tab 'How we price this' panel (SPEC adversarial §9)", () => {
+  it("derives its rates from the rate constants (one source of truth)", () => {
+    const ref = priceReference();
+    const anthropic = ref.find((e) => e.backend === "anthropic");
+    expect(anthropic?.lines).toContainEqual({ name: "claude-sonnet-4-6", rate: "$3 in · $15 out" });
+    expect(anthropic?.lines).toContainEqual({ name: "claude-haiku-4-5", rate: "$0.8 in · $4 out" });
+
+    const whisper = ref.find((e) => e.backend === "openai");
+    expect(whisper?.lines[0].rate).toBe("$6");
+
+    // Bright Data shows the per-1,000-requests rate ($0.003/request × 1000 = $3) and is flagged estimate.
+    const bright = ref.find((e) => e.backend === "bright_data");
+    expect(bright?.lines[0].rate).toBe("$3");
+    expect(bright?.estimated).toBe(true);
+  });
+
+  it("omits Twilio + Resend (no real per-call rate to show, never an invented one)", () => {
+    const backends = priceReference().map((e) => e.backend);
+    expect(backends).not.toContain("twilio");
+    expect(backends).not.toContain("resend");
   });
 });

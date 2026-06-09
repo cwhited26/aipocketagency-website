@@ -106,3 +106,68 @@ export function getCostMicroCents(backend: CostBackend, model: string | null, us
     }
   }
 }
+
+// ── Pricing reference (Cost tab "How we price this", SPEC adversarial §9) ────────────────────
+//
+// The Cost tab renders the exact rates the ledger prices against so an owner can spot-check a spend
+// figure against the provider's own invoice (the cost-mismatch defense). It's built FROM the constants
+// above — there's no second copy of the numbers to drift. A rate change above is the only edit; the
+// panel re-derives. Each entry is one backend, the unit it bills in, and its per-unit line items.
+
+export type PriceLine = { name: string; rate: string };
+
+export type PriceReferenceEntry = {
+  backend: CostBackend;
+  label: string;
+  unit: string;
+  lines: PriceLine[];
+  /** Set when the rate is a hand-kept estimate the table reconciles against a real invoice, not a published per-call number. */
+  estimated: boolean;
+};
+
+const USD = (n: number): string => `$${n.toLocaleString("en-US", { maximumFractionDigits: 4 })}`;
+
+/**
+ * The price table as the Cost tab shows it — derived from the rate constants above, never a second
+ * copy. Twilio + Resend are intentionally absent: PA doesn't price SMS/email through this table (they
+ * pass through at the provider's own per-message rate), and getCostMicroCents degrades them to 0 rather
+ * than invent a number, so showing them here would imply a rate that isn't real.
+ */
+export function priceReference(): PriceReferenceEntry[] {
+  return [
+    {
+      backend: "anthropic",
+      label: "Anthropic (Claude)",
+      unit: "per 1M tokens",
+      estimated: false,
+      lines: Object.entries(ANTHROPIC_RATES_USD_PER_MTOK).map(([name, rate]) => ({
+        name,
+        rate: `${USD(rate.input)} in · ${USD(rate.output)} out`,
+      })),
+    },
+    {
+      backend: "openai",
+      label: "OpenAI (Whisper)",
+      unit: "per audio-hour",
+      estimated: false,
+      lines: [{ name: "whisper-1", rate: USD(WHISPER_USD_PER_HOUR) }],
+    },
+    {
+      backend: "bright_data",
+      label: "Bright Data",
+      unit: "per 1,000 requests",
+      estimated: true,
+      lines: [{ name: "Web Unlocker / SERP", rate: USD(BRIGHT_DATA_USD_PER_REQUEST * 1000) }],
+    },
+    {
+      backend: "modal",
+      label: "Modal (sandbox)",
+      unit: "per unit",
+      estimated: true,
+      lines: [
+        { name: "Active CPU", rate: `${USD(MODAL_USD_PER_CPU_SECOND)} / sec` },
+        { name: "Provisioned memory", rate: `${USD(MODAL_USD_PER_GB_HOUR)} / GB-hr` },
+      ],
+    },
+  ];
+}
