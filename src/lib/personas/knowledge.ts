@@ -24,6 +24,8 @@ import {
   personaZoneKey,
   type PersonaRow,
 } from "./types";
+import { queryRag } from "@/lib/rag/query";
+import { shouldUseVector } from "@/lib/rag/types";
 
 // Bounds so a chat request never reads an unbounded amount of context.
 export const KNOWLEDGE_MAX_FILES = 50;
@@ -96,12 +98,19 @@ export type LoadedKnowledge = {
  * persona's zone via ContainmentGuard, then reads each allowed file — asserting zone
  * membership again immediately before each read (belt-and-suspenders). Throws
  * ContainmentBlockedError if a read path ever escapes the zone.
+ *
+ * RAG (Personas SPEC §3.5): when the caller passes the visitor's `query` + the persona owner and the
+ * zone is above the ~100-doc / ~50k-token threshold, the turbovec index narrows the read set to the
+ * top-N relevant files instead of reading the whole zone. Below threshold (or before the index is
+ * built) it reads all allowed files as before — queryRag returns a `fallback` signal and nothing
+ * changes. The narrowed paths are still drawn from `allowed`, so ContainmentGuard is never widened.
  */
 export async function loadKnowledgeForChat(
   repo: string,
   token: string | null,
   persona: PersonaRow,
   zoneConfig: ZoneConfig,
+  options?: { ownerId?: string; query?: string; topN?: number },
 ): Promise<LoadedKnowledge> {
   const zoneKey = persona.knowledge_zone_key || personaZoneKey(persona.slug);
   const dirPrefix = `${personaKnowledgeDir(persona.slug)}/`;
@@ -112,7 +121,7 @@ export async function loadKnowledgeForChat(
     .map((e) => e.path);
 
   const { allowed, blocked } = filterPathsToZone(candidatePaths, zoneConfig, zoneKey);
-  const capped = allowed.slice(0, KNOWLEDGE_MAX_FILES);
+  const capped = await narrowKnowledgePaths(allowed, persona, options);
 
   const blocks: MemoryBlock[] = [];
   let totalChars = 0;
@@ -133,6 +142,45 @@ export async function loadKnowledgeForChat(
     fileCount: blocks.length,
     blocked,
   };
+}
+
+// Default number of zone files the vector index narrows down to for a single chat turn.
+const KNOWLEDGE_VECTOR_TOP_N = 12;
+
+/**
+ * Narrows the allowed zone files to read for this turn. Above the threshold, queryRag picks the
+ * top-N relevant files (turbovec); the result is intersected with `allowed` so the zone guard is
+ * never widened. Below threshold, before an index exists, or without a query/owner, returns the
+ * first KNOWLEDGE_MAX_FILES allowed paths — the original read-all behavior.
+ */
+async function narrowKnowledgePaths(
+  allowed: string[],
+  persona: PersonaRow,
+  options?: { ownerId?: string; query?: string; topN?: number },
+): Promise<string[]> {
+  const query = options?.query?.trim();
+  const ownerId = options?.ownerId;
+  // tokenCount is unknown here without reading every file; the doc count alone crosses the threshold
+  // for the large zones turbovec targets, which is the case the narrowing exists for.
+  if (!query || !ownerId || !shouldUseVector(allowed.length, 0)) {
+    return allowed.slice(0, KNOWLEDGE_MAX_FILES);
+  }
+
+  const zonePath = personaKnowledgeDir(persona.slug);
+  const rag = await queryRag({
+    ownerId,
+    zonePath,
+    query,
+    topN: options?.topN ?? KNOWLEDGE_VECTOR_TOP_N,
+    docCount: allowed.length,
+  });
+  if (rag.source !== "turbovec" || rag.hits.length === 0) {
+    return allowed.slice(0, KNOWLEDGE_MAX_FILES);
+  }
+
+  const allowedSet = new Set(allowed);
+  const selected = rag.hits.map((h) => h.docPath).filter((p) => allowedSet.has(p));
+  return selected.length > 0 ? selected.slice(0, KNOWLEDGE_MAX_FILES) : allowed.slice(0, KNOWLEDGE_MAX_FILES);
 }
 
 // ── Write side (wizard step 4 + Knowledge tab) ───────────────────────────────────────

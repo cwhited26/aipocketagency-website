@@ -347,3 +347,112 @@ def sandbox_api():
     web.post("/sandbox/stop")(_sandbox_stop)
     web.post("/sandbox/status")(_sandbox_status)
     return web
+
+
+# ── turbovec RAG endpoints (Personas SPEC §3.5, PA-RAG-1..7) ────────────────────────────────
+# The PA web tier (src/lib/rag) calls these over HTTP with Modal proxy auth to build + query the
+# per-zone turbovec indexes. Two routes under one proxy-auth-protected ASGI app (`rag_api`) so the
+# web tier reaches both off a single base URL (PA_RAG_RUNTIME_URL): POST /rag/build, POST /rag/query.
+#
+# The vector deps (turbovec + numpy) ride a dedicated image (`rag_image`) and the indexes persist to
+# a Modal volume (`rag_volume`) keyed by owner + zone hash. ContainmentGuard is STRUCTURAL: a query
+# for a zone can only ever open that zone's index directory (rag.zone_dir), and a stored-zone vs
+# requested-zone mismatch raises OutOfZoneError → HTTP 403.
+
+rag_image = image.pip_install("turbovec>=0.1", "numpy>=1.26").add_local_python_source("rag")
+rag_volume = modal.Volume.from_name("pa-rag-indexes", create_if_missing=True)
+RAG_VOLUME_ROOT = "/indexes"
+
+
+class RagDoc(BaseModel):
+    docPath: str
+    text: str
+
+
+class RagBuildRequest(BaseModel):
+    ownerId: str
+    zonePath: str
+    embeddingModel: str = "text-embedding-3-small"
+    docs: list[RagDoc]
+
+
+class RagQueryRequest(BaseModel):
+    ownerId: str
+    zonePath: str
+    embeddingModel: str = "text-embedding-3-small"
+    query: str
+    topN: int = 8
+
+
+@app.function(
+    image=rag_image,
+    volumes={RAG_VOLUME_ROOT: rag_volume},
+    secrets=[modal.Secret.from_name("pa-orchestrator")],
+    timeout=900,
+)
+@modal.asgi_app(requires_proxy_auth=True)
+def rag_api():
+    """The two `/rag/*` routes under one proxy-auth-protected ASGI app. requires_proxy_auth keeps the
+    index build/query reachable only by the web tier (Modal-Key / Modal-Secret). turbovec + numpy +
+    the OpenAI key live in this function's image + secret only."""
+    from fastapi import FastAPI
+    from fastapi.responses import JSONResponse
+
+    import rag
+
+    web = FastAPI(title="PA turbovec RAG")
+
+    @web.post("/rag/build")
+    def build(req: RagBuildRequest):  # noqa: ANN202 — FastAPI handler
+        try:
+            stats = rag.build_index(
+                RAG_VOLUME_ROOT,
+                req.ownerId,
+                req.zonePath,
+                req.embeddingModel,
+                [{"docPath": d.docPath, "text": d.text} for d in req.docs],
+            )
+        except rag.EmbeddingError as exc:
+            return JSONResponse(status_code=502, content={"ok": False, "error": str(exc)})
+        except rag.RagError as exc:
+            return JSONResponse(status_code=400, content={"ok": False, "error": str(exc)})
+        # Persist the freshly written .tvim / .tq / meta.json so a later query container sees them.
+        rag_volume.commit()
+        return {
+            "ok": True,
+            "docCount": stats.doc_count,
+            "tokenCount": stats.token_count,
+            "embeddingTokens": stats.embedding_tokens,
+            "dim": stats.dim,
+            "cpuSeconds": stats.cpu_seconds,
+        }
+
+    @web.post("/rag/query")
+    def query(req: RagQueryRequest):  # noqa: ANN202 — FastAPI handler
+        # See the latest committed indexes (a build may have happened in another container).
+        rag_volume.reload()
+        try:
+            result = rag.query_index(
+                RAG_VOLUME_ROOT,
+                req.ownerId,
+                req.zonePath,
+                req.embeddingModel,
+                req.query,
+                req.topN,
+            )
+        except rag.OutOfZoneError as exc:
+            return JSONResponse(status_code=403, content={"ok": False, "code": "out_of_zone", "error": str(exc)})
+        except rag.NotBuiltError:
+            return JSONResponse(status_code=404, content={"ok": False, "code": "not_built"})
+        except rag.EmbeddingError as exc:
+            return JSONResponse(status_code=502, content={"ok": False, "error": str(exc)})
+        except rag.RagError as exc:
+            return JSONResponse(status_code=400, content={"ok": False, "error": str(exc)})
+        return {
+            "ok": True,
+            "results": [{"docPath": h.doc_path, "score": h.score, "snippet": h.snippet} for h in result.hits],
+            "embeddingTokens": result.embedding_tokens,
+            "cpuSeconds": result.cpu_seconds,
+        }
+
+    return web

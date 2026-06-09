@@ -12,6 +12,7 @@
 
 import { fetchFileContent, listRepoTree } from "@/lib/pa-brain";
 import { fetchMemoryIndex } from "@/lib/pa-brain-index";
+import { queryRag } from "@/lib/rag/query";
 import {
   gmailListRecent,
   gmailSearch,
@@ -428,7 +429,29 @@ async function runInline(
       };
     }
     case "brain.search": {
-      const query = asString(input.query).trim().toLowerCase();
+      const rawQuery = asString(input.query).trim();
+
+      // Above the ~100-doc / ~50k-token threshold, the owner's memory zone is served by the
+      // turbovec vector index (Personas SPEC §3.5); below it, fall through to the keyword scan over
+      // the memory index. queryRag returns a `fallback` signal whenever the index isn't ready or the
+      // zone is small, so this stays correct before any index is built.
+      if (rawQuery) {
+        const rag = await queryRag({ ownerId: userId, zonePath: "memory", query: rawQuery });
+        if (rag.source === "turbovec" && rag.hits.length > 0) {
+          const lines = rag.hits
+            .map((h) => `• ${h.docPath} — ${h.snippet || "(match)"} [${h.docPath}]`)
+            .join("\n");
+          return {
+            status: "ok",
+            label: "Searched brain",
+            summary: `Found ${rag.hits.length} relevant memory file${rag.hits.length === 1 ? "" : "s"}.`,
+            detail: lines,
+            forModel: clampForModel(`brain.search (vector) matches:\n${lines}`),
+          };
+        }
+      }
+
+      const query = rawQuery.toLowerCase();
       const rows = await fetchMemoryIndex(userId);
       const terms = query.split(/\s+/).filter(Boolean);
       const matched = (terms.length === 0 ? rows : rows.filter((r) => {

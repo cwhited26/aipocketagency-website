@@ -218,7 +218,10 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
 
     let knowledge;
     try {
-      knowledge = await loadKnowledgeForChat(brain_repo, github_token, persona, zoneConfig);
+      knowledge = await loadKnowledgeForChat(brain_repo, github_token, persona, zoneConfig, {
+        ownerId: persona.business_id,
+        query: message,
+      });
     } catch (e) {
       if (e instanceof ContainmentBlockedError) {
         const convoId = await ensureConversation(conversationId, persona.id);
