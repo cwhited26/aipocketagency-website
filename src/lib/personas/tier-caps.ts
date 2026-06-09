@@ -47,6 +47,54 @@ export function tierAllowsLeadScoutPacks(tier: Tier): boolean {
   return tierRank(tier) >= tierRank("studio_plus");
 }
 
+/**
+ * Can this tier run a Decision Roundtable (PA-DR-1)? Three (or four) sub-agent runs per question is
+ * 3-4× a normal chat's model spend, so the feature is Studio+/Enterprise only. Free/Pro tiers see a
+ * non-actionable teaser inline in chat but can't fire the debate.
+ */
+export function tierAllowsDecisionRoundtable(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio_plus");
+}
+
+// Per-tier monthly Decision Roundtable run cap (adversarial §11: cost-runaway guard). 0 = tier can't
+// run the feature at all. Studio+ ~30/mo, Enterprise ~150/mo; runs above the cap are refused honestly
+// rather than metered-and-billed, keeping the premium gate legible.
+export const DECISION_ROUNDTABLE_MONTHLY_CAPS: Record<Tier, number> = {
+  starter: 0,
+  pro: 0,
+  pro_plus: 0,
+  studio: 0,
+  studio_plus: 30,
+  enterprise: 150,
+};
+
+/** This tier's monthly roundtable run cap (0 when the tier can't run the feature). */
+export function decisionRoundtableMonthlyCap(tier: Tier): number {
+  return DECISION_ROUNDTABLE_MONTHLY_CAPS[tier];
+}
+
+/**
+ * Pure: may this tier start another roundtable this month, given how many it has already run?
+ * Returns a CapDecision so routes surface the reason verbatim (gating teaser vs cap-reached notice).
+ */
+export function evaluateCanRunRoundtable(tier: Tier, monthlyRunCount: number): CapDecision {
+  if (!tierAllowsDecisionRoundtable(tier)) {
+    return {
+      ok: false,
+      reason:
+        "Decision Roundtable is a Studio+ feature. Upgrade to have three of your agents argue a call and bring you a verdict.",
+    };
+  }
+  const cap = DECISION_ROUNDTABLE_MONTHLY_CAPS[tier];
+  if (monthlyRunCount >= cap) {
+    return {
+      ok: false,
+      reason: `You've run all ${cap} Decision Roundtables on your plan this month. They reset next month — or upgrade to Enterprise for more.`,
+    };
+  }
+  return { ok: true, reason: "" };
+}
+
 // ── Stripe LIVE-mode price → tier mapping (PA-ORCH-10 unified SMB ladder) ────────────
 //
 // Source of truth for the SMB subscription tier a paid Stripe price grants. The

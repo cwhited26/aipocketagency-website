@@ -164,6 +164,16 @@ function ConnectionsIcon() {
   );
 }
 
+// A balance/scales glyph — the roundtable weighing both sides of a call.
+function DecisionsIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M7.5 2v11M3 13h9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M2 4.5h11M4 4.5L2.5 8h3L4 4.5zM11 4.5L9.5 8h3L11 4.5z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -271,6 +281,7 @@ export default function AppNav() {
   const isCalendar = pathname.startsWith("/app/calendar");
   const isEmail = pathname.startsWith("/app/email");
   const isProjects = pathname.startsWith("/app/projects");
+  const isDecisions = pathname.startsWith("/app/decisions");
 
   const close = () => setMobileOpen(false);
 
@@ -307,6 +318,14 @@ export default function AppNav() {
         <NavItem href="/app/personas" active={isPersonas} icon={<PersonasIcon />} label="Personas" onClick={close} />
         <NavItem href="/app/routines" active={isRoutines} icon={<RoutinesIcon />} label="Routines" onClick={close} />
         <NavItem href="/app/projects" active={isProjects} icon={<ProjectsIcon />} label="Projects" onClick={close} />
+        <NavItem
+          href="/app/decisions"
+          active={isDecisions}
+          icon={<DecisionsIcon />}
+          label="Decisions"
+          title="Roundtable verdicts your agents argued out"
+          onClick={close}
+        />
         <NavItem href="/app/skool" active={isCommunity} icon={<CommunityIcon />} label="Community" onClick={close} />
         <NavItem href="/app/settings/connections" active={isConnections} icon={<ConnectionsIcon />} label="Connections" onClick={close} />
 

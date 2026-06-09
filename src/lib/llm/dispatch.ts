@@ -299,6 +299,51 @@ export async function completeLlm(
   };
 }
 
+// ── Explicit-target completion ──────────────────────────────────────────────────────────
+//
+// Like completeLlm, but the provider + model + key are chosen by the CALLER rather than read from
+// the user's saved settings. This is the seam the Decision Roundtable uses to back its sub-agents
+// with DIFFERENT providers in the same run (PA-DR-3 model diversity) — the saved-settings dispatcher
+// only ever resolves one primary, so it can't fan a single run across Claude + GPT + Grok. No
+// fallback here: the roundtable resolver decides which target each role gets (and supplies a
+// pa_managed fallback target it retries with on failure), so this stays a thin one-shot.
+
+export type ExplicitTarget = {
+  provider: LlmProvider;
+  model: string;
+  apiKey: string;
+  endpointUrl?: string;
+};
+
+export async function completeLlmWithTarget(
+  target: ExplicitTarget,
+  req: { system: string; messages: LlmChatMessage[]; maxTokens?: number },
+  deps: Pick<DispatchDeps, "adapterFor"> = { adapterFor },
+): Promise<DispatchCompletionResult> {
+  const res = await deps.adapterFor(target.provider).streamCompletion({
+    apiKey: target.apiKey,
+    model: target.model,
+    system: req.system,
+    messages: req.messages,
+    maxTokens: req.maxTokens ?? DEFAULT_MAX_TOKENS,
+    endpointUrl: target.endpointUrl,
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: res.error };
+  const drained = await drain(res.stream);
+  if (drained.error) return { ok: false, status: 502, error: drained.error };
+  return {
+    ok: true,
+    text: drained.text,
+    inputTokens: drained.inputTokens,
+    outputTokens: drained.outputTokens,
+    provider: target.provider,
+    model: target.model,
+    qualityWarning: !isPremiumTierModel(target.model),
+    usedFallback: false,
+    fallbackReason: null,
+  };
+}
+
 // ── Test-connection ping ────────────────────────────────────────────────────────────────
 
 export type PingResult =

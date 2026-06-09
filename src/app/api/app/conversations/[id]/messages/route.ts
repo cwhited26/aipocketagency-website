@@ -33,6 +33,9 @@ import {
   buildPodcastContextAppend,
 } from "@/lib/podcasts/hooks";
 import { type PodcastIngestPayload } from "@/lib/podcasts/card";
+import { getCurrentTier, tierAllowsDecisionRoundtable } from "@/lib/personas/tier-caps";
+import { detectDecision } from "@/lib/decisions/classify";
+import { findPrecedent } from "@/lib/decisions/brain";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -485,6 +488,11 @@ export async function POST(
   }
   const hasUploads = uploadInputs.length > 0;
 
+  // `/decide …` is the explicit opt-in (PA-DR trigger §): the owner forces the roundtable offer
+  // regardless of the classifier's confidence band. Strip the command so the agent answers cleanly.
+  const forceRoundtable = /^\/decide\b/i.test(caption);
+  if (forceRoundtable) caption = caption.replace(/^\/decide\b\s*/i, "");
+
   const convResult = await getConversation(conversationId, user.id);
   if (!convResult.ok) {
     return NextResponse.json({ error: convResult.error }, { status: convResult.status });
@@ -712,9 +720,50 @@ export async function POST(
 
   const citations = parseCitations(finalAnswer);
 
+  // Decision Roundtable trigger detection (PA-DR-6). Runs only on a plain text turn — uploads, YouTube,
+  // and podcast turns aren't decision questions. Heuristics gate the Haiku spend (lib/decisions/classify),
+  // so an ordinary message costs nothing. We surface an inline offer under the assistant's normal answer
+  // — never auto-spawning — when the question reads as a high-confidence decision OR the owner typed
+  // /decide. Lower tiers get a non-actionable teaser; Studio+ get the "Run Decision Roundtable" button.
+  let roundtableOffer:
+    | {
+        question: string;
+        eligible: boolean;
+        teaser: boolean;
+        decisionType: string;
+        stakesLevel: string;
+        precedent: { path: string; date: string; verdict: string } | null;
+      }
+    | null = null;
+  if (!hasUploads && !youtubeMetadata && !podcastMetadata && caption.trim()) {
+    const cost = {
+      ownerId: user.id,
+      featureSlug: "roundtable" as const,
+      idempotencyKey: `${conversationId}:${userMsgResult.data.id}:classify`,
+      conversationId,
+    };
+    const detection = await detectDecision(caption.trim(), anthropic_api_key, cost);
+    const highConfidence = detection.confidence >= 0.85;
+    if (forceRoundtable || highConfidence) {
+      const tier = await getCurrentTier(user.id);
+      const eligible = tierAllowsDecisionRoundtable(tier);
+      // Surface a matching prior verdict before a fresh debate (PA-DR §9 precedents) — eligible owners only.
+      const precedent = eligible ? await findPrecedent(brain_repo, github_token, caption.trim()) : null;
+      roundtableOffer = {
+        question: caption.trim(),
+        eligible,
+        teaser: !eligible,
+        decisionType: detection.decisionType,
+        stakesLevel: detection.stakesLevel,
+        precedent,
+      };
+    }
+  }
+
   return NextResponse.json({
     userMessage: userMsgResult.data,
     assistantMessage: { ...asstMsgResult.data, citations, toolSteps },
     conversationTitle,
+    roundtableOffer,
   });
 }

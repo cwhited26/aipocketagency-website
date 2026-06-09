@@ -21,6 +21,9 @@ import { asUploadResultPayload } from "@/lib/chat/upload-card";
 import { asYouTubeIngestPayload } from "@/lib/youtube/card";
 import { asPodcastIngestPayload } from "@/lib/podcasts/card";
 import { asSlackOrigin, asSmsOrigin } from "@/lib/chat/message-origin";
+import { asDecisionRoundtablePayload } from "@/lib/decisions/card";
+import DecisionRoundtableCard from "./_components/DecisionRoundtableCard";
+import RoundtableOfferChip, { type RoundtableOffer } from "./_components/RoundtableOfferChip";
 import { isVisionUploadType } from "@/lib/vision/ocr";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -1064,6 +1067,10 @@ export default function HomeClient({
   const [activeConvId, setActiveConvId] = useState<string | null>(initialConversationId);
   const [messages, setMessages] = useState<Message[]>([]);
   const [threadError, setThreadError] = useState<string | null>(null);
+  // Decision Roundtable offers, keyed by the assistant message they sit under (PA-DR §9). One at a time
+  // in practice; a map keeps each answer's offer attached to its own bubble across re-renders.
+  const [roundtableOffers, setRoundtableOffers] = useState<Record<string, RoundtableOffer>>({});
+  const [startingRoundtable, setStartingRoundtable] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState(initialQuery ?? "");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [attachError, setAttachError] = useState<string | null>(null);
@@ -1157,6 +1164,46 @@ export default function HomeClient({
       e.preventDefault();
       handleSubmit();
     }
+  }
+
+  function dismissRoundtableOffer(msgId: string) {
+    setRoundtableOffers((prev) => {
+      const next = { ...prev };
+      delete next[msgId];
+      return next;
+    });
+  }
+
+  // Owner tapped "Run Decision Roundtable" — spin up the debate and drop its live card into the thread.
+  async function startRoundtable(question: string, msgId: string) {
+    if (!activeConvId || startingRoundtable) return;
+    setStartingRoundtable(msgId);
+    setThreadError(null);
+    try {
+      const res = await fetch("/api/app/decisions/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ conversationId: activeConvId, question }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { cardMessage: Message };
+        setMessages((prev) => [...prev, data.cardMessage]);
+        dismissRoundtableOffer(msgId);
+      } else {
+        const err = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+        setThreadError(err.message ?? err.error ?? "Couldn't start the roundtable.");
+      }
+    } catch {
+      setThreadError("Couldn't start the roundtable. Please try again.");
+    } finally {
+      setStartingRoundtable(null);
+    }
+  }
+
+  // "Run again with new context" from a verdict card — seed the composer with the question to revise.
+  function runRoundtableAgain(question: string) {
+    setInputValue(question);
+    setTimeout(() => textareaRef.current?.focus(), 60);
   }
 
   // Stage picked files for the next send: enforce type, 10 MB/file, and 5/message client-side
@@ -1255,9 +1302,16 @@ export default function HomeClient({
         userMessage: Message;
         assistantMessage: Message & { citations?: Citation[]; toolSteps?: ToolStep[] };
         conversationTitle?: string;
+        roundtableOffer?: RoundtableOffer | null;
       };
 
       setMessages((prev) => [...prev.slice(0, -1), data.userMessage, data.assistantMessage]);
+
+      // PA flagged this as a decision question — attach the offer under the answer it just gave.
+      if (data.roundtableOffer) {
+        const offer = data.roundtableOffer;
+        setRoundtableOffers((prev) => ({ ...prev, [data.assistantMessage.id]: offer }));
+      }
 
       if (data.conversationTitle) {
         setConversations((prev) =>
@@ -1371,36 +1425,62 @@ export default function HomeClient({
                           );
                         })()
                       ) : (
-                        <div className="space-y-2.5 max-w-full">
-                          <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-[0.18em] uppercase">
-                            Pocket Agent
-                          </div>
-                          {msg.toolSteps && msg.toolSteps.length > 0 && (
-                            <div className="flex flex-col gap-1 py-1">
-                              {msg.toolSteps.map((step, i) => (
-                                <div key={i} className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500">
-                                  <span className="text-[#22d3ee]/30 shrink-0">{toolStepIcon(step.tool)}</span>
-                                  {step.label}
+                        (() => {
+                          // A started roundtable lands as an assistant message carrying the live card in
+                          // metadata — render the interactive debate/verdict card instead of a bubble.
+                          const roundtable = asDecisionRoundtablePayload(msg.metadata);
+                          if (roundtable) {
+                            return (
+                              <div className="space-y-2.5 max-w-full">
+                                <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-[0.18em] uppercase">
+                                  Pocket Agent
                                 </div>
-                              ))}
+                                <DecisionRoundtableCard payload={roundtable} onRunAgain={runRoundtableAgain} />
+                              </div>
+                            );
+                          }
+                          const offer = roundtableOffers[msg.id];
+                          return (
+                            <div className="space-y-2.5 max-w-full">
+                              <div className="text-[10px] text-[#22d3ee]/70 font-mono tracking-[0.18em] uppercase">
+                                Pocket Agent
+                              </div>
+                              {msg.toolSteps && msg.toolSteps.length > 0 && (
+                                <div className="flex flex-col gap-1 py-1">
+                                  {msg.toolSteps.map((step, i) => (
+                                    <div key={i} className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500">
+                                      <span className="text-[#22d3ee]/30 shrink-0">{toolStepIcon(step.tool)}</span>
+                                      {step.label}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
+                                {msg.content}
+                              </div>
+                              {citations.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                  {citations.map((c, i) => (
+                                    <span
+                                      key={i}
+                                      className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-800 border border-slate-700/60 text-[#22d3ee]/70"
+                                    >
+                                      {c.file}{c.line ? `:${c.line}` : ""}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {offer && (
+                                <RoundtableOfferChip
+                                  offer={offer}
+                                  starting={startingRoundtable === msg.id}
+                                  onRun={() => startRoundtable(offer.question, msg.id)}
+                                  onDismiss={() => dismissRoundtableOffer(msg.id)}
+                                />
+                              )}
                             </div>
-                          )}
-                          <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
-                            {msg.content}
-                          </div>
-                          {citations.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {citations.map((c, i) => (
-                                <span
-                                  key={i}
-                                  className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-800 border border-slate-700/60 text-[#22d3ee]/70"
-                                >
-                                  {c.file}{c.line ? `:${c.line}` : ""}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                          );
+                        })()
                       )}
                     </div>
                   );
