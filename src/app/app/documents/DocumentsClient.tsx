@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FileUploadZone from "../_components/FileUploadZone";
@@ -280,6 +280,20 @@ export default function DocumentsClient({
   }, [brainRepo]);
 
   useEffect(() => { loadFiles(); }, [loadFiles]);
+
+  // Honor a ?path= deep link (e.g. "Open in Documents" from the Brain Map): once
+  // files load, open the matching file's viewer. Runs at most once.
+  const deepLinkOpened = useRef(false);
+  useEffect(() => {
+    if (deepLinkOpened.current || files.length === 0) return;
+    const wanted = new URLSearchParams(window.location.search).get("path");
+    if (!wanted) return;
+    const match = files.find((f) => f.path === wanted);
+    if (match) {
+      deepLinkOpened.current = true;
+      setViewingFile(match);
+    }
+  }, [files]);
 
   const lc = search.trim().toLowerCase();
   const filtered = lc

@@ -80,6 +80,14 @@ const apps: AppDef[] = [
     tag: "Finds Leads",
     tagColor: "cyan",
   },
+  {
+    href: "/app/brain-map",
+    label: "Brain Map",
+    description:
+      "See what PA knows about your business — interactive map of every fact, voice cue, decision, and customer it's learned.",
+    tag: "View",
+    tagColor: "muted",
+  },
 ];
 
 function tagClass(color: AppDef["tagColor"]): string {

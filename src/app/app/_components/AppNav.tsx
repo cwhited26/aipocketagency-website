@@ -68,6 +68,17 @@ function DocsIcon() {
   );
 }
 
+function BrainMapIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <circle cx="3.5" cy="4" r="1.6" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="11.5" cy="3.5" r="1.6" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="7.5" cy="11" r="1.6" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M4.8 5.1L6.6 9.6M10.3 4.6L8.5 9.7M5 4.2l5-0.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function CaptureIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
@@ -250,6 +261,7 @@ export default function AppNav() {
     pathname.startsWith("/app/brain") || pathname.startsWith("/app/onboarding");
   const isApps = pathname.startsWith("/app/apps") && !isInbox;
   const isDocs = pathname.startsWith("/app/documents");
+  const isBrainMap = pathname.startsWith("/app/brain-map");
   const isCommunity = pathname.startsWith("/app/skool");
   const isSettings = pathname.startsWith("/app/settings") && !isConnections;
   const isCapture = pathname.startsWith("/app/capture");
@@ -290,6 +302,7 @@ export default function AppNav() {
         <NavItem href="/app/email" active={isEmail} icon={<EmailIcon />} label="Email" onClick={close} />
         <NavItem href="/app/brain" active={isBrain} icon={<BrainIcon />} label="Brain" title="What your agent knows" onClick={close} />
         <NavItem href="/app/documents" active={isDocs} icon={<DocsIcon />} label="Documents" title="Files in your brain" onClick={close} />
+        <NavItem href="/app/brain-map" active={isBrainMap} icon={<BrainMapIcon />} label="Brain Map" title="Map of what your agent knows" onClick={close} />
         <NavItem href="/app/apps" active={isApps} icon={<WorkIcon />} label="Apps" onClick={close} />
         <NavItem href="/app/personas" active={isPersonas} icon={<PersonasIcon />} label="Personas" onClick={close} />
         <NavItem href="/app/routines" active={isRoutines} icon={<RoutinesIcon />} label="Routines" onClick={close} />
