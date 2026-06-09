@@ -42,6 +42,8 @@ import { monthKey } from "./tier-caps";
 import { dispatch as runtimeDispatch, type DispatchJob, type DispatchResult } from "./runtime-client";
 import { completeLlm } from "@/lib/llm/dispatch";
 import { fetchPaUser } from "@/lib/pa-supabase";
+import { checkBudgetGate, type BudgetGate } from "@/lib/cost/budget";
+import { stageCostBudgetGateCard } from "@/lib/cost/gate-card";
 
 // ── Dependency surface (mocked in tests) ──────────────────────────────────────────────────
 
@@ -58,6 +60,13 @@ export type DispatcherDeps = {
   dispatchRuntime: (job: DispatchJob) => Promise<DispatchResult>;
   maxConcurrent: () => number;
   timeBudgetSeconds: () => number;
+  // Cost soft-pause gate (Cost Observability SPEC §5.4, PA-COST-14). Runs BEFORE a sub-agent fires;
+  // chat is exempt (PA-COST-7) so it's only wired here, not in the chat loop. Injected for tests.
+  checkBudget: (ownerId: string) => Promise<BudgetGate>;
+  stageBudgetGateCard: (
+    ownerId: string,
+    gate: Extract<BudgetGate, { status: "block_100" }>,
+  ) => Promise<string | null>;
 };
 
 // Default planner LLM: PA-managed Claude via the BYO dispatcher, keyed by the owner's stored
@@ -111,7 +120,15 @@ export const defaultDeps: DispatcherDeps = {
   dispatchRuntime: runtimeDispatch,
   maxConcurrent: maxConcurrentRunsPerUser,
   timeBudgetSeconds: defaultTimeBudgetSeconds,
+  checkBudget: checkBudgetGate,
+  stageBudgetGateCard: stageCostBudgetGateCard,
 };
+
+// Human-readable dollar amounts for the budget-gate copy. Budget is whole-dollar cents; spend is
+// micro-cents (PA-COST-9). Kept here (not in the lib) because it's surface copy, not budget logic.
+function dollars(cents: number): string {
+  return `$${(cents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────────────────
 
@@ -190,6 +207,36 @@ export async function dispatchUserGoal(
       reason:
         `You already have ${active} task${active === 1 ? "" : "s"} running. ` +
         "Wait for one to finish (or cancel it) before starting another.",
+    };
+  }
+
+  // Cost soft-pause gate (PA-COST-14). Runs BEFORE scaffolding so a gated owner never pays the planner
+  // cost either. Chat is exempt (PA-COST-7) — only this sub-agent-dispatch path gates.
+  const gate = await deps.checkBudget(businessId);
+  if (gate.status === "warn_80") {
+    const pctText = Math.round(gate.pct);
+    return {
+      kind: "budget_warn",
+      spentMicroCents: gate.spentMicroCents,
+      budgetCents: gate.budgetCents,
+      pct: gate.pct,
+      reason:
+        `You're at ${pctText}% of your ${dollars(gate.budgetCents)} monthly cost budget — ` +
+        "keep going, pause new agent runs for the month, or raise the cap?",
+    };
+  }
+  if (gate.status === "block_100") {
+    const inboxItemId = await deps.stageBudgetGateCard(businessId, gate);
+    return {
+      kind: "budget_gated",
+      inboxItemId,
+      spentMicroCents: gate.spentMicroCents,
+      budgetCents: gate.budgetCents,
+      pct: gate.pct,
+      reason:
+        `You've hit your ${dollars(gate.budgetCents)} monthly cost budget, so I've paused new ` +
+        "background agent runs and parked this one in Mission Control. Raise the cap in Settings → " +
+        "Budget to let it run, or it'll resume when your budget resets next month. (Your chat keeps working.)",
     };
   }
 

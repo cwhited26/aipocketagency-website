@@ -29,7 +29,8 @@ export type InboxKind =
   | "sub_agent_activity"
   | "routine_output"
   | "lead_scout_batch"
-  | "build_action_approval";
+  | "build_action_approval"
+  | "cost_budget_gate";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

@@ -203,6 +203,7 @@ export default async function SettingsPage({
           <SettingsRow label="API keys" value="REST API for any agent" href="/app/settings/api-keys" />
           <SettingsRow label="Privacy zones" value="Control what your agent can read" href="/app/settings/privacy-zones" />
           <SettingsRow label="Auto-approve" value="Let trusted actions run on their own" href="/app/settings/auto-approve" />
+          <SettingsRow label="Budget" value="Cap what your agents cost each month" href="/app/settings/budget" />
           <SettingsRow label="Learn" value="How Pocket Agent works" href="/app/learn" />
           <SettingsRow label="Changelog" value="What's new" href="/app/changelog" />
         </div>

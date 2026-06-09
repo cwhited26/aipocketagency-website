@@ -67,6 +67,13 @@ function baseDeps(overrides: Partial<DispatcherDeps> = {}): DispatcherDeps {
     dispatchRuntime: vi.fn(async () => ({ ok: true as const, runtimeJobId: "job-1" })),
     maxConcurrent: vi.fn(() => 5),
     timeBudgetSeconds: vi.fn(() => 300),
+    checkBudget: vi.fn(async () => ({
+      status: "ok" as const,
+      spentMicroCents: 0,
+      budgetCents: 10000,
+      pct: 0,
+    })),
+    stageBudgetGateCard: vi.fn(async () => "gate-card-1"),
     ...overrides,
   };
 }
@@ -120,6 +127,44 @@ describe("dispatchUserGoal", () => {
     expect(out.kind).toBe("capped");
     if (out.kind === "capped") expect(out.reason).toBe("over budget");
     expect(deps.insertRun).not.toHaveBeenCalled();
+  });
+
+  it("pauses with budget_warn at 80% — no scaffold, no run, no card", async () => {
+    const deps = baseDeps({
+      checkBudget: vi.fn(async () => ({
+        status: "warn_80" as const,
+        spentMicroCents: 8_400_000,
+        budgetCents: 10000,
+        pct: 84,
+      })),
+    });
+    const out = await dispatchUserGoal(INPUT, deps);
+    expect(out.kind).toBe("budget_warn");
+    if (out.kind === "budget_warn") {
+      expect(out.pct).toBe(84);
+      expect(out.reason).toContain("84%");
+      expect(out.reason).toContain("$100");
+    }
+    expect(deps.insertRun).not.toHaveBeenCalled();
+    expect(deps.reserveRun).not.toHaveBeenCalled();
+    expect(deps.stageBudgetGateCard).not.toHaveBeenCalled();
+  });
+
+  it("gates with budget_gated at 100% — stages the Mission Control card, fires nothing", async () => {
+    const deps = baseDeps({
+      checkBudget: vi.fn(async () => ({
+        status: "block_100" as const,
+        spentMicroCents: 10_200_000,
+        budgetCents: 10000,
+        pct: 102,
+      })),
+    });
+    const out = await dispatchUserGoal(INPUT, deps);
+    expect(out.kind).toBe("budget_gated");
+    if (out.kind === "budget_gated") expect(out.inboxItemId).toBe("gate-card-1");
+    expect(deps.stageBudgetGateCard).toHaveBeenCalledTimes(1);
+    expect(deps.insertRun).not.toHaveBeenCalled();
+    expect(deps.dispatchRuntime).not.toHaveBeenCalled();
   });
 
   it("dispatches: persists the run, fires it, logs OBSERVE", async () => {

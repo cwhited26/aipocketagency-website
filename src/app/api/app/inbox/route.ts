@@ -23,7 +23,8 @@ export type InboxCardKind =
   | "sub_agent_activity"
   | "routine_output"
   | "lead_scout_batch"
-  | "build_action_approval";
+  | "build_action_approval"
+  | "cost_budget_gate";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {

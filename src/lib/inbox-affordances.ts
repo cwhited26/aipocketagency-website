@@ -20,7 +20,8 @@ export type InboxItemKind =
   | "sub_agent_activity"
   | "routine_output"
   | "lead_scout_batch"
-  | "build_action_approval";
+  | "build_action_approval"
+  | "cost_budget_gate";
 
 export type AffordanceRole = "primary" | "secondary" | "destructive";
 
@@ -140,6 +141,19 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
         affordances: [
           { key: "mark_read", label: "Mark as read", role: "primary" },
           { key: "dismiss", label: "Dismiss", role: "destructive" },
+        ],
+      };
+
+    // The over-budget gate (PA-COST-14). The dispatcher paused new agent runs because the owner hit
+    // their monthly cost cap. Nothing fires on tap — raising the cap (which actually un-gates) happens
+    // in Settings → Budget, so this is informational: "Raise the cap" links there, "Wait until next
+    // period" clears the card and lets runs resume on their own at the period reset.
+    case "cost_budget_gate":
+      return {
+        hasApproval: false,
+        affordances: [
+          { key: "raise_cap", label: "Raise the cap", role: "primary" },
+          { key: "wait", label: "Wait until next period", role: "secondary" },
         ],
       };
 

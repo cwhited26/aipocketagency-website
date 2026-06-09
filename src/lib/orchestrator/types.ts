@@ -197,6 +197,26 @@ export type DispatchOutcome =
     }
   // The tier cap refused the run.
   | { kind: "capped"; reason: string }
+  // The cost budget is at 80%+ (not yet acknowledged this period). The dispatcher PAUSED instead of
+  // firing (PA-COST-14): the surface shows the three-button choice (keep going / pause / raise the cap)
+  // and the owner answers via /api/app/budget/decision before the goal is re-issued. Chat is exempt.
+  | {
+      kind: "budget_warn";
+      reason: string;
+      spentMicroCents: number;
+      budgetCents: number;
+      pct: number;
+    }
+  // The cost budget is at 100%+ (or the owner paused for the period). The dispatcher staged a
+  // cost_budget_gate Mission Control card instead of firing; `inboxItemId` is null only if staging failed.
+  | {
+      kind: "budget_gated";
+      reason: string;
+      inboxItemId: string | null;
+      spentMicroCents: number;
+      budgetCents: number;
+      pct: number;
+    }
   // The orchestrator is disabled by flag.
   | { kind: "disabled"; reason: string };
 

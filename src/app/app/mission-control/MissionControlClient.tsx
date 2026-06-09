@@ -124,6 +124,7 @@ type AwaitingSection =
   | "briefs"
   | "activity"
   | "leads"
+  | "budget"
   | "hidden";
 
 function sectionFor(kind: InboxItemKind): AwaitingSection {
@@ -143,6 +144,8 @@ function sectionFor(kind: InboxItemKind): AwaitingSection {
       return "activity";
     case "lead_scout_batch":
       return "leads";
+    case "cost_budget_gate":
+      return "budget";
     case "persona_lead":
       return "hidden";
     default: {
@@ -1191,6 +1194,71 @@ function RoutineOutputCard({
   );
 }
 
+// ─── Cost budget gate card (PA-COST-14) ────────────────────────────────────────
+//
+// The dispatcher paused new background agent runs because the owner hit their monthly cost cap. Nothing
+// fires on tap (a refused dispatch isn't held in a queue to "release") — raising the cap, which is what
+// actually un-gates, happens in Settings → Budget. So this card is honest: "Raise the cap" links there,
+// "Wait until next period" clears the card and lets runs resume on their own when the budget resets.
+
+function CostBudgetGateCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function wait() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await postDecision(rejectEndpoint(card));
+      onResolved(card.id, "rejected");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.04] p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-amber-300/70 uppercase tracking-[0.18em]">
+          Cost budget
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
+      </div>
+
+      <p className="text-[15px] font-semibold text-slate-100 leading-snug">{card.title}</p>
+
+      <div className="mt-3 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+        {card.bodyMd.trim() || card.preview}
+      </div>
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <div className="mt-4 flex items-center gap-2">
+        <Link
+          href="/app/settings/budget"
+          className="flex-1 min-h-[44px] flex items-center justify-center py-3 px-4 rounded-xl bg-[#22d3ee] hover:bg-[#06b6d4] text-[#031820] text-sm font-semibold transition-colors"
+        >
+          Raise the cap
+        </Link>
+        <button
+          onClick={() => void wait()}
+          disabled={busy}
+          className="min-h-[44px] px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {busy ? "…" : "Wait until next period"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Lead Scout batch card (PA-LS-7) ───────────────────────────────────────────
 //
 // A finished scrape batch: classification breakdown, top leads, a CSV download, and a Phase-3 hook
@@ -1623,6 +1691,7 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
   const decisions = inSection("decisions");
   const briefs = inSection("briefs");
   const leads = inSection("leads");
+  const budgetGates = inSection("budget");
   const activity = inSection("activity");
 
   const pendingTriageThreadIds = new Set(
@@ -1918,6 +1987,21 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
                       : `Show all ${triage.length} emails to triage ↓`}
                   </button>
                 )}
+              </section>
+            )}
+
+            {budgetGates.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader
+                  label="Cost budget reached"
+                  count={budgetGates.length}
+                  tone="text-amber-300/70"
+                />
+                <div className="flex flex-col gap-3">
+                  {budgetGates.map((card) => (
+                    <CostBudgetGateCard key={card.id} card={card} onResolved={onResolved} />
+                  ))}
+                </div>
               </section>
             )}
 
