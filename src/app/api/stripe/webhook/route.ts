@@ -10,6 +10,7 @@ import {
 import {
   fetchPocketAgentByCustomerId,
   fetchPocketAgentBySubscriptionId,
+  insertPocketAgentAddonPurchase,
   markPocketAgentActive,
   markPocketAgentCanceled,
   markPocketAgentTier,
@@ -18,6 +19,11 @@ import {
   setPocketAgentAddonByCustomer,
   upsertPocketAgentTrial,
 } from "@/lib/pocket-agent-supabase";
+import {
+  getAddonMeta,
+  isAddonCheckoutKind,
+  type AddonCheckoutKind,
+} from "@/lib/pocket-agent-addons";
 import { getAddonFromStripePriceId } from "@/lib/personas/tier-caps";
 import {
   applyPocketAgentTierFromSubscription,
@@ -879,6 +885,131 @@ async function handlePaymentFailed(intent: PaymentIntent): Promise<void> {
   });
 }
 
+// ─── Funnel v1 one-time add-on handlers (PA-FUNNEL) ──────────────────────────
+
+function setupConfirmationHtml(name: string | null): string {
+  const greeting = name ? `Hey ${name} —` : "Hey —";
+  return `<!doctype html>
+<html><body style="margin:0;padding:24px 16px;background:#0b0b0b;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;">
+<div style="max-width:560px;margin:0 auto;">
+<p>${greeting}</p>
+<p>You added the Done-With-You Setup. That means I build your workspace for you instead of you setting it up yourself — your Business Brain from your real business, your Personas configured to your jobs, your first workflow running, and a call to hand you the keys.</p>
+<p>Next step is the call. I'll email you a booking link and a short intake (your existing writing for voice, your customer list, your pricing, the one workflow you want first) so the call is spent building, not gathering.</p>
+<p>If the setup call doesn't leave you with a workspace that's actually running your work, we keep working until it does. Reply to this email, no form.</p>
+<p style="margin-top:32px;">&mdash; Chase</p>
+</div>
+</body></html>`;
+}
+
+function setupConfirmationText(name: string | null): string {
+  const greeting = name ? `Hey ${name} —` : "Hey —";
+  return `${greeting}
+
+You added the Done-With-You Setup. That means I build your workspace for you instead of you setting it up yourself — your Business Brain from your real business, your Personas configured to your jobs, your first workflow running, and a call to hand you the keys.
+
+Next step is the call. I'll email you a booking link and a short intake (your existing writing for voice, your customer list, your pricing, the one workflow you want first) so the call is spent building, not gathering.
+
+If the setup call doesn't leave you with a workspace that's actually running your work, we keep working until it does. Reply to this email, no form.
+
+— Chase`;
+}
+
+function pilotConfirmationHtml(name: string | null): string {
+  const greeting = name ? `Hey ${name} —` : "Hey —";
+  return `<!doctype html>
+<html><body style="margin:0;padding:24px 16px;background:#0b0b0b;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;">
+<div style="max-width:560px;margin:0 auto;">
+<p>${greeting}</p>
+<p>Your 14-day Pilot just started. Here's what's in it: a Business Brain starter set up from your business, one Persona on the job that's burying you most, one real workflow running, and a Mission Control review where we walk you through reading the cockpit.</p>
+<p>The $97 comes off your subscription if you upgrade inside the 14 days — so trying it first costs you nothing extra.</p>
+<p><a href="${SITE_ORIGIN}/app" style="color:#6ee7b7;">Open your workspace →</a></p>
+<p style="margin-top:32px;">&mdash; Chase</p>
+</div>
+</body></html>`;
+}
+
+function pilotConfirmationText(name: string | null): string {
+  const greeting = name ? `Hey ${name} —` : "Hey —";
+  return `${greeting}
+
+Your 14-day Pilot just started. Here's what's in it: a Business Brain starter set up from your business, one Persona on the job that's burying you most, one real workflow running, and a Mission Control review where we walk you through reading the cockpit.
+
+The $97 comes off your subscription if you upgrade inside the 14 days — so trying it first costs you nothing extra.
+
+Open your workspace: ${SITE_ORIGIN}/app
+
+— Chase`;
+}
+
+async function handlePocketAgentAddonCompleted(
+  session: CheckoutSession,
+): Promise<void> {
+  const kindRaw = session.metadata?.addon_kind ?? null;
+  if (!kindRaw || !isAddonCheckoutKind(kindRaw)) {
+    console.error("[stripe/webhook] pocket_agent_addon: missing/unknown addon_kind", {
+      session_id: session.id,
+      addon_kind: kindRaw,
+    });
+    return;
+  }
+  const kind: AddonCheckoutKind = kindRaw;
+  const meta = getAddonMeta(kind);
+  const email = session.metadata?.email ?? session.customer_email ?? null;
+  const userId = session.client_reference_id ?? session.metadata?.user_id ?? null;
+  const name = session.metadata?.name ?? null;
+
+  const ledger = await insertPocketAgentAddonPurchase({
+    userId,
+    email,
+    kind,
+    stripeSessionId: session.id,
+    stripeCustomerId: session.customer,
+    stripePaymentIntentId: session.payment_intent,
+    amountCents: session.amount_total ?? meta.amountCents,
+  });
+  if (!ledger.ok) {
+    console.error("[stripe/webhook] pocket_agent_addon: ledger insert failed", {
+      session_id: session.id,
+      kind,
+      status: ledger.status,
+      error: ledger.error,
+    });
+  }
+
+  if (!email) {
+    console.warn("[stripe/webhook] pocket_agent_addon: no email, skipping confirmation", {
+      session_id: session.id,
+      kind,
+    });
+    return;
+  }
+
+  const isPilot = kind === "pilot";
+  const send = await sendEmail({
+    from: FROM,
+    to: email,
+    subject: isPilot
+      ? "Your Pocket Agent Pilot is live"
+      : "Your Done-With-You Setup — next step",
+    html: isPilot ? pilotConfirmationHtml(name) : setupConfirmationHtml(name),
+    text: isPilot ? pilotConfirmationText(name) : setupConfirmationText(name),
+  });
+  if (!send.ok) {
+    console.error("[stripe/webhook] pocket_agent_addon: confirmation email failed", {
+      session_id: session.id,
+      kind,
+      status: send.status,
+      error: send.error,
+    });
+    return;
+  }
+  console.info("[stripe/webhook] pocket_agent_addon purchase ledgered + emailed", {
+    session_id: session.id,
+    kind,
+    email,
+  });
+}
+
 async function handleCheckoutCompleted(session: CheckoutSession): Promise<void> {
   const leadId = session.client_reference_id;
   const email = session.customer_email;
@@ -943,7 +1074,9 @@ export async function POST(req: Request): Promise<NextResponse> {
       event.type === "checkout.session.async_payment_succeeded"
     ) {
       const session = event.data.object as unknown as CheckoutSession;
-      if (session.metadata?.source === "pocket_agent") {
+      if (session.metadata?.source === "pocket_agent_addon") {
+        await handlePocketAgentAddonCompleted(session);
+      } else if (session.metadata?.source === "pocket_agent") {
         await handlePocketAgentCheckoutCompleted(session);
       } else {
         await handleCheckoutCompleted(session);

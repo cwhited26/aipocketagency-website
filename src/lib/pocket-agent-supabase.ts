@@ -294,6 +294,58 @@ export async function markWelcomeEmailSent(
   return { ok: true };
 }
 
+// ── Funnel v1 one-time add-on purchases (PA-FUNNEL, migration 065) ───────────────────
+//
+// The Done-With-You Setup (/upsell) and the $97 Pilot (/downsell) are one-time charges, not
+// subscription rungs, so they get their own append-only ledger. The webhook inserts one row per
+// completed one-time checkout; the unique index on stripe_session_id makes the insert idempotent
+// across webhook retries (merge-duplicates → no second row).
+export type PocketAgentAddonKind = "setup_standard" | "setup_premium" | "pilot";
+
+export async function insertPocketAgentAddonPurchase(args: {
+  userId: string | null;
+  email: string | null;
+  kind: PocketAgentAddonKind;
+  stripeSessionId: string;
+  stripeCustomerId: string | null;
+  stripePaymentIntentId: string | null;
+  amountCents: number;
+}): Promise<InsertResult> {
+  const env = supabaseEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const row: Record<string, unknown> = {
+    email: args.email,
+    kind: args.kind,
+    stripe_session_id: args.stripeSessionId,
+    stripe_customer_id: args.stripeCustomerId,
+    stripe_payment_intent_id: args.stripePaymentIntentId,
+    amount_cents: args.amountCents,
+  };
+  if (args.userId !== null) {
+    row.user_id = args.userId;
+  }
+
+  const url = `${env.url.replace(/\/$/, "")}/rest/v1/pocket_agent_addon_purchases?on_conflict=stripe_session_id`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      apikey: env.key,
+      Authorization: `Bearer ${env.key}`,
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify(row),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const error = await res.text();
+    return { ok: false, status: res.status, error };
+  }
+  return { ok: true };
+}
+
 type FetchByCustomerResult =
   | { ok: true; row: PocketAgentSubscriptionRow | null }
   | { ok: false; status: number; error: string };

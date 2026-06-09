@@ -6,13 +6,13 @@ import Link from "next/link";
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
-// Display props are resolved server-side from the validated ?tier= param (see
-// start/page.tsx) and passed as primitives so this client component never imports the
-// server-side tier-caps module. `tier` is the only value sent to the checkout API.
+// Display props are resolved server-side from the validated ?tier= param (see start/page.tsx) and
+// passed as primitives so this client component never imports the server-side tier-caps module.
+// `tier` + `bump` are the only values sent to the checkout API.
 export default function StartForm({
   defaultEmail = "",
   tier = "starter",
-  tierLabel = "Starter",
+  tierLabel = "Personal Brain",
   priceUsd = 37,
 }: {
   defaultEmail?: string;
@@ -22,11 +22,9 @@ export default function StartForm({
 }) {
   const [email, setEmail] = useState(defaultEmail);
   const [name, setName] = useState("");
+  const [bump, setBump] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-
-  const isStarter = tier === "starter";
-  const priceLine = `$${priceUsd}/mo after the trial. Cancel anytime.`;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,12 +34,10 @@ export default function StartForm({
       const res = await fetch("/api/pocket-agent/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, tier }),
+        body: JSON.stringify({ email, name, tier, bump }),
       });
       if (res.status === 502 || res.status === 503) {
-        setError(
-          "Trial signups are temporarily paused — try again in a minute."
-        );
+        setError("Checkout is temporarily paused — try again in a minute.");
         return;
       }
       if (!res.ok) {
@@ -73,15 +69,14 @@ export default function StartForm({
               className="mb-4 whitespace-nowrap text-xs text-cyan-300/70 sm:text-sm"
               style={{ fontFamily: MONO_FONT }}
             >
-              [ pocket agent{isStarter ? "" : ` ${tierLabel.toLowerCase()}`} · $
-              {priceUsd}/mo · 14-day free trial ]
+              [ {tierLabel.toLowerCase()} · ${priceUsd}/mo · 14-day free trial ]
             </div>
             <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
-              <span className="bg-gradient-to-r from-accent via-cyan-300 to-indigo-300 bg-clip-text text-transparent">
-                Start your 14-day free trial
-              </span>
+              You’re one step from your workspace.
             </h1>
-            <p className="mt-4 text-lg text-slate-300">{priceLine}</p>
+            <p className="mt-4 text-lg text-slate-300">
+              ${priceUsd}/mo after the trial. Cancel any time.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-10 space-y-4">
@@ -99,7 +94,7 @@ export default function StartForm({
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder="you@yourbusiness.com"
                 className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-slate-100 placeholder-slate-500 outline-none transition focus:border-accent/60 focus:bg-white/[0.06] focus:ring-1 focus:ring-accent/30"
               />
             </div>
@@ -108,8 +103,7 @@ export default function StartForm({
                 htmlFor="name"
                 className="mb-1.5 block text-sm font-medium text-slate-300"
               >
-                First name{" "}
-                <span className="text-slate-500">(optional)</span>
+                First name <span className="text-slate-500">(optional)</span>
               </label>
               <input
                 id="name"
@@ -117,10 +111,37 @@ export default function StartForm({
                 autoComplete="given-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Chase"
+                placeholder="Dana"
                 className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-slate-100 placeholder-slate-500 outline-none transition focus:border-accent/60 focus:bg-white/[0.06] focus:ring-1 focus:ring-accent/30"
               />
             </div>
+
+            {/* Order-form bump — the Fast-Start Brain Import. */}
+            <label
+              htmlFor="bump"
+              className="flex cursor-pointer items-start gap-3 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.04] p-4"
+            >
+              <input
+                id="bump"
+                type="checkbox"
+                checked={bump}
+                onChange={(e) => setBump(e.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0 accent-cyan-400"
+              />
+              <span className="text-sm leading-relaxed text-slate-300">
+                <span className="font-semibold text-slate-100">
+                  Add the Fast-Start Brain Import — +$49 one-time.
+                </span>{" "}
+                We pull your existing notes, your last 50 sent emails, and your
+                site into your Business Brain before day one, so your agents
+                start knowing your business instead of learning it.{" "}
+                <span className="text-slate-500">
+                  (Optional — the Launch Kit walks you through this yourself for
+                  free; the bump just does it for you.)
+                </span>
+              </span>
+            </label>
+
             {error ? (
               <p className="rounded-xl border border-red-500/30 bg-red-500/[0.06] px-4 py-3 text-sm text-red-300">
                 {error}
@@ -131,20 +152,10 @@ export default function StartForm({
               disabled={busy}
               className="mt-2 inline-flex w-full items-center justify-center gap-3 rounded-full bg-accent px-8 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 sm:text-lg"
             >
-              {busy ? "Loading…" : "Start free trial"}
-              {!busy ? (
-                <svg
-                  aria-hidden
-                  viewBox="0 0 20 20"
-                  className="h-5 w-5"
-                  fill="currentColor"
-                >
-                  <path d="M7.05 4.05a1 1 0 011.414 0l5.243 5.243a1 1 0 010 1.414l-5.243 5.243a1 1 0 01-1.414-1.414L11.586 11H3a1 1 0 110-2h8.586L7.05 5.464a1 1 0 010-1.414z" />
-                </svg>
-              ) : null}
+              {busy ? "Loading…" : "Start my workspace"}
             </button>
             <p className="text-center text-xs text-slate-500">
-              After payment confirms, you&apos;ll be sent to your Pocket Agent.
+              After payment confirms, you’ll be sent to your workspace setup.
             </p>
           </form>
 
@@ -158,12 +169,15 @@ export default function StartForm({
             <ol className="space-y-3">
               {[
                 "Start your 14-day trial.",
-                "Open your Pocket Agent.",
-                "Add your first context — voice note, screenshot, or email.",
-                "Get your first draft or call brief.",
+                "Open your workspace.",
+                "Run the Business Brain setup from the Launch Kit.",
+                "Put a Persona to work and get your first real output.",
                 "Charged on day 15 unless you cancel.",
               ].map((step, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm text-slate-300">
+                <li
+                  key={i}
+                  className="flex items-start gap-3 text-sm text-slate-300"
+                >
                   <span
                     className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent"
                     style={{ fontFamily: MONO_FONT }}
@@ -175,8 +189,8 @@ export default function StartForm({
               ))}
             </ol>
             <p className="mt-5 text-xs leading-relaxed text-slate-500">
-              Your Pocket Agent will not send emails or customer replies without
-              you. Every output is a draft you approve.
+              Your agents won’t send emails or customer replies without you.
+              Every output is a draft you approve.
             </p>
           </div>
         </div>
@@ -185,16 +199,15 @@ export default function StartForm({
       <footer className="bg-black/40">
         <div className="mx-auto max-w-3xl px-6 py-12 text-center">
           <p className="text-sm leading-relaxed text-slate-400">
-            <Link href="/" className="text-accent transition hover:underline">
-              Back to the homepage
+            <Link href="/pricing" className="text-accent transition hover:underline">
+              Back to pricing
             </Link>
             .
           </p>
         </div>
         <div className="border-t border-white/5">
           <div className="mx-auto max-w-5xl px-6 py-4 text-xs text-slate-600">
-            © {new Date().getFullYear()} Whited Consulting. All rights
-            reserved.
+            © {new Date().getFullYear()} Whited Consulting. All rights reserved.
           </div>
         </div>
       </footer>

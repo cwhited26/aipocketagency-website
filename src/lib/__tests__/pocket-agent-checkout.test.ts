@@ -86,6 +86,48 @@ describe("buildPocketAgentCheckoutParams", () => {
     expect(p.get("metadata[tier]")).toBe("starter");
     expect(p.get("subscription_data[metadata][source]")).toBe("pocket_agent");
     expect(p.get("subscription_data[trial_period_days]")).toBe("14");
-    expect(p.get("success_url")).toContain("/pocket-agent/welcome");
+  });
+
+  it("routes success to /upsell carrying the session id (funnel post-checkout OTO)", () => {
+    const p = buildPocketAgentCheckoutParams({
+      ...base,
+      tier: "pro",
+      priceId: TIER_TO_PRICE.pro,
+    });
+    expect(p.get("success_url")).toBe(
+      "https://aipocketagent.com/upsell?session_id={CHECKOUT_SESSION_ID}",
+    );
+    expect(p.get("cancel_url")).toBe("https://aipocketagent.com/pricing");
+  });
+
+  it("omits the order-form bump line items by default", () => {
+    const p = buildPocketAgentCheckoutParams({
+      ...base,
+      tier: "pro",
+      priceId: TIER_TO_PRICE.pro,
+    });
+    expect(
+      p.get("subscription_data[add_invoice_items][0][price_data][unit_amount]"),
+    ).toBeNull();
+    expect(p.get("metadata[bump_fast_start_brain_import]")).toBeNull();
+  });
+
+  it("adds the Fast-Start Brain Import as a one-time first-invoice line when bump is set", () => {
+    const p = buildPocketAgentCheckoutParams({
+      ...base,
+      tier: "pro",
+      priceId: TIER_TO_PRICE.pro,
+      bump: true,
+    });
+    expect(
+      p.get("subscription_data[add_invoice_items][0][price_data][currency]"),
+    ).toBe("usd");
+    expect(
+      p.get("subscription_data[add_invoice_items][0][price_data][unit_amount]"),
+    ).toBe("4900");
+    expect(
+      p.get("subscription_data[add_invoice_items][0][price_data][product_data][name]"),
+    ).toBe("Fast-Start Brain Import");
+    expect(p.get("metadata[bump_fast_start_brain_import]")).toBe("true");
   });
 });
