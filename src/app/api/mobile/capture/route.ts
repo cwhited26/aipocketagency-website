@@ -29,6 +29,7 @@ import { MAX_UPLOAD_BYTES } from "@/lib/brain/absorb";
 import { UPLOAD_RESULT_KIND, type UploadResultPayload } from "@/lib/chat/upload-card";
 import { runAgentTurn, type AgentToolContext } from "@/lib/mobile/agent";
 import { maybeIngestYouTubeUrls, buildYouTubeContextAppend } from "@/lib/youtube/ingest";
+import { maybeIngestPodcastUrls, buildPodcastContextAppend } from "@/lib/podcasts/hooks";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -134,7 +135,10 @@ export async function POST(req: Request): Promise<Response> {
   // message metadata; the video lands as its own brain note.
   const ytResults = await maybeIngestYouTubeUrls(prompt, userId, "mobile_capture");
   const ytContext = buildYouTubeContextAppend(ytResults);
-  const effectiveContent = [prompt, processed.modelContext, ytContext].filter(Boolean).join("\n\n");
+  // A podcast link in the prompt → transcribe the episode + fold it into the turn, same as video.
+  const pcResults = await maybeIngestPodcastUrls(prompt, userId, "mobile_capture");
+  const pcContext = buildPodcastContextAppend(pcResults);
+  const effectiveContent = [prompt, processed.modelContext, ytContext, pcContext].filter(Boolean).join("\n\n");
   const uploadMetadata: UploadResultPayload = {
     kind: UPLOAD_RESULT_KIND,
     caption: prompt,

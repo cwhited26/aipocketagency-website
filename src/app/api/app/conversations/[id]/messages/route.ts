@@ -27,6 +27,12 @@ import {
   buildYouTubeContextAppend,
 } from "@/lib/youtube/ingest";
 import { type YouTubeIngestPayload } from "@/lib/youtube/card";
+import {
+  maybeIngestPodcastUrls,
+  buildPodcastCardPayload,
+  buildPodcastContextAppend,
+} from "@/lib/podcasts/hooks";
+import { type PodcastIngestPayload } from "@/lib/podcasts/card";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -518,6 +524,7 @@ export async function POST(
   let effectiveContent = caption.trim();
   let uploadMetadata: UploadResultPayload | undefined;
   let youtubeMetadata: YouTubeIngestPayload | undefined;
+  let podcastMetadata: PodcastIngestPayload | undefined;
   if (hasUploads) {
     if (!brain_repo || !github_token) {
       return NextResponse.json(
@@ -547,16 +554,26 @@ export async function POST(
       const ytContext = buildYouTubeContextAppend(ytResults);
       effectiveContent = [caption.trim(), ytContext].filter(Boolean).join("\n\n");
       youtubeMetadata = buildYouTubeCardPayload(caption.trim(), ytResults) ?? undefined;
+    } else {
+      // A podcast link in chat → same shape as YouTube: transcribe the episode BEFORE the agent runs,
+      // fold the transcript into this turn, and ride a podcast_ingest card in metadata. A message
+      // carries one card kind, so this is the no-upload / no-YouTube branch.
+      const pcResults = await maybeIngestPodcastUrls(caption.trim(), user.id, "ask_box");
+      if (pcResults.length > 0) {
+        const pcContext = buildPodcastContextAppend(pcResults);
+        effectiveContent = [caption.trim(), pcContext].filter(Boolean).join("\n\n");
+        podcastMetadata = buildPodcastCardPayload(caption.trim(), pcResults) ?? undefined;
+      }
     }
   }
 
-  // Persist user message first (with the upload / YouTube card payload when one applies).
+  // Persist user message first (with the upload / YouTube / podcast card payload when one applies).
   const userMsgResult = await insertMessage({
     conversationId,
     userId: user.id,
     role: "user",
     content: effectiveContent,
-    metadata: uploadMetadata ?? youtubeMetadata,
+    metadata: uploadMetadata ?? youtubeMetadata ?? podcastMetadata,
   });
   if (!userMsgResult.ok) {
     return NextResponse.json({ error: userMsgResult.error }, { status: userMsgResult.status });
@@ -685,6 +702,7 @@ export async function POST(
       caption.trim() ||
       uploadMetadata?.files[0]?.structuredDescription ||
       youtubeMetadata?.videos[0]?.title ||
+      podcastMetadata?.episodes[0]?.title ||
       "Image upload";
     conversationTitle = generateTitle(titleSeed);
     await updateConversation(conversationId, user.id, { title: conversationTitle });

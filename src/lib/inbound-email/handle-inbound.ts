@@ -12,6 +12,7 @@ import {
 } from "@/lib/pa-conversations";
 import { absorbToMemory, isAllowedUploadType } from "@/lib/brain/absorb";
 import { maybeIngestYouTubeUrls, buildYouTubeContextAppend } from "@/lib/youtube/ingest";
+import { maybeIngestPodcastUrls, buildPodcastContextAppend } from "@/lib/podcasts/hooks";
 import { sendTransactional } from "@/lib/email/resend";
 import { fetchAuthUserEmail } from "@/lib/connectors/system/recipient";
 import { generateInboundReply } from "./agent";
@@ -101,7 +102,11 @@ export async function handleInboundForward(params: {
   // A YouTube link in the forwarded email → ingest it (transcript + metadata → brain note) and fold
   // the transcript into the turn so PA's reply can act on the video, not just the URL.
   const ytResults = await maybeIngestYouTubeUrls(bodyText, ownerId, "inbound_email");
-  const ytContext = buildYouTubeContextAppend(ytResults);
+  // A podcast link in the forwarded email → transcribe the episode too, same as the video path.
+  const pcResults = await maybeIngestPodcastUrls(bodyText, ownerId, "inbound_email");
+  const ytContext = [buildYouTubeContextAppend(ytResults), buildPodcastContextAppend(pcResults)]
+    .filter(Boolean)
+    .join("\n\n");
   const bodyWithVideo = [bodyText, ytContext].filter(Boolean).join("\n\n");
 
   const userTurn =
@@ -131,7 +136,8 @@ export async function handleInboundForward(params: {
     return { ok: true, replied: false };
   }
 
-  // When a video was ingested, give the reply agent the transcript by augmenting the email body.
+  // When a video or podcast episode was ingested, give the reply agent the transcript by augmenting
+  // the email body.
   const emailForReply = ytContext ? { ...email, text: bodyWithVideo } : email;
   const generated = await generateInboundReply({ anthropicApiKey, brainRepo, githubToken, email: emailForReply });
   if (!generated.ok) return { ok: false, status: generated.status, error: generated.error };

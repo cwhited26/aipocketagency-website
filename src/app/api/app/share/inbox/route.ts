@@ -3,6 +3,7 @@ import { z } from "zod";
 import { commitMemoryFile, fetchFileContent } from "@/lib/pa-brain";
 import { appendEntryToRaw } from "@/lib/pa-inbox";
 import { maybeIngestYouTubeUrls } from "@/lib/youtube/ingest";
+import { maybeIngestPodcastUrls } from "@/lib/podcasts/hooks";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -182,15 +183,24 @@ export async function POST(req: Request): Promise<NextResponse> {
     .filter((r): r is Extract<(typeof ytResults)[number], { ok: true }> => r.ok)
     .map((r) => ({ title: r.title, channel: r.channel, brainPath: r.brainPath, summary: r.summary }));
 
+  // A shared podcast link → transcribe the episode + write its own brain note, same as the video path.
+  const pcResults = await maybeIngestPodcastUrls(shareText, tokenRow.user_id, "ios_share");
+  const ingestedPodcasts = pcResults
+    .filter((r): r is Extract<(typeof pcResults)[number], { ok: true }> => r.ok)
+    .map((r) => ({ title: r.title, show: r.show, brainPath: r.brainPath, summary: r.summary }));
+
+  const captured = [
+    ...ingested.map((i) => `Captured + transcribed: ${i.title}`),
+    ...ingestedPodcasts.map((i) => `Listened + transcribed: ${i.title}`),
+  ];
+
   return NextResponse.json({
     ok: true,
     id: entry.id,
     path: inboxPath,
     sha: commitResult.sha,
     ingested,
-    message:
-      ingested.length > 0
-        ? ingested.map((i) => `Captured + transcribed: ${i.title}`).join("; ")
-        : undefined,
+    ingestedPodcasts,
+    message: captured.length > 0 ? captured.join("; ") : undefined,
   });
 }

@@ -5,6 +5,7 @@
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { commitBrainTextFile } from "@/lib/brain/absorb";
 import { maybeIngestYouTubeUrls } from "@/lib/youtube/ingest";
+import { maybeIngestPodcastUrls } from "@/lib/podcasts/hooks";
 import { slugifyForPath } from "./slug";
 import { createBccWatch } from "./bcc-watch";
 import { logInboundEmail } from "./log";
@@ -72,9 +73,10 @@ export async function handleBccAwareness(params: {
     if (committed.ok) brainPath = path;
   }
 
-  // 1b. If the BCC'd email links a YouTube video, ingest it (transcript + metadata → its own brain
-  //     note) so the owner's brain captures the content, not just that the email went out.
+  // 1b. If the BCC'd email links a YouTube video or a podcast episode, ingest it (transcript → its
+  //     own brain note) so the owner's brain captures the content, not just that the email went out.
   await maybeIngestYouTubeUrls(bodyText, ownerId, "bcc");
+  await maybeIngestPodcastUrls(bodyText, ownerId, "bcc");
 
   // 2. Register the thread-watch so the cron can draft the reply when the recipient responds.
   const watch = await createBccWatch({

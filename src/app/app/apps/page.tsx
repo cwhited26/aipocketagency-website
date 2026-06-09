@@ -65,6 +65,14 @@ const apps: AppDef[] = [
     tagColor: "cyan",
   },
   {
+    href: "/app/apps/podcasts",
+    label: "Podcast Ingester",
+    description:
+      "Drop a podcast link — PA listens to the episode, pulls out what matters by use case (a competitor's claim, a pricing tactic, a customer quote), and files a clean note in your brain so you don't sit through 90 minutes of audio.",
+    tag: "Reads Brain",
+    tagColor: "cyan",
+  },
+  {
     href: "/app/apps/lead-scout",
     label: "Lead Scout",
     description:

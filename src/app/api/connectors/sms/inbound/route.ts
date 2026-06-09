@@ -35,6 +35,7 @@ import {
 import { logVisionAttempt } from "@/lib/vision/log";
 import { transcribeAudio } from "@/lib/voice/transcribe";
 import { maybeIngestYouTubeUrls, buildYouTubeContextAppend } from "@/lib/youtube/ingest";
+import { maybeIngestPodcastUrls, buildPodcastContextAppend } from "@/lib/podcasts/hooks";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -163,10 +164,12 @@ export async function POST(req: Request): Promise<NextResponse> {
   // A YouTube link in the text → ingest it (transcript + metadata → brain note) and fold the
   // transcript into the turn so PA can act on the video and text back about it.
   const ytResults = await maybeIngestYouTubeUrls(parsed.body, ownerId, "sms");
-  const content =
-    ytResults.length > 0
-      ? [baseContent, buildYouTubeContextAppend(ytResults)].join("\n\n")
-      : baseContent;
+  // A podcast link in the text → transcribe + fold into the turn, same as the video path.
+  const pcResults = await maybeIngestPodcastUrls(parsed.body, ownerId, "sms");
+  const ingestContext = [buildYouTubeContextAppend(ytResults), buildPodcastContextAppend(pcResults)]
+    .filter(Boolean)
+    .join("\n\n");
+  const content = ingestContext ? [baseContent, ingestContext].join("\n\n") : baseContent;
 
   // 4. Resolve the owner's single SMS thread, then run the shared headless turn (persists the
   // inbound user message with the SMS origin chip, runs the agent, persists the reply).
