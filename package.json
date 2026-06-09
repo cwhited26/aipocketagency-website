@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "changelog:check": "node scripts/update-changelog.mjs",
     "pdf:build": "./scripts/build-pdf.sh"
   },
   "dependencies": {
