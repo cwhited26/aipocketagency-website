@@ -53,7 +53,9 @@ function baseDeps(overrides: Partial<DispatcherDeps> = {}): DispatcherDeps {
     loadContext: vi.fn(async () => ({
       ctx: { availableConnectors: [], availablePersonas: [] },
       brainRepo: null,
+      brainToken: null,
     })),
+    resolveSkills: vi.fn(async () => []),
     llm: vi.fn(() => async () => ({ ok: true as const, text: JSON.stringify(scaffoldWith(2)) })),
     reserveRun: vi.fn(async (_b: string, minutes: number) => ({
       ok: true as const,
@@ -221,5 +223,62 @@ describe("buildRunSpec", () => {
     expect(spec.objective).toBe("the goal");
     expect(spec.toolScopes).toEqual(["gmail"]);
     expect(spec.definitionOfDone).toBe(scaffold.definitionOfDone);
+    // Default zone is recorded so the sub-agent knows its containment scope.
+    expect(spec.readZones).toEqual(["project-shared"]);
+  });
+
+  it("injects loaded Skills as `## Learned techniques` context (PA-SKILL-6)", () => {
+    const scaffold = scaffoldWith(2);
+    const spec = buildRunSpec("draft a supplement", scaffold, [], {
+      loadedSkills: [{ slug: "draft-roof-supplement-quote", name: "Draft Roof Supplement Quote", body: "Step 1. Read the photos." }],
+      runZone: "project-shared",
+    });
+    const ctx = spec.context as {
+      learnedTechniques: { slug: string }[];
+      learnedTechniquesMarkdown: string;
+    };
+    expect(ctx.learnedTechniques).toHaveLength(1);
+    expect(ctx.learnedTechniques[0].slug).toBe("draft-roof-supplement-quote");
+    expect(ctx.learnedTechniquesMarkdown).toContain("## Learned techniques");
+    expect(ctx.learnedTechniquesMarkdown).toContain("Draft Roof Supplement Quote");
+  });
+});
+
+describe("dispatchUserGoal · Skills", () => {
+  beforeEach(() => {
+    process.env.PA_ORCHESTRATOR_ENABLED = "true";
+  });
+  afterEach(() => {
+    delete process.env.PA_ORCHESTRATOR_ENABLED;
+    vi.restoreAllMocks();
+  });
+
+  it("resolves Skills for the run's zone and carries them into the dispatched spec", async () => {
+    const resolveSkills = vi.fn(async () => [
+      { slug: "draft-roof-supplement-quote", name: "Draft Roof Supplement Quote", body: "Read photos." },
+    ]);
+    const dispatchRuntime = vi.fn(async (_job: unknown) => ({ ok: true as const, runtimeJobId: "job-1" }));
+    const deps = baseDeps({
+      loadContext: vi.fn(async () => ({
+        ctx: { availableConnectors: [], availablePersonas: [] },
+        brainRepo: "owner/brain",
+        brainToken: null,
+      })),
+      resolveSkills,
+      dispatchRuntime,
+    });
+    await dispatchUserGoal({ businessId: "biz-1", goal: COMPLEX_GOAL }, deps);
+    expect(resolveSkills).toHaveBeenCalledWith(
+      expect.objectContaining({ ownerId: "biz-1", repo: "owner/brain", runZone: "project-shared" }),
+    );
+    const job = dispatchRuntime.mock.calls[0][0] as unknown as { spec: { context: { learnedTechniques: unknown[] } } };
+    expect(job.spec.context.learnedTechniques).toHaveLength(1);
+  });
+
+  it("skips Skill resolution entirely when the owner has no brain repo", async () => {
+    const resolveSkills = vi.fn(async () => []);
+    const deps = baseDeps({ resolveSkills });
+    await dispatchUserGoal({ businessId: "biz-1", goal: COMPLEX_GOAL }, deps);
+    expect(resolveSkills).not.toHaveBeenCalled();
   });
 });

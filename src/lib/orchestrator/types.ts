@@ -143,6 +143,10 @@ export const SubAgentRunRowSchema = z.object({
   retry_budget: z.number().int().nullable().optional(),
   verification_verdict: VerificationVerdictSchema.nullable().optional(),
   needs_human: z.boolean().optional(),
+  // Skills poisoning defense (migration 059, PA-SKILL-7): a run born from untrusted inbound
+  // content (email / SMS / public persona) may LOAD Skills in its zone but never PROPOSE one in
+  // the LEARN phase. Optional so a row from a project that hasn't applied 059 still parses.
+  untrusted_origin: z.boolean().optional(),
 });
 export type SubAgentRunRow = z.infer<typeof SubAgentRunRowSchema>;
 

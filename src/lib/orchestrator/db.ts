@@ -102,21 +102,26 @@ export type InsertRunInput = {
   toolScopes: string[];
   timeBudgetSeconds: number;
   agentMinutes: number;
+  // Skills poisoning defense (PA-SKILL-7). Only sent when true so a project that hasn't applied
+  // migration 057 still inserts trusted (owner-initiated) runs without an unknown-column error.
+  untrustedOrigin?: boolean;
 };
 
 export async function insertRun(input: InsertRunInput): Promise<SubAgentRunRow> {
+  const body: Record<string, unknown> = {
+    business_id: input.businessId,
+    originating_message_id: input.originatingMessageId ?? null,
+    status: input.status ?? "planning",
+    spec_json: input.specJson,
+    tool_scopes: input.toolScopes,
+    time_budget_seconds: input.timeBudgetSeconds,
+    agent_minutes: input.agentMinutes,
+  };
+  if (input.untrustedOrigin) body.untrusted_origin = true;
   const rows = await rest<unknown>("pa_sub_agent_runs", {
     method: "POST",
     prefer: "return=representation",
-    body: {
-      business_id: input.businessId,
-      originating_message_id: input.originatingMessageId ?? null,
-      status: input.status ?? "planning",
-      spec_json: input.specJson,
-      tool_scopes: input.toolScopes,
-      time_budget_seconds: input.timeBudgetSeconds,
-      agent_minutes: input.agentMinutes,
-    },
+    body,
   });
   const parsed = Array.isArray(rows) ? rows.map((r) => SubAgentRunRowSchema.parse(r)) : [];
   if (!parsed[0]) throw new OrchestratorDbError("Run insert returned no row");

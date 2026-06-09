@@ -54,6 +54,15 @@ function IcWork() {
   );
 }
 
+function IcSkills() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
+      <path d="M7.5 1.5l1.6 3.5 3.9.4-2.9 2.6.9 3.8-3.5-2-3.5 2 .9-3.8L2 5.4l3.9-.4z"
+        stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function IcQuote() {
   return (
     <svg width="14" height="14" viewBox="0 0 15 15" fill="none">
@@ -208,6 +217,7 @@ const PALETTE_ITEMS: PaletteItem[] = [
   { id: "digest",     label: "Weekly Read",          keywords: "weekly digest brain read summary",                        href: "/app/brain/digest",     section: "NAVIGATE", Icon: IcBook        },
   { id: "documents",  label: "Documents",            keywords: "documents files uploads library brain",                   href: "/app/documents",        section: "NAVIGATE", Icon: IcDoc         },
   { id: "apps",       label: "Apps",                 keywords: "apps work tools catalog workbench",                       href: "/app/apps",             section: "NAVIGATE", Icon: IcWork        },
+  { id: "skills",     label: "Skills",               keywords: "skills techniques learned moves abilities evolve",        href: "/app/skills",           section: "NAVIGATE", Icon: IcSkills      },
   { id: "quote",      label: "Quote / Proposal",     keywords: "quote proposal writer output client",                     href: "/app/apps/quote",       section: "NAVIGATE", Icon: IcQuote       },
   { id: "drafter",    label: "Email Drafter",        keywords: "email drafter draft write message app",                   href: "/app/apps/email",       section: "NAVIGATE", Icon: IcMail        },
   { id: "followups",  label: "Follow-up Radar",      keywords: "follow up radar cold outreach leads",                     href: "/app/apps/followups",   section: "NAVIGATE", Icon: IcRadar       },

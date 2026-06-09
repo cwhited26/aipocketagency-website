@@ -44,13 +44,33 @@ import { completeLlm } from "@/lib/llm/dispatch";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { checkBudgetGate, type BudgetGate } from "@/lib/cost/budget";
 import { stageCostBudgetGateCard } from "@/lib/cost/gate-card";
+import {
+  formatLearnedTechniques,
+  resolveSkillsForRun,
+  type LoadedSkill,
+} from "@/lib/skills/resolve";
+import { appendTriggeredRecord } from "@/lib/skills/store";
+
+// The zone a goal-driven owner run is scoped to. Skills are matched + loaded only within this zone
+// (PA-SKILL-7); a future persona-scoped dispatch passes its own `persona-<slug>` zone instead.
+export const DEFAULT_RUN_ZONE = "project-shared";
+
+export type ResolveSkillsInput = {
+  ownerId: string;
+  repo: string;
+  token: string | null;
+  goal: string;
+  runZone: string;
+};
 
 // ── Dependency surface (mocked in tests) ──────────────────────────────────────────────────
 
 export type DispatcherDeps = {
   getTier: (businessId: string) => Promise<Tier>;
   countActiveRuns: (businessId: string) => Promise<number>;
-  loadContext: (businessId: string) => Promise<{ ctx: PlannerContext; brainRepo: string | null }>;
+  loadContext: (
+    businessId: string,
+  ) => Promise<{ ctx: PlannerContext; brainRepo: string | null; brainToken?: string | null }>;
   llm: (businessId: string) => PlannerLlm;
   reserveRun: (businessId: string, minutes: number) => ReturnType<typeof reserveRun>;
   releaseReservation: (businessId: string, minutes: number) => Promise<void>;
@@ -58,6 +78,9 @@ export type DispatcherDeps = {
   updateRun: typeof updateRun;
   logPhaseEnter: typeof logPhaseEnter;
   dispatchRuntime: (job: DispatchJob) => Promise<DispatchResult>;
+  // Read-before-plan Skill resolution (PA-SKILL-6). Best-effort: never blocks dispatch — a throw
+  // or no match just means the run plans from baseline. Injected so dispatcher tests stay pure.
+  resolveSkills: (input: ResolveSkillsInput) => Promise<LoadedSkill[]>;
   maxConcurrent: () => number;
   timeBudgetSeconds: () => number;
   // Cost soft-pause gate (Cost Observability SPEC §5.4, PA-COST-14). Runs BEFORE a sub-agent fires;
@@ -90,12 +113,13 @@ function defaultLlm(businessId: string): PlannerLlm {
 
 async function defaultLoadContext(
   businessId: string,
-): Promise<{ ctx: PlannerContext; brainRepo: string | null }> {
+): Promise<{ ctx: PlannerContext; brainRepo: string | null; brainToken: string | null }> {
   const paRes = await fetchPaUser(businessId);
   const brainRepo = paRes.ok && paRes.data ? paRes.data.brain_repo : null;
+  const brainToken = paRes.ok && paRes.data ? paRes.data.github_token : null;
   // Connector + persona discovery is best-effort; the planner degrades to read-only / pocket-
   // agent tasks when nothing is available. (Wired thin here; Wave C grows the connector list.)
-  return { ctx: { availableConnectors: [], availablePersonas: [] }, brainRepo };
+  return { ctx: { availableConnectors: [], availablePersonas: [] }, brainRepo, brainToken };
 }
 
 export const defaultDeps: DispatcherDeps = {
@@ -118,6 +142,18 @@ export const defaultDeps: DispatcherDeps = {
   updateRun,
   logPhaseEnter,
   dispatchRuntime: runtimeDispatch,
+  resolveSkills: async (input) => {
+    try {
+      return await resolveSkillsForRun(input);
+    } catch (e) {
+      // Never block dispatch on Skill resolution — plan from baseline and log the miss.
+      console.error("[dispatcher] skill resolution failed", {
+        ownerId: input.ownerId,
+        error: e instanceof Error ? e.message : String(e),
+      });
+      return [];
+    }
+  },
   maxConcurrent: maxConcurrentRunsPerUser,
   timeBudgetSeconds: defaultTimeBudgetSeconds,
   checkBudget: checkBudgetGate,
@@ -151,18 +187,28 @@ export function deriveToolScopes(scaffold: Scaffold): string[] {
   return [...scopes];
 }
 
-/** The run-level ISA the Modal runtime executes (it fans out to leaves internally). */
+/** The run-level ISA the Modal runtime executes (it fans out to leaves internally). Loaded Skills
+ *  ride in `context.learnedTechniques` (structured) + `context.learnedTechniquesMarkdown` (the
+ *  rendered `## Learned techniques` block, PA-SKILL-6) so the runtime starts from accumulated
+ *  technique. The run's zone is recorded in readZones for the sub-agent's containment scope. */
 export function buildRunSpec(
   goal: string,
   scaffold: Scaffold,
   toolScopes: string[],
+  opts?: { loadedSkills?: LoadedSkill[]; runZone?: string },
 ): SubAgentSpec {
+  const loadedSkills = opts?.loadedSkills ?? [];
+  const runZone = opts?.runZone ?? DEFAULT_RUN_ZONE;
   return {
     objective: goal.slice(0, 2_000),
     toolScopes,
-    readZones: [],
+    readZones: [runZone],
     definitionOfDone: scaffold.definitionOfDone,
-    context: { scaffold },
+    context: {
+      scaffold,
+      learnedTechniques: loadedSkills.map((s) => ({ slug: s.slug, name: s.name, body: s.body })),
+      learnedTechniquesMarkdown: formatLearnedTechniques(loadedSkills),
+    },
   };
 }
 
@@ -172,6 +218,12 @@ export type DispatchUserGoalInput = {
   businessId: string;
   goal: string;
   originatingMessageId?: string | null;
+  // The ContainmentGuard zone this run is scoped to (PA-SKILL-7). Defaults to the owner's
+  // project-shared zone; a persona-scoped surface passes its own `persona-<slug>`.
+  zone?: string;
+  // True for runs born from untrusted inbound content (email / SMS / public persona). Such a run
+  // may LOAD Skills but never PROPOSE one in the LEARN phase — the skill-poisoning defense.
+  untrustedOrigin?: boolean;
 };
 
 /**
@@ -241,10 +293,17 @@ export async function dispatchUserGoal(
   }
 
   const tier = await deps.getTier(businessId);
-  const { ctx, brainRepo } = await deps.loadContext(businessId);
+  const { ctx, brainRepo, brainToken } = await deps.loadContext(businessId);
+  const runZone = input.zone ?? DEFAULT_RUN_ZONE;
 
   // 4. Scaffold (Project → Milestones → Tasks). Never throws — deterministic fallback.
   const { scaffold } = await buildScaffold(goal, ctx, deps.llm(businessId));
+
+  // 4b. Read-before-plan: load the Skills this goal matches, scoped to the run's zone (PA-SKILL-6).
+  // Best-effort — a throw inside resolveSkills is caught there, returning [] (plan from baseline).
+  const loadedSkills = brainRepo
+    ? await deps.resolveSkills({ ownerId: businessId, repo: brainRepo, token: brainToken ?? null, goal, runZone })
+    : [];
 
   // 5. Sub-agent fan-out cap.
   const fanout = evaluateSubAgentFanout(tier, leafCount(scaffold));
@@ -256,22 +315,43 @@ export async function dispatchUserGoal(
   const reservation = await deps.reserveRun(businessId, minutes);
   if (!reservation.ok) return { kind: "capped", reason: reservation.reason };
 
-  // 7. Persist the run + fire it.
+  // 7. Persist the run + fire it. The loaded Skill slugs + zone ride in spec_json so the LEARN
+  // phase (webhook run_complete) knows which Skills this run started from.
   const toolScopes = deriveToolScopes(scaffold);
+  const loadedSkillSlugs = loadedSkills.map((s) => s.slug);
   const run = await deps.insertRun({
     businessId,
     originatingMessageId: input.originatingMessageId ?? null,
     status: "planning",
-    specJson: { goal, scaffold },
+    specJson: { goal, scaffold, zone: runZone, loadedSkillSlugs },
     toolScopes,
     timeBudgetSeconds: budgetSeconds,
     agentMinutes: minutes,
+    untrustedOrigin: input.untrustedOrigin ?? false,
   });
+
+  // Record a triggered stub for every loaded Skill (PA-SKILL §7.2 step 4) — audit + LEARN signal.
+  // Best-effort; a failed audit write is logged, never blocks the run.
+  if (loadedSkills.length > 0 && brainRepo) {
+    const stampIso = new Date().toISOString();
+    await Promise.all(
+      loadedSkills.map(async (s) => {
+        const res = await appendTriggeredRecord(
+          { repo: brainRepo, token: brainToken ?? null },
+          s.slug,
+          { runId: run.id, goal, outcome: "loaded", stampIso },
+        );
+        if (!res.ok) {
+          console.error("[dispatcher] triggered-record write failed", { slug: s.slug, error: res.error });
+        }
+      }),
+    );
+  }
 
   const job: DispatchJob = {
     runId: run.id,
     businessId,
-    spec: buildRunSpec(goal, scaffold, toolScopes),
+    spec: buildRunSpec(goal, scaffold, toolScopes, { loadedSkills, runZone }),
     timeBudgetSeconds: budgetSeconds,
     brainRepo,
   };

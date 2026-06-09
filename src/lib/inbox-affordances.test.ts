@@ -17,11 +17,18 @@ const ALL_KINDS: InboxItemKind[] = [
   "sub_agent_activity",
   "routine_output",
   "cost_budget_gate",
+  "skill_evolution_proposal",
 ];
 
 // Kinds that commit a real-world / irreversible write ONLY because the user approved
-// — these are the only kinds allowed to show an approve/reject button.
-const ACTION_KINDS: InboxItemKind[] = ["draft", "decision", "action_approval"];
+// — these are the only kinds allowed to show an approve/reject button. A skill_evolution_proposal
+// writes a versioned SKILL.md to the brain on approval, so it belongs here.
+const ACTION_KINDS: InboxItemKind[] = [
+  "draft",
+  "decision",
+  "action_approval",
+  "skill_evolution_proposal",
+];
 
 // Kinds that are pure outputs the user reads and clears — nothing fires either way.
 const INFORMATIONAL_KINDS: InboxItemKind[] = [

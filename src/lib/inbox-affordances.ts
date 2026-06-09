@@ -21,7 +21,8 @@ export type InboxItemKind =
   | "routine_output"
   | "lead_scout_batch"
   | "build_action_approval"
-  | "cost_budget_gate";
+  | "cost_budget_gate"
+  | "skill_evolution_proposal";
 
 export type AffordanceRole = "primary" | "secondary" | "destructive";
 
@@ -112,6 +113,20 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
     // the approval queue — no affordances render here.
     case "persona_lead":
       return { hasApproval: false, affordances: [] };
+
+    // A Skill write the LEARN phase proposes (new technique or an update to an existing one,
+    // PA-SKILL-3). Approving WRITES a versioned SKILL.md to the owner's brain — a commit-on-approve
+    // primitive — so it carries Approve / Edit / Reject. Edit lets the owner tweak the technique
+    // before it's saved; Reject feeds back so PA doesn't re-propose it.
+    case "skill_evolution_proposal":
+      return {
+        hasApproval: true,
+        affordances: [
+          { key: "approve", label: "Approve", role: "primary" },
+          { key: "edit", label: "Edit", role: "secondary" },
+          { key: "reject", label: "Reject", role: "destructive" },
+        ],
+      };
 
     // Sub-agent progress card. Informational — dismissible, never approvable.
     case "sub_agent_activity":

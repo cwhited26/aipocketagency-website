@@ -30,7 +30,8 @@ export type InboxKind =
   | "routine_output"
   | "lead_scout_batch"
   | "build_action_approval"
-  | "cost_budget_gate";
+  | "cost_budget_gate"
+  | "skill_evolution_proposal";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

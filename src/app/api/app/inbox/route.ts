@@ -24,7 +24,8 @@ export type InboxCardKind =
   | "routine_output"
   | "lead_scout_batch"
   | "build_action_approval"
-  | "cost_budget_gate";
+  | "cost_budget_gate"
+  | "skill_evolution_proposal";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -63,6 +64,19 @@ export type LeadScoutBatchDetail = {
   noWebsiteCount: number;
 };
 
+// Skills (PA-SKILL-3): a proposed Skill write the LEARN phase staged. Carries the full proposed
+// SKILL.md body so the owner reviews exactly what would be saved (the primary poisoning defense —
+// a poisoned line is human-readable here). action='new' creates a Skill; 'update' sharpens one.
+export type SkillProposalDetail = {
+  action: "new" | "update";
+  slug: string;
+  name: string;
+  proposedBody: string;
+  proposedDescription: string;
+  currentVersion: number;
+  reason: string;
+};
+
 export type InboxCard = {
   id: string;
   system: InboxCardSystem;
@@ -78,6 +92,7 @@ export type InboxCard = {
   triage: TriageDetail | null;
   action: ActionApprovalDetail | null;
   leadScout: LeadScoutBatchDetail | null;
+  skillProposal: SkillProposalDetail | null;
   // The surface the draft was initiated from. 'inbox' means it was drafted from
   // within the Inbox (a reply to a triaged thread) and is rendered inline on its
   // originating thread instead of in the generic drafts list. threadId links it back.
@@ -151,6 +166,19 @@ function leadScoutOf(item: InboxItem): LeadScoutBatchDetail {
   };
 }
 
+function skillProposalOf(item: InboxItem): SkillProposalDetail {
+  const action = item.payload.action === "update" ? "update" : "new";
+  return {
+    action,
+    slug: str(item.payload.slug),
+    name: str(item.payload.name) || item.title,
+    proposedBody: str(item.payload.proposedBody),
+    proposedDescription: str(item.payload.proposedDescription),
+    currentVersion: num(item.payload.currentVersion),
+    reason: str(item.payload.reason),
+  };
+}
+
 function normalizeInboxItem(item: InboxItem): InboxCard {
   const isEmail = item.kind === "draft" && item.source === "email-drafter";
   const isTriage = item.kind === "email_triage";
@@ -162,6 +190,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
   const triage = isTriage ? triageOf(item) : null;
   const action = isAction ? actionOf(item) : null;
   const leadScout = item.kind === "lead_scout_batch" ? leadScoutOf(item) : null;
+  const skillProposal = item.kind === "skill_evolution_proposal" ? skillProposalOf(item) : null;
   return {
     id: item.id,
     system: "inbox",
@@ -183,6 +212,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
     triage,
     action,
     leadScout,
+    skillProposal,
     sourceSurface: str(item.payload.sourceSurface) || null,
     threadId: str(item.payload.threadId) || null,
   };
@@ -220,6 +250,7 @@ function normalizeLegacyAction(action: PendingAction): InboxCard {
     triage: null,
     action: null,
     leadScout: null,
+    skillProposal: null,
     sourceSurface: null,
     threadId: null,
   };

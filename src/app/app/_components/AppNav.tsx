@@ -98,6 +98,15 @@ function TasksIcon() {
   );
 }
 
+function SkillsIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M7.5 1.5l1.6 3.5 3.9.4-2.9 2.6.9 3.8-3.5-2-3.5 2 .9-3.8L2 5.4l3.9-.4z"
+        stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function PersonasIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
@@ -270,6 +279,7 @@ export default function AppNav() {
   const isBrain =
     pathname.startsWith("/app/brain") || pathname.startsWith("/app/onboarding");
   const isApps = pathname.startsWith("/app/apps") && !isInbox;
+  const isSkills = pathname.startsWith("/app/skills");
   const isDocs = pathname.startsWith("/app/documents");
   const isBrainMap = pathname.startsWith("/app/brain-map");
   const isCommunity = pathname.startsWith("/app/skool");
@@ -315,6 +325,7 @@ export default function AppNav() {
         <NavItem href="/app/documents" active={isDocs} icon={<DocsIcon />} label="Documents" title="Files in your brain" onClick={close} />
         <NavItem href="/app/brain-map" active={isBrainMap} icon={<BrainMapIcon />} label="Brain Map" title="Map of what your agent knows" onClick={close} />
         <NavItem href="/app/apps" active={isApps} icon={<WorkIcon />} label="Apps" onClick={close} />
+        <NavItem href="/app/skills" active={isSkills} icon={<SkillsIcon />} label="Skills" title="Techniques your agent has learned" onClick={close} />
         <NavItem href="/app/personas" active={isPersonas} icon={<PersonasIcon />} label="Personas" onClick={close} />
         <NavItem href="/app/routines" active={isRoutines} icon={<RoutinesIcon />} label="Routines" onClick={close} />
         <NavItem href="/app/projects" active={isProjects} icon={<ProjectsIcon />} label="Projects" onClick={close} />

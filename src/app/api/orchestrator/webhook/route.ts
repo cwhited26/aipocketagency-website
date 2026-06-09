@@ -23,6 +23,7 @@ import { notifyApprovalNeeded } from "@/lib/connectors/system";
 import { ConnectorScopeError } from "@/lib/orchestrator/containment-guard";
 import { verifyWebhookSecret } from "@/lib/orchestrator/runtime-client";
 import { applyVerificationGate } from "@/lib/orchestrator/verification";
+import { runSkillLearnPhase } from "@/lib/skills/learn";
 import { monthKey } from "@/lib/orchestrator/tier-caps";
 import { logCostFromUsage } from "@/lib/cost/log";
 import { WebhookEventSchema, isTerminalStatus } from "@/lib/orchestrator/types";
@@ -213,6 +214,19 @@ export async function POST(req: Request): Promise<NextResponse> {
         verification = { verdict: outcome.verdict, needsHuman: outcome.needsHuman };
       } catch (e) {
         console.error("[orchestrator/webhook] verification gate failed", {
+          runId: run.id,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+
+      // LEARN phase (PA-SKILL-3): a SUCCEEDED, trusted run may propose a new Skill or sharpen an
+      // existing one. Stages a `skill_evolution_proposal` Inbox card (or auto-evolves a trusted
+      // Skill). Best-effort — a LEARN error must never fail the already-completed callback, and the
+      // run-not-successful / untrusted-origin / nothing-to-learn skips are normal control flow.
+      try {
+        await runSkillLearnPhase({ ...run, status: event.status }, new Date().toISOString());
+      } catch (e) {
+        console.error("[orchestrator/webhook] skill learn phase failed", {
           runId: run.id,
           error: e instanceof Error ? e.message : String(e),
         });

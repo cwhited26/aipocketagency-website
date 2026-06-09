@@ -51,6 +51,16 @@ type LeadScoutBatchDetail = {
   noWebsiteCount: number;
 };
 
+type SkillProposalDetail = {
+  action: "new" | "update";
+  slug: string;
+  name: string;
+  proposedBody: string;
+  proposedDescription: string;
+  currentVersion: number;
+  reason: string;
+};
+
 type InboxCard = {
   id: string;
   system: "inbox" | "legacy";
@@ -66,6 +76,7 @@ type InboxCard = {
   triage: TriageDetail | null;
   action: ActionApprovalDetail | null;
   leadScout: LeadScoutBatchDetail | null;
+  skillProposal: SkillProposalDetail | null;
   sourceSurface: string | null;
   threadId: string | null;
 };
@@ -96,12 +107,14 @@ function countdownTo(iso: string): string {
 }
 
 function approveEndpoint(card: InboxCard): string {
+  if (card.kind === "skill_evolution_proposal") return `/api/app/skills/proposals/${card.id}/approve`;
   return card.system === "legacy"
     ? `/api/app/actions/${card.id}/approve`
     : `/api/app/inbox/${card.id}/approve`;
 }
 
 function rejectEndpoint(card: InboxCard): string {
+  if (card.kind === "skill_evolution_proposal") return `/api/app/skills/proposals/${card.id}/reject`;
   return card.system === "legacy"
     ? `/api/app/actions/${card.id}/reject`
     : `/api/app/inbox/${card.id}/reject`;
@@ -125,6 +138,7 @@ type AwaitingSection =
   | "activity"
   | "leads"
   | "budget"
+  | "skills"
   | "hidden";
 
 function sectionFor(kind: InboxItemKind): AwaitingSection {
@@ -146,6 +160,8 @@ function sectionFor(kind: InboxItemKind): AwaitingSection {
       return "leads";
     case "cost_budget_gate":
       return "budget";
+    case "skill_evolution_proposal":
+      return "skills";
     case "persona_lead":
       return "hidden";
     default: {
@@ -750,6 +766,7 @@ function TriageCard({
         triage: null,
         action: null,
         leadScout: null,
+        skillProposal: null,
         sourceSurface: "inbox",
         threadId: triage!.threadId,
       });
@@ -1048,6 +1065,94 @@ function ActionApprovalCard({
 // ─── Routine output card (unchanged) ───────────────────────────────────────────
 
 const ROUTINE_PREVIEW_CHARS = 600;
+
+// A Skill the LEARN phase wants to save or sharpen (PA-SKILL-3). The full proposed technique is
+// shown right here — a poisoned line would be human-readable — so the owner reads what they're
+// approving before it's written to the brain. Approve writes a versioned SKILL.md; deeper edits
+// happen on the Skills tab.
+function SkillProposalCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState<"approve" | "reject" | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const p = card.skillProposal;
+  const isUpdate = p?.action === "update";
+  const body = (p?.proposedBody ?? card.bodyMd).trim();
+  const isLong = body.length > 600;
+  const shown = expanded || !isLong ? body : `${body.slice(0, 600).trimEnd()}…`;
+
+  async function decide(kind: "approve" | "reject") {
+    setBusy(kind);
+    setErr(null);
+    try {
+      await postDecision(kind === "approve" ? approveEndpoint(card) : rejectEndpoint(card));
+      onResolved(card.id, kind === "approve" ? "approved" : "rejected");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-violet-500/20 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-violet-300/80 uppercase tracking-[0.18em]">
+          {isUpdate ? `Sharpen skill · was v${p?.currentVersion ?? 1}` : "New skill"}
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
+      </div>
+
+      <p className="text-[15px] font-semibold text-slate-100 leading-snug">{p?.name || card.title}</p>
+      {p?.reason && <p className="mt-1.5 text-sm text-slate-400 leading-relaxed">{p.reason}</p>}
+      {p?.proposedDescription && (
+        <p className="mt-1.5 text-[13px] text-slate-500 leading-relaxed">{p.proposedDescription}</p>
+      )}
+
+      <div className="mt-3 rounded-xl border border-slate-800/60 bg-slate-950/40 px-4 py-3 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+        {shown}
+      </div>
+      {isLong && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 text-xs font-mono text-[#22d3ee]/80 hover:text-[#22d3ee] transition-colors"
+        >
+          {expanded ? "Show less ↑" : "Read the full technique ↓"}
+        </button>
+      )}
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => void decide("approve")}
+          disabled={busy !== null}
+          className="min-h-[44px] rounded-xl bg-[#22d3ee]/15 border border-[#22d3ee]/40 px-4 text-sm font-medium text-[#22d3ee] hover:bg-[#22d3ee]/25 disabled:opacity-50 transition-colors"
+        >
+          {busy === "approve" ? "Saving…" : isUpdate ? "Approve update" : "Approve & save"}
+        </button>
+        <Link
+          href="/app/skills"
+          className="min-h-[44px] flex items-center rounded-xl border border-slate-700/60 px-4 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors"
+        >
+          Review &amp; edit in Skills →
+        </Link>
+        <button
+          onClick={() => void decide("reject")}
+          disabled={busy !== null}
+          className="min-h-[44px] rounded-xl border border-slate-700/60 px-4 text-sm text-slate-400 hover:border-red-500/50 hover:text-red-300 disabled:opacity-50 transition-colors ml-auto"
+        >
+          {busy === "reject" ? "…" : "Reject"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function RoutineOutputCard({
   card,
@@ -1693,6 +1798,7 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
   const leads = inSection("leads");
   const budgetGates = inSection("budget");
   const activity = inSection("activity");
+  const skillProposals = inSection("skills");
 
   const pendingTriageThreadIds = new Set(
     triage.map((c) => c.triage?.threadId).filter((t): t is string => Boolean(t)),
@@ -2055,6 +2161,17 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
                 <div className="flex flex-col gap-3">
                   {leads.map((card) => (
                     <LeadScoutBatchCard key={card.id} card={card} onResolved={onResolved} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {skillProposals.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader label="Skills to review" count={skillProposals.length} tone="text-violet-300/70" />
+                <div className="flex flex-col gap-3">
+                  {skillProposals.map((card) => (
+                    <SkillProposalCard key={card.id} card={card} onResolved={onResolved} />
                   ))}
                 </div>
               </section>
