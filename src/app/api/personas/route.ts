@@ -10,6 +10,7 @@ import {
   updatePersona,
 } from "@/lib/personas/db";
 import { applyTemplate, getTemplate } from "@/lib/personas/templates";
+import { sanitizeAppIds } from "@/lib/apps/catalog";
 import { buildPersonaSpecMarkdown } from "@/lib/personas/spec";
 import {
   customFieldsSchema,
@@ -32,6 +33,9 @@ const createSchema = z.object({
   name: personaNameSchema,
   tone: toneSchema,
   customFields: customFieldsSchema.default({}),
+  // The Apps (the WHAT) this persona can use. Sanitized against the catalog server-side;
+  // when omitted, the template's defaults are used.
+  accessibleApps: z.array(z.string().max(40)).max(40).optional(),
 });
 
 export async function GET(): Promise<NextResponse> {
@@ -72,10 +76,14 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.message }, { status: 422 });
   }
-  const { templateKey, name, tone, customFields } = parsed.data;
+  const { templateKey, name, tone, customFields, accessibleApps } = parsed.data;
 
   const template = getTemplate(templateKey);
   if (!template) return NextResponse.json({ error: "Unknown template" }, { status: 422 });
+
+  // Apps the persona can use: caller selection if provided, else the template's defaults.
+  // Always sanitized against the catalog so an unknown id can never be persisted.
+  const apps = sanitizeAppIds(accessibleApps ?? template.defaultApps);
 
   try {
     const cap = await canCreatePersona(ctx.userId);
@@ -125,6 +133,7 @@ export async function POST(req: Request): Promise<NextResponse> {
         status: "active",
         spec_path: specPath,
         knowledge_zone_key: zoneKey,
+        accessible_apps: apps,
       });
     } catch (e) {
       if (e instanceof PersonaDbError && (e.status === 409 || /duplicate|23505/.test(e.message))) {

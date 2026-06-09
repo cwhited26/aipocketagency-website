@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { TabGuide } from "../_components/TabGuide";
-import type { PersonaRow } from "@/lib/personas/types";
+import { personaApps, type PersonaRow } from "@/lib/personas/types";
+import { appsByIds } from "@/lib/apps/catalog";
 
 type CatalogResponse = {
   personas: PersonaRow[];
@@ -87,15 +88,14 @@ export default function PersonasCatalogClient() {
         </header>
 
         <p className="text-sm text-slate-300 leading-relaxed max-w-2xl mb-4">
-          A persona is your agent wearing a different hat. A sales persona writes like a closer — direct,
-          chasing the next step. A support persona writes like a patient operator. A recruiting persona
-          writes like a coach. Each one draws from its own slice of your brain, so your sales agent
-          isn&apos;t answering refund questions and your support agent isn&apos;t cold-pitching. That voice
-          and that slice of knowledge don&apos;t just shape emails — they shape how the agent works for
-          you in Projects too, so a sales-flavored follow-up sequence sounds like sales, not like a manual.
-          Build one from a template, share a link with a teammate, and it only ever knows what
-          you&apos;ve taught it. (Soon you&apos;ll be able to keep separate brains for separate businesses,
-          each with its own personas.)
+          A persona is the <span className="text-slate-100">who</span> — an Admin Assistant, a Sales
+          Assistant, a Content Creator, an Operations Chief of Staff. Apps are the{" "}
+          <span className="text-slate-100">what</span> they use: the Email Drafter, the Follow-up Radar,
+          Lead Scout. Each persona declares which Apps it can reach, writes in its own voice, and draws
+          from its own slice of your brain — so your sales persona isn&apos;t answering refund questions and
+          your support persona isn&apos;t cold-pitching. Start from a template, pick its Apps, share a link
+          with a teammate, and it only ever knows what you&apos;ve taught it. (Soon you&apos;ll be able to
+          keep separate brains for separate businesses, each with its own personas.)
         </p>
 
         {/* Start a persona — common types, one tap to the builder */}
@@ -156,6 +156,18 @@ export default function PersonasCatalogClient() {
                   {p.status}
                 </span>
               </div>
+              {appsByIds(personaApps(p)).length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {appsByIds(personaApps(p)).map((a) => (
+                    <span
+                      key={a.id}
+                      className="text-[10px] text-slate-400 border border-slate-700/60 rounded px-1.5 py-0.5"
+                    >
+                      {a.shortLabel}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Link
                   href={`/app/personas/${p.id}`}

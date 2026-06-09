@@ -6,89 +6,11 @@ import { GlowCard } from "../_components/GlowCard";
 import { TabGuide } from "../_components/TabGuide";
 import { StarterBox } from "../_components/StarterBox";
 import YouTubeExplainerCard from "@/components/youtube/ExplainerCard";
+import { APP_CATALOG, type AppDef } from "@/lib/apps/catalog";
 
-type AppDef = {
-  href: string;
-  label: string;
-  description: string;
-  tag: string;
-  tagColor?: "cyan" | "muted";
-};
-
-const apps: AppDef[] = [
-  {
-    href: "/app/apps/quote",
-    label: "Quote / Proposal Writer",
-    description:
-      "Drop in a client name, the scope, and any specifics. Reads your brain for services, pricing, and positioning — then produces a structured draft in your voice.",
-    tag: "Output",
-    tagColor: "cyan",
-  },
-  {
-    href: "/app/apps/email",
-    label: "Email Drafter",
-    description:
-      "Tell it who you're writing to, why, and what to cover. Reads your voice from the brain and drafts an email that sounds like you wrote it.",
-    tag: "Output",
-    tagColor: "cyan",
-  },
-  {
-    href: "/app/apps/followups",
-    label: "Follow-up Radar",
-    description:
-      "Scans your brain for relationships, leads, and deals that have gone cold. Surfaces the gap and drafts the nudge for each one.",
-    tag: "Reads Brain",
-    tagColor: "cyan",
-  },
-  {
-    href: "/app/apps/daily-brief",
-    label: "Daily Brief",
-    description:
-      "Your morning read. The agent scans your brain and writes what's on the radar, what's pending, and the one thing to move on today.",
-    tag: "Reads Brain",
-    tagColor: "cyan",
-  },
-  {
-    href: "/app/apps/calendar",
-    label: "Upcoming (from brain)",
-    description:
-      "Scans your brain for anything date or deadline related — scheduled jobs, deadlines, follow-up timelines. For live events, see Calendar in the sidebar.",
-    tag: "Reads Brain",
-    tagColor: "cyan",
-  },
-  {
-    href: "/app/apps/youtube",
-    label: "YouTube",
-    description:
-      "Drop a YouTube link — PA reads the video, files what matters in your brain by use case, and watches channels so you catch every new upload.",
-    tag: "Reads Brain",
-    tagColor: "cyan",
-  },
-  {
-    href: "/app/apps/podcasts",
-    label: "Podcast Ingester",
-    description:
-      "Drop a podcast link — PA listens to the episode, pulls out what matters by use case (a competitor's claim, a pricing tactic, a customer quote), and files a clean note in your brain so you don't sit through 90 minutes of audio.",
-    tag: "Reads Brain",
-    tagColor: "cyan",
-  },
-  {
-    href: "/app/apps/lead-scout",
-    label: "Lead Scout",
-    description:
-      "New: subscribe to a vertical pack and PA runs the full sweep + outreach loop for you — roofing, HVAC, painting, med spa, law firm, and more, each pre-tuned. Or build your own: sweep Google Maps for a category in a place (roofers near Knoxville without a website) or paste your own URLs. Either way PA sorts them by fit and drafts a first email in your voice for Approve & Send.",
-    tag: "Finds Leads",
-    tagColor: "cyan",
-  },
-  {
-    href: "/app/brain-map",
-    label: "Brain Map",
-    description:
-      "See what PA knows about your business — interactive map of every fact, voice cue, decision, and customer it's learned.",
-    tag: "View",
-    tagColor: "muted",
-  },
-];
+// The Apps menu reads from the shared catalog (lib/apps/catalog.ts) — the same source the
+// Personas surface uses to let each persona declare which Apps it can reach.
+const apps = APP_CATALOG;
 
 function tagClass(color: AppDef["tagColor"]): string {
   if (color === "cyan") {

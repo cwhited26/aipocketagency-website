@@ -98,6 +98,7 @@ export async function insertPersona(row: {
   status: PersonaStatus;
   spec_path: string;
   knowledge_zone_key: string;
+  accessible_apps: string[];
 }): Promise<PersonaRow> {
   const rows = await rest<PersonaRow[]>("personas", {
     method: "POST",
@@ -137,6 +138,7 @@ export async function updatePersona(
     tone: ToneKey;
     status: PersonaStatus;
     mode: PersonaMode;
+    accessible_apps: string[];
     current_spec_version: string;
     updated_at: string;
   }>,

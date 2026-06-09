@@ -47,10 +47,19 @@ export type PersonaRow = {
   status: PersonaStatus;
   spec_path: string;
   knowledge_zone_key: string;
+  // The Apps (the WHAT) this persona is set up to use — stable ids from the Apps catalog
+  // (lib/apps/catalog.ts). The column ships in migration 062; rows created before it is
+  // applied report `undefined`, so always read through `personaApps()`.
+  accessible_apps: string[];
   current_spec_version: string | null;
   created_at: string;
   updated_at: string;
 };
+
+/** The persona's declared Apps, tolerant of rows predating migration 062. */
+export function personaApps(persona: Pick<PersonaRow, "accessible_apps">): string[] {
+  return persona.accessible_apps ?? [];
+}
 
 export type PersonaSpecRow = {
   id: string;

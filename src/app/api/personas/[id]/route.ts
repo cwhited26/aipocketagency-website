@@ -27,6 +27,7 @@ import {
   PERSONA_STATUSES,
 } from "@/lib/personas/types";
 import { generateShareToken } from "@/lib/personas/tokens";
+import { sanitizeAppIds } from "@/lib/apps/catalog";
 import { publicModesEnabled, PUBLIC_MODES_COMING_SOON } from "@/lib/personas/feature-flags";
 import { publicChatUrlForToken } from "@/lib/personas/links";
 
@@ -89,13 +90,15 @@ const patchSchema = z
     tone: toneSchema.optional(),
     status: z.enum(PERSONA_STATUSES).optional(),
     mode: modeSchema.optional(),
+    accessibleApps: z.array(z.string().max(40)).max(40).optional(),
   })
   .refine(
     (v) =>
       v.name !== undefined ||
       v.tone !== undefined ||
       v.status !== undefined ||
-      v.mode !== undefined,
+      v.mode !== undefined ||
+      v.accessibleApps !== undefined,
     { message: "Nothing to update" },
   );
 
@@ -119,7 +122,10 @@ export async function PATCH(req: Request, { params }: Params): Promise<NextRespo
     if (!owned.ok) return NextResponse.json({ error: owned.error }, { status: owned.status });
     const { persona } = owned;
 
-    const { mode, ...rest } = parsed.data;
+    const { mode, accessibleApps, ...rest } = parsed.data;
+    // Apps the persona can use are sanitized against the catalog before persisting.
+    const appsPatch =
+      accessibleApps !== undefined ? { accessible_apps: sanitizeAppIds(accessibleApps) } : {};
 
     // A mode change reissues the share token: the old token(s) are revoked and a fresh one
     // of the correct kind is minted, so an old link never works under a new mode.
@@ -154,7 +160,11 @@ export async function PATCH(req: Request, { params }: Params): Promise<NextRespo
       if (isPublicMode(mode)) newPublicLink = publicChatUrlForToken(token);
     }
 
-    const updated = await updatePersona(params.id, { ...rest, ...(mode ? { mode } : {}) });
+    const updated = await updatePersona(params.id, {
+      ...rest,
+      ...(mode ? { mode } : {}),
+      ...appsPatch,
+    });
     return NextResponse.json({ persona: updated, publicLink: newPublicLink });
   } catch (e) {
     const status = e instanceof PersonaDbError ? e.status : 500;

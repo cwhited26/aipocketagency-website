@@ -9,17 +9,42 @@ import {
   PERSONA_NAME_TOKEN,
 } from "../templates";
 import { PERSONA_SECTION_KEYS } from "../spec";
+import { isAppId } from "@/lib/apps/catalog";
 
 describe("template catalog", () => {
-  it("ships the 5 launch templates", () => {
+  it("ships the 5 launch templates plus the 7 role templates", () => {
     const keys = listTemplates().map((t) => t.key).sort();
-    expect(keys).toEqual(["vcsa", "vmd", "vom", "vr", "vsm"]);
+    expect(keys).toEqual(
+      [
+        "admin",
+        "content",
+        "email",
+        "followup",
+        "lead-research",
+        "ops-cos",
+        "sales",
+        "vcsa",
+        "vmd",
+        "vom",
+        "vr",
+        "vsm",
+      ].sort(),
+    );
   });
 
   it("each template prefills all 12 spec sections", () => {
     for (const t of TEMPLATES) {
       for (const key of PERSONA_SECTION_KEYS) {
         expect(t.fields[key], `${t.key}.${key}`).toBeTruthy();
+      }
+    }
+  });
+
+  it("each template ships a starter prompt and only valid default App ids", () => {
+    for (const t of TEMPLATES) {
+      expect(t.starterPrompt, `${t.key}.starterPrompt`).toBeTruthy();
+      for (const id of t.defaultApps) {
+        expect(isAppId(id), `${t.key} → unknown app ${id}`).toBe(true);
       }
     }
   });

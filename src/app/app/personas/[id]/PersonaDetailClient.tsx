@@ -6,10 +6,13 @@ import { PERSONA_SECTIONS } from "@/lib/personas/spec";
 import {
   PERSONA_MODE_LABELS,
   PERSONA_MODES,
+  personaApps,
   type PersonaMode,
   type PersonaRow,
   type PersonaStatus,
 } from "@/lib/personas/types";
+import { APP_CATALOG, appsByIds } from "@/lib/apps/catalog";
+import { getTemplate } from "@/lib/personas/templates";
 
 type SpecPayload = { id: string; version: number; fields: Record<string, string>; createdAt: string };
 type SeatView = {
@@ -30,7 +33,7 @@ type Bundle = {
   publicLink: string | null;
 };
 
-const TABS = ["Overview", "Spec", "Knowledge", "Team", "Conversations", "Leads", "Settings"] as const;
+const TABS = ["Overview", "Spec", "Knowledge", "Apps", "Team", "Conversations", "Leads", "Settings"] as const;
 type Tab = (typeof TABS)[number];
 
 export default function PersonaDetailClient({ personaId }: { personaId: string }) {
@@ -91,6 +94,7 @@ export default function PersonaDetailClient({ personaId }: { personaId: string }
           {tab === "Overview" && <OverviewTab personaId={personaId} bundle={bundle} />}
           {tab === "Spec" && <SpecTab personaId={personaId} bundle={bundle} onChange={reload} />}
           {tab === "Knowledge" && <KnowledgeTab personaId={personaId} />}
+          {tab === "Apps" && <AppsTab personaId={personaId} bundle={bundle} onChange={reload} />}
           {tab === "Team" && <TeamTab personaId={personaId} seats={bundle.seats} onChange={reload} />}
           {tab === "Conversations" && <ConversationsTab personaId={personaId} />}
           {tab === "Leads" && <LeadsTab personaId={personaId} />}
@@ -375,6 +379,136 @@ function KnowledgeTab({ personaId }: { personaId: string }) {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+// ── Apps (the WHAT this persona uses) ───────────────────────────────────────────────────
+function AppsTab({
+  personaId,
+  bundle,
+  onChange,
+}: {
+  personaId: string;
+  bundle: Bundle;
+  onChange: () => void;
+}) {
+  const { persona } = bundle;
+  const [sel, setSel] = useState<string[]>(personaApps(persona));
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const template = getTemplate(persona.template_key);
+
+  function toggle(id: string) {
+    setMsg(null);
+    setSel((cur) => (cur.includes(id) ? cur.filter((a) => a !== id) : [...cur, id]));
+  }
+
+  async function save() {
+    setSaving(true);
+    setMsg(null);
+    const res = await fetch(`/api/personas/${personaId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accessibleApps: sel }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      setMsg((await res.json().catch(() => ({}))).error ?? "Save failed");
+      return;
+    }
+    setMsg("Saved.");
+    onChange();
+  }
+
+  const saved = personaApps(persona);
+  const dirty =
+    sel.length !== saved.length || sel.some((id) => !saved.includes(id));
+  const chosen = appsByIds(sel);
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <p className="text-sm text-slate-300 leading-relaxed max-w-xl">
+          This persona is the <span className="text-slate-100">who</span>. Apps are the{" "}
+          <span className="text-slate-100">what</span> it uses — the workflows it&apos;s set up to run.
+          Pick the ones it should reach.{" "}
+          <Link href="/app/apps" className="text-[#22d3ee] hover:underline">
+            Browse all Apps →
+          </Link>
+        </p>
+      </div>
+
+      {chosen.length > 0 && (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {chosen.map((a) => (
+            <Link
+              key={a.id}
+              href={a.href}
+              className="rounded-xl border border-slate-800 bg-slate-900/40 p-3.5 hover:border-[#22d3ee]/50 transition-colors group"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium text-slate-100">{a.label}</span>
+                <span className="text-[11px] text-[#22d3ee]/50 group-hover:text-[#22d3ee] font-mono">
+                  Open →
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 leading-snug">{a.blurb}</p>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <div>
+        <div className="text-xs text-slate-500 uppercase tracking-wide mb-2">
+          Choose Apps
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {APP_CATALOG.map((a) => {
+            const on = sel.includes(a.id);
+            return (
+              <button
+                key={a.id}
+                onClick={() => toggle(a.id)}
+                className={`text-left rounded-xl border p-3 transition-colors ${
+                  on
+                    ? "border-[#22d3ee] bg-[#22d3ee]/5"
+                    : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm text-slate-200">{a.label}</span>
+                  <span className={`shrink-0 text-[15px] leading-none ${on ? "text-[#22d3ee]" : "text-slate-600"}`} aria-hidden>
+                    {on ? "✓" : "+"}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={save}
+          disabled={saving || !dirty}
+          className="text-xs rounded-md bg-[#22d3ee] text-[#06222a] font-semibold px-3 py-1.5 disabled:opacity-40"
+        >
+          {saving ? "Saving…" : "Save Apps"}
+        </button>
+        {msg && <span className="text-xs text-[#22d3ee]">{msg}</span>}
+      </div>
+
+      {template && (
+        <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 p-4">
+          <div className="text-[11px] font-mono text-[#22d3ee]/60 uppercase tracking-[0.16em]">
+            Try this with {persona.name}
+          </div>
+          <p className="mt-1.5 text-sm text-slate-300 leading-relaxed">
+            &ldquo;{template.starterPrompt}&rdquo;
+          </p>
+        </div>
+      )}
     </div>
   );
 }
