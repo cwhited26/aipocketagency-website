@@ -15,6 +15,7 @@ export const APP_IDS = [
   "podcasts",
   "lead-scout",
   "follow-up-sweeps",
+  "landing-page-builder",
   "brain-map",
 ] as const;
 
@@ -132,6 +133,17 @@ export const APP_CATALOG: AppDef[] = [
       "Closes the loop on every conversation you started and didn't finish. Watches the contacts that have gone quiet — leads who ghosted, customers you haven't checked in on, past clients worth winning back — across your Gmail, your brain's customer files, and your Lead Scout leads. Each week it drafts the next touch in your voice and stages the batch in Mission Control for one tap. Mark anyone \"leave alone\" and it stays off the list.",
     blurb: "Watch contacts that go quiet and draft the next touch each week.",
     tag: "Runs Weekly",
+    tagColor: "cyan",
+  },
+  {
+    id: "landing-page-builder",
+    href: "/app/apps/landing-pages",
+    label: "Landing Page Builder",
+    shortLabel: "Landing Pages",
+    description:
+      "Describe the page you need — a page for your roofing business with a hero, the problem you solve, how it works, and one clear ask. PA writes the copy in your voice, builds the page on your own GitHub and Vercel, and stages each step for your approval. You get a live link, and the code is yours.",
+    blurb: "Describe a landing page; PA builds it on your accounts and hands you a live link.",
+    tag: "Builds",
     tagColor: "cyan",
   },
   {

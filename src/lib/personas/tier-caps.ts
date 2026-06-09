@@ -57,6 +57,24 @@ export function tierAllowsPodcastPacks(tier: Tier): boolean {
 }
 
 /**
+ * Can this tier actually build a landing page (PA-LPB-4)? The Landing Page Builder is a Studio /
+ * Studio+ / Enterprise App — it stands up a real GitHub repo + Vercel project + deploy on the owner's
+ * accounts, so it sits with the other build-grade tooling. Pro / Pro+ see the card and the upgrade
+ * path; Studio and above can fire a build.
+ */
+export function tierAllowsLandingPageBuilder(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio");
+}
+
+/**
+ * Should this tier even SEE the Landing Page Builder card (PA-LPB-4)? Pro and above see it (with an
+ * upgrade CTA below Studio); the free Starter tier doesn't — the card stays off their Apps grid.
+ */
+export function tierCanSeeLandingPageBuilder(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("pro");
+}
+
+/**
  * Can this tier run a Decision Roundtable (PA-DR-1)? Three (or four) sub-agent runs per question is
  * 3-4× a normal chat's model spend, so the feature is Studio+/Enterprise only. Free/Pro tiers see a
  * non-actionable teaser inline in chat but can't fire the debate.

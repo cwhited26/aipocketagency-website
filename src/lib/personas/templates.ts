@@ -322,7 +322,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Keeps deals moving — finds the next prospect, drafts the outreach, and chases the quotes that have gone quiet.",
     sampleQuestion: "Draft a first outreach to a prospect who fits our best customers.",
     defaultTone: "direct",
-    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote"],
+    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote", "landing-page-builder"],
     starterPrompt: "Draft a first outreach email to a regional homebuilder who'd be a good fit.",
     fields: {
       problem:
@@ -378,7 +378,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Turns what you already know into on-brand posts, emails, and descriptions — sounding like your business, not a template.",
     sampleQuestion: "Draft a promo post for this week's offer in our voice.",
     defaultTone: "conversational",
-    defaultApps: ["email-drafter", "youtube", "podcasts"],
+    defaultApps: ["email-drafter", "youtube", "podcasts", "landing-page-builder"],
     starterPrompt: "Draft three social posts for this week's offer in our voice.",
     fields: {
       problem:
@@ -462,7 +462,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "The wide-angle view — pulls together what's happening across the business and surfaces the one thing to handle next.",
     sampleQuestion: "What across the business needs my attention this week?",
     defaultTone: "direct",
-    defaultApps: ["daily-brief", "upcoming", "followups", "follow-up-sweeps", "email-drafter", "brain-map"],
+    defaultApps: ["daily-brief", "upcoming", "followups", "follow-up-sweeps", "email-drafter", "brain-map", "landing-page-builder"],
     starterPrompt: "Pull together what's happening across the business and tell me what to handle first.",
     fields: {
       problem:

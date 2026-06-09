@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
+import {
+  getCurrentTier,
+  tierAllowsLandingPageBuilder,
+  tierCanSeeLandingPageBuilder,
+} from "@/lib/personas/tier-caps";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { GlowCard } from "../_components/GlowCard";
@@ -35,6 +40,14 @@ export default async function AppsPage() {
   const hasApiKey = Boolean(paUser.anthropic_api_key);
   const hasBrain = Boolean(paUser.brain_repo);
   const hasGithubToken = Boolean(paUser.github_token);
+
+  // The Landing Page Builder is Studio-gated (PA-LPB-4): Studio+ build, Pro/Pro+ see the card with an
+  // upgrade nudge, the free Starter tier doesn't see it at all.
+  const tier = await getCurrentTier(user.id);
+  const canBuildLandingPages = tierAllowsLandingPageBuilder(tier);
+  const visibleApps = apps.filter(
+    (app) => app.id !== "landing-page-builder" || tierCanSeeLandingPageBuilder(tier),
+  );
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">
@@ -105,22 +118,27 @@ export default async function AppsPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {apps.map((app) => (
-            <GlowCard key={app.href} href={app.href} className="px-5 py-5 group">
-              <div className="flex items-start justify-between gap-3 mb-2">
-                <h2 className="text-sm font-semibold text-slate-100">{app.label}</h2>
-                <span
-                  className={`text-[10px] font-mono border rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0 ${tagClass(app.tagColor)}`}
-                >
-                  {app.tag}
-                </span>
-              </div>
-              <p className="text-sm text-slate-400 leading-relaxed">{app.description}</p>
-              <div className="mt-3 text-[11px] text-[#22d3ee]/50 group-hover:text-[#22d3ee] transition-colors font-mono">
-                Open →
-              </div>
-            </GlowCard>
-          ))}
+          {visibleApps.map((app) => {
+            const lockedLandingPages = app.id === "landing-page-builder" && !canBuildLandingPages;
+            return (
+              <GlowCard key={app.href} href={app.href} className="px-5 py-5 group">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <h2 className="text-sm font-semibold text-slate-100">{app.label}</h2>
+                  <span
+                    className={`text-[10px] font-mono border rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0 ${
+                      lockedLandingPages ? "text-slate-500 border-slate-700 bg-transparent" : tagClass(app.tagColor)
+                    }`}
+                  >
+                    {lockedLandingPages ? "Studio" : app.tag}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-400 leading-relaxed">{app.description}</p>
+                <div className="mt-3 text-[11px] text-[#22d3ee]/50 group-hover:text-[#22d3ee] transition-colors font-mono">
+                  {lockedLandingPages ? "Upgrade to Studio →" : "Open →"}
+                </div>
+              </GlowCard>
+            );
+          })}
         </div>
 
         {/* Run something now — without picking a card first */}

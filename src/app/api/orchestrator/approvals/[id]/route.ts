@@ -17,8 +17,19 @@ import {
 import { notifyApproval } from "@/lib/orchestrator/runtime-client";
 import { autoApproveUnlockedFor } from "@/lib/orchestrator/tier-caps";
 import { executeConnectorAction } from "@/lib/connectors/registry";
+import {
+  advanceLandingPageBuildAfterApproval,
+  failLandingPageBuildAfterRejection,
+  type AdvanceResult,
+} from "@/lib/landing-pages/advance";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+
+/** The landing_page_id a build step's stored payload carries, when it belongs to a Landing Page build. */
+function landingPageIdOf(payload: Record<string, unknown>): string | null {
+  const v = payload.landing_page_id;
+  return typeof v === "string" && v ? v : null;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -117,6 +128,26 @@ export async function POST(
         payload: approval.payload,
       });
     }
+
+    // Landing Page Builder: when an approved build step belongs to a landing page build, advance the
+    // build (record the artifact, stage the next step). Best-effort — the connector action already
+    // ran, so a hiccup here is surfaced in the response (landingBuild), never undoes the real success.
+    let landingBuild: AdvanceResult | undefined;
+    const landingPageId =
+      item.kind === "build_action_approval" ? landingPageIdOf(approval.payload) : null;
+    if (landingPageId && exec && exec.ok) {
+      try {
+        landingBuild = await advanceLandingPageBuildAfterApproval({
+          landingPageId,
+          ownerId: user.id,
+          action: approval.action,
+          data: exec.data,
+        });
+      } catch (e) {
+        landingBuild = { ok: false, status: 500, error: e instanceof Error ? e.message : "advance failed" };
+      }
+    }
+
     return NextResponse.json({
       status: "approved",
       trustCount,
@@ -125,6 +156,7 @@ export async function POST(
       action: approval.action,
       executed: exec ? exec.ok : false,
       result: exec && exec.ok ? exec.summary : undefined,
+      landingBuild,
     });
   }
 
@@ -143,5 +175,21 @@ export async function POST(
       decision: "rejected",
     });
   }
-  return NextResponse.json({ status: "rejected" });
+
+  // A rejected build step ends a landing page build (the owner can retry from the App surface).
+  let landingBuild: AdvanceResult | undefined;
+  const rejectedLandingPageId =
+    item.kind === "build_action_approval" ? landingPageIdOf(approval.payload) : null;
+  if (rejectedLandingPageId) {
+    try {
+      landingBuild = await failLandingPageBuildAfterRejection({
+        landingPageId: rejectedLandingPageId,
+        ownerId: user.id,
+      });
+    } catch (e) {
+      landingBuild = { ok: false, status: 500, error: e instanceof Error ? e.message : "fail-stop failed" };
+    }
+  }
+
+  return NextResponse.json({ status: "rejected", landingBuild });
 }
