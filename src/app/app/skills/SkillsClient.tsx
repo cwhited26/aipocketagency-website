@@ -198,6 +198,8 @@ export default function SkillsClient({ hasBrain }: { hasBrain: boolean }) {
           </div>
         )}
 
+        <StarterPack />
+
         <TabGuide
           promptsHeading="Try one of these"
           prompts={[
@@ -234,6 +236,158 @@ export default function SkillsClient({ hasBrain }: { hasBrain: boolean }) {
           onChanged={load}
         />
       )}
+    </div>
+  );
+}
+
+// ── Starter Pack (PA-STARTERSKILL-5) ─────────────────────────────────────────────────────────
+// The 30 starter Skills the AI Office Launch Kit comes with, grouped by category. Each shows whether
+// the owner's plan has it unlocked, a View that renders the full technique, and a per-skill Disable
+// toggle (a disabled skill stops loading into runs without deleting the brain file).
+
+type StarterSkill = {
+  slug: string;
+  name: string;
+  description: string;
+  whenToUse: string;
+  tierRequired: string;
+  tierLabel: string;
+  unlocked: boolean;
+  disabled: boolean;
+  body: string;
+};
+type StarterGroup = { category: string; label: string; skills: StarterSkill[] };
+
+function StarterPack() {
+  const [groups, setGroups] = useState<StarterGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/app/skills/starter", { cache: "no-store" });
+      const data = (await res.json().catch(() => ({}))) as { groups?: StarterGroup[]; error?: string };
+      if (!res.ok) setError(data.error ?? "Couldn't load the starter pack.");
+      else setGroups(data.groups ?? []);
+    } catch {
+      setError("Couldn't reach the server.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function toggleDisabled(s: StarterSkill) {
+    setBusy(s.slug);
+    const res = await postJson(`/api/app/skills/starter/${encodeURIComponent(s.slug)}/disable`, {
+      disabled: !s.disabled,
+    });
+    setBusy(null);
+    if (res.ok) {
+      setGroups((prev) =>
+        prev.map((g) => ({
+          ...g,
+          skills: g.skills.map((x) => (x.slug === s.slug ? { ...x, disabled: !x.disabled } : x)),
+        })),
+      );
+    } else {
+      setError(res.error ?? "Couldn't change that setting.");
+    }
+  }
+
+  if (loading) return <p className="text-sm text-slate-500">Loading the starter pack…</p>;
+  if (error) return <p className="text-sm text-red-400">{error}</p>;
+  if (groups.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div>
+        <span className="text-[11px] font-mono text-[#22d3ee]/70 tracking-[0.14em] uppercase font-semibold">
+          Starter Pack
+        </span>
+        <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+          The moves your AI Office Launch Kit comes with — 30 techniques, ready to load into your
+          agent&apos;s work. The ones your plan unlocks get copied into your brain, so you can read,
+          edit, or roll them back like any other skill.
+        </p>
+      </div>
+
+      {groups.map((g) => (
+        <div key={g.category} className="flex flex-col gap-2">
+          <p className="text-[12px] font-semibold text-slate-300">{g.label}</p>
+          <div className="flex flex-col gap-2">
+            {g.skills.map((s) => (
+              <div
+                key={s.slug}
+                className="rounded-xl border border-slate-800/70 bg-slate-900/40 px-4 py-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-[14px] font-semibold text-slate-100">{s.name}</p>
+                  {s.unlocked ? (
+                    <span className="shrink-0 text-[10px] font-mono text-emerald-300/80 border border-emerald-400/30 rounded px-1.5 py-0.5 uppercase tracking-wider">
+                      Unlocked
+                    </span>
+                  ) : (
+                    <span className="shrink-0 text-[10px] font-mono text-amber-300/80 border border-amber-400/30 rounded px-1.5 py-0.5 uppercase tracking-wider">
+                      {s.tierLabel}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-[13px] text-slate-400 leading-relaxed">{s.description}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => setOpenSlug(openSlug === s.slug ? null : s.slug)}
+                    className="text-[12px] font-mono text-[#22d3ee]/80 hover:text-[#22d3ee] transition-colors"
+                  >
+                    {openSlug === s.slug ? "Hide" : "View"}
+                  </button>
+                  {!s.unlocked && (
+                    <Link
+                      href="/pricing"
+                      className="text-[12px] font-mono text-amber-300/70 hover:text-amber-200 transition-colors"
+                    >
+                      Upgrade to {s.tierLabel} →
+                    </Link>
+                  )}
+                  {s.unlocked && (
+                    <button
+                      onClick={() => void toggleDisabled(s)}
+                      disabled={busy === s.slug}
+                      className={`ml-auto text-[12px] font-mono transition-colors disabled:opacity-50 ${
+                        s.disabled
+                          ? "text-slate-500 hover:text-emerald-300"
+                          : "text-slate-500 hover:text-red-300"
+                      }`}
+                    >
+                      {busy === s.slug ? "…" : s.disabled ? "Disabled · turn on" : "Disable"}
+                    </button>
+                  )}
+                </div>
+                {openSlug === s.slug && (
+                  <div className="mt-3 border-t border-slate-800/60 pt-3">
+                    {s.whenToUse && (
+                      <p className="text-[12px] text-slate-500 leading-relaxed mb-2">
+                        <span className="font-mono uppercase tracking-wider text-slate-600">When: </span>
+                        {s.whenToUse}
+                      </p>
+                    )}
+                    <pre className="text-[12.5px] text-slate-300 leading-relaxed whitespace-pre-wrap font-sans">
+                      {s.body}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

@@ -7,6 +7,9 @@
 // no brain, just plans from baseline exactly as today.
 
 import { queryRag } from "@/lib/rag/query";
+import { getCurrentTier, type Tier } from "@/lib/personas/tier-caps";
+import { tierGateAllowsSkillSlug } from "@/lib/starter-skills/catalog";
+import { listDisabledStarterSlugs } from "@/lib/starter-skills/db";
 import { listSkillSummaries, readSkill, type SkillRepo } from "./store";
 import {
   SKILLS_ROOT,
@@ -61,10 +64,23 @@ export function rankByGrep(goal: string, reachable: SkillSummary[], max: number)
 }
 
 /**
+ * Pure: drop Skills the owner's tier can't load and ones the owner has disabled (PA-STARTERSKILL-3,
+ * PA-STARTERSKILL-6). A starter-pack slug must be tier-unlocked; an owner-evolved / LEARN-phase Skill
+ * (not in the pack) always clears the tier gate — it's the owner's own. A disabled slug never loads.
+ */
+export function applyStarterGate(
+  reachable: SkillSummary[],
+  tier: Tier,
+  disabled: ReadonlySet<string>,
+): SkillSummary[] {
+  return reachable.filter((s) => tierGateAllowsSkillSlug(tier, s.slug) && !disabled.has(s.slug));
+}
+
+/**
  * Resolves the Skills to load for a run. Returns the loaded Skill bodies (capped at
  * maxSkillsLoadedPerRun). Containment is enforced first — only Skills whose zone matches the run's
- * zone are even candidates (PA-SKILL-7) — so a cross-zone Skill is never a match target, before the
- * LLM sees anything.
+ * zone are even candidates (PA-SKILL-7) — then the tier gate + disable overrides are applied
+ * (PA-STARTERSKILL-3/6), so a locked or disabled Skill is never a match target before the LLM sees it.
  */
 export async function resolveSkillsForRun(input: {
   ownerId: string;
@@ -73,10 +89,19 @@ export async function resolveSkillsForRun(input: {
   goal: string;
   runZone: string;
   max?: number;
+  /** Owner tier override (tests). When omitted, resolved from the subscription. */
+  tier?: Tier;
+  /** Disabled-slug override (tests). When omitted, read from pa_skill_overrides. */
+  disabledSlugs?: ReadonlySet<string>;
 }): Promise<LoadedSkill[]> {
   const max = input.max ?? maxSkillsLoadedPerRun();
   const all = await listSkillSummaries({ repo: input.repo, token: input.token });
-  const reachable = all.filter((s) => skillReachableFromZone(s.zone, input.runZone));
+  const inZone = all.filter((s) => skillReachableFromZone(s.zone, input.runZone));
+  if (inZone.length === 0) return [];
+
+  const tier = input.tier ?? (await getCurrentTier(input.ownerId));
+  const disabled = input.disabledSlugs ?? (await listDisabledStarterSlugs(input.ownerId));
+  const reachable = applyStarterGate(inZone, tier, disabled);
   if (reachable.length === 0) return [];
 
   const selected = await rankSkills(input.ownerId, input.goal, reachable, max);

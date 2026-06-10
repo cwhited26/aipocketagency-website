@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { scoreSkillMatch, rankByGrep, formatLearnedTechniques } from "../resolve";
+import { scoreSkillMatch, rankByGrep, formatLearnedTechniques, applyStarterGate } from "../resolve";
 import type { SkillSummary } from "../types";
 
 function summary(over: Partial<SkillSummary>): SkillSummary {
@@ -75,5 +75,31 @@ describe("formatLearnedTechniques", () => {
   });
   it("is empty for no loaded skills", () => {
     expect(formatLearnedTechniques([])).toBe("");
+  });
+});
+
+describe("applyStarterGate (PA-STARTERSKILL-3/6)", () => {
+  const skills = [
+    summary({ slug: "lead-with-the-action" }), // free starter skill
+    summary({ slug: "inbox-triage" }), // studio_plus starter skill
+    summary({ slug: "draft-roof-supplement-quote" }), // owner-evolved (not in pack)
+  ];
+
+  it("locks a higher-tier starter skill below its tier, keeps free + owner-evolved", () => {
+    const out = applyStarterGate(skills, "pro", new Set()).map((s) => s.slug);
+    expect(out).toContain("lead-with-the-action");
+    expect(out).toContain("draft-roof-supplement-quote");
+    expect(out).not.toContain("inbox-triage");
+  });
+
+  it("unlocks all starter skills at studio_plus", () => {
+    const out = applyStarterGate(skills, "studio_plus", new Set()).map((s) => s.slug);
+    expect(out).toEqual(["lead-with-the-action", "inbox-triage", "draft-roof-supplement-quote"]);
+  });
+
+  it("drops a disabled skill regardless of tier", () => {
+    const out = applyStarterGate(skills, "studio_plus", new Set(["inbox-triage"])).map((s) => s.slug);
+    expect(out).not.toContain("inbox-triage");
+    expect(out).toContain("lead-with-the-action");
   });
 });

@@ -38,7 +38,7 @@ import {
   type KitConfig,
   type KitSlug,
 } from "@/lib/kit-config";
-import { ensureLaunchKitSeeded } from "@/lib/launch-kit/seed";
+import { ensureLaunchKitSeeded, seedStarterSkillsForSubscription } from "@/lib/launch-kit/seed";
 import { createSprintFromCheckout } from "@/lib/setup-sprint/sprints";
 import { inviteEmailBody } from "@/lib/setup-sprint/calendar-invite-template";
 import { signDiyKitDownload } from "@/lib/diy-kit/download";
@@ -1240,9 +1240,15 @@ export async function POST(req: Request): Promise<NextResponse> {
       // payment-link subscriptions that lack source=pocket_agent metadata — as long
       // as a pocket_agent_subscriptions row exists for them (see blocker logging).
       await applyPocketAgentTierFromSubscription(sub, "created");
+      // Seed the AI Office Launch Kit starter Skills for the paid tier (PA-STARTERSKILL-4).
+      // Best-effort + idempotent; no-ops when the brain isn't connected yet (the usual case at
+      // create-time — the Starter Pack backfill picks it up once they connect).
+      await seedStarterSkillsForSubscription(sub);
     } else if (event.type === "customer.subscription.updated") {
       const sub = event.data.object as unknown as StripeSubscription;
       await applyPocketAgentTierFromSubscription(sub, "updated");
+      // Re-run on upgrade so newly-unlocked Skills get seeded (idempotent — adds only the delta).
+      await seedStarterSkillsForSubscription(sub);
     } else if (event.type === "customer.subscription.trial_will_end") {
       const sub = event.data.object as unknown as StripeSubscription;
       if (sub.metadata?.source === "pocket_agent") {
