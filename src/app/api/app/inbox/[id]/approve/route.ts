@@ -17,6 +17,7 @@ import {
   isTriageBucket,
   type CaptureTriagePayload,
 } from "@/lib/capture-inbox/types";
+import { isBlueprintDecision, advanceAfterBlueprintApproval } from "@/lib/idea-engine/engine";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -129,6 +130,19 @@ export async function POST(
       return NextResponse.json({ error: resolved.error }, { status: resolved.status });
     }
     return NextResponse.json({ status: "approved", filed: true, path: accepted.path });
+  }
+
+  // Idea Engine blueprint (PA-IDEA-5): an approved MVP-plan `decision` card advances the idea from
+  // stage 3 (blueprint) to stage 4 (build). Resolve the card, then advance — best-effort, the advance
+  // never undoes the approval.
+  const blueprint = item.kind === "decision" ? isBlueprintDecision(item.payload) : null;
+  if (blueprint) {
+    const resolved = await resolveInboxItem(id, "approved", user.id);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+    }
+    await advanceAfterBlueprintApproval(user.id, blueprint.ideaId);
+    return NextResponse.json({ status: "approved", sent: false, ideaAdvanced: true });
   }
 
   // Non-email items (decisions, legacy drafts): record approval, nothing to send.

@@ -75,6 +75,33 @@ export function tierCanSeeLandingPageBuilder(tier: Tier): boolean {
 }
 
 /**
+ * Should this tier even SEE the Idea Engine card (PA-IDEA-3)? The Idea Engine turns an idea into a
+ * shipped MVP by chaining the build-grade Apps, so it's a Pro+ and above feature — Free and Pro don't
+ * see it at all. Pro+ gets prompt-pack mode (stages 1–3 + prompts for 4–6).
+ */
+export function tierCanSeeIdeaEngine(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("pro_plus");
+}
+
+/**
+ * Can this tier use the Idea Engine at all (PA-IDEA-3)? Same gate as visibility — Pro+ and above. Pro+
+ * runs the full chain in prompt-pack mode; auto-build is gated separately below.
+ */
+export function tierAllowsIdeaEngine(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("pro_plus");
+}
+
+/**
+ * Can this tier run the Idea Engine in AUTO-BUILD mode (PA-IDEA-2/3)? Auto-build ships the MVP + sales
+ * page on the owner's own GitHub + Vercel via the Build Tools, so it sits with the other build-grade
+ * tooling: Studio+ and Enterprise only. Pro+ falls back to prompt-pack mode (the prompts to run
+ * elsewhere). The resolved mode is auto_build at Studio+, else prompt_pack.
+ */
+export function tierAllowsIdeaEngineAutoBuild(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio_plus");
+}
+
+/**
  * How many of the 25 AI Workflow Vault recipes this tier unlocks for free (PA-VAULT-3). The Vault is
  * visible to every tier — Starter sees 3 unlocked and 22 locked behind an upgrade, Pro 5, Pro+ 10,
  * Studio 18, Studio+/Enterprise all 25. The $47 Workflow Vault order-bump unlocks all 25 regardless of

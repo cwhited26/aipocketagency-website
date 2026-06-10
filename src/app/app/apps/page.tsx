@@ -4,6 +4,7 @@ import {
   getCurrentTier,
   tierAllowsLandingPageBuilder,
   tierCanSeeLandingPageBuilder,
+  tierCanSeeIdeaEngine,
 } from "@/lib/personas/tier-caps";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -45,9 +46,12 @@ export default async function AppsPage() {
   // upgrade nudge, the free Starter tier doesn't see it at all.
   const tier = await getCurrentTier(user.id);
   const canBuildLandingPages = tierAllowsLandingPageBuilder(tier);
-  const visibleApps = apps.filter(
-    (app) => app.id !== "landing-page-builder" || tierCanSeeLandingPageBuilder(tier),
-  );
+  const visibleApps = apps.filter((app) => {
+    if (app.id === "landing-page-builder") return tierCanSeeLandingPageBuilder(tier);
+    // The Idea Engine is Pro+ and above (PA-IDEA-3); below that it stays off the grid entirely.
+    if (app.id === "idea-engine") return tierCanSeeIdeaEngine(tier);
+    return true;
+  });
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">

@@ -322,7 +322,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Keeps deals moving — finds the next prospect, drafts the outreach, and chases the quotes that have gone quiet.",
     sampleQuestion: "Draft a first outreach to a prospect who fits our best customers.",
     defaultTone: "direct",
-    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote", "landing-page-builder", "workflow-vault"],
+    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote", "landing-page-builder", "idea-engine", "workflow-vault"],
     starterPrompt: "Draft a first outreach email to a regional homebuilder who'd be a good fit.",
     fields: {
       problem:
@@ -378,7 +378,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Turns what you already know into on-brand posts, emails, and descriptions — sounding like your business, not a template.",
     sampleQuestion: "Draft a promo post for this week's offer in our voice.",
     defaultTone: "conversational",
-    defaultApps: ["email-drafter", "youtube", "podcasts", "landing-page-builder", "capture-inbox", "workflow-vault"],
+    defaultApps: ["email-drafter", "youtube", "podcasts", "landing-page-builder", "idea-engine", "capture-inbox", "workflow-vault"],
     starterPrompt: "Draft three social posts for this week's offer in our voice.",
     fields: {
       problem:
@@ -434,7 +434,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Finds businesses that fit your best customers, sorts them by fit, and tees up who's worth reaching out to.",
     sampleQuestion: "Find roofers near Knoxville without a website and sort them by fit.",
     defaultTone: "direct",
-    defaultApps: ["lead-scout", "brain-map", "capture-inbox"],
+    defaultApps: ["lead-scout", "idea-engine", "brain-map", "capture-inbox"],
     starterPrompt: "Find businesses in our area that look like our best customers and rank them by fit.",
     fields: {
       problem:
@@ -462,7 +462,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "The wide-angle view — pulls together what's happening across the business and surfaces the one thing to handle next.",
     sampleQuestion: "What across the business needs my attention this week?",
     defaultTone: "direct",
-    defaultApps: ["daily-brief", "upcoming", "followups", "follow-up-sweeps", "email-drafter", "brain-map", "landing-page-builder", "capture-inbox", "workflow-vault"],
+    defaultApps: ["daily-brief", "upcoming", "followups", "follow-up-sweeps", "email-drafter", "brain-map", "landing-page-builder", "idea-engine", "capture-inbox", "workflow-vault"],
     starterPrompt: "Pull together what's happening across the business and tell me what to handle first.",
     fields: {
       problem:

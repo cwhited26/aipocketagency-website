@@ -16,6 +16,7 @@ export const APP_IDS = [
   "lead-scout",
   "follow-up-sweeps",
   "landing-page-builder",
+  "idea-engine",
   "capture-inbox",
   "brain-map",
   "workflow-vault",
@@ -145,6 +146,17 @@ export const APP_CATALOG: AppDef[] = [
     description:
       "Describe the page you need — a page for your roofing business with a hero, the problem you solve, how it works, and one clear ask. PA writes the copy in your voice, builds the page on your own GitHub and Vercel, and stages each step for your approval. You get a live link, and the code is yours.",
     blurb: "Describe a landing page; PA builds it on your accounts and hands you a live link.",
+    tag: "Builds",
+    tagColor: "cyan",
+  },
+  {
+    id: "idea-engine",
+    href: "/app/apps/idea-engine",
+    label: "Idea Engine",
+    shortLabel: "Idea Engine",
+    description:
+      "You have brilliant ideas. They keep dying in a notes app. Drop one — typed, a voice memo, or a link you were watching — and PA runs the chain: scans the market, writes the MVP plan for you to approve, then ships the MVP on your own GitHub and Vercel. It ends with a working link and your first 25 outreach drafts, not one more prompt box.",
+    blurb: "Drop an idea. Approve the plan. PA ships the MVP on your accounts.",
     tag: "Builds",
     tagColor: "cyan",
   },

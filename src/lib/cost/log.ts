@@ -27,6 +27,7 @@ export type CostFeatureSlug =
   | "build_tools"
   | "follow_up_sweeps"
   | "landing_page_builder"
+  | "idea_engine"
   | "rag"
   | "capture_triage";
 

@@ -22,6 +22,8 @@ import {
   failLandingPageBuildAfterRejection,
   type AdvanceResult,
 } from "@/lib/landing-pages/advance";
+import { advanceIdeaBuildAfterApproval, ideaBuildIdOf } from "@/lib/idea-engine/build";
+import { fetchPaUser } from "@/lib/pa-supabase";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -148,6 +150,33 @@ export async function POST(
       }
     }
 
+    // Idea Engine auto-build (PA-IDEA-2): an approved build step tagged with idea_id advances that
+    // idea's MVP / sales build (record the artifact, stage the next step, or finish + write the
+    // Snapshot). Same one-step-per-approval shape as the Landing Page Builder. Best-effort.
+    let ideaBuild: AdvanceResult | undefined;
+    const ideaId = item.kind === "build_action_approval" ? ideaBuildIdOf(approval.payload) : null;
+    if (ideaId && !landingPageId && exec && exec.ok) {
+      try {
+        const pa = await fetchPaUser(user.id);
+        const brain =
+          pa.ok && pa.data && pa.data.brain_repo && pa.data.github_token
+            ? { repo: pa.data.brain_repo, token: pa.data.github_token }
+            : null;
+        const adv = await advanceIdeaBuildAfterApproval({
+          approvalPayload: approval.payload,
+          ownerId: user.id,
+          action: approval.action,
+          data: exec.data,
+          brain,
+        });
+        ideaBuild = adv.ok
+          ? { ok: true, staged: !("done" in adv) }
+          : { ok: false, status: adv.status, error: adv.error };
+      } catch (e) {
+        ideaBuild = { ok: false, status: 500, error: e instanceof Error ? e.message : "advance failed" };
+      }
+    }
+
     return NextResponse.json({
       status: "approved",
       trustCount,
@@ -157,6 +186,7 @@ export async function POST(
       executed: exec ? exec.ok : false,
       result: exec && exec.ok ? exec.summary : undefined,
       landingBuild,
+      ideaBuild,
     });
   }
 

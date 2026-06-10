@@ -1,0 +1,547 @@
+// engine.ts — the Idea Engine orchestrator (PA-IDEA-1). It chains six already-shipped PA primitives
+// into one staged workflow over pa_ideas / pa_idea_stage_runs. Each stage delegates to a primitive,
+// writes its output into the Snapshot folder (brain/ideas/<slug>/), records a stage run, and — when
+// the stage pauses for approval — stages a Mission Control card (PA-IDEA-5). Every metered step writes
+// one pa_cost_events row with featureSlug 'idea_engine' and the deterministic key idea:<id>:stage:<N>:<step>
+// (PA-IDEA-6). No new infrastructure: the stages reuse Lead Scout, Project Scaffolding, the Email
+// Drafter, the Build Tools, the Landing Page Builder, and the outreach loop verbatim.
+
+import type { PaUser } from "@/lib/pa-supabase";
+import { buildScaffold, scaffoldToMarkdown, type PlannerLlm } from "@/lib/orchestrator/planner";
+import { fetchMapsViaSerp, isRealWebsite } from "@/lib/leads/brightdata";
+import { classifyLead } from "@/lib/leads/classify";
+import { resolveBrightData } from "@/lib/pa-lead-scout-connections";
+import { generateOutreachDraft } from "@/lib/pa-drafts";
+import { createInboxItem } from "@/lib/pa-inbox-items";
+import { ensureUserRoutines } from "@/lib/pa-routines";
+import { logCostFromUsage } from "@/lib/cost/log";
+import { scaffoldFiles } from "@/lib/landing-pages/build";
+import {
+  createIdea,
+  createStageRun,
+  getIdeaById,
+  updateIdea,
+  updateStageRun,
+} from "./store";
+import {
+  writeSnapshotFile,
+  renderIdeaMd,
+  renderReadmeMd,
+  renderMarketScanMd,
+  renderProspectsMd,
+  type BrainCtx,
+} from "./snapshot";
+import { startIdeaBuild, type IdeaBuildKind } from "./build";
+import { ideaLog, errMsg } from "./log";
+import {
+  costKey,
+  ideaSlug,
+  snapshotPath,
+  type BuildMode,
+  type IdeaRow,
+  type IdeaSource,
+  type MarketScan,
+  type Prospect,
+  type StageNumber,
+} from "./types";
+
+const SYNTH_MODEL = "claude-haiku-4-5-20251001";
+const PROMPT_MODEL = "claude-sonnet-4-6";
+const MAX_PROSPECTS = 25;
+const OUTREACH_BATCH = 25;
+
+type EngineResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
+
+function brainCtx(paUser: Pick<PaUser, "brain_repo" | "github_token">): BrainCtx | null {
+  return paUser.brain_repo && paUser.github_token
+    ? { repo: paUser.brain_repo, token: paUser.github_token }
+    : null;
+}
+
+// ── Stage 1 · Capture (Capture Inbox / inbox.md / voice memo) ───────────────────────────────────────
+
+/**
+ * Drop an idea into the engine. Creates the idea row, opens the Snapshot folder (idea.md + README),
+ * and records stage 1 (Capture) complete. `detail` is the captured idea text — already transcribed if
+ * it came from a voice memo, or the resolved text of a shared link.
+ */
+export async function dropIdea(params: {
+  ownerId: string;
+  title: string;
+  source: IdeaSource;
+  detail: string;
+  sourcePayload?: Record<string, unknown>;
+  paUser: PaUser;
+}): Promise<EngineResult<IdeaRow>> {
+  // Provisional slug needs the id; mint the row, then the id is known. We slug from title alone first
+  // (collisions are guarded by the UNIQUE(owner,slug) — re-mint with the id suffix on the row we get).
+  const provisional = ideaSlug(params.title, "");
+  const created = await createIdea({
+    ownerId: params.ownerId,
+    slug: provisional,
+    title: params.title,
+    source: params.source,
+    sourcePayload: { detail: params.detail, ...(params.sourcePayload ?? {}) },
+    snapshotBrainPath: snapshotPath(provisional),
+  });
+  if (!created.ok) return { ok: false, status: created.status, error: created.error };
+  const idea = created.data;
+
+  const brain = brainCtx(params.paUser);
+  if (brain) {
+    await writeSnapshotFile(brain, idea.slug, "idea.md", renderIdeaMd(params.title, params.source, params.detail));
+    await writeSnapshotFile(brain, idea.slug, "README.md", renderReadmeMd(params.title, idea.slug));
+  }
+
+  const run = await createStageRun({ ideaId: idea.id, ownerId: params.ownerId, stage: 1, status: "running" });
+  if (run.ok) {
+    await updateStageRun(run.data.id, {
+      status: "complete",
+      output: { captured: params.detail, source: params.source },
+      completed_at: new Date().toISOString(),
+    });
+  }
+  ideaLog.info("idea captured", { ideaId: idea.id, slug: idea.slug, source: params.source });
+  return { ok: true, data: idea };
+}
+
+// ── Anthropic helpers (metered) ────────────────────────────────────────────────────────────────────
+
+type AnthropicResponse = {
+  content?: { type: string; text?: string }[];
+  usage?: { input_tokens?: number; output_tokens?: number };
+};
+
+async function anthropicText(
+  apiKey: string,
+  model: string,
+  system: string,
+  user: string,
+  maxTokens: number,
+  cost: { ownerId: string; idempotencyKey: string },
+): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  let res: Response;
+  try {
+    res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({ model, max_tokens: maxTokens, system, messages: [{ role: "user", content: user }] }),
+      cache: "no-store",
+    });
+  } catch (e) {
+    return { ok: false, error: errMsg(e) };
+  }
+  if (!res.ok) return { ok: false, error: `Anthropic returned ${res.status}.` };
+  const msg = (await res.json()) as AnthropicResponse;
+  await logCostFromUsage(
+    { ownerId: cost.ownerId, featureSlug: "idea_engine", idempotencyKey: cost.idempotencyKey },
+    "anthropic",
+    model,
+    { tokensInput: msg.usage?.input_tokens ?? 0, tokensOutput: msg.usage?.output_tokens ?? 0 },
+  );
+  return { ok: true, text: (msg.content?.find((c) => c.type === "text")?.text ?? "").trim() };
+}
+
+// ── Stage 2 · Market validation (Lead Scout SERP + Haiku classifier) ────────────────────────────────
+
+function classToFit(c: string): string {
+  if (c === "hot") return "Strong fit";
+  if (c === "warm") return "Good fit";
+  if (c === "wrong_fit") return "Not a fit";
+  if (c === "cold") return "Weak fit";
+  return "Worth a look";
+}
+
+/**
+ * Scan the market for an idea: SERP search "<idea space> companies in <vertical>", classify the
+ * businesses by fit against the ICP, synthesize the read (price range + ICP), and produce the
+ * 25-prospect list. Degrades cleanly if Bright Data isn't connected (empty scan + a note), so the
+ * chain never hard-stops on a missing connector.
+ */
+export async function runMarketValidation(params: {
+  ownerId: string;
+  idea: IdeaRow;
+  ideaSpace: string;
+  vertical: string;
+  paUser: PaUser;
+}): Promise<EngineResult<MarketScan>> {
+  const { idea } = params;
+  const brand = await resolveBrightData(params.ownerId);
+
+  const prospects: Prospect[] = [];
+  let strongest = "";
+  let strongestReviews = -1;
+
+  if (brand.ok && params.paUser.anthropic_api_key) {
+    const query = `${params.ideaSpace} companies in ${params.vertical}`;
+    const serp = await fetchMapsViaSerp({
+      apiKey: brand.apiKey,
+      query,
+      page: 0,
+      cost: { ownerId: params.ownerId, featureSlug: "idea_engine", idempotencyKey: costKey(idea.id, 2, "serp") },
+    });
+    if (serp.ok) {
+      const icpPattern = `Businesses that would buy "${params.idea.title}" — i.e. ${params.vertical} operators in the "${params.ideaSpace}" space.`;
+      for (const b of serp.businesses.slice(0, MAX_PROSPECTS)) {
+        const reviews = b.reviewsCount ?? 0;
+        if (reviews > strongestReviews) {
+          strongestReviews = reviews;
+          strongest = b.name;
+        }
+        const fit = await classifyLead({
+          apiKey: params.paUser.anthropic_api_key,
+          extractionPattern: icpPattern,
+          profile: {
+            name: b.name,
+            contact: b.email || b.phone,
+            summary: `${b.category}${b.address ? ` — ${b.address}` : ""}`,
+            fields: { website: b.website || "(none)", reviews: String(reviews), rating: String(b.rating ?? "") },
+          },
+          cost: { ownerId: params.ownerId, featureSlug: "idea_engine", idempotencyKey: costKey(idea.id, 2, `classify:${prospects.length}`) },
+        });
+        prospects.push({
+          name: b.name,
+          website: isRealWebsite(b.website) ? b.website : "",
+          summary: b.category,
+          contact: b.email || b.phone,
+          fit: classToFit(fit),
+          category: b.category,
+        });
+      }
+    } else {
+      ideaLog.warn("market SERP failed", { ideaId: idea.id, error: serp.error });
+    }
+  } else {
+    ideaLog.info("market validation degraded (no Bright Data / API key)", { ideaId: idea.id });
+  }
+
+  // Synthesize the price range + ICP read. One cheap Haiku call; deterministic fallback on failure.
+  let priceRange = "Unknown — connect Bright Data for a live read";
+  let icp = `${params.vertical} businesses in the ${params.ideaSpace} space`;
+  if (params.paUser.anthropic_api_key && prospects.length > 0) {
+    const synth = await anthropicText(
+      params.paUser.anthropic_api_key,
+      SYNTH_MODEL,
+      "You are a market analyst. Given a list of businesses in a space, reply with EXACTLY two lines:\nPRICE: <one-line typical price range for this kind of offer, or 'unclear'>\nICP: <one-line ideal customer profile>",
+      `Idea: ${params.idea.title}\nSpace: ${params.ideaSpace}\nVertical: ${params.vertical}\nBusinesses:\n${prospects.map((p) => `- ${p.name} (${p.category})`).join("\n")}`,
+      200,
+      { ownerId: params.ownerId, idempotencyKey: costKey(idea.id, 2, "synthesize") },
+    );
+    if (synth.ok) {
+      const priceMatch = synth.text.match(/PRICE:\s*(.+)/i);
+      const icpMatch = synth.text.match(/ICP:\s*(.+)/i);
+      if (priceMatch) priceRange = priceMatch[1].trim();
+      if (icpMatch) icp = icpMatch[1].trim();
+    }
+  }
+
+  const scan: MarketScan = {
+    ideaSpace: params.ideaSpace,
+    vertical: params.vertical,
+    competitorCount: prospects.filter((p) => p.website).length,
+    strongestCompetitor: strongest,
+    priceRange,
+    icp,
+    prospects,
+  };
+
+  const brain = brainCtx(params.paUser);
+  if (brain) {
+    await writeSnapshotFile(brain, idea.slug, "market-scan.md", renderMarketScanMd(scan));
+    await writeSnapshotFile(brain, idea.slug, "prospects.md", renderProspectsMd(prospects));
+  }
+  return { ok: true, data: scan };
+}
+
+// ── Stage 3 · MVP blueprint (Project Scaffolding) ───────────────────────────────────────────────────
+
+function plannerLlm(apiKey: string, ownerId: string, ideaId: string): PlannerLlm {
+  return async ({ system, user }) => {
+    const r = await anthropicText(apiKey, PROMPT_MODEL, system, user, 2000, {
+      ownerId,
+      idempotencyKey: costKey(ideaId, 3, "scaffold"),
+    });
+    return r.ok ? { ok: true, text: r.text } : { ok: false, error: r.error };
+  };
+}
+
+/**
+ * Build the MVP blueprint with the Project Scaffolder, write blueprint.md, and stage the plan as a
+ * `decision` card in Mission Control (PA-IDEA-5). The next stage fires only after the owner approves.
+ */
+export async function runBlueprint(params: {
+  ownerId: string;
+  idea: IdeaRow;
+  paUser: PaUser;
+  marketIcp: string;
+}): Promise<EngineResult<{ markdown: string }>> {
+  const { idea } = params;
+  if (!params.paUser.anthropic_api_key) {
+    return { ok: false, status: 409, error: "Add your Anthropic API key in Settings to plan a blueprint." };
+  }
+  const goal = `Plan a minimal, shippable MVP for: ${idea.title}. Target customer: ${params.marketIcp}. The MVP is a small Next.js web app deployed to Vercel, with the smallest feature set that delivers the core value.`;
+  const { scaffold } = await buildScaffold(
+    goal,
+    { availableConnectors: ["github_build", "vercel", "supabase", "modal_sandbox"], availablePersonas: [] },
+    plannerLlm(params.paUser.anthropic_api_key, params.ownerId, idea.id),
+  );
+  const markdown = scaffoldToMarkdown(scaffold, new Date().toISOString());
+
+  const brain = brainCtx(params.paUser);
+  if (brain) await writeSnapshotFile(brain, idea.slug, "blueprint.md", markdown);
+
+  // Stage the plan for approval — reuse the `decision` kind (its affordance set is "Approve plan" /
+  // "Reject", exactly the MVP-blueprint semantics). The inbox approve route detects the ideaEngine
+  // payload and advances the idea on approval.
+  await createInboxItem({
+    userId: params.ownerId,
+    kind: "decision",
+    title: `Approve the MVP plan for "${idea.title}"`,
+    bodyMd: markdown,
+    source: "idea-engine",
+    payload: { ideaEngine: true, ideaId: idea.id, stage: 3, slug: idea.slug },
+  });
+  return { ok: true, data: { markdown } };
+}
+
+// ── Stage 4/5 · Build + Sales surface ───────────────────────────────────────────────────────────────
+
+/** A minimal MVP / sales page scaffold from the idea + blueprint. Deterministic — no LLM dependency
+ *  for the files themselves; the metered copy generation feeds the page content. */
+function mvpFiles(idea: IdeaRow, intro: string): Record<string, string> {
+  const safe = JSON.stringify(idea.title);
+  const page =
+    `export default function Home() {\n` +
+    `  return (\n` +
+    `    <main style={{ maxWidth: 640, margin: "0 auto", padding: "4rem 1.5rem", fontFamily: "system-ui" }}>\n` +
+    `      <h1>${idea.title}</h1>\n` +
+    `      <p>${intro.replace(/[<>]/g, "")}</p>\n` +
+    `    </main>\n` +
+    `  );\n}\n`;
+  return { ...scaffoldFiles(idea.title), "app/page.tsx": page, "README.md": `# ${JSON.parse(safe)}\n\nBuilt with Pocket Agent — Idea Engine. Your code, your GitHub, your Vercel.\n` };
+}
+
+/**
+ * Run a build stage in the resolved mode. prompt-pack mode writes the build prompts to the Snapshot and
+ * completes inline (Pro+); auto-build mode assembles the files and hands them to the Build Tools via
+ * startIdeaBuild, which stages each connector step for approval (Studio+/Enterprise).
+ */
+export async function runBuildStage(params: {
+  ownerId: string;
+  idea: IdeaRow;
+  runId: string;
+  mode: BuildMode;
+  buildKind: IdeaBuildKind;
+  paUser: PaUser;
+  blueprintMd: string;
+  githubLogin: string | null;
+}): Promise<EngineResult<{ mode: BuildMode; staged?: boolean }>> {
+  const { idea } = params;
+  const brain = brainCtx(params.paUser);
+  const stage = params.buildKind === "mvp" ? 4 : 5;
+
+  if (params.mode === "prompt_pack") {
+    if (!params.paUser.anthropic_api_key) {
+      return { ok: false, status: 409, error: "Add your Anthropic API key to generate the prompt pack." };
+    }
+    const what = params.buildKind === "mvp" ? "build the MVP" : "build the sales page";
+    const system =
+      "You write copy-paste-ready prompts for an AI coding tool (Cursor / Claude Code). Given an MVP plan, " +
+      "output 4–7 numbered prompts the owner can paste one at a time to build the project. Each prompt is " +
+      "self-contained and specific. No preamble, no commentary — just the numbered prompts.";
+    const gen = await anthropicText(
+      params.paUser.anthropic_api_key,
+      PROMPT_MODEL,
+      system,
+      `Idea: ${idea.title}\nGoal: ${what}\n\nPlan:\n${params.blueprintMd}`,
+      2500,
+      { ownerId: params.ownerId, idempotencyKey: costKey(idea.id, stage, "prompt-pack") },
+    );
+    const md = [
+      `# Prompt pack — ${params.buildKind === "mvp" ? "MVP" : "sales page"}`,
+      "",
+      "Paste these into Cursor or Claude Code, one at a time.",
+      "",
+      gen.ok ? gen.text : "_(prompt generation failed — re-run this stage)_",
+    ].join("\n");
+    if (brain) await writeSnapshotFile(brain, idea.slug, params.buildKind === "mvp" ? "prompt-pack.md" : "sales.md", md);
+    await updateStageRun(params.runId, {
+      status: "complete",
+      output: { mode: "prompt_pack", buildKind: params.buildKind },
+      completed_at: new Date().toISOString(),
+    });
+    const reached = params.buildKind === "mvp" ? 5 : 6;
+    if (idea.current_stage < reached) await updateIdea(params.ownerId, idea.id, { current_stage: reached });
+    return { ok: true, data: { mode: "prompt_pack" } };
+  }
+
+  // auto-build: assemble files, hand to the Build Tools.
+  let intro = `An MVP for ${idea.title}.`;
+  if (params.paUser.anthropic_api_key) {
+    const copy = await anthropicText(
+      params.paUser.anthropic_api_key,
+      PROMPT_MODEL,
+      params.buildKind === "mvp"
+        ? "Write one short paragraph (under 50 words) describing what this MVP does, for its landing hero. Plain, specific, no hype."
+        : "Write one short sales paragraph (under 50 words) for this product's sales page. Plain, specific, no hype.",
+      `Idea: ${idea.title}\nPlan:\n${params.blueprintMd}`,
+      300,
+      { ownerId: params.ownerId, idempotencyKey: costKey(idea.id, stage, "copy") },
+    );
+    if (copy.ok && copy.text) intro = copy.text;
+  }
+  const slug = `${ideaSlug(idea.title, idea.id)}${params.buildKind === "sales" ? "-sales" : ""}`;
+  const files = mvpFiles(idea, intro);
+  const started = await startIdeaBuild({
+    ideaId: idea.id,
+    ownerId: params.ownerId,
+    runId: params.runId,
+    buildKind: params.buildKind,
+    slug,
+    files,
+    githubLogin: params.githubLogin,
+  });
+  if (!started.ok) return { ok: false, status: 500, error: started.error };
+  return { ok: true, data: { mode: "auto_build", staged: true } };
+}
+
+// ── Stage 6 · Launch (outreach loop + weekly Routine) ───────────────────────────────────────────────
+
+/**
+ * Draft the first 25 outreach emails to the stage-2 prospects (Email Drafter voice, staged as `draft`
+ * cards for Approve & Send via Gmail), ensure the weekly Follow-Up Sweep routine is provisioned, and
+ * write launch.md. Returns how many drafts were staged.
+ */
+export async function runLaunch(params: {
+  ownerId: string;
+  idea: IdeaRow;
+  runId: string;
+  prospects: Prospect[];
+  sourceName: string;
+  paUser: PaUser;
+}): Promise<EngineResult<{ staged: number }>> {
+  const { idea } = params;
+  if (!params.paUser.anthropic_api_key) {
+    return { ok: false, status: 409, error: "Add your Anthropic API key to draft outreach." };
+  }
+  const targets = params.prospects.filter((p) => p.contact).slice(0, OUTREACH_BATCH);
+  let staged = 0;
+  for (const p of targets) {
+    try {
+      const draft = await generateOutreachDraft(
+        {
+          leadName: p.name,
+          leadSummary: p.summary,
+          leadProfile: { website: p.website || "(none)", category: p.category, fit: p.fit },
+          leadUrl: p.website,
+          sourceName: params.sourceName,
+          tone: "cold-introduce",
+          voiceBrief: `This prospect fits the market for "${idea.title}". Lead with the specific problem it solves for them.`,
+        },
+        params.paUser.anthropic_api_key,
+        params.paUser.brain_repo,
+        params.paUser.github_token,
+        { ownerId: params.ownerId, featureSlug: "idea_engine", idempotencyKey: costKey(idea.id, 6, `outreach:${staged}`) },
+      );
+      const created = await createInboxItem({
+        userId: params.ownerId,
+        kind: "draft",
+        title: `Outreach to ${p.name}`,
+        bodyMd: draft.body,
+        source: "email-drafter",
+        payload: {
+          to: p.contact,
+          subject: draft.subject,
+          body: draft.body,
+          citations: draft.citations,
+          sourceSurface: "idea-engine",
+          ideaId: idea.id,
+        },
+      });
+      if (created.ok) staged += 1;
+    } catch (e) {
+      ideaLog.warn("outreach draft failed", { ideaId: idea.id, prospect: p.name, error: errMsg(e) });
+    }
+  }
+
+  // Ensure the weekly Follow-Up Sweep routine exists so these prospects get a recurring re-touch.
+  await ensureUserRoutines(params.ownerId).catch(() => undefined);
+
+  const brain = brainCtx(params.paUser);
+  if (brain) {
+    await writeSnapshotFile(
+      brain,
+      idea.slug,
+      "launch.md",
+      [
+        `# Launch`,
+        "",
+        `**Outreach drafts staged:** ${staged} (in Mission Control — Approve & Send each one).`,
+        `**Weekly cadence:** the Follow-Up Sweep routine re-touches contacts that go quiet.`,
+        "",
+        "Approve the drafts you want to send. The rest stay queued.",
+      ].join("\n"),
+    );
+  }
+  await updateStageRun(params.runId, {
+    status: "complete",
+    output: { staged },
+    completed_at: new Date().toISOString(),
+  });
+  if (idea.current_stage < 6) await updateIdea(params.ownerId, idea.id, { current_stage: 6 });
+  return { ok: true, data: { staged } };
+}
+
+// ── Blueprint approval advance (called from the inbox approve route) ────────────────────────────────
+
+/** Detect an Idea Engine blueprint `decision` card by its payload. */
+export function isBlueprintDecision(payload: Record<string, unknown>): { ideaId: string } | null {
+  if (payload.ideaEngine === true && payload.stage === 3 && typeof payload.ideaId === "string") {
+    return { ideaId: payload.ideaId };
+  }
+  return null;
+}
+
+/** On blueprint approval: mark stage 3 approved/complete and advance the idea to stage 4 (Build). */
+export async function advanceAfterBlueprintApproval(ownerId: string, ideaId: string): Promise<void> {
+  const idea = await getIdeaById(ownerId, ideaId);
+  if (!idea.ok || !idea.data) return;
+  if (idea.data.current_stage < 4) await updateIdea(ownerId, ideaId, { current_stage: 4 });
+  const run = await createStageRun({ ideaId, ownerId, stage: 3, status: "approved" });
+  if (run.ok) {
+    await updateStageRun(run.data.id, { status: "complete", completed_at: new Date().toISOString() });
+  }
+  ideaLog.info("blueprint approved", { ideaId });
+}
+
+// ── Lifecycle: archive / fork ───────────────────────────────────────────────────────────────────────
+
+export async function archiveIdea(ownerId: string, ideaId: string): Promise<EngineResult<IdeaRow>> {
+  const res = await updateIdea(ownerId, ideaId, { status: "archived" });
+  return res.ok ? { ok: true, data: res.data } : { ok: false, status: res.status, error: res.error };
+}
+
+/**
+ * Fork an idea: clone the title + captured detail into a fresh idea (stage 1), so the owner can take a
+ * different angle without losing the original. The original is marked `forked` only if it was the
+ * source; the new idea starts clean.
+ */
+export async function forkIdea(params: {
+  ownerId: string;
+  ideaId: string;
+  paUser: PaUser;
+}): Promise<EngineResult<IdeaRow>> {
+  const src = await getIdeaById(params.ownerId, params.ideaId);
+  if (!src.ok || !src.data) return { ok: false, status: 404, error: "Idea not found." };
+  const detail = typeof src.data.source_payload.detail === "string" ? src.data.source_payload.detail : "";
+  return dropIdea({
+    ownerId: params.ownerId,
+    title: `${src.data.title} (fork)`,
+    source: src.data.source,
+    detail,
+    sourcePayload: { forkedFrom: src.data.id },
+    paUser: params.paUser,
+  });
+}
+
+export type { StageNumber };
