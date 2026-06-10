@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS pa_channel_connections (
   -- The paired external identity. Slack: "<team_id>:<user_id>". Phone channels: the E.164 number.
   external_id          text NOT NULL,
   -- Which Persona answers on this channel (PA-CHAN-8). NULL = the gateway's default Persona.
-  persona_id           uuid REFERENCES pa_personas (id) ON DELETE SET NULL,
+  persona_id           uuid REFERENCES personas (id) ON DELETE SET NULL,
   -- AES-256-GCM envelope (lib/crypto/encrypt.ts). Slack: the bot token. Nullable so a row can exist
   -- mid-pair before the token lands.
   auth_token_encrypted text,

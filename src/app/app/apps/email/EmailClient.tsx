@@ -41,10 +41,14 @@ export default function EmailClient({
   brainRepo,
   hasApiKey,
   initial,
+  replyContext,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
   initial?: { mode: Mode; brief: string };
+  // Set when drafting a reply to a triaged Gmail thread — auto-populates the
+  // recipient + subject and threads the send back into the original conversation.
+  replyContext?: { to: string; subject: string; threadId: string; inReplyTo: string };
 }) {
   const [mode, setMode] = useState<Mode>(initial?.mode ?? "quick");
 
@@ -69,9 +73,9 @@ export default function EmailClient({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // Staging to Inbox
-  const [stageTo, setStageTo] = useState("");
-  const [stageSubject, setStageSubject] = useState("");
+  // Staging to Inbox — prefill recipient + subject from the reply context.
+  const [stageTo, setStageTo] = useState(replyContext?.to ?? "");
+  const [stageSubject, setStageSubject] = useState(replyContext?.subject ?? "");
   const [staging, setStaging] = useState(false);
   const [staged, setStaged] = useState(false);
   const [stageError, setStageError] = useState<string | null>(null);
@@ -162,11 +166,12 @@ export default function EmailClient({
     setDraft(data.draft);
     setCitations(data.citations);
     setHasBrain(data.hasBrain);
-    // Reset staging for the fresh draft; prefill the recipient when we have one.
+    // Reset staging for the fresh draft; prefill recipient + subject when we have
+    // them — a reply context wins, else the detailed-mode recipient.
     setStaged(false);
     setStageError(null);
-    setStageTo(mode === "detailed" ? recipient.trim() : "");
-    setStageSubject("");
+    setStageTo(replyContext?.to ?? (mode === "detailed" ? recipient.trim() : ""));
+    setStageSubject(replyContext?.subject ?? "");
     setIsLoading(false);
   }
 
@@ -182,6 +187,8 @@ export default function EmailClient({
         subject: stageSubject.trim(),
         body: draft,
         citations,
+        threadId: replyContext?.threadId ?? "",
+        inReplyTo: replyContext?.inReplyTo ?? "",
       }),
     }).catch(() => null);
 

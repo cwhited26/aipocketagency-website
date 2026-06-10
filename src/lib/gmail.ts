@@ -18,10 +18,8 @@ import {
 // readonly: read message/thread content. modify + labels: archive (remove the
 // INBOX label) on a triage action. send: send a reply AS the user, threaded into
 // the original conversation, landing in their Sent folder (connector.gmail.send).
-// gmail.send is incrementally authorized — a user connected before this scope
-// existed is prompted to re-grant the first time a send action fires. The OAuth
-// start route requests this list with prompt=consent + include_granted_scopes, so
-// a reconnect re-grants the new scope without dropping the old ones.
+// gmail.send is incrementally authorized — users connected before this scope
+// existed are prompted to re-grant the first time a send action fires.
 export const GMAIL_SCOPES = [
   "openid",
   "email",
@@ -31,8 +29,8 @@ export const GMAIL_SCOPES = [
   "https://www.googleapis.com/auth/gmail.send",
 ];
 
-// The send scope, named once so the connector action, the approval route, and the
-// Connections UI agree on what "send AS you" requires.
+// The send scope, named once so the connector action and the Connections UI agree
+// on what "send AS you" requires.
 export const GMAIL_SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 
 /** True iff a connection's granted scopes include gmail.send. */
