@@ -23,7 +23,8 @@ export type InboxItemKind =
   | "build_action_approval"
   | "cost_budget_gate"
   | "skill_evolution_proposal"
-  | "gate_findings";
+  | "gate_findings"
+  | "persona_memory_proposal";
 
 export type AffordanceRole = "primary" | "secondary" | "destructive";
 
@@ -120,6 +121,19 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
     // primitive — so it carries Approve / Edit / Reject. Edit lets the owner tweak the technique
     // before it's saved; Reject feeds back so PA doesn't re-propose it.
     case "skill_evolution_proposal":
+      return {
+        hasApproval: true,
+        affordances: [
+          { key: "approve", label: "Approve", role: "primary" },
+          { key: "edit", label: "Edit", role: "secondary" },
+          { key: "reject", label: "Reject", role: "destructive" },
+        ],
+      };
+
+    // A persona-memory write the LEARN phase proposes (PA-MEM-3). Approving WRITES a row to
+    // pa_persona_memory — a commit-on-approve primitive — so it carries Approve / Edit / Reject. Edit
+    // lets the owner tweak the memory before it's saved; Reject feeds back so it isn't re-proposed.
+    case "persona_memory_proposal":
       return {
         hasApproval: true,
         affordances: [

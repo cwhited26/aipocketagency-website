@@ -18,6 +18,9 @@ import {
   type CaptureTriagePayload,
 } from "@/lib/capture-inbox/types";
 import { isBlueprintDecision, advanceAfterBlueprintApproval } from "@/lib/idea-engine/engine";
+import { acceptMemoryProposal } from "@/lib/persona-memory/write";
+import { getCurrentTier } from "@/lib/personas/tier-caps";
+import { isMemoryPartition, isMemoryTier } from "@/lib/persona-memory/types";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -35,6 +38,11 @@ const OverrideSchema = z.object({
   // the card before approving.
   targetPath: z.string().max(300).optional(),
   bucket: z.string().max(40).optional(),
+  // Persona memory proposals (PA-MEM-3): the owner may edit the memory before saving it. `body` above
+  // doubles as the memory body; these are the memory-specific fields.
+  importance: z.number().int().min(1).max(10).optional(),
+  partition: z.string().max(20).optional(),
+  memoryTier: z.string().max(20).optional(),
 });
 
 function str(v: unknown): string {
@@ -130,6 +138,31 @@ export async function POST(
       return NextResponse.json({ error: resolved.error }, { status: resolved.status });
     }
     return NextResponse.json({ status: "approved", filed: true, path: accepted.path });
+  }
+
+  // Persona memory proposal (PA-MEM-3): write the (possibly owner-edited) memory to pa_persona_memory,
+  // cap-enforced. Nothing is sent. Reject (the other route) just resolves — re-proposal suppression
+  // reads the rejected status.
+  if (item.kind === "persona_memory_proposal") {
+    const tier = await getCurrentTier(user.id);
+    const written = await acceptMemoryProposal({
+      ownerId: user.id,
+      tier,
+      payload: item.payload,
+      override: {
+        body: override.body,
+        importance: override.importance,
+        partition:
+          override.partition && isMemoryPartition(override.partition) ? override.partition : undefined,
+        tier: override.memoryTier && isMemoryTier(override.memoryTier) ? override.memoryTier : undefined,
+      },
+    });
+    if (!written.ok) return NextResponse.json({ error: written.error }, { status: written.status });
+    const resolved = await resolveInboxItem(id, "approved", user.id);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+    }
+    return NextResponse.json({ status: "approved", saved: true, memoryId: written.data.id });
   }
 
   // Idea Engine blueprint (PA-IDEA-5): an approved MVP-plan `decision` card advances the idea from

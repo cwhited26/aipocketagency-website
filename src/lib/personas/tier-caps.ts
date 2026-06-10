@@ -123,6 +123,24 @@ export function workflowVaultUnlockCount(tier: Tier): number {
   return WORKFLOW_VAULT_UNLOCK_COUNTS[tier];
 }
 
+// Per-tier cap on LIVE persona memories, counted across ALL of an owner's Personas (SPEC §9, PA-MEM-6).
+// null = unlimited (fair use). The cap is checked on the LEARN write path; over-cap, the
+// lowest-importance live memory auto-supersedes rather than erroring. Superseded rows never count.
+// (The lowest tier is 'starter' here — the SPEC's "Free" — and maps to 100.)
+export const PERSONA_MEMORY_CAPS: Record<Tier, number | null> = {
+  starter: 100,
+  pro: 1_000,
+  pro_plus: 1_000,
+  studio: 10_000,
+  studio_plus: 10_000,
+  enterprise: null,
+};
+
+/** This tier's live-memory cap across all Personas (null = unlimited). */
+export function personaMemoryCap(tier: Tier): number | null {
+  return PERSONA_MEMORY_CAPS[tier];
+}
+
 /**
  * Can this tier run a Decision Roundtable (PA-DR-1)? Three (or four) sub-agent runs per question is
  * 3-4× a normal chat's model spend, so the feature is Studio+/Enterprise only. Free/Pro tiers see a

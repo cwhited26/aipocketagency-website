@@ -30,7 +30,8 @@ export type InboxCardKind =
   | "follow_up_sweep_batch"
   | "capture_triage_proposal"
   | "ritual_result"
-  | "ritual_paused";
+  | "ritual_paused"
+  | "persona_memory_proposal";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -110,6 +111,20 @@ export type GateFindingsDetail = {
   gates: GateCardGate[];
 };
 
+// Persona Memory (PA-MEM-3): a sub-threshold memory write the LEARN phase staged. Carries the full
+// proposed memory so the owner reads exactly what would be saved (the importance-inflation +
+// poisoning defense — a poisoned line is human-readable here). partition/tier are owner-friendly on
+// the card; importance shows what the classifier judged.
+export type MemoryProposalDetail = {
+  personaId: string;
+  personaName: string;
+  partition: string;
+  tier: string;
+  body: string;
+  importance: number;
+  untrustedOrigin: boolean;
+};
+
 export type InboxCard = {
   id: string;
   system: InboxCardSystem;
@@ -127,6 +142,7 @@ export type InboxCard = {
   leadScout: LeadScoutBatchDetail | null;
   skillProposal: SkillProposalDetail | null;
   gate: GateFindingsDetail | null;
+  memoryProposal: MemoryProposalDetail | null;
   // The surface the draft was initiated from. 'inbox' means it was drafted from
   // within the Inbox (a reply to a triaged thread) and is rendered inline on its
   // originating thread instead of in the generic drafts list. threadId links it back.
@@ -214,6 +230,18 @@ function skillProposalOf(item: InboxItem): SkillProposalDetail {
   };
 }
 
+function memoryProposalOf(item: InboxItem): MemoryProposalDetail {
+  return {
+    personaId: str(item.payload.personaId),
+    personaName: str(item.payload.personaName) || "Your assistant",
+    partition: str(item.payload.partition),
+    tier: str(item.payload.tier),
+    body: str(item.payload.body),
+    importance: num(item.payload.importance),
+    untrustedOrigin: item.payload.untrustedOrigin === true,
+  };
+}
+
 type GateSeverity = "low" | "medium" | "high" | "critical";
 function severityOf(v: unknown): GateSeverity {
   return v === "low" || v === "high" || v === "critical" ? v : "medium";
@@ -266,6 +294,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
   const leadScout = item.kind === "lead_scout_batch" ? leadScoutOf(item) : null;
   const skillProposal = item.kind === "skill_evolution_proposal" ? skillProposalOf(item) : null;
   const gate = item.kind === "gate_findings" ? gateOf(item) : null;
+  const memoryProposal = item.kind === "persona_memory_proposal" ? memoryProposalOf(item) : null;
   return {
     id: item.id,
     system: "inbox",
@@ -289,6 +318,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
     leadScout,
     skillProposal,
     gate,
+    memoryProposal,
     sourceSurface: str(item.payload.sourceSurface) || null,
     threadId: str(item.payload.threadId) || null,
   };
@@ -328,6 +358,7 @@ function normalizeLegacyAction(action: PendingAction): InboxCard {
     leadScout: null,
     skillProposal: null,
     gate: null,
+    memoryProposal: null,
     sourceSurface: null,
     threadId: null,
   };

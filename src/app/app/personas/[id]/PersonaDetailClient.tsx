@@ -142,12 +142,20 @@ function OverviewTab({ personaId, bundle }: { personaId: string; bundle: Bundle 
           This persona has reached its monthly message limit. Upgrade to Studio to lift the cap.
         </div>
       )}
-      <button
-        onClick={copyLink}
-        className="rounded-lg bg-[#22d3ee] text-[#06222a] text-sm font-semibold px-4 py-2.5 hover:bg-[#67e8f9] transition-colors"
-      >
-        {copied ? "Share link copied!" : "Copy share link"}
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={copyLink}
+          className="rounded-lg bg-[#22d3ee] text-[#06222a] text-sm font-semibold px-4 py-2.5 hover:bg-[#67e8f9] transition-colors"
+        >
+          {copied ? "Share link copied!" : "Copy share link"}
+        </button>
+        <Link
+          href={`/app/personas/${personaId}/memory`}
+          className="rounded-lg border border-slate-700 text-slate-300 text-sm font-medium px-4 py-2.5 hover:border-slate-500 hover:text-slate-100 transition-colors"
+        >
+          What it remembers about you →
+        </Link>
+      </div>
     </div>
   );
 }

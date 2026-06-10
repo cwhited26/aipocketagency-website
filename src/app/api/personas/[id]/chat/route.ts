@@ -13,10 +13,13 @@ import {
   listMessages,
   PersonaDbError,
 } from "@/lib/personas/db";
-import { canSendMessage, monthKey } from "@/lib/personas/tier-caps";
+import { canSendMessage, getCurrentTier, monthKey, type Tier } from "@/lib/personas/tier-caps";
 import { isTokenLive } from "@/lib/personas/tokens";
 import { loadKnowledgeForChat } from "@/lib/personas/knowledge";
 import { buildPersonaSystemPrompt, parsePersonaSpecMarkdown } from "@/lib/personas/spec";
+import { loadPersonaMemory } from "@/lib/persona-memory/read";
+import { runMemoryLearnPhase, defaultMemoryLearnLlm } from "@/lib/persona-memory/write";
+import type { PersonaRow } from "@/lib/personas/types";
 import { loadZoneConfig } from "@/lib/brain/containment-guard";
 import { ContainmentBlockedError } from "@/lib/brain/containment-guard";
 
@@ -121,13 +124,21 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
       throw e;
     }
 
+    // Persona memory (PA-MEM-4): cascade-ranked, ~2k-token block stitched into the prompt. Additive to
+    // the brain RAG above; never reads in public mode (loadPersonaMemory hard-guards on persona.mode).
+    const memory = await loadPersonaMemory({ personaId: persona.id, mode: persona.mode });
+
     const systemPrompt = buildPersonaSystemPrompt({
       personaName: persona.name,
       tone: persona.tone,
       spec: specFields,
       knowledgeMarkup: knowledge.markup,
       hasKnowledge: knowledge.fileCount > 0,
+      memoryBlock: memory.block,
     });
+
+    // Resolved once for the LEARN-phase cap check after the turn completes.
+    const tier = await getCurrentTier(persona.business_id);
 
     // 5. Conversation + history.
     const convoId =
@@ -154,6 +165,7 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
       upstream: upstream.body,
       conversationId: convoId,
       personaId: persona.id,
+      learn: { persona, tier, userMessage: message },
     });
   } catch (e) {
     const status = e instanceof PersonaDbError ? e.status : 500;
@@ -217,8 +229,11 @@ function streamResponse(args: {
   upstream: ReadableStream<Uint8Array>;
   conversationId: string;
   personaId: string;
+  // LEARN-phase context (PA-MEM-3): after the turn completes, classify it for memory writes. Optional
+  // so the streaming helper stays usable without it.
+  learn: { persona: PersonaRow; tier: Tier; userMessage: string };
 }): Response {
-  const { upstream, conversationId, personaId } = args;
+  const { upstream, conversationId, personaId, learn } = args;
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
@@ -283,6 +298,23 @@ function streamResponse(args: {
         await incrementUsage(personaId, monthKey(), { messages: 1, tokens: totalTokens });
 
         send({ type: "done" });
+
+        // LEARN phase (PA-MEM-3): the turn is fully streamed + persisted — now decide whether anything
+        // is worth remembering. Best-effort: a LEARN error never fails the completed turn. Public mode
+        // is guarded inside runMemoryLearnPhase.
+        try {
+          await runMemoryLearnPhase({
+            persona: learn.persona,
+            tier: learn.tier,
+            conversationId,
+            userMessage: learn.userMessage,
+            assistantText,
+            origin: "conversation",
+            llm: defaultMemoryLearnLlm(learn.persona.business_id),
+          });
+        } catch {
+          // swallowed by design — the turn already succeeded.
+        }
       } catch (e) {
         send({ type: "error", error: e instanceof Error ? e.message : "stream error" });
       } finally {

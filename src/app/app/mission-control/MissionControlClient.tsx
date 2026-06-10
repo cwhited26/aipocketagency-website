@@ -86,6 +86,16 @@ type SkillProposalDetail = {
   reason: string;
 };
 
+type MemoryProposalDetail = {
+  personaId: string;
+  personaName: string;
+  partition: string;
+  tier: string;
+  body: string;
+  importance: number;
+  untrustedOrigin: boolean;
+};
+
 type InboxCard = {
   id: string;
   system: "inbox" | "legacy";
@@ -103,6 +113,7 @@ type InboxCard = {
   leadScout: LeadScoutBatchDetail | null;
   skillProposal: SkillProposalDetail | null;
   gate: GateFindingsDetail | null;
+  memoryProposal: MemoryProposalDetail | null;
   sourceSurface: string | null;
   threadId: string | null;
 };
@@ -166,6 +177,7 @@ type AwaitingSection =
   | "leads"
   | "budget"
   | "skills"
+  | "memory"
   | "hidden";
 
 function sectionFor(kind: InboxItemKind): AwaitingSection {
@@ -191,6 +203,8 @@ function sectionFor(kind: InboxItemKind): AwaitingSection {
       return "budget";
     case "skill_evolution_proposal":
       return "skills";
+    case "persona_memory_proposal":
+      return "memory";
     case "persona_lead":
       return "hidden";
     default: {
@@ -797,6 +811,7 @@ function TriageCard({
         leadScout: null,
         skillProposal: null,
         gate: null,
+        memoryProposal: null,
         sourceSurface: "inbox",
         threadId: triage!.threadId,
       });
@@ -1327,6 +1342,89 @@ function SkillProposalCard({
         >
           Review &amp; edit in Skills →
         </Link>
+        <button
+          onClick={() => void decide("reject")}
+          disabled={busy !== null}
+          className="min-h-[44px] rounded-xl border border-slate-700/60 px-4 text-sm text-slate-400 hover:border-red-500/50 hover:text-red-300 disabled:opacity-50 transition-colors ml-auto"
+        >
+          {busy === "reject" ? "…" : "Reject"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Owner-facing partition labels (mirror persona-memory/types PARTITION_LABELS) — the card never shows
+// the internal partition name.
+const MEMORY_PARTITION_LABELS: Record<string, string> = {
+  working: "What you're working on",
+  episodic: "Past conversations",
+  semantic: "What it learned",
+  procedural: "What works for you",
+  model_of_you: "How you work",
+};
+
+function MemoryProposalCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState<"approve" | "reject" | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const p = card.memoryProposal;
+  const body = (p?.body ?? card.bodyMd).trim();
+  const partitionLabel = p ? (MEMORY_PARTITION_LABELS[p.partition] ?? "Something it learned") : "";
+
+  async function decide(kind: "approve" | "reject") {
+    setBusy(kind);
+    setErr(null);
+    try {
+      await postDecision(kind === "approve" ? approveEndpoint(card) : rejectEndpoint(card));
+      onResolved(card.id, kind === "approve" ? "approved" : "rejected");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-cyan-500/20 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-cyan-300/80 uppercase tracking-[0.18em]">
+          {p?.personaName ? `${p.personaName} · ${partitionLabel}` : "A memory to keep"}
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
+      </div>
+
+      <p className="text-[15px] text-slate-100 leading-relaxed">{body}</p>
+
+      {p?.untrustedOrigin && (
+        <p className="mt-2 text-[12px] text-amber-300/80">
+          Picked up from something you shared — read it before you keep it.
+        </p>
+      )}
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => void decide("approve")}
+          disabled={busy !== null}
+          className="min-h-[44px] rounded-xl bg-[#22d3ee]/15 border border-[#22d3ee]/40 px-4 text-sm font-medium text-[#22d3ee] hover:bg-[#22d3ee]/25 disabled:opacity-50 transition-colors"
+        >
+          {busy === "approve" ? "Saving…" : "Approve & keep"}
+        </button>
+        {p?.personaId && (
+          <Link
+            href={`/app/personas/${p.personaId}/memory`}
+            className="min-h-[44px] flex items-center rounded-xl border border-slate-700/60 px-4 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors"
+          >
+            Review what it remembers →
+          </Link>
+        )}
         <button
           onClick={() => void decide("reject")}
           disabled={busy !== null}
@@ -1985,6 +2083,7 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
   const budgetGates = inSection("budget");
   const activity = inSection("activity");
   const skillProposals = inSection("skills");
+  const memoryProposals = inSection("memory");
 
   const pendingTriageThreadIds = new Set(
     triage.map((c) => c.triage?.threadId).filter((t): t is string => Boolean(t)),
@@ -2369,6 +2468,17 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
                 <div className="flex flex-col gap-3">
                   {skillProposals.map((card) => (
                     <SkillProposalCard key={card.id} card={card} onResolved={onResolved} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {memoryProposals.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader label="Memories to review" count={memoryProposals.length} tone="text-[#22d3ee]/70" />
+                <div className="flex flex-col gap-3">
+                  {memoryProposals.map((card) => (
+                    <MemoryProposalCard key={card.id} card={card} onResolved={onResolved} />
                   ))}
                 </div>
               </section>

@@ -30,6 +30,9 @@
 // 'ritual_result' (migration 072, PA-RITUAL-5) is the output a scheduled ritual stages when it fires —
 // informational, read like routine_output. 'ritual_paused' (PA-RITUAL-6) is the flag a ritual stages
 // when it auto-pauses after 5 consecutive failures, so the owner sees why it stopped.
+// 'persona_memory_proposal' (migration 073, PA-MEM-3) is a sub-threshold persona-memory write the
+// LEARN phase staged: the proposed {partition, tier, body, importance} for one Persona. Approve writes
+// it to pa_persona_memory (cap-enforced); reject suppresses re-proposal. Same pattern as Skill evolution.
 export type InboxKind =
   | "draft"
   | "decision"
@@ -46,7 +49,8 @@ export type InboxKind =
   | "follow_up_sweep_batch"
   | "capture_triage_proposal"
   | "ritual_result"
-  | "ritual_paused";
+  | "ritual_paused"
+  | "persona_memory_proposal";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {
