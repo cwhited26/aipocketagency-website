@@ -6,6 +6,8 @@
 
 import { useMemo, useState } from "react";
 import { ROLE_LABELS, type Roundtable, type RoundtableTurn, type Verdict } from "@/lib/decisions/types";
+import { AppEmptyState } from "@/app/app/_components/AppEmptyState";
+import { DECISION_ROUNDTABLE } from "@/lib/copy/in-app";
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -172,10 +174,13 @@ export default function DecisionsClient({
               plan includes {monthlyCap} a month.
             </p>
           ) : (
-            <p className="text-[12px] text-slate-500 mt-2">
-              Decision Roundtable runs the multi-agent debate on Studio+.{" "}
-              <a href="/app/settings" className="text-[#34d399]/80 hover:underline">See plans →</a>
-            </p>
+            <div className="mt-3 rounded-xl border border-[#34d399]/20 bg-[#34d399]/5 px-5 py-4">
+              <p className="text-sm font-semibold text-slate-100">{DECISION_ROUNDTABLE.upgradeGate.headline}</p>
+              <p className="text-sm text-slate-300 mt-1 leading-relaxed">{DECISION_ROUNDTABLE.upgradeGate.body}</p>
+              <a href="/app/settings/tier" className="mt-2 inline-block text-xs font-mono text-[#34d399]/80 hover:text-[#34d399]">
+                {DECISION_ROUNDTABLE.upgradeGate.cta} →
+              </a>
+            </div>
           )}
         </div>
 
@@ -190,17 +195,13 @@ export default function DecisionsClient({
         )}
 
         {filtered.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-700/60 bg-slate-900/40 px-5 py-8 text-center">
-            <p className="text-sm text-slate-300">
-              {roundtables.length === 0 ? "No decisions yet." : "Nothing matches that search."}
-            </p>
-            {roundtables.length === 0 && (
-              <p className="text-[13px] text-slate-500 mt-1">
-                Ask your agent a real call — &quot;should I raise prices on this client?&quot; — and run a
-                roundtable on it. The verdict shows up here.
-              </p>
-            )}
-          </div>
+          roundtables.length === 0 ? (
+            <AppEmptyState copy={DECISION_ROUNDTABLE.empty} />
+          ) : (
+            <div className="rounded-xl border border-dashed border-slate-700/60 bg-slate-900/40 px-5 py-8 text-center">
+              <p className="text-sm text-slate-300">Nothing matches that search.</p>
+            </div>
+          )
         ) : (
           <div className="flex flex-col gap-2">
             {filtered.map((rt) => (

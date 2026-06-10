@@ -1,6 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { getUsageSnapshot, type UsageSnapshot, type UsageMetricRow } from "@/lib/usage/snapshot";
 import { redirect } from "next/navigation";
+import { UsageLimitBanner } from "@/app/app/_components/UsageLimitBanner";
+import type { UsageLimitKind } from "@/lib/copy/in-app";
+
+// The three usage caps that have a Part 7V banner. Other metrics (youtube, connections, personas,
+// roundtable) fall back to the per-row upgrade CTA below.
+const USAGE_BANNER_KIND: Partial<Record<UsageMetricRow["key"], UsageLimitKind>> = {
+  lead_scout: "leads",
+  podcast_whisper: "whisper",
+  sub_agent: "sub_agent_runs",
+};
 
 // Settings → Tier & limits (Usage Surface v1, PA-USAGE-5). The reframe of the old Settings → Budget:
 // no dollar-cap input anymore. In the platform-managed flow the owner can't "set a budget" — they can
@@ -72,6 +82,14 @@ export default async function TierLimitsPage() {
           </div>
         ) : snapshot ? (
           <>
+            {/* Part 7V: a usage-limit banner for every cap the owner has hit. Same message as the
+                email confirmation the usage-cap hook enqueues — different channel. */}
+            {snapshot.metrics
+              .filter((row) => statusFor(row) === "hit" && USAGE_BANNER_KIND[row.key])
+              .map((row) => (
+                <UsageLimitBanner key={`cap-${row.key}`} kind={USAGE_BANNER_KIND[row.key]!} />
+              ))}
+
             <div className="rounded-xl border border-slate-700/60 bg-slate-900/50 px-5 py-4 flex items-center justify-between gap-4">
               <div>
                 <p className="text-[11px] text-slate-500 font-mono tracking-[0.14em] uppercase">

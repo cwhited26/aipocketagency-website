@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import FileUploadZone from "../_components/FileUploadZone";
 import { TabGuide } from "../_components/TabGuide";
 import YouTubeExplainerCard from "@/components/youtube/ExplainerCard";
+import { CAPTURE_INBOX } from "@/lib/copy/in-app";
 
 type CompletenessData = { filled: number; total: number; pct: number };
 
@@ -62,9 +63,9 @@ export default function FeedBrainClient({
           <div className="text-[#22d3ee] text-[10px] font-mono tracking-[0.22em] uppercase mb-1.5">
             Pocket Agent · Brain
           </div>
-          <h1 className="text-2xl font-bold text-slate-100">Feed your brain.</h1>
+          <h1 className="text-2xl font-bold text-slate-100">{CAPTURE_INBOX.empty.headline}</h1>
           <p className="text-slate-400 text-sm mt-1.5 leading-relaxed">
-            The fastest way to get something into your brain, from anywhere.
+            {CAPTURE_INBOX.empty.subheadline}
           </p>
           <p className="text-sm text-slate-300 mt-3 leading-relaxed">
             When something matters and you don&apos;t want to lose it, drop it here. A voice memo

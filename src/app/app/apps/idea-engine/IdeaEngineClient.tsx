@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { IDEA_ENGINE } from "@/lib/copy/in-app";
 
 export type IdeaListItem = {
   slug: string;
@@ -60,9 +61,9 @@ export function IdeaEngineClient({ ideas, hasApiKey }: { ideas: IdeaListItem[]; 
     <div className="flex flex-col gap-7">
       {/* Drop an idea */}
       <section className="rounded-xl border border-[#22d3ee]/20 bg-[#22d3ee]/[0.04] px-5 py-5">
-        <h2 className="text-sm font-semibold text-slate-100">Drop an idea</h2>
+        <h2 className="text-sm font-semibold text-slate-100">{IDEA_ENGINE.empty.headline}</h2>
         <p className="text-[12px] text-slate-400 mt-1">
-          A line is enough. PA reads it and opens a Snapshot — then you run the chain stage by stage.
+          {IDEA_ENGINE.empty.subheadline}
         </p>
         {!hasApiKey && (
           <p className="text-[12px] text-amber-300/80 mt-3">
@@ -88,7 +89,7 @@ export function IdeaEngineClient({ ideas, hasApiKey }: { ideas: IdeaListItem[]; 
           disabled={submitting}
           className="mt-3 rounded-lg bg-[#22d3ee] text-[#06080b] text-sm font-semibold px-4 py-2 hover:bg-[#22d3ee]/90 disabled:opacity-50"
         >
-          {submitting ? "Opening…" : "Open a Snapshot →"}
+          {submitting ? "Opening…" : IDEA_ENGINE.empty.cta}
         </button>
       </section>
 
@@ -98,7 +99,7 @@ export function IdeaEngineClient({ ideas, hasApiKey }: { ideas: IdeaListItem[]; 
           Your ideas
         </h2>
         {active.length === 0 ? (
-          <p className="text-sm text-slate-500">No ideas yet. Drop one above.</p>
+          <p className="text-sm text-slate-500">{IDEA_ENGINE.empty.subheadline}</p>
         ) : (
           <div className="flex flex-col gap-2">
             {active.map((i) => (

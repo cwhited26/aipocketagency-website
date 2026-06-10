@@ -4,6 +4,7 @@ import { useState } from "react";
 import Mascot from "@/components/Mascot";
 import GalaxyView from "./GalaxyView";
 import FolderView from "./FolderView";
+import { BUSINESS_BRAIN } from "@/lib/copy/in-app";
 
 type Mode = "galaxy" | "folders";
 
@@ -85,14 +86,20 @@ function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
 }
 
 function EmptyState({ hasGithubToken }: { hasGithubToken: boolean }) {
+  const copy = BUSINESS_BRAIN.mapEmpty;
   return (
     <div className="flex flex-col items-center justify-center text-center gap-5 py-16 px-6">
       <Mascot state="documents" size={120} />
       <div className="space-y-2 max-w-sm">
-        <p className="text-base font-semibold text-slate-200">No brain to map yet</p>
+        <p className="text-base font-semibold text-slate-200">{copy.headline}</p>
+        {copy.subheadline && (
+          <p className="text-sm text-slate-300 leading-relaxed">{copy.subheadline}</p>
+        )}
+        {copy.body && (
+          <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-line">{copy.body}</p>
+        )}
         {!hasGithubToken ? (
           <p className="text-sm text-slate-400 leading-relaxed">
-            Connect GitHub and your agent gets a place to learn. Once it does, this map fills in.{" "}
             <a
               href="/api/app/auth/github?next=/app/brain-map"
               className="text-[#22d3ee] hover:underline"
@@ -102,9 +109,8 @@ function EmptyState({ hasGithubToken }: { hasGithubToken: boolean }) {
           </p>
         ) : (
           <p className="text-sm text-slate-400 leading-relaxed">
-            Finish setting up your brain and the map fills in with what your agent knows.{" "}
             <a href="/app/onboarding" className="text-[#22d3ee] hover:underline">
-              Set up brain →
+              {copy.cta} →
             </a>
           </p>
         )}

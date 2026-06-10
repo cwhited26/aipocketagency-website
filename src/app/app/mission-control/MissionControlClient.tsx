@@ -5,6 +5,9 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
 import UsageTab from "./UsageTab";
+import { AppEmptyState } from "@/app/app/_components/AppEmptyState";
+import { MISSION_CONTROL } from "@/lib/copy/in-app";
+import { trackEvent } from "@/lib/analytics/events";
 import { affordancesFor, type InboxItemKind } from "@/lib/inbox-affordances";
 import type {
   LedgerStatus,
@@ -2142,6 +2145,11 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
     if (toastTimer.current) clearTimeout(toastTimer.current);
   }, []);
 
+  // Fire once on mount — records that the user opened Mission Control (activation funnel step).
+  useEffect(() => {
+    trackEvent("mission_control_opened");
+  }, []);
+
   // Tap / Enter / Space on a tile: scroll to its section, or toast if the bucket is empty. Done also
   // expands its collapsed list so the jump lands on something visible.
   const handleTile = useCallback(
@@ -2257,11 +2265,9 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
           <div className="text-[10px] text-[#22d3ee]/60 font-mono tracking-[0.2em] uppercase mb-2">
             Agent desk · Live
           </div>
-          <h1 className="text-2xl font-bold text-slate-100">Mission Control</h1>
+          <h1 className="text-2xl font-bold text-slate-100">{MISSION_CONTROL.header.headline}</h1>
           <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-            One live view of your whole agent fleet — what needs you, what&apos;s running right now,
-            what&apos;s scheduled, and what just finished. It refreshes itself every few seconds.
-            Nothing sends or saves without your explicit go-ahead.
+            {MISSION_CONTROL.header.subheadline}
           </p>
         </div>
 
@@ -2531,22 +2537,11 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
 
             {/* Empty state */}
             {allClear && (
-              <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 px-6 py-10 flex flex-col items-center gap-4">
-                <Mascot state="inbox" size={104} />
-                <div className="text-center max-w-sm">
-                  <div className="text-slate-100 text-base font-semibold mb-2">Fleet&apos;s all clear</div>
-                  <p className="text-slate-500 text-sm leading-relaxed">
-                    Nothing needs you and nothing&apos;s mid-flight. The moment a sub-agent kicks off,
-                    a draft is staged, or a routine has something for you, it shows up here — live.
-                  </p>
-                </div>
-                <Link
-                  href="/app/apps/email"
-                  className="text-xs font-mono text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors"
-                >
-                  Draft an email →
-                </Link>
-              </div>
+              <AppEmptyState
+                copy={MISSION_CONTROL.empty}
+                ctaHref="/app/apps"
+                icon={<Mascot state="inbox" size={80} />}
+              />
             )}
 
             {/* 7 · Done — recently resolved (collapsed) */}

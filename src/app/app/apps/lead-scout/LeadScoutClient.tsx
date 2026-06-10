@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { LeadScoutSchedule, LeadScoutSourceKind } from "@/lib/leads/types";
+import { LEAD_SCOUT } from "@/lib/copy/in-app";
 
 export type SourceView = {
   id: string;
@@ -471,17 +472,18 @@ export default function LeadScoutClient({
 
       {sources.length === 0 ? (
         <div className="rounded-2xl border border-slate-800/60 bg-slate-900/40 px-6 py-10 text-center">
-          <p className="text-sm font-semibold text-slate-100">No Lead Sources yet</p>
-          <p className="text-sm text-slate-500 mt-1.5 leading-relaxed max-w-sm mx-auto">
-            Make one — sweep Google Maps for a category in a place (say, roofers near Knoxville with no
-            website), or paste a list of URLs to visit. PA pulls the profiles, sorts them by fit, and
-            stages the batch for you.
+          <p className="text-sm font-semibold text-slate-100">{LEAD_SCOUT.empty.headline}</p>
+          <p className="text-sm font-medium text-[#22d3ee]/90 mt-1.5">
+            {LEAD_SCOUT.empty.subheadline}
+          </p>
+          <p className="text-sm text-slate-400 mt-2 leading-relaxed max-w-sm mx-auto">
+            {LEAD_SCOUT.empty.body}
           </p>
           <button
             onClick={() => setSheetOpen(true)}
             className="mt-4 text-xs font-semibold text-[#031820] bg-[#22d3ee] hover:bg-[#06b6d4] rounded-lg px-3.5 py-2 transition-colors"
           >
-            + New Lead Source
+            {LEAD_SCOUT.empty.cta}
           </button>
         </div>
       ) : (

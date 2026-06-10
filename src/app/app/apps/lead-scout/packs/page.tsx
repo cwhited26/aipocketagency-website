@@ -6,6 +6,7 @@ import { getCurrentTier, tierAllowsLeadScoutPacks, TIER_LABELS } from "@/lib/per
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import PacksClient, { type PackView } from "./PacksClient";
+import { LEAD_SCOUT } from "@/lib/copy/in-app";
 
 export const dynamic = "force-dynamic";
 
@@ -69,20 +70,25 @@ export default async function LeadScoutPacksPage() {
         {!canSubscribe && (
           <div className="mb-6 rounded-xl border border-amber-500/25 bg-amber-500/5 px-5 py-4">
             <p className="text-sm font-semibold text-slate-100">
-              Packs are a Studio+ feature — you&apos;re on {TIER_LABELS[tier]}
+              {LEAD_SCOUT.upgradeGate.headline}
             </p>
             <p className="text-sm text-slate-300 mt-1 leading-relaxed">
-              Browse them all below. To subscribe and let PA run the full sweep + outreach loop for
-              you,{" "}
-              <Link href="/pricing" className="text-[#22d3ee] hover:underline">
-                upgrade to Studio+
-              </Link>
-              . You can still build a source by hand on the{" "}
-              <Link href="/app/apps/lead-scout" className="text-[#22d3ee] hover:underline">
-                Lead Scout page
-              </Link>{" "}
-              on any plan.
+              {LEAD_SCOUT.upgradeGate.body}
             </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Link
+                href="/pricing"
+                className="rounded-lg bg-[#22d3ee] px-3.5 py-2 text-xs font-semibold text-slate-950 hover:bg-[#06b6d4] transition-colors"
+              >
+                {LEAD_SCOUT.upgradeGate.cta}
+              </Link>
+              <Link
+                href="/pricing"
+                className="rounded-lg border border-slate-600 px-3.5 py-2 text-xs font-medium text-slate-300 hover:border-slate-400 hover:text-slate-100 transition-colors"
+              >
+                {LEAD_SCOUT.upgradeGate.secondaryCta}
+              </Link>
+            </div>
           </div>
         )}
 

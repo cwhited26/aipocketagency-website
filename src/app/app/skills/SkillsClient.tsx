@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { TabGuide } from "../_components/TabGuide";
+import { AppEmptyState } from "@/app/app/_components/AppEmptyState";
+import { SKILLS } from "@/lib/copy/in-app";
 
 // SkillsClient — the owner-facing Skills tab (Skills SPEC §9.1). Lists the techniques the agent
 // has accumulated, surfaces LEARN-phase proposals waiting for an OK, lets the owner hand-seed a
@@ -133,13 +135,8 @@ export default function SkillsClient({ hasBrain }: { hasBrain: boolean }) {
     <div className="min-h-screen bg-[#070c11] text-slate-200">
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-10 lg:py-14 flex flex-col gap-8">
         <header className="flex flex-col gap-3">
-          <h1 className="text-2xl font-semibold text-slate-100">Skills</h1>
-          <p className="text-[15px] text-slate-400 leading-relaxed">
-            Skills are the moves your agent has learned. Every time it finishes something the right
-            way — and you approve it — it can save the technique here and start the next job from
-            that, instead of from scratch. Apps are what Pocket Agent can do out of the box; Skills
-            are what it&apos;s picked up from working with <em>you</em>.
-          </p>
+          <h1 className="text-2xl font-semibold text-slate-100">{SKILLS.header.headline}</h1>
+          <p className="text-[15px] text-slate-400 leading-relaxed">{SKILLS.header.subheadline}</p>
         </header>
 
         {!hasBrain && (
@@ -309,6 +306,8 @@ function StarterPack() {
   if (error) return <p className="text-sm text-red-400">{error}</p>;
   if (groups.length === 0) return null;
 
+  const hasLockedSkills = groups.some((g) => g.skills.some((s) => !s.unlocked));
+
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -321,6 +320,19 @@ function StarterPack() {
           edit, or roll them back like any other skill.
         </p>
       </div>
+
+      {hasLockedSkills && (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-4">
+          <p className="text-sm font-semibold text-slate-100">{SKILLS.locked.headline}</p>
+          <p className="text-sm text-slate-300 mt-1 leading-relaxed">{SKILLS.locked.body}</p>
+          <Link
+            href="/pricing"
+            className="mt-2 inline-block text-xs font-mono text-[#22d3ee]/80 hover:text-[#22d3ee]"
+          >
+            {SKILLS.locked.cta} →
+          </Link>
+        </div>
+      )}
 
       {groups.map((g) => (
         <div key={g.category} className="flex flex-col gap-2">
@@ -412,15 +424,7 @@ function AgentskillsBadge() {
 }
 
 function EmptyState() {
-  return (
-    <div className="rounded-2xl border border-dashed border-slate-700/60 bg-slate-900/30 px-6 py-8 text-center">
-      <p className="text-sm text-slate-300 leading-relaxed">
-        No skills yet. As your agent finishes work and you approve it, it&apos;ll start asking to
-        remember the moves that worked — and they&apos;ll show up here. You can also seed one by hand
-        above.
-      </p>
-    </div>
-  );
+  return <AppEmptyState copy={SKILLS.empty} />;
 }
 
 function ProposalList({

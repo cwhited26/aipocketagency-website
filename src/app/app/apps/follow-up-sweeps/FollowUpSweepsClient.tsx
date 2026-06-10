@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { FOLLOW_UP_SWEEPS } from "@/lib/copy/in-app";
 
 type SourceType = "gmail" | "brain_customer" | "lead_scout";
 type Relationship = "cold_lead" | "active_customer" | "past_customer";
@@ -399,10 +400,12 @@ export default function FollowUpSweepsClient({
 
         {sources.length === 0 ? (
           <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 p-6 text-center">
-            <p className="text-sm font-semibold text-slate-100">No watches yet</p>
+            <p className="text-sm font-semibold text-slate-100">{FOLLOW_UP_SWEEPS.empty.headline}</p>
+            <p className="mx-auto mt-1.5 max-w-md text-sm font-medium text-[#22d3ee]/90">
+              {FOLLOW_UP_SWEEPS.empty.subheadline}
+            </p>
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-400">
-              Add your first watch above. A common start: a <em>Cold leads</em> watch on your Gmail
-              sent mail, and an <em>Active customers</em> watch on your brain&apos;s customer files.
+              {FOLLOW_UP_SWEEPS.empty.body}
               {!hasBrain && " Connect a brain to watch customer files."}
             </p>
           </div>

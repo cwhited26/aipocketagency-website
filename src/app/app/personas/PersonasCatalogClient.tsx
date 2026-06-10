@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { TabGuide } from "../_components/TabGuide";
+import { AppEmptyState } from "../_components/AppEmptyState";
 import { personaApps, type PersonaRow } from "@/lib/personas/types";
 import { appsByIds } from "@/lib/apps/catalog";
+import { PERSONAS } from "@/lib/copy/in-app";
 
 type CatalogResponse = {
   personas: PersonaRow[];
@@ -60,9 +62,9 @@ export default function PersonasCatalogClient() {
       <div className="max-w-5xl mx-auto px-5 py-8">
         <header className="flex items-start justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-100">Personas</h1>
+            <h1 className="text-2xl font-semibold text-slate-100">{PERSONAS.galleryHeader.headline}</h1>
             <p className="text-sm text-slate-500 mt-1 max-w-xl">
-              Versions of your agent with their own voice and focus.
+              {PERSONAS.galleryHeader.subheadline}
             </p>
           </div>
           {canCreate ? (
@@ -120,19 +122,7 @@ export default function PersonasCatalogClient() {
         )}
 
         {!loading && !error && personas.length === 0 && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-10 text-center">
-            <p className="text-slate-300 font-medium">No personas yet</p>
-            <p className="text-slate-500 text-sm mt-1 mb-5 max-w-md mx-auto">
-              Spin up a Virtual Sales Manager, Customer Service Agent, and more from a
-              template in under 10 minutes.
-            </p>
-            <Link
-              href="/app/personas/new"
-              className="inline-block rounded-lg bg-[#22d3ee] text-[#06222a] text-sm font-semibold px-4 py-2.5 hover:bg-[#67e8f9] transition-colors"
-            >
-              Create your first persona
-            </Link>
-          </div>
+          <AppEmptyState copy={PERSONAS.empty} ctaHref="/app/personas/new" />
         )}
 
         <div className="grid gap-3 sm:grid-cols-2">

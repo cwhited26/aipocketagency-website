@@ -7,6 +7,7 @@
 // watches it leads with a "stop being the last to hear it" intro + three examples.
 
 import { useState, useEffect, useCallback } from "react";
+import { PODCAST } from "@/lib/copy/in-app";
 
 type Cadence = "realtime" | "daily" | "weekly";
 
@@ -204,25 +205,13 @@ export default function PodcastWatchClient() {
       {/* Zero-state intro */}
       {watches.length === 0 ? (
         <div className="rounded-xl border border-slate-700/60 bg-slate-900/40 px-5 py-5">
-          <h3 className="text-sm font-semibold text-slate-100">Stop being the last to hear it.</h3>
+          <h3 className="text-sm font-semibold text-slate-100">{PODCAST.empty.headline}</h3>
           <p className="mt-1.5 text-sm text-slate-400 leading-relaxed">
-            Follow a show and PA catches every new episode the moment it drops — listens to it, files
-            what matters in your brain, and surfaces it. A few ways owners use it:
+            {PODCAST.empty.subheadline}
           </p>
-          <ul className="mt-3 flex flex-col gap-2 text-[13px] text-slate-400">
-            <li className="flex gap-2">
-              <span className="text-[#22d3ee]/60 shrink-0">◆</span>
-              Follow the show a competitor guests on — PA logs what they claimed the morning it posts.
-            </li>
-            <li className="flex gap-2">
-              <span className="text-[#22d3ee]/60 shrink-0">◆</span>
-              Follow Hormozi, Brunson, whoever you learn from — PA pulls the tactics into your voice influences automatically.
-            </li>
-            <li className="flex gap-2">
-              <span className="text-[#22d3ee]/60 shrink-0">◆</span>
-              Follow an industry show on notes-only — PA tells you what each episode was about for a fraction of a cent.
-            </li>
-          </ul>
+          <p className="mt-2 text-[13px] text-slate-400 leading-relaxed">
+            {PODCAST.empty.body}
+          </p>
         </div>
       ) : (
         <ul className="flex flex-col gap-2">

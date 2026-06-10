@@ -5,6 +5,8 @@ import { listIdeas } from "@/lib/idea-engine/store";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { IdeaEngineClient, type IdeaListItem } from "./IdeaEngineClient";
+import { IDEA_ENGINE } from "@/lib/copy/in-app";
+import { AppEmptyState } from "@/app/app/_components/AppEmptyState";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +30,12 @@ export default async function IdeaEnginePage() {
             ← Apps
           </Link>
           <h1 className="text-2xl font-bold text-slate-100 mt-4">Idea Engine</h1>
-          <p className="text-slate-300 text-sm mt-3 leading-relaxed">
-            The Idea Engine turns an idea into a shipped MVP on your own accounts. It&apos;s a Pro+ feature.{" "}
-            <Link href="/app/settings" className="text-[#22d3ee] hover:underline">
-              See your plan →
-            </Link>
-          </p>
+          <div className="mt-6">
+            <AppEmptyState
+              copy={IDEA_ENGINE.upgradeGate}
+              ctaHref="/app/settings/tier"
+            />
+          </div>
         </div>
       </div>
     );
@@ -61,21 +63,27 @@ export default async function IdeaEnginePage() {
         <div className="mt-4 mb-7">
           <h1 className="text-2xl font-bold text-slate-100">Idea Engine</h1>
           <p className="text-slate-200 text-sm mt-3 leading-relaxed">
-            You have brilliant ideas. They keep dying in a notes app.
+            {IDEA_ENGINE.empty.headline}
           </p>
           <p className="text-slate-400 text-sm mt-2 leading-relaxed">
-            A chain of agents that turns an idea into a shipped MVP. Not one more prompt box. Drop an
-            idea, approve the plan, and {autoBuild ? "PA ships the MVP on your accounts" : "PA hands you the prompts to build it"} —
-            ending with {autoBuild ? "a working " : "a plan and the prompts for a "}
-            <span className="font-mono text-[#22d3ee]/80">&lt;slug&gt;.vercel.app</span>
-            {autoBuild ? " URL." : " page."}
+            {IDEA_ENGINE.empty.subheadline}
           </p>
           {!autoBuild && (
-            <p className="text-[12px] text-slate-500 mt-3 leading-relaxed">
-              You&apos;re on prompt-pack mode (Pro+): PA runs the market scan and the plan, then writes
-              the prompts you paste into Cursor or Claude Code. Studio+ ships the MVP for you, step by
-              step.
-            </p>
+            <div className="mt-4 rounded-xl border border-[#22d3ee]/20 bg-[#22d3ee]/[0.04] px-4 py-4">
+              <p className="text-sm font-semibold text-slate-100">{IDEA_ENGINE.proPlusGate.headline}</p>
+              <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">{IDEA_ENGINE.proPlusGate.body}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link
+                  href="/pricing"
+                  className="rounded-lg bg-[#22d3ee] px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-[#67e8f9] transition-colors"
+                >
+                  {IDEA_ENGINE.proPlusGate.cta}
+                </Link>
+                <span className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-400">
+                  {IDEA_ENGINE.proPlusGate.secondaryCta}
+                </span>
+              </div>
+            </div>
           )}
         </div>
 

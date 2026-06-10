@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import FileUploadZone from "../_components/FileUploadZone";
 import Mascot from "@/components/Mascot";
 import { TabGuide } from "../_components/TabGuide";
+import { BUSINESS_BRAIN } from "@/lib/copy/in-app";
 import type { BrainFile } from "@/app/api/app/brain/files/route";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -230,25 +231,33 @@ function Section({
 // ─── Empty State ────────────────────────────────────────────────────────────────
 
 function EmptyState({ hasGithubToken }: { hasGithubToken: boolean }) {
+  const copy = BUSINESS_BRAIN.empty;
   return (
     <div className="flex flex-col items-center justify-center text-center gap-5 py-10 px-6">
       <Mascot state="documents" size={120} />
       <div className="space-y-2 max-w-sm">
-        <p className="text-base font-semibold text-slate-200">No documents yet</p>
+        <p className="text-base font-semibold text-slate-200">{copy.headline}</p>
+        {copy.subheadline && (
+          <p className="text-sm text-slate-300 leading-relaxed">{copy.subheadline}</p>
+        )}
+        {copy.body && (
+          <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-line">{copy.body}</p>
+        )}
         {!hasGithubToken ? (
           <p className="text-sm text-slate-400 leading-relaxed">
-            Connect GitHub so your agent has a place to learn and remember.{" "}
             <a href="/api/app/auth/github?next=/app/documents" className="text-[#22d3ee] hover:underline">
-              Connect GitHub →
+              {copy.cta} →
             </a>
           </p>
         ) : (
           <p className="text-sm text-slate-400 leading-relaxed">
-            Finish setting up your brain and your agent&apos;s knowledge will appear here.{" "}
             <a href="/app/onboarding" className="text-[#22d3ee] hover:underline">
-              Set up brain →
+              {copy.secondaryCta} →
             </a>
           </p>
+        )}
+        {copy.microcopy && (
+          <p className="text-[11px] font-mono text-slate-600 mt-1">{copy.microcopy}</p>
         )}
       </div>
     </div>

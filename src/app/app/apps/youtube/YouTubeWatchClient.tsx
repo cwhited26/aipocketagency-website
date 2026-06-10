@@ -6,6 +6,7 @@
 // there are zero watches, it leads with a "stop being the last to know" intro + three examples.
 
 import { useState, useEffect, useCallback } from "react";
+import { YOUTUBE } from "@/lib/copy/in-app";
 
 type Cadence = "realtime" | "daily" | "weekly";
 type Status = "active" | "paused" | "stopped";
@@ -162,25 +163,13 @@ export default function YouTubeWatchClient() {
       {/* Zero-state intro */}
       {watches.length === 0 ? (
         <div className="rounded-xl border border-slate-700/60 bg-slate-900/40 px-5 py-5">
-          <h3 className="text-sm font-semibold text-slate-100">Stop being the last to know.</h3>
+          <h3 className="text-sm font-semibold text-slate-100">{YOUTUBE.empty.headline}</h3>
           <p className="mt-1.5 text-sm text-slate-400 leading-relaxed">
-            Watch a channel and PA catches every new upload the moment it posts — reads it, files what
-            matters in your brain, and surfaces it. A few ways owners use it:
+            {YOUTUBE.empty.subheadline}
           </p>
-          <ul className="mt-3 flex flex-col gap-2 text-[13px] text-slate-400">
-            <li className="flex gap-2">
-              <span className="text-[#22d3ee]/60 shrink-0">◆</span>
-              Watch your top competitor&apos;s channel — PA logs every new launch claim the moment they post.
-            </li>
-            <li className="flex gap-2">
-              <span className="text-[#22d3ee]/60 shrink-0">◆</span>
-              Watch creators you learn from — Hormozi, Brunson, whoever — PA pulls the techniques into your voice influences automatically.
-            </li>
-            <li className="flex gap-2">
-              <span className="text-[#22d3ee]/60 shrink-0">◆</span>
-              Watch industry channels you&apos;d never have time to follow — PA summarizes the highlights into your weekly brief.
-            </li>
-          </ul>
+          <p className="mt-2 text-[13px] text-slate-400 leading-relaxed">
+            {YOUTUBE.empty.body}
+          </p>
         </div>
       ) : (
         <ul className="flex flex-col gap-2">

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { EMAIL_DRAFTER } from "@/lib/copy/in-app";
 
 type Citation = { file: string; line: string };
 type GenerateResponse = { draft: string; citations: Citation[]; hasBrain: boolean };
@@ -524,9 +525,7 @@ export default function EmailClient({
             </div>
 
             <p className="text-xs text-slate-700 leading-relaxed">
-              Edit freely — it&apos;s a starting point. The voice gets sharper as you feed your brain
-              more context: communication patterns, relationship notes, past email threads that
-              landed well.
+              {EMAIL_DRAFTER.output.microcopy}
             </p>
           </div>
         )}

@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import type { LandingPageView, TemplateId } from "@/lib/landing-pages/types";
+import { AppEmptyState } from "@/app/app/_components/AppEmptyState";
+import { AddonPrompt } from "@/app/app/_components/AddonPrompt";
+import { LANDING_PAGE } from "@/lib/copy/in-app";
 
 type TemplateOption = { id: TemplateId; label: string; description: string; bestFor: string };
 
@@ -132,7 +135,7 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
           <p className="text-sm font-semibold text-slate-100">Building a page is a Studio feature</p>
           <p className="text-sm text-slate-300 mt-1 leading-relaxed">
             You can plan a page here. To build it on your own GitHub and Vercel, move up to Studio.{" "}
-            <a href="/app/settings/billing" className="text-[#22d3ee] hover:underline">
+            <a href="/app/settings/tier" className="text-[#22d3ee] hover:underline">
               See plans →
             </a>
           </p>
@@ -206,7 +209,7 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
 
       {/* Page list */}
       {pages.length === 0 ? (
-        <p className="text-sm text-slate-500">No pages yet. Describe one above and PA drafts it.</p>
+        <AppEmptyState copy={LANDING_PAGE.empty} />
       ) : (
         <div className="flex flex-col gap-3">
           {pages.map((page) => (
@@ -220,6 +223,8 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
               onRemove={() => remove(page.id)}
             />
           ))}
+          {/* Part 7U: contextual PA Publish add-on prompt once the owner has a page to publish. */}
+          <AddonPrompt kind="pa_publish" />
         </div>
       )}
     </div>

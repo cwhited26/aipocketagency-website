@@ -1,3 +1,8 @@
+// Verified Resend sender domain: aipocketagent.com (verified 2026-05-23).
+// Sender: chase@aipocketagent.com. The legacy aipocketagency.com is NOT canonical —
+// see memory/feedback_resend_aipocketagent_verified.md and feedback_pa_domain_is_aipocketagent_com.md
+// in the whited-brain repo for the standing rule.
+
 type Attachment = {
   filename: string;
   path: string;

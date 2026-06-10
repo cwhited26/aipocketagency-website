@@ -6,11 +6,14 @@
 // Direct REST against the Resend send endpoint — no SDK (standing rule #6). Every call returns a
 // typed Result; transport failures are logged structured and returned, never swallowed.
 //
-// Sender note: the default `from` uses chase@aipocketagency.com — the 'cy' domain is the one
-// verified on the Resend account (aipocketagent.com, the 't' domain, is NOT verified). This must
-// stay in sync with lib/personas/notify.ts, the other PA system-mail sender.
+// Verified Resend sender domain: aipocketagent.com (verified 2026-05-23).
+// Sender: chase@aipocketagent.com. The legacy aipocketagency.com is NOT canonical —
+// see memory/feedback_resend_aipocketagent_verified.md and feedback_pa_domain_is_aipocketagent_com.md
+// in the whited-brain repo for the standing rule. (Some legacy senders — lib/personas/notify.ts,
+// the connector re-auth alerts, the Stripe webhook — still carry the 'cy' domain pending a sweep;
+// this transport's default is the canonical 't' domain.)
 
-const DEFAULT_FROM = "Pocket Agent <chase@aipocketagency.com>";
+const DEFAULT_FROM = "Pocket Agent <chase@aipocketagent.com>";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
@@ -20,7 +23,7 @@ export type SendTransactionalInput = {
   subject: string;
   html: string;
   text: string;
-  /** Defaults to `Pocket Agent <chase@aipocketagency.com>` (the verified sender). */
+  /** Defaults to `Pocket Agent <chase@aipocketagent.com>` (the verified sender). */
   from?: string;
   replyTo?: string;
   /**
