@@ -44,6 +44,10 @@
     {
       "path": "/api/cron/capture-triage",
       "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/rituals",
+      "schedule": "*/5 * * * *"
     }
   ],
   "rewrites": [

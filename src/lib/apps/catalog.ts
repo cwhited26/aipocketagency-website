@@ -20,6 +20,7 @@ export const APP_IDS = [
   "capture-inbox",
   "brain-map",
   "workflow-vault",
+  "ritual-scheduler",
 ] as const;
 
 export type AppId = (typeof APP_IDS)[number];
@@ -181,6 +182,17 @@ export const APP_CATALOG: AppDef[] = [
     blurb: "See what the agent knows about your business.",
     tag: "View",
     tagColor: "muted",
+  },
+  {
+    id: "ritual-scheduler",
+    href: "/app/apps/rituals",
+    label: "Ritual Scheduler",
+    shortLabel: "Rituals",
+    description:
+      "You keep meaning to run the same thing every week and it slips. Tell PA once — \"every Monday at 8, review my open leads\" — and it runs on that schedule for good. Pick which App fires, type the schedule in plain words (no cron, ever), and the result is waiting in Mission Control when you sit down. Pause, edit, or delete it from one place. Starts with 8 ready rituals you install in a tap.",
+    blurb: "Author a recurring job once; the result is waiting when you sit down.",
+    tag: "Runs On Schedule",
+    tagColor: "cyan",
   },
   {
     id: "workflow-vault",

@@ -28,7 +28,9 @@ export type InboxCardKind =
   | "skill_evolution_proposal"
   | "gate_findings"
   | "follow_up_sweep_batch"
-  | "capture_triage_proposal";
+  | "capture_triage_proposal"
+  | "ritual_result"
+  | "ritual_paused";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {

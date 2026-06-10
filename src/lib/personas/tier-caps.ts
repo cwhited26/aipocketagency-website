@@ -171,6 +171,45 @@ export function evaluateCanRunRoundtable(tier: Tier, monthlyRunCount: number): C
   return { ok: true, reason: "" };
 }
 
+// ── Ritual Scheduler active-ritual caps (PA-RITUAL-8, SPEC §9) ────────────────────────
+//
+// The sweep cron does per-owner polling work every 5 minutes, so the number of ACTIVE (enabled)
+// rituals an owner can hold is bounded by tier. Paused rituals don't count — pause or delete an old
+// one to author a new one at cap. The ladder mirrors the SMB price ladder: Starter 1, Pro 5, Pro+ 10,
+// Studio 25, Studio+/Enterprise 100.
+export const RITUAL_ACTIVE_CAPS: Record<Tier, number> = {
+  starter: 1,
+  pro: 5,
+  pro_plus: 10,
+  studio: 25,
+  studio_plus: 100,
+  enterprise: 100,
+};
+
+/** This tier's cap on active (enabled) rituals (PA-RITUAL-8). */
+export function ritualActiveCap(tier: Tier): number {
+  return RITUAL_ACTIVE_CAPS[tier];
+}
+
+/**
+ * Pure: may this tier enable another ritual, given how many it already has active? Returns a
+ * CapDecision so the route and the App surface show the same reason verbatim. Used on create and on
+ * resume (resuming a paused ritual makes it active again, so it re-checks the cap).
+ */
+export function evaluateCanActivateRitual(tier: Tier, activeCount: number): CapDecision {
+  const cap = RITUAL_ACTIVE_CAPS[tier];
+  if (activeCount >= cap) {
+    return {
+      ok: false,
+      reason:
+        cap === 1
+          ? "Your plan runs 1 ritual at a time. Pause or delete it to author a new one, or upgrade to run more."
+          : `You're running all ${cap} rituals on your plan. Pause or delete one to author another, or upgrade to run more.`,
+    };
+  }
+  return { ok: true, reason: "" };
+}
+
 // ── Stripe LIVE-mode price → tier mapping (PA-ORCH-10 unified SMB ladder) ────────────
 //
 // Source of truth for the SMB subscription tier a paid Stripe price grants. The
