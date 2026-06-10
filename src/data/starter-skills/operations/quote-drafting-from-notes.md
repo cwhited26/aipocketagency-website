@@ -1,9 +1,16 @@
 ---
 name: quote-drafting-from-notes
+title: "Draft a Quote From Messy Notes"
 description: "Turn rough notes — a photo, a voice memo, a few scribbled lines — into a clean, structured quote with scope, line items, and a total."
 when_to_use: "The owner captured a job in the field — a quick note, a photo, a memo — and needs it turned into a quote they can send."
 tier_required: studio_plus
 category: operations
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "studio_plus"
+  category: "operations"
 prerequisites: []
 ---
 

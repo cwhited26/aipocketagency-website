@@ -1,9 +1,16 @@
 ---
 name: reversibility-check
+title: "Check Whether It's Reversible"
 description: "Decide how much to deliberate by whether the decision can be undone — move fast on reversible calls, slow down on the one-way doors."
 when_to_use: "Any decision where you're unsure how much time it deserves. The check tells you whether to just decide or to slow down."
 tier_required: studio_plus
 category: decision_shape
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "studio_plus"
+  category: "decision_shape"
 prerequisites: []
 ---
 

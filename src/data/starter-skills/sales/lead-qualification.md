@@ -1,9 +1,16 @@
 ---
 name: lead-qualification
+title: "Qualify a Lead Fast"
 description: "Sort a new lead on fit, pain, budget, and timing so the owner spends time on the ones who'll actually close."
 when_to_use: "A new lead comes in and you need to decide how hard to chase it. Use before booking a long call with someone who may never buy."
 tier_required: pro_plus
 category: sales
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "sales"
 prerequisites: []
 ---
 

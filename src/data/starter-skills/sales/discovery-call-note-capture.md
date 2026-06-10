@@ -1,9 +1,16 @@
 ---
 name: discovery-call-note-capture
+title: "Capture What Matters From a Call"
 description: "Log the few things from a discovery call that change the deal — pain, budget signals, decision process, exact words — and skip the transcript."
 when_to_use: "After a sales or discovery call, when turning a messy conversation into notes the owner and the next draft can use."
 tier_required: pro_plus
 category: sales
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "sales"
 prerequisites: []
 ---
 

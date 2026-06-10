@@ -1,9 +1,16 @@
 ---
 name: vertical-landscape-scan
+title: "One-Page Market Scan"
 description: "Turn a handful of sources into a one-page read on a market or vertical — players, pricing, gaps, and where the opening is."
 when_to_use: "Entering a new vertical, sizing an opportunity, or briefing the owner before a decision about a market they don't know yet."
 tier_required: pro_plus
 category: research
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "research"
 prerequisites: []
 ---
 

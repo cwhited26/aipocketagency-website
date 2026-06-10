@@ -1,9 +1,16 @@
 ---
 name: boundary-setting-decline
+title: "Say No Without Burning the Bridge"
 description: "Decline a request — a discount, a deadline, an out-of-scope ask — clearly and warmly, so the relationship survives the no."
 when_to_use: "When the answer has to be no: a price you won't drop, work you don't do, a timeline you can't hit. Anytime softening into a maybe would make it worse."
 tier_required: pro_plus
 category: email_drafting
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "email_drafting"
 prerequisites: []
 ---
 

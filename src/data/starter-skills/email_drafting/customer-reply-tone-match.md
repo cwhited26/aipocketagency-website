@@ -1,9 +1,16 @@
 ---
 name: customer-reply-tone-match
+title: "Match the Customer's Tone"
 description: "Read the tone of the inbound message — clipped, warm, frustrated, formal — and answer in a register that fits instead of one flat default."
 when_to_use: "Replying to any customer or prospect message. Especially when they're upset or unusually casual — a mismatch reads as tone-deaf."
 tier_required: pro_plus
 category: email_drafting
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "email_drafting"
 prerequisites: []
 ---
 

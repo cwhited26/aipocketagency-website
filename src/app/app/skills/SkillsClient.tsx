@@ -179,11 +179,14 @@ export default function SkillsClient({ hasBrain }: { hasBrain: boolean }) {
               >
                 <div className="flex items-start justify-between gap-3">
                   <p className="text-[15px] font-semibold text-slate-100">{s.name}</p>
-                  {s.autoEvolve && (
-                    <span className="shrink-0 text-[10px] font-mono text-[#22d3ee]/80 border border-[#22d3ee]/30 rounded px-1.5 py-0.5 uppercase tracking-wider">
-                      auto-evolve
-                    </span>
-                  )}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {s.autoEvolve && (
+                      <span className="text-[10px] font-mono text-[#22d3ee]/80 border border-[#22d3ee]/30 rounded px-1.5 py-0.5 uppercase tracking-wider">
+                        auto-evolve
+                      </span>
+                    )}
+                    <AgentskillsBadge />
+                  </div>
                 </div>
                 {s.description && (
                   <p className="mt-1.5 text-sm text-slate-400 leading-relaxed">{s.description}</p>
@@ -389,6 +392,22 @@ function StarterPack() {
         </div>
       ))}
     </div>
+  );
+}
+
+// AgentskillsBadge — every Skill PA writes is in the open agentskills.io format (PA-SKILL-INTEROP-1..3),
+// so the owner can take their accumulated Skills to another runtime. The badge says so on each card.
+const AGENTSKILLS_IO_TOOLTIP =
+  "Your Skills are written in the open agentskills.io format. You can take them with you if you ever eject your brain — they work in Hermes Agent and other compatible runtimes.";
+
+function AgentskillsBadge() {
+  return (
+    <span
+      title={AGENTSKILLS_IO_TOOLTIP}
+      className="text-[10px] font-mono text-slate-500 border border-slate-700/70 rounded px-1.5 py-0.5 lowercase tracking-wide cursor-help"
+    >
+      agentskills.io
+    </span>
   );
 }
 

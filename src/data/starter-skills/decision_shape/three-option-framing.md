@@ -1,9 +1,16 @@
 ---
 name: three-option-framing
+title: "Always Three Options"
 description: "Frame a decision as three real options with their trade-offs, never a single take-it-or-leave-it recommendation."
 when_to_use: "Any time the owner faces a real choice — a vendor, a price, a direction. When you'd otherwise just hand them one answer."
 tier_required: studio_plus
 category: decision_shape
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "studio_plus"
+  category: "decision_shape"
 prerequisites: []
 ---
 

@@ -1,9 +1,16 @@
 ---
 name: specific-over-generic
+title: "Specific Over Generic"
 description: "Name the person, the dollar amount, the date, the file. Replace \"stakeholders,\" \"soon,\" and \"several\" with the real thing."
 when_to_use: "Always. Every claim, every plan, every follow-up. If a real detail exists, use it."
 tier_required: free
 category: voice_style
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "free"
+  category: "voice_style"
 prerequisites: []
 ---
 

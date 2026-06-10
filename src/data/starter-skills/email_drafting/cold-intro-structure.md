@@ -1,9 +1,16 @@
 ---
 name: cold-intro-structure
+title: "Cold Intro That Gets a Reply"
 description: "Open a cold email on the prospect's pain, show the one thing that's different about you, then make a single small ask."
 when_to_use: "First-touch outreach to someone who doesn't know the owner. Not for warm leads or existing customers — those get a different open."
 tier_required: pro_plus
 category: email_drafting
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "email_drafting"
 prerequisites: []
 ---
 

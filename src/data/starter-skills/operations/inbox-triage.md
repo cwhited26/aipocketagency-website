@@ -1,9 +1,16 @@
 ---
 name: inbox-triage
+title: "Triage the Inbox"
 description: "Sort a full inbox into respond-now, respond-this-week, archive, and delegate — so the owner sees the few things that actually need them."
 when_to_use: "A backed-up inbox, a morning review, or a daily brief. Anytime the volume is hiding the few messages that matter."
 tier_required: studio_plus
 category: operations
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "studio_plus"
+  category: "operations"
 prerequisites: []
 ---
 

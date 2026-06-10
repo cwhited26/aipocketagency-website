@@ -1,9 +1,16 @@
 ---
 name: customer-voice-extract
+title: "Pull Real Customer Quotes"
 description: "Mine a transcript or review for the lines that sound like a real person, not a paraphrase — the exact words you can use in copy."
 when_to_use: "Building marketing copy, case studies, or messaging from a call recording, a review, or a testimonial. Anytime you need the customer's actual voice."
 tier_required: pro_plus
 category: research
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "research"
 prerequisites: []
 ---
 

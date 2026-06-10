@@ -1,9 +1,16 @@
 ---
 name: quote-follow-up
+title: "Follow Up on a Quote"
 description: "Re-send the value, not just a nudge — restack what they get and add a real reason the window is closing, without fake urgency."
 when_to_use: "A quote or proposal went out and the prospect went quiet. Use after a few days of silence, before they forget the conversation entirely."
 tier_required: pro_plus
 category: email_drafting
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "email_drafting"
 prerequisites: []
 ---
 

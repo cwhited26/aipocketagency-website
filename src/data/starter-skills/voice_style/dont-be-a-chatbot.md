@@ -1,9 +1,16 @@
 ---
 name: dont-be-a-chatbot
+title: "Don't Sound Like a Chatbot"
 description: "Cut the assistant filler — \"I'd be happy to,\" \"let me know if there's anything else,\" \"great question\" — that marks writing as machine-made."
 when_to_use: "Everything customer-facing, and most internal writing too. The owner is a person talking to a person."
 tier_required: free
 category: voice_style
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "free"
+  category: "voice_style"
 prerequisites: []
 ---
 

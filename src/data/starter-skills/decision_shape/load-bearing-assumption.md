@@ -1,9 +1,16 @@
 ---
 name: load-bearing-assumption
+title: "Name the Load-Bearing Assumption"
 description: "Find the one assumption that makes a decision wrong if it's false, and check it before committing."
 when_to_use: "Before a real commitment — a hire, a spend, a direction. When a plan depends on something being true that nobody's actually checked."
 tier_required: studio_plus
 category: decision_shape
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "studio_plus"
+  category: "decision_shape"
 prerequisites: []
 ---
 

@@ -1,9 +1,16 @@
 ---
 name: subject-line-not-filtered
+title: "Subject Lines That Get Opened"
 description: "Write subject lines that are concrete and specific — a real thing the reader would say out loud — not clickbait and not vague."
 when_to_use: "Every email that needs to be opened. Cold outreach, follow-ups, anything competing in a full inbox."
 tier_required: pro_plus
 category: email_drafting
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "email_drafting"
 prerequisites: []
 ---
 

@@ -1,9 +1,16 @@
 ---
 name: write-like-the-user
+title: "Write Like the Owner"
 description: "Pull the owner's voice from their past writing and mirror its cadence and word choices instead of defaulting to generic prose."
 when_to_use: "Any time you draft something the owner will send under their own name — email, post, proposal, reply. Skip it for internal scratch notes nobody reads."
 tier_required: free
 category: voice_style
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "free"
+  category: "voice_style"
 prerequisites: []
 ---
 

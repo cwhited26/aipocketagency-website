@@ -1,9 +1,16 @@
 ---
 name: pre-mortem
+title: "Run a Pre-Mortem"
 description: "Before committing, assume the plan already failed and write down why — so you fix the likely failures before they happen."
 when_to_use: "Before launching something real — a service, a campaign, a big spend. When the plan feels solid and that confidence needs a stress test."
 tier_required: studio_plus
 category: decision_shape
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "studio_plus"
+  category: "decision_shape"
 prerequisites: []
 ---
 

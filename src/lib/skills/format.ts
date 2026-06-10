@@ -6,6 +6,16 @@
 // hand-edited file. Parsing fails SOFT: unknown keys are ignored and missing/garbled fields fall
 // back to schema defaults (mirrors loadZoneConfig), so a typo never bricks a Skill — the body,
 // the load-bearing part, survives regardless.
+//
+// agentskills.io interop ([2026-06-09] Claude Code, PA-SKILL-INTEROP-1..3): the emitted frontmatter
+// is the open agentskills.io shape, so a brain `git clone`d into Hermes Agent / any compatible
+// runtime is usable as-is. The standard's two required fields are `name` (the lowercase-hyphen
+// identifier, == the `skills/<slug>/` directory, ≤64 chars) and `description` (≤1024). PA's existing
+// fields stay alongside them — backward-compatible: the human display title moves to `title`, the
+// identifier is emitted as `name` (== `slug`, which is also kept), and PA-specific bookkeeping
+// (zone, examples, evolution counters) is preserved as-is and additionally surfaced under the
+// standard's optional `metadata` map. The `agentskills_io_compatible: true` marker advertises the
+// shape. Reading is backward-compatible: a legacy file (no `title`, `name` = human) still parses.
 
 import {
   SkillFrontmatterSchema,
@@ -15,6 +25,13 @@ import {
 } from "./types";
 
 const FENCE = "---";
+
+// ── agentskills.io standard fields (https://agentskills.io/specification) ──────────────────
+// Emitted on every SKILL.md so the owner's accumulated Skills are portable to any
+// agentskills.io-compatible runtime. PA-SKILL-4 keeps Skills the owner's own IP, so the default
+// license is Proprietary (not redistributable) — a foreign runtime can still load and run them.
+const SKILL_LICENSE = "Proprietary";
+const AGENTSKILLS_IO_METADATA_SOURCE = "Pocket Agent";
 
 // ── Emit ────────────────────────────────────────────────────────────────────────────────
 
@@ -32,11 +49,21 @@ export function serializeSkill(skill: Skill): string {
   const fm = skill.frontmatter;
   const ev = fm.evolution;
   const lines: string[] = [FENCE];
-  lines.push(`name: ${q(fm.name)}`);
+  // agentskills.io: `name` is the identifier (== slug == directory). PA's human title moves to `title`.
+  lines.push(`name: ${q(fm.slug)}`);
+  lines.push(`title: ${q(fm.name)}`);
   lines.push(`slug: ${q(fm.slug)}`);
   lines.push(`description: ${q(oneLine(fm.description))}`);
   lines.push(`when_to_use: ${q(oneLine(fm.whenToUse))}`);
   lines.push(`zone: ${q(fm.zone)}`);
+
+  // agentskills.io optional fields + the interop marker.
+  lines.push(`license: ${q(SKILL_LICENSE)}`);
+  lines.push(`agentskills_io_compatible: true`);
+  lines.push("metadata:");
+  lines.push(`  source: ${q(AGENTSKILLS_IO_METADATA_SOURCE)}`);
+  lines.push(`  pa_zone: ${q(fm.zone)}`);
+  lines.push(`  pa_version: ${q(String(ev.version))}`);
 
   lines.push("prerequisites:");
   for (const p of fm.prerequisites) lines.push(`  - ${q(oneLine(p))}`);
@@ -220,9 +247,18 @@ export function parseSkill(md: string): Skill | null {
   const successCount = asNumber(raw.success_count);
   const ownerApprovals = asNumber(raw.owner_approvals_count);
 
+  // agentskills.io / legacy reconciliation. In an agentskills.io-compatible file `name` is the
+  // identifier and `title` is the human display name; in a legacy file there's no `title` and `name`
+  // is the human title. The model keeps `name` = human display, `slug` = identifier either way.
+  const fileName = asString(raw.name);
+  const fileTitle = asString(raw.title);
+  const fileSlug = asString(raw.slug);
+  const humanName = fileTitle || fileName;
+  const identifier = fileSlug || fileName;
+
   const candidate = {
-    name: asString(raw.name),
-    slug: asString(raw.slug),
+    name: humanName,
+    slug: identifier,
     description: asString(raw.description),
     whenToUse: asString(raw.when_to_use),
     prerequisites: asStringArray(raw.prerequisites),

@@ -1,9 +1,16 @@
 ---
 name: honest-hedging
+title: "Commit, Don't Hedge"
 description: "Drop the hedge stacks — \"probably,\" \"likely,\" \"might want to consider,\" \"could potentially.\" Commit to the call or say plainly what you don't know."
 when_to_use: "Recommendations, follow-ups, decisions, anything where the reader wants a position. Especially when you're tempted to soften."
 tier_required: free
 category: voice_style
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "free"
+  category: "voice_style"
 prerequisites: []
 ---
 

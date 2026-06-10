@@ -1,9 +1,16 @@
 ---
 name: proposal-drafting-framework
+title: "Turn Notes Into a Proposal"
 description: "Build a proposal from messy call notes by leading with their problem, scoping the work in their terms, and pricing it as an outcome."
 when_to_use: "After discovery, when the owner needs a proposal or scope of work that actually reflects what the prospect said."
 tier_required: pro_plus
 category: sales
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "sales"
 prerequisites: []
 ---
 

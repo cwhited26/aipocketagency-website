@@ -1,9 +1,16 @@
 ---
 name: source-verification
+title: "Every Claim Points at Its Source"
 description: "Attach the URL or source to every factual claim in research, and flag anything you couldn't verify instead of stating it as fact."
 when_to_use: "Any research deliverable the owner will act on or repeat. Especially numbers, prices, and competitive claims that could be wrong."
 tier_required: pro_plus
 category: research
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "research"
 prerequisites: []
 ---
 

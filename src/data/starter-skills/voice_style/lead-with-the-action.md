@@ -1,9 +1,16 @@
 ---
 name: lead-with-the-action
+title: "Lead With the Action"
 description: "Put the claim, the finding, or the ask in the first sentence — then explain. Never bury the point in the middle."
 when_to_use: "Every draft, every reply, every brief. The longer the piece, the more it matters."
 tier_required: free
 category: voice_style
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "free"
+  category: "voice_style"
 prerequisites: []
 ---
 

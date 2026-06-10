@@ -2,8 +2,12 @@
 //
 // Single source of truth for the 30 starter Skills shipped in the AI Office Launch Kit bonus
 // (decisions PA-STARTERSKILL-1..6). Run it to (re)generate two committed outputs:
-//   1. src/data/starter-skills/<category>/<slug>.md  — the SPEC §3 SKILL.md shape, one per skill.
-//      This is the file the auto-seeder copies (its body) into the owner's brain at signup.
+//   1. src/data/starter-skills/<category>/<slug>.md  — the SPEC §3 SKILL.md shape, one per skill,
+//      written in the open agentskills.io frontmatter shape (PA-SKILL-INTEROP-1..3): `name` is the
+//      lowercase-hyphen identifier (== the file slug), `description` is the required summary, the
+//      human title lives in `title`, and PA's extras carry alongside + under the standard `metadata`
+//      map. This is the file the auto-seeder copies (its body) into the owner's brain at signup; the
+//      brain SKILL.md is then emitted by lib/skills/format.ts in the same agentskills.io shape.
 //   2. src/data/starter-skills/manifest.ts            — a typed array the app imports (bundler-safe,
 //      no runtime fs): tier-gating in the dispatcher, the Starter Pack surface, and the seeder all
 //      read this. Generated → never hand-edit; edit the SKILLS array below and re-run:
@@ -768,10 +772,17 @@ function renderFile(s) {
   const fm = [
     "---",
     `name: ${s.slug}`,
+    `title: ${JSON.stringify(s.title)}`,
     `description: ${JSON.stringify(s.description)}`,
     `when_to_use: ${JSON.stringify(s.whenToUse)}`,
     `tier_required: ${s.tier}`,
     `category: ${s.category}`,
+    `license: Proprietary`,
+    `agentskills_io_compatible: true`,
+    "metadata:",
+    `  source: "Pocket Agent Starter Pack"`,
+    `  tier_required: ${JSON.stringify(s.tier)}`,
+    `  category: ${JSON.stringify(s.category)}`,
     prereqs,
     "---",
   ].join("\n");

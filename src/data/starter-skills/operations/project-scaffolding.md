@@ -1,9 +1,16 @@
 ---
 name: project-scaffolding
+title: "Break a Goal Into Steps"
 description: "Turn a vague goal into milestones, then milestones into concrete tasks, so a big ask becomes a sequence someone can actually run."
 when_to_use: "The owner names a goal that's too big to act on directly — \"launch the new service,\" \"clean up the books.\" Use before any of it gets dispatched as work."
 tier_required: studio_plus
 category: operations
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "studio_plus"
+  category: "operations"
 prerequisites: []
 ---
 

@@ -1,9 +1,16 @@
 ---
 name: end-of-day-reflection
+title: "End-of-Day Reflection"
 description: "Pull the day's real activity — what shipped, what moved, what's stuck — and hand the owner a short read on what changed."
 when_to_use: "End of the workday, as a routine or on demand. When the owner wants to close the day knowing what actually happened."
 tier_required: studio_plus
 category: operations
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "studio_plus"
+  category: "operations"
 prerequisites: []
 ---
 

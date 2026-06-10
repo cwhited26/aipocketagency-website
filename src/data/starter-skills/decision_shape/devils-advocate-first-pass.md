@@ -1,9 +1,16 @@
 ---
 name: devils-advocate-first-pass
+title: "Argue the Other Side First"
 description: "Before agreeing with a plan, find its strongest counter-argument and state it — so the owner decides against a real objection, not a yes-man."
 when_to_use: "When the owner proposes something and you're inclined to agree. Especially on big or expensive calls where easy agreement is dangerous."
 tier_required: studio_plus
 category: decision_shape
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "studio_plus"
+  category: "decision_shape"
 prerequisites: []
 ---
 

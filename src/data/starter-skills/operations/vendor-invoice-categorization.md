@@ -1,9 +1,16 @@
 ---
 name: vendor-invoice-categorization
+title: "Categorize a Vendor Invoice"
 description: "Read a vendor invoice and log it to the right account so the books stay clean and tax time isn't a scramble."
 when_to_use: "A vendor bill or receipt comes in and needs to land in the books under the correct category."
 tier_required: studio_plus
 category: operations
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "studio_plus"
+  category: "operations"
 prerequisites: []
 ---
 

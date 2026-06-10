@@ -1,9 +1,16 @@
 ---
 name: objection-handling
+title: "Handle the Real Objection"
 description: "Find the actual objection hiding behind the stated one, then address the fear of loss driving it instead of arguing the surface."
 when_to_use: "A prospect pushes back — on price, timing, \"I need to think about it.\" Use before you discount or walk, when there's still a real conversation to have."
 tier_required: pro_plus
 category: sales
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "sales"
 prerequisites: []
 ---
 

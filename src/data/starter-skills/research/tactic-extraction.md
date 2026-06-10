@@ -1,9 +1,16 @@
 ---
 name: tactic-extraction
+title: "Pull the Plays, Skip the Fluff"
 description: "Read a long video or podcast transcript and extract the named, specific tactics worth keeping — not the stories and filler around them."
 when_to_use: "Processing a YouTube transcript, a podcast, or a long talk into something useful. When the owner wants the moves, not a book report."
 tier_required: pro_plus
 category: research
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "research"
 prerequisites: []
 ---
 

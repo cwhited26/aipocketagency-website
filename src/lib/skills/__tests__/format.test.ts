@@ -73,4 +73,39 @@ describe("serializeSkill / parseSkill", () => {
     const parsed = parseSkill(serializeSkill(skill));
     expect(parsed!.frontmatter.description).toBe("line one line two");
   });
+
+  // ── agentskills.io interop (PA-SKILL-INTEROP-1..3) ──────────────────────────────────────
+  it("emits the agentskills.io-compatible frontmatter shape", () => {
+    const md = serializeSkill(sampleSkill());
+    // Required by the standard: `name` is the lowercase-hyphen identifier (== slug == directory),
+    // and `description` is non-empty.
+    expect(md).toContain('name: "draft-roof-supplement-quote"');
+    expect(md).toContain('description: "Turn inspection photos');
+    // The human title moves to `title`; `slug` is kept for backward compatibility.
+    expect(md).toContain('title: "Draft Roof Supplement Quote"');
+    expect(md).toContain('slug: "draft-roof-supplement-quote"');
+    // Optional standard fields + the interop marker.
+    expect(md).toContain('license: "Proprietary"');
+    expect(md).toContain("agentskills_io_compatible: true");
+    expect(md).toContain("metadata:");
+    expect(md).toContain('source: "Pocket Agent"');
+    expect(md).toContain('pa_version: "4"');
+  });
+
+  it("reads a minimal hand-written agentskills.io SKILL.md (name=identifier, title=human)", () => {
+    const md = [
+      "---",
+      "name: pdf-processing",
+      "title: PDF Processing",
+      'description: "Extract text from PDFs. Use when handling PDFs."',
+      "---",
+      "",
+      "Do the extraction.",
+    ].join("\n");
+    const parsed = parseSkill(md);
+    expect(parsed).not.toBeNull();
+    expect(parsed!.frontmatter.name).toBe("PDF Processing"); // human display ← title
+    expect(parsed!.frontmatter.slug).toBe("pdf-processing"); // identifier ← name
+    expect(parsed!.body).toBe("Do the extraction.");
+  });
 });

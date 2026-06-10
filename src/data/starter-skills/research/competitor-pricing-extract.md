@@ -1,9 +1,16 @@
 ---
 name: competitor-pricing-extract
+title: "Pull a Competitor's Pricing"
 description: "Read a competitor's page and extract their real pricing — tiers, what's included, what's hidden — into a clean comparison."
 when_to_use: "Sizing up a competitor, setting the owner's own prices, or arming a sales conversation with what the other guy charges."
 tier_required: pro_plus
 category: research
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "research"
 prerequisites: []
 ---
 

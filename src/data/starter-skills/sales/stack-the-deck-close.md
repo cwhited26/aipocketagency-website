@@ -1,9 +1,16 @@
 ---
 name: stack-the-deck-close
+title: "Restack the Value Before the Ask"
 description: "Right before the close, line up everything the buyer gets in one stack so the price lands as small against the total — then ask."
 when_to_use: "At the moment of decision — the end of a proposal, the close of a call, the upsell page. When the buyer is about to weigh price against value."
 tier_required: pro_plus
 category: sales
+license: Proprietary
+agentskills_io_compatible: true
+metadata:
+  source: "Pocket Agent Starter Pack"
+  tier_required: "pro_plus"
+  category: "sales"
 prerequisites: []
 ---
 
