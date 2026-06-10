@@ -160,6 +160,41 @@ export async function runQuery(
   return { ok: true, data: [] };
 }
 
+export type SupabaseApiKeys = { anonKey: string | null; serviceRoleKey: string | null };
+
+/**
+ * GET /v1/projects/{ref}/api-keys — the project's anon + service_role keys. Used by the Idea Engine
+ * to inject NEXT_PUBLIC_SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY into the matching Vercel
+ * project. The response is an array of { name, api_key }; we read the two named entries. A freshly
+ * created project that is still coming up may return neither — the caller decides how to degrade.
+ */
+export async function getProjectApiKeys(pat: string, ref: string): Promise<MgmtResult<SupabaseApiKeys>> {
+  let res: Response;
+  try {
+    res = await fetch(`${MGMT_BASE}/projects/${encodeURIComponent(ref)}/api-keys`, {
+      method: "GET",
+      headers: authHeaders(pat),
+      cache: "no-store",
+    });
+  } catch (e) {
+    return { ok: false, status: 502, error: networkError(e), authError: false };
+  }
+  if (!res.ok) return failure(res);
+  const raw = (await res.json()) as unknown;
+  const keys: SupabaseApiKeys = { anonKey: null, serviceRoleKey: null };
+  if (Array.isArray(raw)) {
+    for (const entry of raw) {
+      if (!entry || typeof entry !== "object") continue;
+      const name = (entry as { name?: unknown }).name;
+      const apiKey = (entry as { api_key?: unknown }).api_key;
+      if (typeof name !== "string" || typeof apiKey !== "string") continue;
+      if (name === "anon") keys.anonKey = apiKey;
+      else if (name === "service_role") keys.serviceRoleKey = apiKey;
+    }
+  }
+  return { ok: true, data: keys };
+}
+
 function normalizeProject(raw: Record<string, unknown>, ref: string): SupabaseProject {
   const db = raw.database && typeof raw.database === "object" ? (raw.database as Record<string, unknown>) : {};
   return {

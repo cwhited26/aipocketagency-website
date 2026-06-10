@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { assertReadOnlySql, destructiveSqlWarnings } from "../sql-guard";
 import {
   SUPABASE_ACTIONS,
@@ -7,7 +7,12 @@ import {
   isSupabaseNeverAutoApprove,
   supabaseActionGate,
 } from "../index";
+import { getProjectApiKeys } from "../api";
 import { autoApproveUnlockedFor } from "@/lib/orchestrator/tier-caps";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("assertReadOnlySql", () => {
   it("accepts a plain SELECT", () => {
@@ -107,5 +112,44 @@ describe("action policy", () => {
   it("recognizes only known actions", () => {
     expect(isSupabaseAction("create_project")).toBe(true);
     expect(isSupabaseAction("delete_project")).toBe(false);
+  });
+});
+
+describe("getProjectApiKeys (mocked fetch)", () => {
+  function mockFetch(status: number, body: unknown): void {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } })),
+    );
+  }
+
+  it("reads the anon + service_role keys from the api-keys array", async () => {
+    mockFetch(200, [
+      { name: "anon", api_key: "anon-key-123" },
+      { name: "service_role", api_key: "service-key-456" },
+    ]);
+    const r = await getProjectApiKeys("pat", "ref123");
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.anonKey).toBe("anon-key-123");
+      expect(r.data.serviceRoleKey).toBe("service-key-456");
+    }
+  });
+
+  it("returns null keys when the project is still coming up (empty list)", async () => {
+    mockFetch(200, []);
+    const r = await getProjectApiKeys("pat", "ref123");
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.anonKey).toBeNull();
+      expect(r.data.serviceRoleKey).toBeNull();
+    }
+  });
+
+  it("flags a 401 as an auth error", async () => {
+    mockFetch(401, { message: "unauthorized" });
+    const r = await getProjectApiKeys("bad", "ref123");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.authError).toBe(true);
   });
 });

@@ -18,7 +18,14 @@ import {
   renderReadmeMd,
 } from "../snapshot";
 import { isBlueprintDecision } from "../engine";
-import { ideaBuildIdOf } from "../build";
+import {
+  ideaBuildIdOf,
+  ideaBuildSequence,
+  nextIdeaCursor,
+  stackLine,
+  renderBuildMd,
+  type IdeaBuildState,
+} from "../build";
 import {
   tierCanSeeIdeaEngine,
   tierAllowsIdeaEngine,
@@ -166,6 +173,111 @@ describe("snapshot renderers", () => {
     expect(prospectsMd).toContain("Biz One");
 
     expect(renderReadmeMd("My Idea", "my-idea-x")).toContain("brain/ideas/my-idea-x/");
+    // With a stack line, the README carries the Stack section (PA-IDEA-8).
+    const withStack = renderReadmeMd("My Idea", "my-idea-x", "Next.js on Vercel + Supabase project `abc` + GitHub repo `me/x`");
+    expect(withStack).toContain("## Stack");
+    expect(withStack).toContain("Supabase project `abc`");
+    expect(renderReadmeMd("My Idea", "my-idea-x")).not.toContain("## Stack");
+  });
+});
+
+// ── Stage-4 auto-build chain (PA-IDEA-8 / PA-IDEA-9) ─────────────────────────────────────────────────
+
+function buildState(over: Partial<IdeaBuildState> = {}): IdeaBuildState {
+  return {
+    buildKind: "mvp",
+    slug: "my-mvp-abc123",
+    files: { "app/page.tsx": "x" },
+    cursor: "repo",
+    needsDatabase: true,
+    schemaSql: "create table if not exists public.profiles (id uuid primary key);",
+    repoFullName: "me/my-mvp-abc123",
+    supabaseProjectRef: null,
+    vercelProjectId: null,
+    deployUrl: null,
+    githubLogin: "me",
+    ...over,
+  };
+}
+
+describe("idea-engine stage-4 build chain", () => {
+  it("needs_database=true stages the full five-phase chain: repo → push → Supabase create + migrate → Vercel create + env → deploy", () => {
+    const seq = ideaBuildSequence(true);
+    expect(seq.map((s) => `${s.connector}:${s.action}`)).toEqual([
+      "github_build:create_repo",
+      "github_build:push_files",
+      "supabase:create_project",
+      "supabase:apply_migration",
+      "vercel:createProject",
+      "vercel:setEnvVars",
+      "vercel:triggerDeploy",
+    ]);
+    // The Supabase project creation + the env injection are both present.
+    expect(seq.some((s) => s.connector === "supabase" && s.action === "create_project")).toBe(true);
+    expect(seq.some((s) => s.connector === "vercel" && s.action === "setEnvVars")).toBe(true);
+  });
+
+  it("needs_database=false drops the Supabase + env-injection steps — repo → push → Vercel create → deploy, and Vercel still deploys", () => {
+    const seq = ideaBuildSequence(false);
+    expect(seq.map((s) => `${s.connector}:${s.action}`)).toEqual([
+      "github_build:create_repo",
+      "github_build:push_files",
+      "vercel:createProject",
+      "vercel:triggerDeploy",
+    ]);
+    expect(seq.some((s) => s.connector === "supabase")).toBe(false);
+    expect(seq.some((s) => s.action === "setEnvVars")).toBe(false);
+    // The chain still ends in a deploy.
+    expect(seq[seq.length - 1]).toEqual({ cursor: "deploy", connector: "vercel", action: "triggerDeploy" });
+  });
+
+  it("never queues a Modal connector step from any stage-4 path (PA-IDEA-9)", () => {
+    for (const needsDb of [true, false]) {
+      const seq = ideaBuildSequence(needsDb);
+      for (const step of seq) {
+        expect(step.connector).not.toBe("modal");
+        expect(step.connector).not.toBe("modal_sandbox");
+        expect(["github_build", "vercel", "supabase"]).toContain(step.connector);
+      }
+    }
+  });
+
+  it("nextIdeaCursor routes the database branch and terminates at live", () => {
+    // With a database: push → supabase_project; vercel_project → vercel_env.
+    expect(nextIdeaCursor("push", true)).toBe("supabase_project");
+    expect(nextIdeaCursor("supabase_project", true)).toBe("supabase_migration");
+    expect(nextIdeaCursor("supabase_migration", true)).toBe("vercel_project");
+    expect(nextIdeaCursor("vercel_project", true)).toBe("vercel_env");
+    expect(nextIdeaCursor("vercel_env", true)).toBe("deploy");
+    expect(nextIdeaCursor("deploy", true)).toBe("live");
+    // Without a database: push → vercel_project; vercel_project → deploy.
+    expect(nextIdeaCursor("push", false)).toBe("vercel_project");
+    expect(nextIdeaCursor("vercel_project", false)).toBe("deploy");
+    expect(nextIdeaCursor("live", true)).toBeNull();
+  });
+});
+
+describe("idea-engine build snapshot rendering", () => {
+  it("stackLine names every shipped piece, with Supabase only when present", () => {
+    expect(stackLine(buildState({ supabaseProjectRef: "abc123ref" }))).toBe(
+      "Next.js on Vercel + Supabase project `abc123ref` + GitHub repo `me/my-mvp-abc123`",
+    );
+    expect(stackLine(buildState({ supabaseProjectRef: null }))).toBe(
+      "Next.js on Vercel + GitHub repo `me/my-mvp-abc123`",
+    );
+  });
+
+  it("renderBuildMd records the Supabase project + schema migration when the MVP has a database", () => {
+    const md = renderBuildMd("mvp", buildState({ supabaseProjectRef: "abc123ref" }), "https://my-mvp-abc123.vercel.app");
+    expect(md).toContain("**Supabase project:** abc123ref");
+    expect(md).toContain("## Schema migration applied");
+    expect(md).toContain("create table if not exists public.profiles");
+  });
+
+  it("renderBuildMd omits the Supabase block for a database-free MVP", () => {
+    const md = renderBuildMd("mvp", buildState({ supabaseProjectRef: null }), "https://my-mvp-abc123.vercel.app");
+    expect(md).not.toContain("Supabase project");
+    expect(md).toContain("ships without a database");
   });
 });
 

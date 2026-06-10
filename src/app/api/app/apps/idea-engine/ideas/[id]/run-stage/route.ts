@@ -106,10 +106,19 @@ export async function POST(
       if (run.ok) await updateStageRun(run.data.id, { status: "error", error: result.error, completed_at: new Date().toISOString() });
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
-    // Stage 3 pauses for approval in Mission Control — keep the run `staged` with the plan markdown.
-    if (run.ok) await updateStageRun(run.data.id, { status: "staged", output: { markdown: result.data.markdown } });
+    // Stage 3 pauses for approval in Mission Control — keep the run `staged` with the plan markdown
+    // and the database decision (PA-IDEA-8) so stage 4 knows whether to stage the Supabase steps.
+    if (run.ok)
+      await updateStageRun(run.data.id, {
+        status: "staged",
+        output: {
+          markdown: result.data.markdown,
+          needsDatabase: result.data.needsDatabase,
+          schemaSql: result.data.schemaSql,
+        },
+      });
     if (idea.current_stage < 3) await updateIdea(user.id, idea.id, { current_stage: 3 });
-    return NextResponse.json({ stage: 3, staged: true });
+    return NextResponse.json({ stage: 3, staged: true, needsDatabase: result.data.needsDatabase });
   }
 
   // ── Stage 4 / 5 · Build + Sales surface ──────────────────────────────────────────────────────
@@ -120,7 +129,10 @@ export async function POST(
         { status: 409 },
       );
     }
-    const blueprintMd = (latest.get(3)?.output as { markdown?: string } | undefined)?.markdown ?? "";
+    const blueprint = latest.get(3)?.output as
+      | { markdown?: string; needsDatabase?: boolean; schemaSql?: string }
+      | undefined;
+    const blueprintMd = blueprint?.markdown ?? "";
     const mode = tierAllowsIdeaEngineAutoBuild(tier) ? "auto_build" : "prompt_pack";
     const run = await createStageRun({ ideaId: idea.id, ownerId: user.id, stage, status: "running" });
     if (!run.ok) return NextResponse.json({ error: run.error }, { status: run.status });
@@ -133,6 +145,8 @@ export async function POST(
       paUser: pa.data,
       blueprintMd,
       githubLogin: null,
+      needsDatabase: blueprint?.needsDatabase === true,
+      schemaSql: typeof blueprint?.schemaSql === "string" ? blueprint.schemaSql : "",
     });
     if (!result.ok) {
       await updateStageRun(run.data.id, { status: "error", error: result.error, completed_at: new Date().toISOString() });

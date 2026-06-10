@@ -16,9 +16,11 @@ import {
 import {
   CreateProjectInputSchema,
   SetEnvVarInputSchema,
+  SetEnvVarsInputSchema,
   AttachDomainInputSchema,
   verifyVercelToken,
 } from "../actions";
+import { encrypt } from "@/lib/crypto/encrypt";
 import { autoApproveUnlockedFor, connectorActionTrustWindow } from "@/lib/orchestrator/tier-caps";
 
 afterEach(() => {
@@ -38,12 +40,13 @@ function mockFetch(status: number, body: unknown): void {
 }
 
 describe("registry", () => {
-  it("exposes all five actions", () => {
+  it("exposes all six actions", () => {
     expect(VERCEL_ACTIONS.map((a) => a.action).sort()).toEqual([
       "attachDomain",
       "createProject",
       "getDeploymentStatus",
       "setEnvVar",
+      "setEnvVars",
       "triggerDeploy",
     ]);
   });
@@ -55,6 +58,7 @@ describe("registry", () => {
       "attachDomain",
       "createProject",
       "setEnvVar",
+      "setEnvVars",
       "triggerDeploy",
     ]);
   });
@@ -102,6 +106,25 @@ describe("schemas", () => {
     expect(AttachDomainInputSchema.safeParse({ projectId: "p1", domain: "not a domain" }).success).toBe(false);
     expect(AttachDomainInputSchema.safeParse({ projectId: "p1", domain: "app.example.com" }).success).toBe(true);
   });
+
+  it("setEnvVars accepts a vars array (value or value_encrypted), rejects a var with neither", () => {
+    const ok = SetEnvVarsInputSchema.safeParse({
+      projectId: "p1",
+      vars: [
+        { key: "NEXT_PUBLIC_SUPABASE_URL", value: "https://ref.supabase.co", encrypted: false },
+        { key: "SUPABASE_SERVICE_ROLE_KEY", value_encrypted: "v1.x.y.z" },
+      ],
+    });
+    expect(ok.success).toBe(true);
+    if (ok.success) {
+      // Defaults: encrypted true, all three targets.
+      expect(ok.data.vars[1].encrypted).toBe(true);
+      expect(ok.data.vars[1].target).toEqual(["production", "preview", "development"]);
+    }
+    const bad = SetEnvVarsInputSchema.safeParse({ projectId: "p1", vars: [{ key: "NOPE" }] });
+    expect(bad.success).toBe(false);
+    expect(SetEnvVarsInputSchema.safeParse({ projectId: "p1", vars: [] }).success).toBe(false);
+  });
 });
 
 describe("execute (mocked fetch)", () => {
@@ -130,6 +153,65 @@ describe("execute (mocked fetch)", () => {
     if (r.ok) {
       expect(JSON.stringify(r.data)).not.toContain("super-secret");
       expect(r.data.key).toBe("DB_URL");
+    }
+  });
+
+  it("setEnvVars posts the full array and never echoes any value", async () => {
+    const spy = vi.fn(async (_url: string, init: RequestInit) => {
+      void init;
+      return new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", spy);
+    const r = await executeVercelAction("setEnvVars", {
+      token: "tok",
+      teamId: null,
+      payload: {
+        projectId: "prj_1",
+        vars: [
+          { key: "NEXT_PUBLIC_SUPABASE_URL", value: "https://ref.supabase.co", encrypted: false },
+          { key: "NEXT_PUBLIC_SUPABASE_ANON_KEY", value: "anon-public", encrypted: false },
+        ],
+      },
+    });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.data.keys).toEqual(["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"]);
+      expect(JSON.stringify(r.data)).not.toContain("anon-public");
+    }
+    // The request body is the array of env objects.
+    const body = JSON.parse(spy.mock.calls[0][1].body as string);
+    expect(Array.isArray(body)).toBe(true);
+    expect(body).toHaveLength(2);
+    expect(body[0].type).toBe("plain");
+  });
+
+  it("setEnvVars decrypts a value_encrypted secret at execution and never leaks it", async () => {
+    const prev = process.env.GMAIL_TOKEN_ENCRYPTION_KEY;
+    process.env.GMAIL_TOKEN_ENCRYPTION_KEY = Buffer.alloc(32, 7).toString("base64");
+    try {
+      const sealed = encrypt("service-role-secret");
+      const spy = vi.fn(async (_url: string, init: RequestInit) => {
+        void init;
+        return new Response(JSON.stringify({}), { status: 200, headers: { "content-type": "application/json" } });
+      });
+      vi.stubGlobal("fetch", spy);
+      const r = await executeVercelAction("setEnvVars", {
+        token: "tok",
+        teamId: null,
+        payload: {
+          projectId: "prj_1",
+          vars: [{ key: "SUPABASE_SERVICE_ROLE_KEY", value_encrypted: sealed, encrypted: true }],
+        },
+      });
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(JSON.stringify(r.data)).not.toContain("service-role-secret");
+      // The decrypted secret reaches Vercel (encrypted at rest there), but never our result payload.
+      const body = JSON.parse(spy.mock.calls[0][1].body as string);
+      expect(body[0].value).toBe("service-role-secret");
+      expect(body[0].type).toBe("encrypted");
+    } finally {
+      if (prev === undefined) delete process.env.GMAIL_TOKEN_ENCRYPTION_KEY;
+      else process.env.GMAIL_TOKEN_ENCRYPTION_KEY = prev;
     }
   });
 

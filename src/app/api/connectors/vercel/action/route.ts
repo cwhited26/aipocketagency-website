@@ -52,6 +52,18 @@ function describe(action: VercelActionName, p: Record<string, unknown>): { title
           `Set the ${p.encrypted === false ? "plain" : "encrypted"} environment variable ` +
           `"${s("key")}" on Vercel project ${s("projectId")}. The value is not shown here.`,
       };
+    case "setEnvVars": {
+      const count = Array.isArray(p.vars) ? p.vars.length : 0;
+      const keys = Array.isArray(p.vars)
+        ? p.vars.map((v) => (v && typeof v === "object" && typeof (v as { key?: unknown }).key === "string" ? (v as { key: string }).key : "")).filter(Boolean).join(", ")
+        : "";
+      return {
+        title: `Set ${count} env var(s) on Vercel`,
+        preview:
+          `Set ${count} environment variable(s) on Vercel project ${s("projectId")}${keys ? `: ${keys}` : ""}. ` +
+          `Values are not shown here; secrets are stored encrypted.`,
+      };
+    }
     case "triggerDeploy":
       return {
         title: `Deploy Vercel project ${s("projectId") || "(project)"}`,

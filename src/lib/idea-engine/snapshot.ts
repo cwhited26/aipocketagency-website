@@ -106,18 +106,20 @@ export function renderProspectsMd(prospects: Prospect[]): string {
   return lines.join("\n");
 }
 
-export function renderReadmeMd(title: string, slug: string): string {
+export function renderReadmeMd(title: string, slug: string, stack?: string): string {
   return [
     `# Snapshot: ${title}`,
     "",
     `\`brain/ideas/${slug}/\` — everything the Idea Engine produced for this idea.`,
+    // The Stack line is written once the auto-build ships — it names every shipped piece (PA-IDEA-8).
+    ...(stack ? ["", `## Stack`, "", stack] : []),
     "",
     "- **idea.md** — what you dropped, and how.",
     "- **market-scan.md** — is anyone doing this, at what price, for whom.",
     "- **prospects.md** — 25 best-fit prospects.",
     "- **blueprint.md** — the MVP build plan you approved.",
     "- **prompt-pack.md** — the build prompts (prompt-pack mode).",
-    "- **build.md** — the build artifacts: GitHub repo + live Vercel URL (auto-build mode).",
+    "- **build.md** — the build artifacts: GitHub repo, live Vercel URL, and the Supabase project + schema (auto-build mode).",
     "- **sales.md** — the sales copy + sales page URL.",
     "- **launch.md** — the first outreach batch + the weekly follow-up cadence.",
     "",

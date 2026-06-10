@@ -6,6 +6,7 @@ export type ApprovalGate = "read" | "gated";
 export const VERCEL_ACTION_NAMES = [
   "createProject",
   "setEnvVar",
+  "setEnvVars",
   "triggerDeploy",
   "getDeploymentStatus",
   "attachDomain",

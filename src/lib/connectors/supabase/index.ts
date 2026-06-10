@@ -17,6 +17,7 @@ import {
 } from "@/lib/pa-supabase-connections";
 import { decrypt } from "@/lib/crypto/encrypt";
 import { extendWorkspace } from "@/lib/projects/workspace";
+import { getProjectApiKeys } from "./api";
 import { SUPABASE_CONNECTOR, type ApprovalGate, type SupabaseActionMeta, type SupabaseActionName } from "./types";
 import {
   CreateProjectInputSchema,
@@ -160,6 +161,45 @@ export async function runSupabaseAction(
 
 function str(v: unknown): string {
   return typeof v === "string" ? v : "";
+}
+
+// ── Project credentials (read) — used by the Idea Engine env-injection step ─────────────────────
+
+export type SupabaseProjectCredentials = {
+  url: string;
+  anonKey: string | null;
+  serviceRoleKey: string | null;
+};
+
+/**
+ * Resolve the owner's Supabase connection, then read a project's public URL + anon / service_role
+ * keys (GET /v1/projects/{ref}/api-keys). The Idea Engine stages these as the three Vercel env vars
+ * so a freshly built MVP can reach its own database. Read-only: no approval, no mutation, no audit
+ * write. A still-coming-up project may return null keys — the caller injects what it has and logs
+ * the gap rather than failing the build.
+ */
+export async function fetchSupabaseProjectCredentials(
+  userId: string,
+  projectRef: string,
+): Promise<{ ok: true; data: SupabaseProjectCredentials } | { ok: false; status: number; error: string }> {
+  const conn = await fetchSupabaseConnectionFull(userId);
+  if (!conn.ok) return { ok: false, status: conn.status, error: conn.error };
+  if (!conn.data || conn.data.status === "revoked" || !conn.data.pat) {
+    return { ok: false, status: 409, error: "Connect Supabase before reading project credentials." };
+  }
+  const keys = await getProjectApiKeys(conn.data.pat, projectRef);
+  if (!keys.ok) {
+    if (keys.authError) await markSupabaseConnectionError(conn.data.id);
+    return { ok: false, status: keys.status, error: keys.error };
+  }
+  return {
+    ok: true,
+    data: {
+      url: `https://${projectRef}.supabase.co`,
+      anonKey: keys.data.anonKey,
+      serviceRoleKey: keys.data.serviceRoleKey,
+    },
+  };
 }
 
 // Validate the payload with the action's schema and run it. createProject's org defaults to the

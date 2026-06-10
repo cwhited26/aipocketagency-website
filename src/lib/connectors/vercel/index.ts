@@ -14,6 +14,7 @@ import { resolveVercelToken, markVercelConnectionError } from "@/lib/pa-vercel-c
 import {
   createProjectAction,
   setEnvVarAction,
+  setEnvVarsAction,
   triggerDeployAction,
   getDeploymentStatusAction,
   attachDomainAction,
@@ -28,6 +29,7 @@ export const CONNECTOR = "vercel" as const;
 const DESCRIPTORS: Record<VercelActionName, VercelActionDescriptor<unknown>> = {
   createProject: createProjectAction as VercelActionDescriptor<unknown>,
   setEnvVar: setEnvVarAction as VercelActionDescriptor<unknown>,
+  setEnvVars: setEnvVarsAction as VercelActionDescriptor<unknown>,
   triggerDeploy: triggerDeployAction as VercelActionDescriptor<unknown>,
   getDeploymentStatus: getDeploymentStatusAction as VercelActionDescriptor<unknown>,
   attachDomain: attachDomainAction as VercelActionDescriptor<unknown>,
@@ -47,6 +49,7 @@ export const VERCEL_ACTIONS: readonly VercelActionMeta[] = (
 const GATES: Record<VercelActionName, ApprovalGate> = {
   createProject: createProjectAction.gate,
   setEnvVar: setEnvVarAction.gate,
+  setEnvVars: setEnvVarsAction.gate,
   triggerDeploy: triggerDeployAction.gate,
   getDeploymentStatus: getDeploymentStatusAction.gate,
   attachDomain: attachDomainAction.gate,
@@ -130,6 +133,7 @@ export async function runVercelAction(input: {
 export {
   createProjectAction,
   setEnvVarAction,
+  setEnvVarsAction,
   triggerDeployAction,
   getDeploymentStatusAction,
   attachDomainAction,

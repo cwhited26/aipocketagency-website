@@ -15,6 +15,7 @@
 // threaded onto every call as ?teamId= so create/deploy target the owner's team, not personal scope.
 
 import { z } from "zod";
+import { decrypt } from "@/lib/crypto/encrypt";
 import type { ActionExecOutcome, ApprovalGate, VercelActionName } from "./types";
 
 const API_BASE = "https://api.vercel.com";
@@ -203,6 +204,86 @@ export const setEnvVarAction: VercelActionDescriptor<SetEnvVarInput> = {
       summary: `Set ${input.encrypted ? "encrypted " : ""}env var "${input.key}" on ${input.target.join(", ")}.`,
       // Never echo the value back — it's a secret. Only the key + scope.
       data: { key: input.key, target: input.target, encrypted: input.encrypted },
+    };
+  },
+};
+
+// setEnvVars — POST /v10/projects/{id}/env with an ARRAY body. One approval sets several vars in a
+// single fire (the Idea Engine injects the three Supabase vars — URL, anon key, service role key —
+// in one card rather than three). Each var is either plaintext (`value`) or an AES-256-GCM ciphertext
+// (`value_encrypted`) that is decrypted here, at the point of execution, so a secret like the service
+// role key never sits in plaintext in the staged pa_action_approvals payload (mirrors the Supabase
+// connector's db_pass_encrypted). `encrypted` controls Vercel-side storage and defaults to true.
+const EnvVarSpecSchema = z
+  .object({
+    key: z.string().min(1).max(256),
+    value: z.string().max(65_536).optional(),
+    value_encrypted: z.string().max(65_536).optional(),
+    encrypted: z.boolean().default(true),
+    target: z
+      .array(z.enum(["production", "preview", "development"]))
+      .min(1)
+      .default(["production", "preview", "development"]),
+  })
+  .refine((v) => typeof v.value === "string" || typeof v.value_encrypted === "string", {
+    message: "Each env var needs a value or a value_encrypted.",
+  });
+
+export const SetEnvVarsInputSchema = z.object({
+  projectId: z.string().min(1).max(100),
+  vars: z.array(EnvVarSpecSchema).min(1).max(50),
+});
+export type SetEnvVarsInput = z.infer<typeof SetEnvVarsInputSchema>;
+
+export const setEnvVarsAction: VercelActionDescriptor<SetEnvVarsInput> = {
+  name: "setEnvVars",
+  action: "setEnvVars",
+  description: "Set several environment variables on a Vercel project in one call (encrypted by default).",
+  gate: "gated",
+  schema: SetEnvVarsInputSchema,
+  async execute(ctx, input) {
+    const body: Array<{ key: string; value: string; type: "encrypted" | "plain"; target: string[] }> = [];
+    for (const v of input.vars) {
+      let value: string;
+      if (typeof v.value_encrypted === "string" && v.value_encrypted.length > 0) {
+        try {
+          value = decrypt(v.value_encrypted);
+        } catch {
+          return {
+            ok: false,
+            status: 422,
+            error: `Couldn't read the saved value for "${v.key}" — re-stage this env injection.`,
+            authError: false,
+          };
+        }
+      } else if (typeof v.value === "string") {
+        value = v.value;
+      } else {
+        return { ok: false, status: 422, error: `Env var "${v.key}" has no value.`, authError: false };
+      }
+      body.push({
+        key: v.key,
+        value,
+        type: v.encrypted ? "encrypted" : "plain",
+        target: v.target,
+      });
+    }
+
+    const res = await vercelFetch(
+      ctx,
+      "POST",
+      `/v10/projects/${encodeURIComponent(input.projectId)}/env`,
+      // The array body is the documented multi-create shape for POST /v10/projects/{id}/env.
+      body as unknown as Record<string, unknown>,
+    );
+    if (!res.ok) return { ok: false, status: res.status, error: res.error, authError: res.authError };
+
+    const keys = input.vars.map((v) => v.key);
+    return {
+      ok: true,
+      summary: `Set ${keys.length} env var(s) on the project: ${keys.join(", ")}.`,
+      // Never echo values back — only the key names.
+      data: { keys, count: keys.length },
     };
   },
 };

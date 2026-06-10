@@ -124,6 +124,11 @@ export function IdeaDetailClient({
                     <span className="text-sm font-semibold text-slate-100">{s.name}{buildNote}</span>
                   </div>
                   <p className="text-[12px] text-slate-400 mt-1 leading-relaxed">{s.summary}</p>
+                  {s.stage === 4 && autoBuild && (
+                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                      Auto-build ships your MVP on GitHub, Vercel, and — when it needs a database — Supabase. Modal (a long-running backend runtime) stays off the chain; you add it only if a later build actually needs one.
+                    </p>
+                  )}
                   <p className="text-[11px] text-slate-600 mt-1 font-mono">via {s.backbone}</p>
                   {s.error && <p className="text-[11px] text-rose-400 mt-1">{s.error}</p>}
                 </div>
