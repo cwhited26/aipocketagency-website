@@ -278,6 +278,42 @@ export async function getOrCreateSlackConversation(
   return createConversation(userId, SLACK_CONVERSATION_TITLE);
 }
 
+// The Hub thread title per Channels Gateway channel (PA-CHAN-1). Distinct from the legacy Slack DM
+// thread above ("Slack") and parallel to the SMS thread ("Text messages") so an owner who connects
+// both surfaces doesn't get one merged thread.
+const CHANNEL_CONVERSATION_TITLES: Record<string, string> = {
+  slack: "Slack messages",
+};
+
+/**
+ * Find — or create on first contact — the owner's dedicated conversation for a Channels Gateway
+ * channel (migration-free: keyed on the reserved per-channel title above). The headless channel
+ * roundtrip routes its chat-answer turns here so the thread is stable and survives in the Hub.
+ */
+export async function getOrCreateChannelConversation(
+  userId: string,
+  channelSlug: string,
+): Promise<PaResult<Conversation>> {
+  const title = CHANNEL_CONVERSATION_TITLES[channelSlug] ?? `Channel: ${channelSlug}`;
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const endpoint =
+    `${env.url}/rest/v1/pocket_agent_conversations` +
+    `?user_id=eq.${encodeURIComponent(userId)}` +
+    `&title=eq.${encodeURIComponent(title)}` +
+    `&order=created_at.asc&limit=1`;
+  const res = await fetch(endpoint, {
+    headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },
+    cache: "no-store",
+  });
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as Conversation[];
+  if (rows[0]) return { ok: true, data: rows[0] };
+
+  return createConversation(userId, title);
+}
+
 export function generateTitle(firstMessage: string): string {
   const clean = firstMessage.trim().replace(/\n+/g, " ");
   return clean.length > 52 ? clean.slice(0, 49) + "…" : clean;

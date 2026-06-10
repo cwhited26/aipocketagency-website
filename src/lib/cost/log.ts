@@ -29,7 +29,9 @@ export type CostFeatureSlug =
   | "landing_page_builder"
   | "idea_engine"
   | "rag"
-  | "capture_triage";
+  | "capture_triage"
+  // One row per inbound Channels Gateway roundtrip (PA-CHAN spec §8.4); Slack adapter, Sonnet 4.6.
+  | "channels:slack";
 
 /**
  * The per-call-site context a metered backend carries: who's paying, which feature area, and a

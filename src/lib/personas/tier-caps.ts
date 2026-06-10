@@ -57,6 +57,27 @@ export function tierAllowsPodcastPacks(tier: Tier): boolean {
 }
 
 /**
+ * Can this tier use a given channel of the Channels Gateway (PA-CHAN-7)? The "your agent is wherever
+ * you work" pitch is the Business-Agent-and-up value tier in the v5 funnel:
+ *   • Personal Brain ($37, `starter`) — channels OFF.
+ *   • Business Agent ($97, `pro`)     — Slack only.
+ *   • Pro+ ($149, `pro_plus`) and up  — every shipped channel.
+ */
+export function tierAllowsChannel(tier: Tier, channelSlug: string): boolean {
+  if (channelSlug === "slack") return tierRank(tier) >= tierRank("pro");
+  // Every other (queued) channel is Pro+ and up.
+  return tierRank(tier) >= tierRank("pro_plus");
+}
+
+/**
+ * Should this tier even SEE the Channels surface (PA-CHAN-7)? Business Agent and up see it; the free
+ * Personal Brain tier doesn't — channels stay off their settings entirely.
+ */
+export function tierCanSeeChannels(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("pro");
+}
+
+/**
  * Can this tier actually build a landing page (PA-LPB-4)? The Landing Page Builder is a Studio /
  * Studio+ / Enterprise App — it stands up a real GitHub repo + Vercel project + deploy on the owner's
  * accounts, so it sits with the other build-grade tooling. Pro / Pro+ see the card and the upgrade

@@ -15,7 +15,7 @@
 // Slack thread is never a project thread, so the route-only `save_to_project` tool isn't offered.
 
 import { z } from "zod";
-import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
+import { logCostFromUsage, type CostContext, type CostFeatureSlug } from "@/lib/cost/log";
 import { listMemoryFiles, fetchFileContent } from "@/lib/pa-brain";
 import { generateQuoteDraft, generateEmailDraft } from "@/lib/pa-drafts";
 import { createPendingAction } from "@/lib/pa-actions";
@@ -479,6 +479,12 @@ export async function runConversationTurn(opts: {
   conversationId: string;
   content: string;
   userMetadata?: unknown;
+  /**
+   * Override the cost-ledger tag for this turn. A channel surface (e.g. the Slack Channels Gateway)
+   * passes its own featureSlug + key so the inbound roundtrip meters as `channels:slack` instead of
+   * the default `chat`. Omitted → the chat feature keyed on conversation + this turn's position.
+   */
+  cost?: { featureSlug: CostFeatureSlug; idempotencyKey: string };
 }): Promise<ConversationTurnResult> {
   const { paUser, userId, conversationId, content } = opts;
   if (!paUser.anthropic_api_key) {
@@ -525,9 +531,9 @@ export async function runConversationTurn(opts: {
     ctx: { userId, brain_repo, github_token, anthropic_api_key, zoneConfig },
     cost: {
       ownerId: userId,
-      featureSlug: "chat",
+      featureSlug: opts.cost?.featureSlug ?? "chat",
       // Deterministic per-turn anchor: the conversation + this turn's position in history.
-      idempotencyKey: `chat:${conversationId}:${priorMessages.length}`,
+      idempotencyKey: opts.cost?.idempotencyKey ?? `chat:${conversationId}:${priorMessages.length}`,
       conversationId,
     },
   });
