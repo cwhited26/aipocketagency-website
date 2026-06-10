@@ -34,37 +34,40 @@ const COPY: Record<
   { heading: string; body: string; steps: string[]; cta: { href: string; label: string } }
 > = {
   subscription_only: {
-    heading: "You’re in. Your workspace is live.",
-    body: "Your trial just started. The AI Office Launch Kit is waiting in your workspace — it’s the guided path from empty workspace to working agents in your first week. Start with the Business Brain setup; everything else builds on it.",
+    heading: "Your Pocket Agent workspace is ready.",
+    body: "Your trial just started. Don’t try to build everything at once — work the five steps below in order. Set up your Business Brain first; everything else builds on it.",
     steps: [
-      "Open your workspace and run the Business Brain setup.",
-      "Put a Persona to work — get your first email draft and daily brief.",
-      "Connect your first tool, then read your first Mission Control review.",
+      "Set up your Business Brain — your company memory in markdown, in your own git repo.",
+      "Join the Pocket Agent Launchpad on Skool — the 7-Day Setup Plan and walkthroughs.",
+      "Create your first Persona — Admin Assistant, Follow-Up Agent, or Content Creator.",
+      "Install your first workflow — Email Drafting, Follow-Up Sweeps, Capture Inbox, or Lead Scout. One, not ten.",
+      "Open Mission Control — review what was captured, drafted, researched, and prepared.",
     ],
     cta: { href: "/launch-kit", label: "See your first week" },
   },
   subscription_plus_setup: {
-    heading: "Done. We’re building it for you.",
-    body: "You’ve got the workspace and the Done-With-You Setup. Next step is the call — we’ll email you a booking link and a short intake so the call is spent building, not gathering. By the end of it you’ll have a workspace that’s actually running your work.",
+    heading: "Done. We’re building it with you.",
+    body: "You’ve got the workspace and the Done-With-You Setup. Next step is the call — we’ll email you a booking link and a short intake so the call is spent building, not gathering. We help with your Business Brain import, your first Persona, your first workflow, and your Mission Control review, with live output produced on the call.",
     steps: [
       "Watch your inbox for the booking link + intake form.",
       "Send us your existing writing (for voice), your customer list, and your pricing.",
+      "Start your private setup thread inside the Pocket Agent Launchpad.",
       "Pick the one workflow you want set up first.",
     ],
     cta: { href: "/setup", label: "What we’ll deliver on the call" },
   },
   pilot: {
-    heading: "Your 14-day Pilot is live.",
-    body: "You’ve got a real workspace on your real business for the next 14 days: a Business Brain starter, one Persona, one workflow, and a Mission Control review. The $97 comes off your subscription if you upgrade inside the 14 days.",
+    heading: "Your 14-day Pilot starts now.",
+    body: "You’ve got a real workspace on your real business for the next 14 days. The Pilot goal is simple: 1 Business Brain starter, 1 Persona, 1 workflow, 1 Mission Control review. Start with the Pilot Track inside the Pocket Agent Launchpad. The $97 comes off your subscription if you upgrade within 30 days.",
     steps: [
-      "Open your workspace and run the Business Brain setup.",
-      "Put your one Persona on the job that’s burying you most.",
-      "Watch your first workflow run, then read the cockpit with us.",
+      "Open the Pilot Track inside the Pocket Agent Launchpad.",
+      "Set up your Business Brain starter and put your one Persona on the job burying you most.",
+      "Run your one workflow, then read the cockpit in Mission Control.",
     ],
     cta: { href: "/pricing", label: "See the full plans" },
   },
   workflow_vault: {
-    heading: "All 25 workflows are unlocked.",
+    heading: "All 25 workflows are open on your account.",
     body: "The AI Workflow Vault is open on your account. Quote follow-ups, a dormant-lead sweep, your morning brief, content repurposing, lead research — install any of them with one tap and put a Persona on each. Every recipe brings back a draft you approve.",
     steps: [
       "Open the Workflow Vault from your Apps.",

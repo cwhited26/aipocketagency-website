@@ -34,11 +34,19 @@ export default function PricingPage() {
         <section className="relative overflow-hidden border-b border-white/5">
           <div className="absolute inset-0 bg-grid opacity-20" aria-hidden />
           <div className="relative mx-auto max-w-5xl px-6 pb-16 pt-20 text-center sm:pt-24">
+            <div
+              className="mb-4 inline-block text-xs text-cyan-300/70"
+              style={{ fontFamily: MONO_FONT }}
+            >
+              [ choose your Pocket Agent workspace ]
+            </div>
             <h1 className="text-balance text-4xl font-extrabold tracking-tight sm:text-5xl">
-              Three ways into your AI Agent Workspace.
+              Start with your Business Brain. Upgrade when your agents need more
+              execution.
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-300">
-              Start with the brain. Add the agent. Or run the whole workspace.
+              Personal Brain, Business Agent, or the full AI Agent Workspace. Start
+              simple, then upgrade as your usage, workflows, and team needs grow.
               Every plan includes the AI Office Launch Kit, free.
             </p>
           </div>

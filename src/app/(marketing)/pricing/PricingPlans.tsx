@@ -14,6 +14,8 @@ type VisibleTier = {
   ctaLabel: string;
   tier: string;
   featured?: boolean;
+  badge?: string;
+  anchor?: string;
 };
 
 const VISIBLE_TIERS: VisibleTier[] = [
@@ -21,44 +23,89 @@ const VISIBLE_TIERS: VisibleTier[] = [
     name: "Personal Brain",
     price: "$37",
     tier: "starter",
-    pitch: "The brain + one worker.",
+    pitch: "For the solo owner who wants a single brain.",
     rows: [
-      "Business Brain",
+      "Single Business Brain + basic capture",
       "1 Persona",
-      "Core Apps (Email Drafter, Ingesters)",
+      "5 prebuilt Skills",
       "Mission Control + budgets",
-      "AI Office Launch Kit — free",
+      "AI Office Launch Kit + Launchpad access — free",
     ],
-    ctaLabel: "Start",
+    ctaLabel: "Start Personal Brain",
   },
   {
     name: "Business Agent",
     price: "$97",
     tier: "pro",
     featured: true,
-    pitch: "The worker, across your tools.",
+    badge: "Most Popular",
+    pitch: "For the growing operator with active integrations.",
     rows: [
       "Everything in Personal Brain",
-      "Multiple Personas",
+      "Clone-and-customize Personas",
       "Connected tools — Gmail, Calendar, Slack, QuickBooks",
-      "Follow-Up Sweeps + Landing Page Builder",
-      "AI Office Launch Kit — free",
+      "Capture Inbox, Follow-Up Sweeps, Ingesters, Landing Page Builder",
+      "20 prebuilt Skills",
     ],
-    ctaLabel: "Start — most pick this",
+    ctaLabel: "Build My AI Team",
   },
   {
     name: "AI Agent Workspace",
     price: "$497",
     tier: "studio_plus",
-    pitch: "The whole operation.",
+    badge: "Full Cockpit",
+    pitch: "For businesses that want the full cockpit.",
     rows: [
       "Everything in Business Agent",
-      "Unlimited Personas",
-      "Lead Scout vertical packs",
+      "Idea Engine — ship a working MVP from one idea",
+      "Lead Scout vertical packs (7 verticals)",
       "Decision Roundtable",
-      "Full Mission Control cockpit",
+      "All 30 prebuilt Skills + advanced Mission Control",
     ],
-    ctaLabel: "Start",
+    ctaLabel: "Start AI Agent Workspace",
+    anchor:
+      "PaidCreators charges $497 once for a Gameplan you still have to execute. Pocket Agent includes Idea Engine in AI Agent Workspace at $497/month — and it actually ships the working website for you.",
+  },
+];
+
+type QuizOption = {
+  want: string;
+  plan: string;
+  price: string;
+  ctaLabel: string;
+  tier: string;
+  href?: string;
+};
+
+const QUIZ_OPTIONS: QuizOption[] = [
+  {
+    want: "One place for my own ideas, notes, and business context.",
+    plan: "Personal Brain",
+    price: "$37/mo",
+    ctaLabel: "Start Personal Brain",
+    tier: "starter",
+  },
+  {
+    want: "AI Personas and workflow Apps for my business.",
+    plan: "Business Agent",
+    price: "$97/mo",
+    ctaLabel: "Build My AI Team",
+    tier: "pro",
+  },
+  {
+    want: "Ideas turned into live assets, with prospects lined up.",
+    plan: "AI Agent Workspace",
+    price: "$497/mo",
+    ctaLabel: "Start AI Agent Workspace",
+    tier: "studio_plus",
+  },
+  {
+    want: "Custom usage, permissions, integrations, or team setup.",
+    plan: "Enterprise",
+    price: "Custom",
+    ctaLabel: "Apply for Enterprise",
+    tier: "enterprise",
+    href: "mailto:chase@tnvex.com?subject=Pocket%20Agent%20Enterprise%20inquiry",
   },
 ];
 
@@ -100,12 +147,12 @@ export default function PricingPlans() {
                 : "border-white/10 bg-white/[0.03]"
             }`}
           >
-            {t.featured ? (
+            {t.badge ? (
               <div
                 className="mb-3 inline-block w-fit rounded-full bg-cyan-300/15 px-3 py-1 text-[11px] font-medium text-cyan-300"
                 style={{ fontFamily: MONO_FONT }}
               >
-                most pick this
+                {t.badge}
               </div>
             ) : null}
             <h3 className="text-lg font-semibold text-slate-100">{t.name}</h3>
@@ -124,6 +171,11 @@ export default function PricingPlans() {
                 </li>
               ))}
             </ul>
+            {t.anchor ? (
+              <p className="mt-4 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.04] p-3 text-xs leading-relaxed text-slate-400">
+                {t.anchor}
+              </p>
+            ) : null}
             <Link
               href={`/start?tier=${t.tier}`}
               className={`mt-6 inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition hover:scale-[1.02] ${
@@ -181,6 +233,48 @@ export default function PricingPlans() {
           ))}
         </div>
       ) : null}
+
+      {/* PLAN SELECTOR QUIZ (Part 9M) — one question to remove decision drag. */}
+      <div className="mt-16 rounded-3xl border border-white/10 bg-white/[0.03] p-8">
+        <h3 className="text-xl font-bold tracking-tight text-slate-100">
+          Not sure which plan to choose?
+        </h3>
+        <p className="mt-2 text-sm text-slate-400">
+          Answer one question: what do you want Pocket Agent to do first?
+        </p>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {QUIZ_OPTIONS.map((o) => (
+            <div
+              key={o.plan}
+              className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.02] p-5"
+            >
+              <p className="flex-1 text-[15px] leading-relaxed text-slate-300">
+                “{o.want}”
+              </p>
+              <div className="mt-4 flex items-center justify-between gap-3">
+                <span className="text-sm text-slate-400">
+                  <span className="text-slate-200">{o.plan}</span> · {o.price}
+                </span>
+                {o.href ? (
+                  <a
+                    href={o.href}
+                    className="shrink-0 text-sm font-semibold text-cyan-300 transition hover:underline"
+                  >
+                    {o.ctaLabel} →
+                  </a>
+                ) : (
+                  <Link
+                    href={`/start?tier=${o.tier}`}
+                    className="shrink-0 text-sm font-semibold text-cyan-300 transition hover:underline"
+                  >
+                    {o.ctaLabel} →
+                  </Link>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

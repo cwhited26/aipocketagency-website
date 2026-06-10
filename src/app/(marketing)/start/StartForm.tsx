@@ -73,14 +73,69 @@ export default function StartForm({
               [ {tierLabel.toLowerCase()} · ${priceUsd}/mo · 14-day free trial ]
             </div>
             <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
-              You’re one step from your workspace.
+              Start building your AI team today.
             </h1>
             <p className="mt-4 text-lg text-slate-300">
-              ${priceUsd}/mo after the trial. Cancel any time.
+              You’re getting Pocket Agent plus the AI Office Launch Kit — so you can
+              build your Business Brain, clone your first Personas, install your
+              first workflows, and review everything from Mission Control.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-10 space-y-4">
+          {/* ORDER SUMMARY — the plan, the free bonus, the guarantee. */}
+          <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="text-lg font-semibold text-slate-100">{tierLabel}</h2>
+              <div className="text-right">
+                <span className="text-2xl font-extrabold text-slate-100">
+                  ${priceUsd}
+                </span>
+                <span className="text-sm text-slate-500">/mo</span>
+              </div>
+            </div>
+            <p className="mt-1 text-sm text-slate-400">
+              ${priceUsd}/mo after the 14-day trial. Cancel any time.
+            </p>
+            <ul className="mt-4 space-y-2 text-sm text-slate-300">
+              {[
+                "Business Brain — your company memory in markdown, in your own repo",
+                "Clone-and-customize Personas + workflow Apps",
+                "Mission Control — review and approve everything",
+                "Prebuilt Skills auto-seeded into your brain",
+                "Usage allowances for leads, Whisper hours, and sub-agent runs",
+              ].map((line) => (
+                <li key={line} className="flex items-start gap-2">
+                  <span className="mt-1 text-cyan-300">✓</span>
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-5 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.04] p-4">
+              <div className="text-sm font-semibold text-slate-100">
+                Free bonus: AI Office Launch Kit — included
+              </div>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-400">
+                Business Brain Setup Checklist · 3 starter Personas · 5 workflow
+                templates · Mission Control Review Checklist · 7-Day Setup Plan ·
+                Pocket Agent Launchpad access on Skool · 30 prebuilt Skills
+                auto-seeded by tier.
+              </p>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+              <div className="text-sm font-semibold text-slate-100">
+                Implementation Guarantee
+              </div>
+              <p className="mt-1 text-[13px] leading-relaxed text-slate-400">
+                Complete the Launch Kit’s 7-day setup steps. If you don’t have 3
+                trained Personas and 3 working workflows by day 7, we help you
+                finish the setup.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             <div>
               <label
                 htmlFor="email"
@@ -179,10 +234,10 @@ export default function StartForm({
               disabled={busy}
               className="mt-2 inline-flex w-full items-center justify-center gap-3 rounded-full bg-accent px-8 py-4 text-base font-semibold text-accent-foreground shadow-[0_0_40px_-10px_rgba(34,211,238,0.7)] transition hover:scale-[1.02] hover:shadow-[0_0_60px_-8px_rgba(34,211,238,0.85)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 sm:text-lg"
             >
-              {busy ? "Loading…" : "Start my workspace"}
+              {busy ? "Loading…" : "Start Pocket Agent"}
             </button>
             <p className="text-center text-xs text-slate-500">
-              After payment confirms, you’ll be sent to your workspace setup.
+              Instant access at app.aipocketagent.com after checkout.
             </p>
           </form>
 
