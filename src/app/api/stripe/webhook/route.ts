@@ -24,12 +24,22 @@ import {
   isAddonCheckoutKind,
   type AddonCheckoutKind,
 } from "@/lib/pocket-agent-addons";
-import { getAddonFromStripePriceId } from "@/lib/personas/tier-caps";
+import { getAddonFromStripePriceId, resolveProvisionTier } from "@/lib/personas/tier-caps";
 import {
   applyPocketAgentTierFromSubscription,
   extractPriceIds,
   type StripeSubscription,
 } from "@/lib/pocket-agent-webhook-tier";
+import {
+  enqueueDiyKit,
+  enqueueDwy,
+  enqueueOnboarding,
+  enqueuePilot,
+} from "@/lib/emails/enqueue";
+import { cancelPendingForOwnerSequences, enqueueEmail } from "@/lib/emails/queue";
+import { renderBySlug } from "@/lib/emails/registry";
+import { EMAIL_FROM } from "@/lib/emails/render";
+import { CANCELLABLE_SEQUENCES } from "@/lib/emails/sequences";
 import { sendEmail } from "@/lib/resend";
 import {
   getKitConfig,
@@ -631,22 +641,42 @@ async function handlePocketAgentSubscriptionCreated(
     return;
   }
 
-  const send = await sendEmail({
-    from: FROM,
-    to: email,
-    subject: "You're in.",
-    html: welcomeEmailHtml(name),
-    text: welcomeEmailText(name),
-  });
-
-  if (!send.ok) {
-    console.error("[stripe/webhook] failed to send pocket_agent welcome email", {
+  // GTM Phase 3: enqueue the universal 12-email onboarding + the plan-specific welcome (immediate),
+  // picked from the subscription's tier. The queue owns Day-0 → Day-14. If the enqueue fails (e.g. the
+  // 076 queue table isn't applied yet) we fall back to the legacy single "You're in." welcome so the
+  // buyer is never left without a receipt. welcome_email_sent_at is the idempotency guard either way.
+  const tier =
+    resolveProvisionTier({ priceIds: extractPriceIds(sub), metadataTier: sub.metadata?.tier }) ??
+    "starter";
+  const enqueued = await enqueueOnboarding({ ownerId: userId, email, firstName: name }, tier);
+  if (!enqueued.ok) {
+    console.error("[stripe/webhook] pocket_agent onboarding enqueue failed; sending legacy welcome", {
+      subscription_id: sub.id,
+      error: enqueued.error,
+    });
+    const send = await sendEmail({
+      from: FROM,
+      to: email,
+      subject: "You're in.",
+      html: welcomeEmailHtml(name),
+      text: welcomeEmailText(name),
+    });
+    if (!send.ok) {
+      console.error("[stripe/webhook] failed to send pocket_agent welcome email", {
+        subscription_id: sub.id,
+        email,
+        status: send.status,
+        error: send.error,
+      });
+      return;
+    }
+  } else {
+    console.info("[stripe/webhook] pocket_agent onboarding sequence enqueued", {
       subscription_id: sub.id,
       email,
-      status: send.status,
-      error: send.error,
+      tier,
+      count: enqueued.count,
     });
-    return;
   }
 
   const mark = await markWelcomeEmailSent(sub.id);
@@ -657,10 +687,6 @@ async function handlePocketAgentSubscriptionCreated(
       error: mark.error,
     });
   }
-  console.info("[stripe/webhook] pocket_agent welcome email sent", {
-    subscription_id: sub.id,
-    email,
-  });
 }
 
 async function handlePocketAgentTrialWillEnd(
@@ -835,6 +861,54 @@ async function handlePocketAgentSubscriptionDeleted(
     subscription_id: sub.id,
     email: lookup.row.email,
   });
+
+  // GTM Phase 3: clear any pending onboarding/pilot emails for this owner, then send the cancellation
+  // confirmation (transactional). The confirmation is enqueued (drains within 5 min); on enqueue failure
+  // it's sent inline so the customer always gets the receipt.
+  const ownerId = lookup.row.user_id;
+  const cancelEmail = lookup.row.email;
+  const cancelName = lookup.row.name;
+  if (ownerId) {
+    const cleared = await cancelPendingForOwnerSequences(
+      ownerId,
+      CANCELLABLE_SEQUENCES,
+      "sequence_cancelled",
+    );
+    if (!cleared.ok) {
+      console.error("[stripe/webhook] failed to cancel pending sequences on churn", {
+        subscription_id: sub.id,
+        error: cleared.error,
+      });
+    }
+  }
+  const confProps = { email: cancelEmail, firstName: cancelName };
+  const conf = await enqueueEmail({
+    ownerId,
+    email: cancelEmail,
+    templateSlug: "cancellation.confirmation",
+    templateProps: confProps,
+    sequenceSlug: null,
+    sendAt: new Date().toISOString(),
+  });
+  if (!conf.ok) {
+    const rendered = renderBySlug("cancellation.confirmation", confProps);
+    if (rendered) {
+      const send = await sendEmail({
+        from: EMAIL_FROM,
+        to: cancelEmail,
+        subject: rendered.subject,
+        html: rendered.html,
+        text: rendered.text,
+      });
+      if (!send.ok) {
+        console.error("[stripe/webhook] cancellation confirmation send failed", {
+          subscription_id: sub.id,
+          status: send.status,
+          error: send.error,
+        });
+      }
+    }
+  }
 }
 
 // ─── Kit helpers ─────────────────────────────────────────────────────────────
@@ -1101,6 +1175,54 @@ async function handlePocketAgentAddonCompleted(
       kind,
     });
     return;
+  }
+
+  // GTM Phase 3: enqueue the post-purchase sequence for this kind (Day-0 confirmation through the tail).
+  // On success we return — the queue owns the confirmation. On failure (e.g. the 076 queue table isn't
+  // applied yet) we fall through to the existing inline confirmation so the buyer still gets a receipt.
+  // workflow_vault has no sequence and always uses the inline confirmation below.
+  const who = { ownerId: userId, email, firstName: name };
+  if (kind === "pilot") {
+    const enq = await enqueuePilot(who);
+    if (enq.ok) {
+      console.info("[stripe/webhook] pocket_agent_addon: pilot sequence enqueued", {
+        session_id: session.id,
+        count: enq.count,
+      });
+      return;
+    }
+    console.error("[stripe/webhook] pilot enqueue failed; falling back to inline confirmation", {
+      session_id: session.id,
+      error: enq.error,
+    });
+  } else if (kind === "setup_standard" || kind === "setup_premium") {
+    const enq = await enqueueDwy(who, kind === "setup_premium" ? "premium" : "standard");
+    if (enq.ok) {
+      console.info("[stripe/webhook] pocket_agent_addon: DWY sequence enqueued", {
+        session_id: session.id,
+        count: enq.count,
+      });
+      return;
+    }
+    console.error("[stripe/webhook] DWY enqueue failed; falling back to inline confirmation", {
+      session_id: session.id,
+      error: enq.error,
+    });
+  } else if (kind === "diy_setup_kit") {
+    const signed = await signDiyKitDownload();
+    const downloadUrl = signed.ok ? signed.url : `${SITE_ORIGIN}/app/apps/diy-kit`;
+    const enq = await enqueueDiyKit(who, downloadUrl);
+    if (enq.ok) {
+      console.info("[stripe/webhook] pocket_agent_addon: DIY kit sequence enqueued", {
+        session_id: session.id,
+        count: enq.count,
+      });
+      return;
+    }
+    console.error("[stripe/webhook] DIY kit enqueue failed; falling back to inline confirmation", {
+      session_id: session.id,
+      error: enq.error,
+    });
   }
 
   // Per-kind confirmation. Vault and DIY Kit have their own emails; setup/pilot keep the funnel copy.

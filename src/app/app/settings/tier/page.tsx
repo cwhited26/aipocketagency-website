@@ -138,6 +138,15 @@ export default async function TierLimitsPage() {
               </a>
               .
             </p>
+
+            <div className="border-t border-slate-800/60 pt-4">
+              <a
+                href="/cancel"
+                className="text-[12px] text-slate-600 underline hover:text-slate-400 transition-colors"
+              >
+                Cancel subscription
+              </a>
+            </div>
           </>
         ) : null}
       </div>

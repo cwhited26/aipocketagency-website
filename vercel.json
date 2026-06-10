@@ -48,6 +48,14 @@
     {
       "path": "/api/cron/rituals",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/email-queue",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/email-activation",
+      "schedule": "0 10 * * *"
     }
   ],
   "rewrites": [

@@ -8,6 +8,7 @@
 // Settings → Tier & limits, where the only lever is upgrading (the customer can't raise a dollar cap).
 
 import { createInboxItem, listInboxItems, type InboxItem } from "@/lib/pa-inbox-items";
+import { enqueueUsageCapForOwner } from "@/lib/emails/enqueue";
 import { periodStartDate } from "./db";
 import type { UsageMetricKey, UsageUnit } from "./caps";
 
@@ -76,5 +77,20 @@ export async function stageTierLimitGateCard(
       cap: input.cap,
     },
   });
+
+  // GTM Phase 3: the over-limit card was newly staged this period → also enqueue the matching usage-cap
+  // upgrade email (Part 5H). Best-effort + 30-day deduped inside the enqueuer; a mail-side failure never
+  // affects the gate (the card is the source of truth). Skips metrics without a Part-5H email.
+  if (created.ok) {
+    const mail = await enqueueUsageCapForOwner(ownerId, input.featureSlug);
+    if (!mail.ok) {
+      console.error("[usage/gate-card] usage-cap email enqueue failed", {
+        owner_id: ownerId,
+        feature_slug: input.featureSlug,
+        error: mail.error,
+      });
+    }
+  }
+
   return created.ok ? created.data.id : null;
 }
