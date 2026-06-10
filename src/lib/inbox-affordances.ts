@@ -160,16 +160,17 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
         ],
       };
 
-    // The over-budget gate (PA-COST-14). The dispatcher paused new agent runs because the owner hit
-    // their monthly cost cap. Nothing fires on tap — raising the cap (which actually un-gates) happens
-    // in Settings → Budget, so this is informational: "Raise the cap" links there, "Wait until next
-    // period" clears the card and lets runs resume on their own at the period reset.
+    // The tier-limit gate (PA-USAGE-6). The dispatcher paused new background runs because the owner hit
+    // a monthly tier limit (agent runtime). Nothing fires on tap — the only lever that un-gates is
+    // upgrading, in Settings → Tier & limits, so this is informational: "See your plan & limits" links
+    // there, "Wait until next month" clears the card and lets runs resume on their own at the reset.
+    // (The inbox `kind` stays cost_budget_gate — the same primitive, reframed copy, no migration.)
     case "cost_budget_gate":
       return {
         hasApproval: false,
         affordances: [
-          { key: "raise_cap", label: "Raise the cap", role: "primary" },
-          { key: "wait", label: "Wait until next period", role: "secondary" },
+          { key: "see_limits", label: "See your plan & limits", role: "primary" },
+          { key: "wait", label: "Wait until next month", role: "secondary" },
         ],
       };
 

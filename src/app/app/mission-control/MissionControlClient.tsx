@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
-import CostTab from "./CostTab";
+import UsageTab from "./UsageTab";
 import { affordancesFor, type InboxItemKind } from "@/lib/inbox-affordances";
 import type {
   LedgerStatus,
@@ -1517,7 +1517,7 @@ function CostBudgetGateCard({
     <div className="rounded-2xl border border-amber-500/25 bg-amber-500/[0.04] p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3 mb-2">
         <span className="text-[10px] font-mono text-amber-300/70 uppercase tracking-[0.18em]">
-          Cost budget
+          Plan limit
         </span>
         <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
       </div>
@@ -1532,17 +1532,17 @@ function CostBudgetGateCard({
 
       <div className="mt-4 flex items-center gap-2">
         <Link
-          href="/app/settings/budget"
+          href="/app/settings/tier"
           className="flex-1 min-h-[44px] flex items-center justify-center py-3 px-4 rounded-xl bg-[#22d3ee] hover:bg-[#06b6d4] text-[#031820] text-sm font-semibold transition-colors"
         >
-          Raise the cap
+          See your plan &amp; limits
         </Link>
         <button
           onClick={() => void wait()}
           disabled={busy}
           className="min-h-[44px] px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {busy ? "…" : "Wait until next period"}
+          {busy ? "…" : "Wait until next month"}
         </button>
       </div>
     </div>
@@ -1874,11 +1874,11 @@ const EMPTY_COUNTS: MissionControlSnapshot["counts"] = {
   idle: 0,
 };
 
-type MissionTab = "operations" | "cost";
+type MissionTab = "operations" | "usage";
 
 export default function MissionControlClient({ brainRepo: _brainRepo }: { brainRepo: string | null }) {
-  // Two tabs on one cockpit (PA-COST-1): Operations (the live fleet pane below) + Cost (the read-only
-  // spend dashboard). Both auto-refresh on focus; Operations only polls while its tab is active.
+  // Two tabs on one cockpit (PA-USAGE-3): Operations (the live fleet pane below) + Usage (how much of
+  // your plan you've used this month). Both auto-refresh on focus; Operations only polls while active.
   const [tab, setTab] = useState<MissionTab>("operations");
   const [cards, setCards] = useState<InboxCard[]>([]);
   const [snapshot, setSnapshot] = useState<MissionControlSnapshot | null>(null);
@@ -2166,9 +2166,9 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
           </p>
         </div>
 
-        {/* Operations | Cost (PA-COST-1) — one cockpit, two tabs */}
+        {/* Operations | Usage (PA-USAGE-3) — one cockpit, two tabs */}
         <div role="tablist" aria-label="Mission Control views" className="flex items-center gap-1.5 mb-7">
-          {(["operations", "cost"] as const).map((t) => (
+          {(["operations", "usage"] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -2187,8 +2187,8 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
           ))}
         </div>
 
-        {tab === "cost" ? (
-          <CostTab />
+        {tab === "usage" ? (
+          <UsageTab />
         ) : (
           <>
         {loading ? (

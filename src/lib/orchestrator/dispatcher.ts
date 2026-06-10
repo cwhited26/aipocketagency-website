@@ -44,8 +44,10 @@ import { monthKey } from "./tier-caps";
 import { dispatch as runtimeDispatch, type DispatchJob, type DispatchResult } from "./runtime-client";
 import { completeLlm } from "@/lib/llm/dispatch";
 import { fetchPaUser } from "@/lib/pa-supabase";
-import { checkBudgetGate, type BudgetGate } from "@/lib/cost/budget";
-import { stageCostBudgetGateCard } from "@/lib/cost/gate-card";
+import { checkTierLimitGate } from "@/lib/usage/snapshot";
+import { stageTierLimitGateCard, type TierLimitCardInput } from "@/lib/usage/gate-card";
+import { metricConfig, nextTierUp, type TierLimitGate } from "@/lib/usage/caps";
+import { TIER_LABELS } from "@/lib/personas/tier-caps";
 import {
   formatLearnedTechniques,
   resolveSkillsForRun,
@@ -89,13 +91,11 @@ export type DispatcherDeps = {
   resolveSkills: (input: ResolveSkillsInput) => Promise<LoadedSkill[]>;
   maxConcurrent: () => number;
   timeBudgetSeconds: () => number;
-  // Cost soft-pause gate (Cost Observability SPEC §5.4, PA-COST-14). Runs BEFORE a sub-agent fires;
-  // chat is exempt (PA-COST-7) so it's only wired here, not in the chat loop. Injected for tests.
-  checkBudget: (ownerId: string) => Promise<BudgetGate>;
-  stageBudgetGateCard: (
-    ownerId: string,
-    gate: Extract<BudgetGate, { status: "block_100" }>,
-  ) => Promise<string | null>;
+  // Tier-limit soft-pause gate (Usage Surface v1, PA-USAGE-6). Runs BEFORE a sub-agent fires; chat is
+  // exempt so it's only wired here, not in the chat loop. The dispatcher gates on the 'sub_agent'
+  // feature (agent-runtime minutes) — the orchestrator's own monthly tier cap. Injected for tests.
+  checkTierLimit: (ownerId: string, feature: "sub_agent") => Promise<TierLimitGate>;
+  stageTierLimitCard: (ownerId: string, input: TierLimitCardInput) => Promise<string | null>;
   // ── Gate Phase (PA-GATE-1, dark behind PA_PROJECT_GATES_ENABLED) ──
   gatesEnabled: () => boolean;
   runGatePhase: (input: GatePhaseInput) => Promise<GatePhaseResult>;
@@ -171,18 +171,12 @@ export const defaultDeps: DispatcherDeps = {
   },
   maxConcurrent: maxConcurrentRunsPerUser,
   timeBudgetSeconds: defaultTimeBudgetSeconds,
-  checkBudget: checkBudgetGate,
-  stageBudgetGateCard: stageCostBudgetGateCard,
+  checkTierLimit: checkTierLimitGate,
+  stageTierLimitCard: stageTierLimitGateCard,
   gatesEnabled: projectGatesEnabled,
   runGatePhase,
   stageGateCard: stageGateFindingsCard,
 };
-
-// Human-readable dollar amounts for the budget-gate copy. Budget is whole-dollar cents; spend is
-// micro-cents (PA-COST-9). Kept here (not in the lib) because it's surface copy, not budget logic.
-function dollars(cents: number): string {
-  return `$${(cents / 100).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────────────────
 
@@ -280,37 +274,62 @@ export async function dispatchUserGoal(
     };
   }
 
-  // Cost soft-pause gate (PA-COST-14). Runs BEFORE scaffolding so a gated owner never pays the planner
-  // cost either. Chat is exempt (PA-COST-7) — only this sub-agent-dispatch path gates.
-  const gate = await deps.checkBudget(businessId);
+  // Tier-limit soft-pause gate (PA-USAGE-6). Runs BEFORE scaffolding so a gated owner never pays the
+  // planner cost either. Chat is exempt — only this sub-agent-dispatch path gates. The feature is
+  // 'sub_agent' (agent-runtime minutes), the orchestrator's own monthly tier cap.
+  const tier = await deps.getTier(businessId);
+  const gate = await deps.checkTierLimit(businessId, "sub_agent");
+  const runtimeCfg = metricConfig("sub_agent");
+  const tierLabel = TIER_LABELS[tier];
+  const nextTier = nextTierUp(tier);
+  const nextTierLabel = nextTier ? TIER_LABELS[nextTier] : null;
   if (gate.status === "warn_80") {
-    const pctText = Math.round(gate.pct);
+    const cap = gate.cap ?? 0;
     return {
-      kind: "budget_warn",
-      spentMicroCents: gate.spentMicroCents,
-      budgetCents: gate.budgetCents,
+      kind: "tier_limit_warn",
+      feature: "sub_agent",
+      featureLabel: runtimeCfg.label,
+      unit: runtimeCfg.unit,
+      used: gate.used,
+      cap,
       pct: gate.pct,
       reason:
-        `You're at ${pctText}% of your ${dollars(gate.budgetCents)} monthly cost budget — ` +
-        "keep going, pause new agent runs for the month, or raise the cap?",
+        `You're at ${gate.used} of ${cap} agent-minutes on your ${tierLabel} plan this month — ` +
+        (nextTierLabel
+          ? `keep going, pause new agent runs for the month, or upgrade to ${nextTierLabel} for more?`
+          : "keep going, or pause new agent runs for the month?"),
     };
   }
   if (gate.status === "block_100") {
-    const inboxItemId = await deps.stageBudgetGateCard(businessId, gate);
+    const cap = gate.cap ?? 0;
+    const inboxItemId = await deps.stageTierLimitCard(businessId, {
+      featureSlug: "sub_agent",
+      featureLabel: runtimeCfg.label,
+      unit: runtimeCfg.unit,
+      used: gate.used,
+      cap,
+      tierLabel,
+      nextTierLabel,
+    });
     return {
-      kind: "budget_gated",
+      kind: "tier_limit_gated",
       inboxItemId,
-      spentMicroCents: gate.spentMicroCents,
-      budgetCents: gate.budgetCents,
+      feature: "sub_agent",
+      featureLabel: runtimeCfg.label,
+      unit: runtimeCfg.unit,
+      used: gate.used,
+      cap,
       pct: gate.pct,
       reason:
-        `You've hit your ${dollars(gate.budgetCents)} monthly cost budget, so I've paused new ` +
-        "background agent runs and parked this one in Mission Control. Raise the cap in Settings → " +
-        "Budget to let it run, or it'll resume when your budget resets next month. (Your chat keeps working.)",
+        `You've used all ${cap} agent-minutes on your ${tierLabel} plan this month, so I've paused new ` +
+        "background agent runs and parked this one in Mission Control. " +
+        (nextTierLabel
+          ? `Upgrade to ${nextTierLabel} in Settings → Tier & limits to let it run, `
+          : "") +
+        "or it'll resume on its own when your plan resets next month. (Your chat keeps working.)",
     };
   }
 
-  const tier = await deps.getTier(businessId);
   const { ctx, brainRepo, brainToken } = await deps.loadContext(businessId);
   const runZone = input.zone ?? DEFAULT_RUN_ZONE;
 
