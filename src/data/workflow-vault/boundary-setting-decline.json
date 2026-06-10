@@ -1,0 +1,11 @@
+{
+  "name": "Boundary-Setting Decline",
+  "description": "Writes a polite no for the requests you should turn down without burning the relationship. For the discounts, free work, and off-scope asks you want to decline cleanly instead of avoiding.",
+  "category": "email",
+  "default_persona_slug": "admin",
+  "prompt_template": "Draft a kind but firm reply that declines the request I describe below. Acknowledge what they asked, say no clearly without over-explaining or apologizing too much, and where it fits offer one alternative or a door left open. Match the tone in my brain so it sounds like me. Give it to me as a draft to approve before sending.",
+  "default_schedule_cron": "",
+  "default_apps": ["email-drafter"],
+  "recommended_tier": "studio_plus",
+  "starter_seed": false
+}

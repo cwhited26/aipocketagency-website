@@ -1,0 +1,11 @@
+{
+  "name": "Customer Story → Testimonial Draft",
+  "description": "Turns what a happy customer told you into a clean testimonial and a short case story you can use in your marketing. Captures the win while it is fresh instead of letting a great quote disappear into your inbox.",
+  "category": "content",
+  "default_persona_slug": "content",
+  "prompt_template": "Using the customer feedback or story I point you to in my brain or email, draft a short testimonial in the customer's voice and a brief before-and-after story I can put on my site or share. Keep the wording natural and avoid overselling. Also draft a short note asking the customer to approve the testimonial. Give me all of it as drafts to review.",
+  "default_schedule_cron": "",
+  "default_apps": ["email-drafter"],
+  "recommended_tier": "studio",
+  "starter_seed": false
+}

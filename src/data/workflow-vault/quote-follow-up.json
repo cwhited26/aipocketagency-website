@@ -1,0 +1,11 @@
+{
+  "name": "Quote Follow-Up",
+  "description": "Writes the follow-up email after you send a quote, so the deal does not go cold while you are busy with the job in front of you. The note checks in without nagging and makes it easy for them to say yes.",
+  "category": "email",
+  "default_persona_slug": "sales",
+  "prompt_template": "Draft a follow-up email to a customer I sent a quote to. Use what you know about the quote and the job from my brain and recent email, restate the value in a line or two, and ask if they have any questions or are ready to move forward. Keep it friendly and short, with no pressure. Give it to me as a draft to approve.",
+  "default_schedule_cron": "",
+  "default_apps": ["email-drafter", "followups"],
+  "recommended_tier": "starter",
+  "starter_seed": true
+}

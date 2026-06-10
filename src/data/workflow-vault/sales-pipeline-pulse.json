@@ -1,0 +1,11 @@
+{
+  "name": "Sales Pipeline Pulse",
+  "description": "Each morning it gives you a read on your deals: what is moving, what is stuck, and who needs a nudge today. Keeps the pipeline from running on memory and guesswork.",
+  "category": "daily-brief",
+  "default_persona_slug": "sales",
+  "prompt_template": "Give me a short read on my sales pipeline today. Using my leads, contacts, recent email, and notes, group deals by where they stand, flag the ones gone quiet or overdue for a follow-up, and call out the few worth my attention today. Keep it brief and put the most important things first. Give it to me as a draft to read.",
+  "default_schedule_cron": "0 8 * * *",
+  "default_apps": ["daily-brief", "followups"],
+  "recommended_tier": "pro_plus",
+  "starter_seed": false
+}

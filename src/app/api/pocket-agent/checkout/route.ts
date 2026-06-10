@@ -24,6 +24,8 @@ const BodySchema = z.object({
   tier: z.string().optional(),
   // The /start order-form bump (Fast-Start Brain Import +$49). Optional checkbox.
   bump: z.boolean().optional(),
+  // The /start order-form bump (AI Workflow Vault +$47). Optional checkbox.
+  vault: z.boolean().optional(),
 });
 
 type CheckoutResult =
@@ -41,6 +43,7 @@ async function createPocketAgentCheckout(args: {
   origin: string;
   userId: string | null;
   bump: boolean;
+  vault: boolean;
 }): Promise<CheckoutResult> {
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) {
@@ -63,6 +66,7 @@ async function createPocketAgentCheckout(args: {
     origin: args.origin,
     userId: args.userId,
     bump: args.bump,
+    vault: args.vault,
   });
 
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -105,6 +109,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   const name = parsed.data.name ?? "";
   const tier = resolveCheckoutTier(parsed.data.tier);
   const bump = parsed.data.bump === true;
+  const vault = parsed.data.vault === true;
 
   // Read auth from session cookie — null when not logged in (still allowed).
   const supabase = createClient();
@@ -120,6 +125,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     origin,
     userId: user?.id ?? null,
     bump,
+    vault,
   });
 
   if (!checkout.ok) {

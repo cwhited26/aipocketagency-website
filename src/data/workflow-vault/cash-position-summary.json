@@ -1,0 +1,11 @@
+{
+  "name": "Cash Position Summary",
+  "description": "Every Monday it pulls together a plain-English read on money coming in and going out so you start the week knowing where you stand. For owners who feel the cash but never sit down to look at it.",
+  "category": "daily-brief",
+  "default_persona_slug": "ops-cos",
+  "prompt_template": "Pull together a short cash summary for the week ahead. Using the financial notes, invoices, and bills in my brain and email, lay out what is coming in, what is going out, anything overdue on either side, and the few things I should keep an eye on. Keep it in plain language, no jargon. Give it to me as a draft to review.",
+  "default_schedule_cron": "0 9 * * 1",
+  "default_apps": ["daily-brief"],
+  "recommended_tier": "studio_plus",
+  "starter_seed": false
+}

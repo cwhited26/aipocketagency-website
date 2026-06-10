@@ -23,6 +23,7 @@ export default function StartForm({
   const [email, setEmail] = useState(defaultEmail);
   const [name, setName] = useState("");
   const [bump, setBump] = useState(false);
+  const [vault, setVault] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -34,7 +35,7 @@ export default function StartForm({
       const res = await fetch("/api/pocket-agent/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, tier, bump }),
+        body: JSON.stringify({ email, name, tier, bump, vault }),
       });
       if (res.status === 502 || res.status === 503) {
         setError("Checkout is temporarily paused — try again in a minute.");
@@ -138,6 +139,32 @@ export default function StartForm({
                 <span className="text-slate-500">
                   (Optional — the Launch Kit walks you through this yourself for
                   free; the bump just does it for you.)
+                </span>
+              </span>
+            </label>
+
+            {/* Order-form bump — the AI Workflow Vault. */}
+            <label
+              htmlFor="vault"
+              className="flex cursor-pointer items-start gap-3 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.04] p-4"
+            >
+              <input
+                id="vault"
+                type="checkbox"
+                checked={vault}
+                onChange={(e) => setVault(e.target.checked)}
+                className="mt-1 h-4 w-4 shrink-0 accent-cyan-400"
+              />
+              <span className="text-sm leading-relaxed text-slate-300">
+                <span className="font-semibold text-slate-100">
+                  Yes, add the AI Workflow Vault to my order — $47 one-time.
+                </span>{" "}
+                Opens all 25 plug-and-play workflows — quote follow-ups, a
+                dormant-lead sweep, your morning brief, content repurposing,
+                lead research. Install any of them with one tap and put a Persona
+                on each.{" "}
+                <span className="text-slate-500">
+                  (Your plan already includes a few; this opens the rest.)
                 </span>
               </span>
             </label>

@@ -1,0 +1,11 @@
+{
+  "name": "Tomorrow's Calendar Prep",
+  "description": "Every evening it looks at tomorrow's schedule and gets you ready for it, so you walk into each meeting prepared instead of scrambling. Catches conflicts and prep you would have missed until morning.",
+  "category": "daily-brief",
+  "default_persona_slug": "admin",
+  "prompt_template": "Look at tomorrow's calendar. For each meeting, pull what I know about the person or topic from my brain and recent email, and note what I should prepare or bring. Flag any back-to-back crunches, gaps, or things that look off. Keep it short and in time order. Give it to me as a draft to read tonight.",
+  "default_schedule_cron": "0 17 * * *",
+  "default_apps": ["daily-brief", "upcoming"],
+  "recommended_tier": "pro_plus",
+  "starter_seed": false
+}

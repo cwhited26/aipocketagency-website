@@ -38,6 +38,10 @@ import {
   type KitConfig,
   type KitSlug,
 } from "@/lib/kit-config";
+import { ensureLaunchKitSeeded } from "@/lib/launch-kit/seed";
+import { createSprintFromCheckout } from "@/lib/setup-sprint/sprints";
+import { inviteEmailBody } from "@/lib/setup-sprint/calendar-invite-template";
+import { signDiyKitDownload } from "@/lib/diy-kit/download";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -526,6 +530,44 @@ async function handlePocketAgentCheckoutCompleted(
       email,
     });
   }
+
+  // The Launch Kit ships with every paid subscription — auto-install the 5 starter Workflow Vault
+  // recipes (PA-LAUNCHKIT-IMPL-3). Idempotent; needs the owner's user id.
+  if (userId) {
+    const seeded = await ensureLaunchKitSeeded(userId);
+    if (!seeded.ok) {
+      console.error("[stripe/webhook] pocket_agent: launch kit seed failed", {
+        session_id: session.id,
+        error: seeded.error,
+      });
+    }
+  }
+
+  // The $47 Workflow Vault order-bump (PA-VAULT-2): unlock all 25 recipes by ledgering a
+  // workflow_vault purchase row. The session id keys idempotency, so retries don't double-write.
+  if (session.metadata?.bump_workflow_vault === "true") {
+    const unlock = await insertPocketAgentAddonPurchase({
+      userId,
+      email,
+      kind: "workflow_vault",
+      stripeSessionId: session.id,
+      stripeCustomerId: session.customer,
+      stripePaymentIntentId: session.payment_intent,
+      amountCents: 4_700,
+    });
+    if (!unlock.ok) {
+      console.error("[stripe/webhook] pocket_agent: workflow_vault unlock ledger failed", {
+        session_id: session.id,
+        status: unlock.status,
+        error: unlock.error,
+      });
+    } else {
+      console.info("[stripe/webhook] pocket_agent: workflow vault unlocked via order bump", {
+        session_id: session.id,
+        email,
+      });
+    }
+  }
 }
 
 async function handlePocketAgentSubscriptionCreated(
@@ -941,6 +983,63 @@ Open your workspace: ${SITE_ORIGIN}/app
 — Chase`;
 }
 
+function vaultConfirmationHtml(name: string | null): string {
+  const greeting = name ? `Hey ${name} —` : "Hey —";
+  return `<!doctype html>
+<html><body style="margin:0;padding:24px 16px;background:#0b0b0b;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;">
+<div style="max-width:560px;margin:0 auto;">
+<p>${greeting}</p>
+<p>Your AI Workflow Vault is unlocked — all 25 recipes are open on your account. Quote follow-ups, a dormant-lead sweep, your morning brief, content repurposing, lead research, and more.</p>
+<p>Open the Vault, pick one, choose which Persona runs it, and it's working. Every recipe brings back a draft you approve before anything goes out.</p>
+<p><a href="${SITE_ORIGIN}/app/apps/workflow-vault" style="color:#6ee7b7;">Open the Workflow Vault →</a></p>
+<p style="margin-top:32px;">&mdash; Chase</p>
+</div>
+</body></html>`;
+}
+
+function vaultConfirmationText(name: string | null): string {
+  const greeting = name ? `Hey ${name} —` : "Hey —";
+  return `${greeting}
+
+Your AI Workflow Vault is unlocked — all 25 recipes are open on your account. Quote follow-ups, a dormant-lead sweep, your morning brief, content repurposing, lead research, and more.
+
+Open the Vault, pick one, choose which Persona runs it, and it's working. Every recipe brings back a draft you approve before anything goes out.
+
+Open the Workflow Vault: ${SITE_ORIGIN}/app/apps/workflow-vault
+
+— Chase`;
+}
+
+function diyKitDeliveryHtml(name: string | null, downloadUrl: string): string {
+  const greeting = name ? `Hey ${name} —` : "Hey —";
+  return `<!doctype html>
+<html><body style="margin:0;padding:24px 16px;background:#0b0b0b;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;">
+<div style="max-width:560px;margin:0 auto;">
+<p>${greeting}</p>
+<p>Your AI Office DIY Setup Kit is ready. Inside: the Business Brain upload checklist, the Mission Control review, the 7-day setup plan, setup templates for your three starter Personas, 25 workflow prompts, and an import-ready file you drop into Pocket Agent when you sign up.</p>
+<p><a href="${downloadUrl}" style="color:#6ee7b7;">Download your kit →</a></p>
+<p>The link is good for 24 hours. If it expires, reply and I'll send a fresh one.</p>
+<p>When you're ready for the live system around it, that's at <a href="${SITE_ORIGIN}" style="color:#6ee7b7;">aipocketagent.com</a>.</p>
+<p style="margin-top:32px;">&mdash; Chase</p>
+</div>
+</body></html>`;
+}
+
+function diyKitDeliveryText(name: string | null, downloadUrl: string): string {
+  const greeting = name ? `Hey ${name} —` : "Hey —";
+  return `${greeting}
+
+Your AI Office DIY Setup Kit is ready. Inside: the Business Brain upload checklist, the Mission Control review, the 7-day setup plan, setup templates for your three starter Personas, 25 workflow prompts, and an import-ready file you drop into Pocket Agent when you sign up.
+
+Download your kit: ${downloadUrl}
+
+The link is good for 24 hours. If it expires, reply and I'll send a fresh one.
+
+When you're ready for the live system around it, that's at ${SITE_ORIGIN}.
+
+— Chase`;
+}
+
 async function handlePocketAgentAddonCompleted(
   session: CheckoutSession,
 ): Promise<void> {
@@ -976,6 +1075,26 @@ async function handlePocketAgentAddonCompleted(
     });
   }
 
+  // A Done-With-You Setup purchase opens an operator-facing Setup Sprint (PA-SPRINT-2). Idempotent on
+  // the session id, so webhook retries don't duplicate.
+  if (kind === "setup_standard" || kind === "setup_premium") {
+    const sprintTier = kind === "setup_premium" ? "premium" : "standard";
+    const sprint = await createSprintFromCheckout({
+      ownerId: userId,
+      email,
+      tier: sprintTier,
+      stripeSessionId: session.id,
+    });
+    if (!sprint.ok) {
+      console.error("[stripe/webhook] pocket_agent_addon: setup sprint create failed", {
+        session_id: session.id,
+        kind,
+        status: sprint.status,
+        error: sprint.error,
+      });
+    }
+  }
+
   if (!email) {
     console.warn("[stripe/webhook] pocket_agent_addon: no email, skipping confirmation", {
       session_id: session.id,
@@ -984,16 +1103,40 @@ async function handlePocketAgentAddonCompleted(
     return;
   }
 
-  const isPilot = kind === "pilot";
-  const send = await sendEmail({
-    from: FROM,
-    to: email,
-    subject: isPilot
-      ? "Your Pocket Agent Pilot is live"
-      : "Your Done-With-You Setup — next step",
-    html: isPilot ? pilotConfirmationHtml(name) : setupConfirmationHtml(name),
-    text: isPilot ? pilotConfirmationText(name) : setupConfirmationText(name),
-  });
+  // Per-kind confirmation. Vault and DIY Kit have their own emails; setup/pilot keep the funnel copy.
+  let subject: string;
+  let html: string;
+  let text: string;
+  if (kind === "workflow_vault") {
+    subject = "Your AI Workflow Vault is unlocked";
+    html = vaultConfirmationHtml(name);
+    text = vaultConfirmationText(name);
+  } else if (kind === "diy_setup_kit") {
+    const signed = await signDiyKitDownload();
+    if (!signed.ok) {
+      console.error("[stripe/webhook] pocket_agent_addon: diy kit signed URL failed", {
+        session_id: session.id,
+        status: signed.status,
+        error: signed.error,
+      });
+    }
+    const downloadUrl = signed.ok ? signed.url : `${SITE_ORIGIN}/app/apps/diy-kit`;
+    subject = "Your AI Office DIY Setup Kit — download inside";
+    html = diyKitDeliveryHtml(name, downloadUrl);
+    text = diyKitDeliveryText(name, downloadUrl);
+  } else if (kind === "setup_standard" || kind === "setup_premium") {
+    const invite = inviteEmailBody(kind === "setup_premium" ? "premium" : "standard");
+    subject = invite.subject;
+    html = setupConfirmationHtml(name);
+    text = `${setupConfirmationText(name)}\n\n${invite.lines.join("\n\n")}`;
+  } else {
+    // pilot
+    subject = "Your Pocket Agent Pilot is live";
+    html = pilotConfirmationHtml(name);
+    text = pilotConfirmationText(name);
+  }
+
+  const send = await sendEmail({ from: FROM, to: email, subject, html, text });
   if (!send.ok) {
     console.error("[stripe/webhook] pocket_agent_addon: confirmation email failed", {
       session_id: session.id,

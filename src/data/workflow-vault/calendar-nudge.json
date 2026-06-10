@@ -1,0 +1,11 @@
+{
+  "name": "Calendar Nudge",
+  "description": "Drafts a quick reminder to the other person before an upcoming meeting, so fewer of your calls and appointments turn into no-shows. It confirms the time and gives them what they need to show up ready.",
+  "category": "email",
+  "default_persona_slug": "admin",
+  "prompt_template": "Look at my upcoming calendar and find meetings in the next day or two with an outside person. For each one, draft a short reminder email that confirms the date, time, and place or link, and notes anything they should bring or prepare. Keep the tone warm and brief. Give me the drafts to review before they go out.",
+  "default_schedule_cron": "",
+  "default_apps": ["email-drafter", "upcoming"],
+  "recommended_tier": "studio",
+  "starter_seed": false
+}

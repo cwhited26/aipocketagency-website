@@ -1,0 +1,11 @@
+{
+  "name": "Industry Trend Digest",
+  "description": "Each Monday it scans what is happening in your industry and sends a short digest of what changed and why it matters to you. Keeps you current without an hour of reading every week.",
+  "category": "lead-research",
+  "default_persona_slug": "content",
+  "prompt_template": "Scan recent news, discussions, and developments in my industry from the past week. Pull out the handful of things that actually matter to a business like mine and write a short digest, with a line on each one about why it matters and anything I might want to do about it. Skip the noise. Give it to me as a draft I can read in a couple of minutes.",
+  "default_schedule_cron": "0 8 * * 1",
+  "default_apps": ["lead-scout"],
+  "recommended_tier": "studio_plus",
+  "starter_seed": false
+}

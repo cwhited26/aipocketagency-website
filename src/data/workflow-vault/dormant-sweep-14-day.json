@@ -1,0 +1,11 @@
+{
+  "name": "14-Day Dormant Sweep",
+  "description": "Every Monday it finds the conversations that have gone two weeks without a reply and drafts a check-in for each one. Catches the leads and threads that slip through the cracks when the week gets busy.",
+  "category": "follow-up",
+  "default_persona_slug": "followup",
+  "prompt_template": "Scan my sent email, customers, and leads for people I have not heard back from in about 14 days where a reply was expected. For each one, draft a short, friendly check-in that references our last exchange and gives them an easy way to respond. Skip anyone who already replied or clearly closed the loop. Hand me the batch of drafts to review before anything goes out.",
+  "default_schedule_cron": "0 9 * * 1",
+  "default_apps": ["follow-up-sweeps", "email-drafter"],
+  "recommended_tier": "starter",
+  "starter_seed": true
+}

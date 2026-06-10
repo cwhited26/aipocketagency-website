@@ -1,0 +1,11 @@
+{
+  "name": "Podcast → Newsletter Draft",
+  "description": "Turns a podcast episode into a newsletter draft your audience can read in a few minutes. Lets you mail your list off the back of an episode without rewriting it by hand.",
+  "category": "content",
+  "default_persona_slug": "content",
+  "prompt_template": "Take the podcast episode I name and pull the key takeaways and best moments. Draft a newsletter that opens with a hook, walks through the main points in plain language, and ends with a clear next step for the reader. Write it in my voice from my brain. Give it to me as a draft I can edit before it goes to my list.",
+  "default_schedule_cron": "",
+  "default_apps": ["podcasts", "email-drafter"],
+  "recommended_tier": "studio",
+  "starter_seed": false
+}

@@ -1,0 +1,11 @@
+{
+  "name": "Morning Operator Brief",
+  "description": "Every morning it pulls together what is on your plate today into one short brief. Replaces the scattered first half hour of checking email, calendar, and your own head to figure out where to start.",
+  "category": "daily-brief",
+  "default_persona_slug": "ops-cos",
+  "prompt_template": "Put together my brief for today. Pull from my calendar, recent email, and open items in my brain. Cover what is on my schedule, the few things that actually need attention, anyone waiting on me, and where I should focus first. Keep it short and skimmable, in order of what matters most. Give it to me as a draft I can read with my coffee.",
+  "default_schedule_cron": "0 8 * * *",
+  "default_apps": ["daily-brief", "upcoming"],
+  "recommended_tier": "starter",
+  "starter_seed": true
+}

@@ -1,0 +1,11 @@
+{
+  "name": "Warm Re-Engagement",
+  "description": "Finds people you were talking to who went quiet, then writes a low-pressure note to restart the conversation. For the deals and relationships that stalled but were never really dead.",
+  "category": "email",
+  "default_persona_slug": "sales",
+  "prompt_template": "Look through my recent email and contacts for people I had a real back-and-forth with who then went quiet. For the ones I name or the top few you find, draft a warm note that picks up where we left off, references something specific from our last exchange, and gives them an easy reason to reply. Keep each one short. Hand me the drafts to review before anything sends.",
+  "default_schedule_cron": "",
+  "default_apps": ["email-drafter", "followups"],
+  "recommended_tier": "pro_plus",
+  "starter_seed": false
+}

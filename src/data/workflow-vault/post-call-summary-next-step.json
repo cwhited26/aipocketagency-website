@@ -1,0 +1,11 @@
+{
+  "name": "Post-Call Summary + Next Step",
+  "description": "After a call or meeting, it drafts the recap email that nails down what you agreed and what happens next. Sends the deal forward while it is fresh instead of letting momentum fade.",
+  "category": "follow-up",
+  "default_persona_slug": "sales",
+  "prompt_template": "Look at my recent calendar for the meeting I name or my most recent one, plus any notes in my brain about it. Draft a recap email that thanks them, summarizes what we discussed and agreed, lists the clear next steps and who owns each, and proposes a time for whatever comes next. Keep it tight. Give it to me as a draft to review.",
+  "default_schedule_cron": "",
+  "default_apps": ["email-drafter", "upcoming"],
+  "recommended_tier": "pro",
+  "starter_seed": false
+}

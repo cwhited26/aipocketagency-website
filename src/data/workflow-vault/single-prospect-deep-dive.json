@@ -1,0 +1,11 @@
+{
+  "name": "Single-Prospect Deep Dive",
+  "description": "Researches one prospect in depth before you reach out or get on a call. Walks you in knowing who they are, what they care about, and the angle most likely to land.",
+  "category": "lead-research",
+  "default_persona_slug": "sales",
+  "prompt_template": "Research the one prospect I name below in depth. Pull together who they are, what their business does, recent news or signals, likely pain points, and how what I offer connects. End with two or three angles I could open with and one specific thing to mention that shows I did my homework. Give it to me as a short brief I can read before reaching out.",
+  "default_schedule_cron": "",
+  "default_apps": ["lead-scout"],
+  "recommended_tier": "studio",
+  "starter_seed": true
+}

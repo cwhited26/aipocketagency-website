@@ -65,14 +65,34 @@ async function retrievePriorSession(
 }
 
 function thanksPath(kind: AddonCheckoutKind): string {
-  return kind === "pilot"
-    ? "/thanks?bought=pilot"
-    : "/thanks?bought=subscription_plus_setup";
+  switch (kind) {
+    case "pilot":
+      return "/thanks?bought=pilot";
+    case "workflow_vault":
+      return "/thanks?bought=workflow_vault";
+    case "diy_setup_kit":
+      return "/thanks?bought=diy_setup_kit";
+    default:
+      return "/thanks?bought=subscription_plus_setup";
+  }
 }
 
 function cancelPath(kind: AddonCheckoutKind, sessionId: string | null): string {
-  if (kind === "pilot") return "/downsell";
-  return sessionId ? `/upsell?session_id=${encodeURIComponent(sessionId)}` : "/upsell";
+  switch (kind) {
+    case "pilot":
+      return "/downsell";
+    case "diy_setup_kit":
+      return "/downsell-kit";
+    case "workflow_vault":
+      return "/app/apps/workflow-vault";
+    default:
+      return sessionId ? `/upsell?session_id=${encodeURIComponent(sessionId)}` : "/upsell";
+  }
+}
+
+/** Kinds bought by a fresh visitor (not necessarily signed in) — they need an email for the receipt. */
+function requiresEmail(kind: AddonCheckoutKind): boolean {
+  return kind === "pilot" || kind === "diy_setup_kit";
 }
 
 export async function POST(req: Request): Promise<NextResponse> {
@@ -107,8 +127,8 @@ export async function POST(req: Request): Promise<NextResponse> {
     }
   }
 
-  // The pilot is bought by a fresh visitor — it needs an email to attach a customer + send a receipt.
-  if (kind === "pilot" && !email) {
+  // Fresh-visitor products (pilot, DIY kit) need an email to attach a customer + send the receipt/link.
+  if (requiresEmail(kind) && !email) {
     return NextResponse.json({ error: "Email required" }, { status: 400 });
   }
 

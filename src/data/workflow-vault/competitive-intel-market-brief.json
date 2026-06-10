@@ -1,0 +1,11 @@
+{
+  "name": "Competitive Intel → Market Brief",
+  "description": "Researches the competitors you name and writes up where you stand against them. Tells you what they are pushing, where they are weak, and where you can win.",
+  "category": "content",
+  "default_persona_slug": "content",
+  "prompt_template": "Research the competitors I name below. Look at how they position themselves, what they charge, what they emphasize, and where customers seem unhappy. Write a brief that lays out each one, then summarizes where I have an opening and what I should say differently to stand out. Keep it readable and skip the filler. Give it to me as a draft to review.",
+  "default_schedule_cron": "",
+  "default_apps": ["lead-scout"],
+  "recommended_tier": "studio_plus",
+  "starter_seed": false
+}

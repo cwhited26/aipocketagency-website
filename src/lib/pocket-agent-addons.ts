@@ -16,14 +16,21 @@
 // Next.js / Stripe imports so the catalog is unit-tested in isolation.
 
 /** The one-time products that produce an actual Stripe charge (excludes the $0 Launch Kit bonus). */
-export type AddonCheckoutKind = "setup_standard" | "setup_premium" | "pilot";
+export type AddonCheckoutKind =
+  | "setup_standard"
+  | "setup_premium"
+  | "pilot"
+  | "workflow_vault"
+  | "diy_setup_kit";
 
 /** Every funnel money-model product, including the $0 included bonus. */
 export type AddonSlug =
   | "ai-office-launch-kit"
   | "done-with-you-setup-standard"
   | "done-with-you-setup-premium"
-  | "ai-agent-workspace-pilot";
+  | "ai-agent-workspace-pilot"
+  | "ai-workflow-vault"
+  | "ai-office-diy-setup-kit";
 
 export type AddonProductMeta = {
   slug: AddonSlug;
@@ -37,7 +44,9 @@ export type AddonProductMeta = {
 export type ThanksBranch =
   | "subscription_only"
   | "subscription_plus_setup"
-  | "pilot";
+  | "pilot"
+  | "workflow_vault"
+  | "diy_setup_kit";
 
 // The catalog. Indexed by the checkout kind for the three charged products; the bonus is exported
 // separately since it is never checked out.
@@ -60,6 +69,25 @@ export const ADDON_CATALOG: Record<AddonCheckoutKind, AddonProductMeta> = {
     amountCents: 9_700,
     thanksBranch: "pilot",
   },
+  // The $47 AI Workflow Vault. On /start it rides the subscription checkout as a one-time invoice line
+  // (the same mechanism as the Fast-Start bump — no second session), but it is also a standalone
+  // mode=payment product so it can be bought later. Either way a pocket_agent_addon_purchases row with
+  // kind='workflow_vault' is written, and that row unlocks all 25 recipes.
+  workflow_vault: {
+    slug: "ai-workflow-vault",
+    name: "AI Workflow Vault (all 25 recipes)",
+    amountCents: 4_700,
+    thanksBranch: "workflow_vault",
+  },
+  // The $97 AI Office DIY Setup Kit — the info-product version of the Launch Kit, sold on /downsell-kit
+  // to a visitor who declined both the Setup Sprint and the Pilot. On purchase the buyer is emailed a
+  // signed download link to the bundle (markdown docs + a 25-prompt reference + an import-ready JSON).
+  diy_setup_kit: {
+    slug: "ai-office-diy-setup-kit",
+    name: "AI Office DIY Setup Kit",
+    amountCents: 9_700,
+    thanksBranch: "diy_setup_kit",
+  },
 };
 
 // The included bonus. $0, never charged, present so the slug + value framing have one home.
@@ -75,7 +103,9 @@ export function isAddonCheckoutKind(value: unknown): value is AddonCheckoutKind 
   return (
     value === "setup_standard" ||
     value === "setup_premium" ||
-    value === "pilot"
+    value === "pilot" ||
+    value === "workflow_vault" ||
+    value === "diy_setup_kit"
   );
 }
 

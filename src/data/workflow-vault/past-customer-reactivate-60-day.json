@@ -1,0 +1,11 @@
+{
+  "name": "60-Day Past-Customer Reactivate",
+  "description": "Monthly, it pulls up customers you have not worked with in a couple of months and drafts a note to win the next job. The easiest sale is often the person who already paid you once.",
+  "category": "follow-up",
+  "default_persona_slug": "sales",
+  "prompt_template": "Find past customers I have not done work for in about 60 days or more. For each one, draft a warm note that reminds them what we did together, mentions something relevant we could help with next, and makes it easy to start a conversation. Use what you know about each customer so it does not feel generic. Hand me the drafts to approve before sending.",
+  "default_schedule_cron": "0 9 1 * *",
+  "default_apps": ["follow-up-sweeps", "email-drafter"],
+  "recommended_tier": "studio",
+  "starter_seed": false
+}

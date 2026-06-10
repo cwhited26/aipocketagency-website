@@ -1,0 +1,11 @@
+{
+  "name": "Cold Intro Drafter",
+  "description": "Turns a name and a reason for reaching out into a short, personal first-contact email that sounds like you wrote it. Good for the moment you know who you want to talk to but keep putting off the actual message.",
+  "category": "email",
+  "default_persona_slug": "sales",
+  "prompt_template": "Draft a short cold intro email to the prospect I name below. Pull what you know about them and my business from my brain, find one specific reason this connection makes sense, and lead with that. Keep it under 120 words, no fluff, and end with one easy yes-or-no ask. Give it to me as a draft so I can adjust the tone before it goes out.",
+  "default_schedule_cron": "",
+  "default_apps": ["email-drafter"],
+  "recommended_tier": "pro",
+  "starter_seed": false
+}

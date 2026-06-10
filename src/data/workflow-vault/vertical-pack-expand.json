@@ -1,0 +1,11 @@
+{
+  "name": "Vertical Pack Expand",
+  "description": "Every Monday it finds new businesses in the industry and area you target that look like a fit and need what you sell. Keeps a steady trickle of fresh prospects coming in instead of you starting from zero each week.",
+  "category": "lead-research",
+  "default_persona_slug": "sales",
+  "prompt_template": "Find new businesses in the industry and location I target that fit the kind of customer I do best with. Focus on ones that look like they need what I offer. For each, pull the basics, a quick read on why they fit, and anything useful for a first conversation. Skip anyone already in my contacts or leads. Give me the new list to review.",
+  "default_schedule_cron": "0 8 * * 1",
+  "default_apps": ["lead-scout"],
+  "recommended_tier": "studio_plus",
+  "starter_seed": false
+}

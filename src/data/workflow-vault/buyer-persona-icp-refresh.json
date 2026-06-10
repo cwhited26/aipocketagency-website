@@ -1,0 +1,11 @@
+{
+  "name": "Buyer Persona ICP Refresh",
+  "description": "Looks at who you have actually been winning and losing and updates your picture of your best-fit customer. Keeps your targeting honest instead of stuck on who you thought your customer was a year ago.",
+  "category": "lead-research",
+  "default_persona_slug": "sales",
+  "prompt_template": "Review my recent customers, closed deals, and lost ones from my brain and contacts. Look for patterns in who buys, who pays well, who sticks around, and who turns out to be a poor fit. Write an updated picture of my best-fit customer, what they have in common, and which kinds of prospects I should chase or avoid. Give it to me as a draft to review and confirm.",
+  "default_schedule_cron": "",
+  "default_apps": ["lead-scout"],
+  "recommended_tier": "studio_plus",
+  "starter_seed": false
+}

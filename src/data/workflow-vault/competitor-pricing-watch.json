@@ -1,0 +1,11 @@
+{
+  "name": "Competitor Pricing Change Watch",
+  "description": "Every Monday it checks your competitors' pricing and flags anything that moved since last time. So you find out they changed their prices from your own research, not from a customer.",
+  "category": "lead-research",
+  "default_persona_slug": "sales",
+  "prompt_template": "Check the current pricing of the competitors I track and compare it to what you found before. Flag any changes, new plans, dropped offers, or shifts in what they include. For each change, add a short note on what it might mean for me and how I should respond. If nothing moved, just say so. Give it to me as a short draft to review.",
+  "default_schedule_cron": "0 8 * * 1",
+  "default_apps": ["lead-scout"],
+  "recommended_tier": "studio_plus",
+  "starter_seed": false
+}

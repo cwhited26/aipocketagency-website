@@ -1,0 +1,11 @@
+{
+  "name": "30-Day Customer Check-In",
+  "description": "Once a month it drafts a check-in to customers you served about 30 days ago to see how things are going. Keeps you top of mind and catches small problems before they turn into bad reviews.",
+  "category": "follow-up",
+  "default_persona_slug": "followup",
+  "prompt_template": "Find customers I delivered work to or closed with roughly 30 days ago. For each one, draft a short check-in asking how things are going with what we did, whether anything came up, and leaving the door open for the next thing. Keep it personal using what you know about them from my brain. Give me the drafts to review before they send.",
+  "default_schedule_cron": "0 9 1 * *",
+  "default_apps": ["follow-up-sweeps", "email-drafter"],
+  "recommended_tier": "pro_plus",
+  "starter_seed": false
+}

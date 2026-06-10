@@ -300,7 +300,12 @@ export async function markWelcomeEmailSent(
 // subscription rungs, so they get their own append-only ledger. The webhook inserts one row per
 // completed one-time checkout; the unique index on stripe_session_id makes the insert idempotent
 // across webhook retries (merge-duplicates → no second row).
-export type PocketAgentAddonKind = "setup_standard" | "setup_premium" | "pilot";
+export type PocketAgentAddonKind =
+  | "setup_standard"
+  | "setup_premium"
+  | "pilot"
+  | "workflow_vault"
+  | "diy_setup_kit";
 
 export async function insertPocketAgentAddonPurchase(args: {
   userId: string | null;

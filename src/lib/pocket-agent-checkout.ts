@@ -23,6 +23,12 @@ export function priceIdForCheckout(tier: PaidTier): string | null {
 // (a one-time line item layered onto a subscription Checkout) so it doesn't need its own session.
 export const FAST_START_BRAIN_IMPORT_CENTS = 4_900;
 
+// The second order-form bump (PA-VAULT-2): the AI Workflow Vault, a one-time $47 add-on offered as a
+// checkbox on /start. It unlocks all 25 plug-and-play recipes. Like the Fast-Start import, it rides the
+// first invoice via add_invoice_items rather than a second checkout session, so the buyer pays once.
+// metadata[bump_workflow_vault] lets the webhook write the pocket_agent_addon_purchases unlock row.
+export const WORKFLOW_VAULT_CENTS = 4_700;
+
 /**
  * Build the Stripe Checkout Session form params. Stamps source=pocket_agent + tier +
  * (when signed in) user_id into BOTH the session and the subscription metadata so the
@@ -40,6 +46,7 @@ export function buildPocketAgentCheckoutParams(args: {
   origin: string;
   userId: string | null;
   bump?: boolean;
+  vault?: boolean;
 }): URLSearchParams {
   const params = new URLSearchParams();
   params.set("mode", "subscription");
@@ -65,21 +72,45 @@ export function buildPocketAgentCheckoutParams(args: {
   if (args.name) {
     params.set("metadata[name]", args.name);
   }
+  // One-time bumps ride add_invoice_items on the first invoice. The index walks forward so the two
+  // bumps can stack without colliding (Fast-Start at [0], Vault at [0] or [1]).
+  let invoiceItemIndex = 0;
   if (args.bump) {
+    const i = invoiceItemIndex++;
     params.set(
-      "subscription_data[add_invoice_items][0][price_data][currency]",
+      `subscription_data[add_invoice_items][${i}][price_data][currency]`,
       "usd",
     );
     params.set(
-      "subscription_data[add_invoice_items][0][price_data][product_data][name]",
+      `subscription_data[add_invoice_items][${i}][price_data][product_data][name]`,
       "Fast-Start Brain Import",
     );
     params.set(
-      "subscription_data[add_invoice_items][0][price_data][unit_amount]",
+      `subscription_data[add_invoice_items][${i}][price_data][unit_amount]`,
       String(FAST_START_BRAIN_IMPORT_CENTS),
     );
-    params.set("subscription_data[add_invoice_items][0][quantity]", "1");
+    params.set(`subscription_data[add_invoice_items][${i}][quantity]`, "1");
     params.set("metadata[bump_fast_start_brain_import]", "true");
+  }
+  if (args.vault) {
+    const i = invoiceItemIndex++;
+    params.set(
+      `subscription_data[add_invoice_items][${i}][price_data][currency]`,
+      "usd",
+    );
+    params.set(
+      `subscription_data[add_invoice_items][${i}][price_data][product_data][name]`,
+      "AI Workflow Vault (all 25 recipes)",
+    );
+    params.set(
+      `subscription_data[add_invoice_items][${i}][price_data][unit_amount]`,
+      String(WORKFLOW_VAULT_CENTS),
+    );
+    params.set(`subscription_data[add_invoice_items][${i}][quantity]`, "1");
+    // Flag on BOTH the session (checkout.session.completed) and the subscription
+    // (customer.subscription.created) so whichever the webhook sees first can unlock the Vault.
+    params.set("metadata[bump_workflow_vault]", "true");
+    params.set("subscription_data[metadata][bump_workflow_vault]", "true");
   }
   params.set(
     "success_url",

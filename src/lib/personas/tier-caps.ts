@@ -75,6 +75,28 @@ export function tierCanSeeLandingPageBuilder(tier: Tier): boolean {
 }
 
 /**
+ * How many of the 25 AI Workflow Vault recipes this tier unlocks for free (PA-VAULT-3). The Vault is
+ * visible to every tier — Starter sees 3 unlocked and 22 locked behind an upgrade, Pro 5, Pro+ 10,
+ * Studio 18, Studio+/Enterprise all 25. The $47 Workflow Vault order-bump unlocks all 25 regardless of
+ * tier (checked separately via the owner's pocket_agent_addon_purchases row). The per-recipe
+ * recommended_tier in src/data/workflow-vault/ drives which specific recipes unlock; this Record is the
+ * authoritative count, asserted equal to the recipe distribution in the tests.
+ */
+export const WORKFLOW_VAULT_UNLOCK_COUNTS: Record<Tier, number> = {
+  starter: 3,
+  pro: 5,
+  pro_plus: 10,
+  studio: 18,
+  studio_plus: 25,
+  enterprise: 25,
+};
+
+/** This tier's free Workflow Vault unlock count (0 is never returned — every tier sees at least 3). */
+export function workflowVaultUnlockCount(tier: Tier): number {
+  return WORKFLOW_VAULT_UNLOCK_COUNTS[tier];
+}
+
+/**
  * Can this tier run a Decision Roundtable (PA-DR-1)? Three (or four) sub-agent runs per question is
  * 3-4× a normal chat's model spend, so the feature is Studio+/Enterprise only. Free/Pro tiers see a
  * non-actionable teaser inline in chat but can't fire the debate.

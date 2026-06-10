@@ -12,13 +12,20 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-type Branch = "subscription_only" | "subscription_plus_setup" | "pilot";
+type Branch =
+  | "subscription_only"
+  | "subscription_plus_setup"
+  | "pilot"
+  | "workflow_vault"
+  | "diy_setup_kit";
 
 function isBranch(value: string | undefined): value is Branch {
   return (
     value === "subscription_only" ||
     value === "subscription_plus_setup" ||
-    value === "pilot"
+    value === "pilot" ||
+    value === "workflow_vault" ||
+    value === "diy_setup_kit"
   );
 }
 
@@ -53,6 +60,26 @@ const COPY: Record<
       "Open your workspace and run the Business Brain setup.",
       "Put your one Persona on the job that’s burying you most.",
       "Watch your first workflow run, then read the cockpit with us.",
+    ],
+    cta: { href: "/pricing", label: "See the full plans" },
+  },
+  workflow_vault: {
+    heading: "All 25 workflows are unlocked.",
+    body: "The AI Workflow Vault is open on your account. Quote follow-ups, a dormant-lead sweep, your morning brief, content repurposing, lead research — install any of them with one tap and put a Persona on each. Every recipe brings back a draft you approve.",
+    steps: [
+      "Open the Workflow Vault from your Apps.",
+      "Pick a recipe and choose which Persona runs it.",
+      "Approve the first draft it brings back.",
+    ],
+    cta: { href: "/app/apps/workflow-vault", label: "Open the Vault" },
+  },
+  diy_setup_kit: {
+    heading: "Your DIY Setup Kit is on its way.",
+    body: "Check your email for the download link. Inside: the Business Brain upload checklist, the Mission Control review, the 7-day setup plan, setup templates for your three starter Personas, 25 workflow prompts, and an import-ready file you drop in when you sign up.",
+    steps: [
+      "Open the download link in your inbox (good for 24 hours).",
+      "Work the 7-day plan and gather your brain materials.",
+      "Import the bundle when you start your subscription.",
     ],
     cta: { href: "/pricing", label: "See the full plans" },
   },

@@ -1,0 +1,11 @@
+{
+  "name": "End-of-Day Reflection Prompt",
+  "description": "At the end of the day it gives you a short recap of what happened and a couple of questions to close the loop before you log off. Helps you notice patterns and leave work at work.",
+  "category": "daily-brief",
+  "default_persona_slug": "ops-cos",
+  "prompt_template": "Recap my day using my calendar, recent email, and anything I logged in my brain. Note what got done, what is still open, and anything worth carrying into tomorrow. Then add two or three short reflection questions to help me close out the day. Keep it brief and easy on the eyes. Give it to me as a draft to read before I log off.",
+  "default_schedule_cron": "0 18 * * *",
+  "default_apps": ["daily-brief"],
+  "recommended_tier": "studio",
+  "starter_seed": false
+}

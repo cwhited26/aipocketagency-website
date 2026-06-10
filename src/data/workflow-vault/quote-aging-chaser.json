@@ -1,0 +1,11 @@
+{
+  "name": "Quote-Aging Chaser",
+  "description": "Every Tuesday it finds quotes that have been sitting without an answer and drafts the right nudge based on how long it has been. Stops good proposals from quietly dying on the vine.",
+  "category": "follow-up",
+  "default_persona_slug": "sales",
+  "prompt_template": "Find quotes and proposals I sent that have not been accepted or declined yet, and sort them by how long they have been open. For each one, draft a follow-up that fits its age, gentler for recent ones and a clearer last-call for the older ones, and make it easy for them to respond either way. Use the quote details from my brain and email. Hand me the batch to review before anything sends.",
+  "default_schedule_cron": "0 9 * * 2",
+  "default_apps": ["follow-up-sweeps", "email-drafter"],
+  "recommended_tier": "studio",
+  "starter_seed": false
+}

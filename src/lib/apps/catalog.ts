@@ -18,6 +18,7 @@ export const APP_IDS = [
   "landing-page-builder",
   "capture-inbox",
   "brain-map",
+  "workflow-vault",
 ] as const;
 
 export type AppId = (typeof APP_IDS)[number];
@@ -168,6 +169,17 @@ export const APP_CATALOG: AppDef[] = [
     blurb: "See what the agent knows about your business.",
     tag: "View",
     tagColor: "muted",
+  },
+  {
+    id: "workflow-vault",
+    href: "/app/apps/workflow-vault",
+    label: "AI Workflow Vault",
+    shortLabel: "Workflow Vault",
+    description:
+      "25 ready-to-run workflows you install with one tap — quote follow-ups, dormant-lead sweeps, a morning brief, content repurposing, lead research, and more. Pick one, choose which Persona runs it, and it's working. Your plan unlocks a set of them; the Workflow Vault add-on opens all 25.",
+    blurb: "Install ready-made workflows with one tap and put a Persona on each.",
+    tag: "Runs Workflows",
+    tagColor: "cyan",
   },
 ];
 

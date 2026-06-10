@@ -1,0 +1,11 @@
+{
+  "name": "Voice Memo → Blog Draft",
+  "description": "Turns a rambling voice memo into a structured blog post draft. For the ideas you can talk through in two minutes but never find time to write down.",
+  "category": "content",
+  "default_persona_slug": "content",
+  "prompt_template": "Take the voice memo or rough notes I give you and turn them into a blog post draft. Keep my point and my voice from my brain, organize it with a clear opening, a few sections, and a closing thought, and clean up the rambling without making it sound stiff. Suggest a title or two. Give it to me as a draft I can edit before publishing.",
+  "default_schedule_cron": "",
+  "default_apps": ["landing-page-builder"],
+  "recommended_tier": "studio",
+  "starter_seed": false
+}

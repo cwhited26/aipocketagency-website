@@ -1,0 +1,11 @@
+{
+  "name": "YouTube → 3-Post Repurpose",
+  "description": "Takes one of your YouTube videos and turns it into three ready-to-post social drafts. One video becomes a week of content without you sitting down to write from scratch.",
+  "category": "content",
+  "default_persona_slug": "content",
+  "prompt_template": "Take the YouTube video I name below and pull out the main ideas. Turn them into three distinct social post drafts, each with its own angle and hook, written in my voice from my brain and short enough to post as-is. Note which platform each one fits best. Give me all three as drafts to review and tweak before I post.",
+  "default_schedule_cron": "",
+  "default_apps": ["youtube"],
+  "recommended_tier": "pro_plus",
+  "starter_seed": true
+}
