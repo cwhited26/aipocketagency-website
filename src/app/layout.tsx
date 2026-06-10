@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const inter = Inter({
@@ -59,7 +60,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} ${jetbrainsMono.variable}`}>{children}</body>
+      <body className={`${inter.className} ${jetbrainsMono.variable}`}>
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
