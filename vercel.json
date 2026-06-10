@@ -40,6 +40,10 @@
     {
       "path": "/api/cron/followup-sweeps",
       "schedule": "0 8 * * 0"
+    },
+    {
+      "path": "/api/cron/capture-triage",
+      "schedule": "0 9 * * 1"
     }
   ],
   "rewrites": [

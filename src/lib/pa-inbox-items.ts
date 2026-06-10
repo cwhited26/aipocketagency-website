@@ -24,6 +24,9 @@
 // blocked; it resolves via Revise / Reject / Approve-anyway through /api/orchestrator/gates/[id].
 // 'follow_up_sweep_batch' (migration 063, PA-FUS-4) is the informational summary card the weekly
 // Follow-Up Sweeps run stages alongside its per-contact 'draft' cards — read, never approve.
+// 'capture_triage_proposal' (migration 066, PA-CAPTURE-2) is the Capture Inbox triage card: the
+// Monday sweep's suggested home for one unfiled inbox entry. Approve files it into the suggested (or
+// owner-edited) brain path and prunes it from memory/inbox.md; reject leaves the entry alone.
 export type InboxKind =
   | "draft"
   | "decision"
@@ -37,7 +40,8 @@ export type InboxKind =
   | "cost_budget_gate"
   | "skill_evolution_proposal"
   | "gate_findings"
-  | "follow_up_sweep_batch";
+  | "follow_up_sweep_batch"
+  | "capture_triage_proposal";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

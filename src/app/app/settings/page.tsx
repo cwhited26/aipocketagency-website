@@ -202,6 +202,7 @@ export default async function SettingsPage({
           <SettingsRow label="LLM provider" value="Bring your own model" href="/app/settings/llm-provider" />
           <SettingsRow label="API keys" value="REST API for any agent" href="/app/settings/api-keys" />
           <SettingsRow label="Privacy zones" value="Control what your agent can read" href="/app/settings/privacy-zones" />
+          <SettingsRow label="Capture routing" value="File what you share into your brain" href="/app/settings/capture-routing" />
           <SettingsRow label="Auto-approve" value="Let trusted actions run on their own" href="/app/settings/auto-approve" />
           <SettingsRow label="Budget" value="Cap what your agents cost each month" href="/app/settings/budget" />
           <SettingsRow label="Learn" value="How Pocket Agent works" href="/app/learn" />

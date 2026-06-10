@@ -27,7 +27,8 @@ export type InboxCardKind =
   | "cost_budget_gate"
   | "skill_evolution_proposal"
   | "gate_findings"
-  | "follow_up_sweep_batch";
+  | "follow_up_sweep_batch"
+  | "capture_triage_proposal";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {

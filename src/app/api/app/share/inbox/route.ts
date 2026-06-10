@@ -4,6 +4,8 @@ import { commitMemoryFile, fetchFileContent } from "@/lib/pa-brain";
 import { appendEntryToRaw } from "@/lib/pa-inbox";
 import { maybeIngestYouTubeUrls } from "@/lib/youtube/ingest";
 import { maybeIngestPodcastUrls } from "@/lib/podcasts/hooks";
+import { applyRouting, listRoutingRules } from "@/lib/capture-inbox/rules";
+import { pruneInboxEntry, type CleanupTarget } from "@/lib/capture-inbox/cleanup";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -194,6 +196,34 @@ export async function POST(req: Request): Promise<NextResponse> {
     ...ingestedPodcasts.map((i) => `Listened + transcribed: ${i.title}`),
   ];
 
+  // Capture Inbox auto-routing (PA-CAPTURE-1): if one of the owner's rules matches this share, file it
+  // straight into a dedicated brain path. Runs AFTER the YouTube/Podcast ingest (those keep their own
+  // notes) and BEFORE the default inbox is treated as final.
+  const captureCtx = { repo, token: ghToken };
+  let routedPath: string | null = null;
+  const rulesResult = await listRoutingRules(tokenRow.user_id);
+  if (rulesResult.ok && rulesResult.data.length > 0) {
+    const routed = await applyRouting({ ctx: captureCtx, entry, rules: rulesResult.data });
+    if (routed.routed) routedPath = routed.path;
+  }
+
+  // Cleanup pass (PA-CAPTURE-3): once this entry has been folded into a dedicated brain note — by a
+  // routing rule, or by the YouTube/Podcast ingester — prune it from memory/inbox.md. Conservative:
+  // pruneInboxEntry re-reads each target and confirms the content is present before removing anything.
+  const cleanupTargets: CleanupTarget[] = [];
+  if (routedPath) cleanupTargets.push({ path: routedPath, requireSignature: true });
+  for (const i of ingested) cleanupTargets.push({ path: i.brainPath, requireSignature: false });
+  for (const i of ingestedPodcasts) cleanupTargets.push({ path: i.brainPath, requireSignature: false });
+  let pruned = false;
+  if (cleanupTargets.length > 0) {
+    const prune = await pruneInboxEntry({
+      ctx: captureCtx,
+      entryId: entry.id,
+      targets: cleanupTargets,
+    });
+    pruned = prune.pruned;
+  }
+
   return NextResponse.json({
     ok: true,
     id: entry.id,
@@ -201,6 +231,9 @@ export async function POST(req: Request): Promise<NextResponse> {
     sha: commitResult.sha,
     ingested,
     ingestedPodcasts,
+    routed: Boolean(routedPath),
+    routedPath: routedPath ?? undefined,
+    pruned,
     message: captured.length > 0 ? captured.join("; ") : undefined,
   });
 }

@@ -27,7 +27,8 @@ export type CostFeatureSlug =
   | "build_tools"
   | "follow_up_sweeps"
   | "landing_page_builder"
-  | "rag";
+  | "rag"
+  | "capture_triage";
 
 /**
  * The per-call-site context a metered backend carries: who's paying, which feature area, and a

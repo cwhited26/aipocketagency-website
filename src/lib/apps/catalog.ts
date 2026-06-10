@@ -16,6 +16,7 @@ export const APP_IDS = [
   "lead-scout",
   "follow-up-sweeps",
   "landing-page-builder",
+  "capture-inbox",
   "brain-map",
 ] as const;
 
@@ -144,6 +145,17 @@ export const APP_CATALOG: AppDef[] = [
       "Describe the page you need — a page for your roofing business with a hero, the problem you solve, how it works, and one clear ask. PA writes the copy in your voice, builds the page on your own GitHub and Vercel, and stages each step for your approval. You get a live link, and the code is yours.",
     blurb: "Describe a landing page; PA builds it on your accounts and hands you a live link.",
     tag: "Builds",
+    tagColor: "cyan",
+  },
+  {
+    id: "capture-inbox",
+    href: "/app/settings/capture-routing",
+    label: "Capture Inbox",
+    shortLabel: "Capture Inbox",
+    description:
+      "Everything you tap, talk, or share into your brain lands here first. Set rules so the obvious stuff files itself — a competitor's link goes straight to your competitor notes. Each Monday, PA reads what's left, suggests where each one belongs, and you approve with a tap. Once something's filed in your brain, it clears out of the inbox so the list stays short.",
+    blurb: "File what you capture: rules that route it, a weekly sweep that sorts the rest.",
+    tag: "Reads Brain",
     tagColor: "cyan",
   },
   {

@@ -10,6 +10,13 @@ import {
   markGmailConnectionError,
 } from "@/lib/pa-gmail-connections";
 import { execute as gmailSend, type GmailSendInput } from "@/lib/connectors/gmail/actions/send";
+import { fetchPaUser } from "@/lib/pa-supabase";
+import { acceptTriageProposal } from "@/lib/capture-inbox/triage";
+import {
+  CAPTURE_TRIAGE_PROPOSAL_KIND,
+  isTriageBucket,
+  type CaptureTriagePayload,
+} from "@/lib/capture-inbox/types";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -23,6 +30,10 @@ const OverrideSchema = z.object({
   to: z.string().max(500).optional(),
   subject: z.string().max(500).optional(),
   body: z.string().max(50_000).optional(),
+  // Capture Inbox triage proposals: the owner may edit the destination brain path and the bucket on
+  // the card before approving.
+  targetPath: z.string().max(300).optional(),
+  bucket: z.string().max(40).optional(),
 });
 
 function str(v: unknown): string {
@@ -82,6 +93,42 @@ export async function POST(
       { error: `Cannot approve an item that is '${item.status}'.` },
       { status: 409 },
     );
+  }
+
+  // Capture Inbox triage proposal (PA-CAPTURE-2): file the entry into the suggested (or owner-edited)
+  // brain path, then prune it from memory/inbox.md via the cleanup pass. Nothing is sent.
+  if (item.kind === CAPTURE_TRIAGE_PROPOSAL_KIND) {
+    const pa = await fetchPaUser(user.id);
+    if (!pa.ok || !pa.data || !pa.data.brain_repo || !pa.data.github_token) {
+      return NextResponse.json(
+        { error: "Connect your brain in Settings before filing captures." },
+        { status: 409 },
+      );
+    }
+    const payload = item.payload as unknown as CaptureTriagePayload;
+    if (!payload || typeof payload.entryId !== "string") {
+      return NextResponse.json(
+        { error: "This proposal is missing its entry — nothing to file." },
+        { status: 422 },
+      );
+    }
+    const overrideBucket =
+      typeof override.bucket === "string" && isTriageBucket(override.bucket)
+        ? override.bucket
+        : undefined;
+    const accepted = await acceptTriageProposal({
+      ctx: { repo: pa.data.brain_repo, token: pa.data.github_token },
+      payload,
+      overrideTargetPath: override.targetPath,
+      overrideBucket,
+    });
+    if (!accepted.ok) return NextResponse.json({ error: accepted.error }, { status: 502 });
+
+    const resolved = await resolveInboxItem(id, "approved", user.id);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+    }
+    return NextResponse.json({ status: "approved", filed: true, path: accepted.path });
   }
 
   // Non-email items (decisions, legacy drafts): record approval, nothing to send.
