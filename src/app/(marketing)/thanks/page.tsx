@@ -67,7 +67,7 @@ const COPY: Record<
     cta: { href: "/pricing", label: "See the full plans" },
   },
   workflow_vault: {
-    heading: "All 25 workflows are open on your account.",
+    heading: "All 25 workflows are unlocked.",
     body: "The AI Workflow Vault is open on your account. Quote follow-ups, a dormant-lead sweep, your morning brief, content repurposing, lead research — install any of them with one tap and put a Persona on each. Every recipe brings back a draft you approve.",
     steps: [
       "Open the Workflow Vault from your Apps.",

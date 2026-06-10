@@ -54,7 +54,8 @@ const VISIBLE_TIERS: VisibleTier[] = [
     price: "$497",
     tier: "studio_plus",
     badge: "Full Cockpit",
-    pitch: "For businesses that want the full cockpit.",
+    pitch:
+      "Unlock the full Pocket Agent workspace for idea execution, vertical lead research, decisions, and advanced review.",
     rows: [
       "Everything in Business Agent",
       "Idea Engine — ship a working MVP from one idea",
@@ -62,7 +63,7 @@ const VISIBLE_TIERS: VisibleTier[] = [
       "Decision Roundtable",
       "All 30 prebuilt Skills + advanced Mission Control",
     ],
-    ctaLabel: "Start AI Agent Workspace",
+    ctaLabel: "Unlock AI Agent Workspace",
     anchor:
       "PaidCreators charges $497 once for a Gameplan you still have to execute. Pocket Agent includes Idea Engine in AI Agent Workspace at $497/month — and it actually ships the working website for you.",
   },
@@ -96,7 +97,7 @@ const QUIZ_OPTIONS: QuizOption[] = [
     want: "Ideas turned into live assets, with prospects lined up.",
     plan: "AI Agent Workspace",
     price: "$497/mo",
-    ctaLabel: "Start AI Agent Workspace",
+    ctaLabel: "Unlock AI Agent Workspace",
     tier: "studio_plus",
   },
   {
@@ -105,7 +106,7 @@ const QUIZ_OPTIONS: QuizOption[] = [
     price: "Custom",
     ctaLabel: "Apply for Enterprise",
     tier: "enterprise",
-    href: "mailto:chase@tnvex.com?subject=Pocket%20Agent%20Enterprise%20inquiry",
+    href: "/enterprise",
   },
 ];
 
@@ -215,12 +216,12 @@ export default function PricingPlans() {
               </div>
               <p className="mt-2 flex-1 text-sm text-slate-400">{t.pitch}</p>
               {t.href ? (
-                <a
+                <Link
                   href={t.href}
                   className="mt-4 text-sm font-semibold text-cyan-300 transition hover:underline"
                 >
-                  Email us →
-                </a>
+                  {t.tier === "enterprise" ? "Apply for Enterprise" : `Learn more`} →
+                </Link>
               ) : (
                 <Link
                   href={`/start?tier=${t.tier}`}
@@ -256,12 +257,12 @@ export default function PricingPlans() {
                   <span className="text-slate-200">{o.plan}</span> · {o.price}
                 </span>
                 {o.href ? (
-                  <a
+                  <Link
                     href={o.href}
                     className="shrink-0 text-sm font-semibold text-cyan-300 transition hover:underline"
                   >
                     {o.ctaLabel} →
-                  </a>
+                  </Link>
                 ) : (
                   <Link
                     href={`/start?tier=${o.tier}`}
