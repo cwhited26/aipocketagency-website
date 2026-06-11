@@ -1,17 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
+import { SKOOL_URL } from "@/lib/constants/skool";
 import { LaunchpadPrompt } from "../_components/LaunchpadPrompt";
 
-export default async function SkoolPage() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const email = user?.email ?? "";
-  const skoolUrl = email
-    ? `https://www.skool.com/ai-pocket-agency/about?email=${encodeURIComponent(email)}`
-    : "https://www.skool.com/ai-pocket-agency/about";
-
+export default function SkoolPage() {
   return (
     <div className="h-full overflow-y-auto bg-[#05070a]">
       <div className="max-w-md mx-auto px-6 py-16 space-y-6">
@@ -23,8 +13,8 @@ export default async function SkoolPage() {
         </div>
 
         {/* Part 7S: in-app Launchpad join prompt. Join state isn't tracked yet, so we always show the
-            not-joined pitch; the CTA points at the owner's Skool join URL. */}
-        <LaunchpadPrompt joined={false} href={skoolUrl} />
+            not-joined pitch; the CTA points at the real Skool community URL (opens in a new tab). */}
+        <LaunchpadPrompt joined={false} href={SKOOL_URL} />
       </div>
     </div>
   );

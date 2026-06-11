@@ -1,6 +1,7 @@
 // lib/emails/templates/shared.ts — common props + deep-link constants for the email templates.
 // Every template imports from here so the in-app links and the base prop shape live in one place.
 
+import { SKOOL_URL } from "@/lib/constants/skool";
 import { APP_ORIGIN, SITE_ORIGIN } from "../render";
 
 /** The base prop every template accepts: who it's going to (for the footer) + an optional first name. */
@@ -23,9 +24,9 @@ export const LINKS = {
   ideaEngine: `${APP_ORIGIN}/app/apps/ideas`,
   launchKit: `${APP_ORIGIN}/app/launch-kit`,
   setupSprint: `${APP_ORIGIN}/app/setup-sprint`,
-  // The Pocket Agent Launchpad (Skool community). NOTE: the Skool community must exist for this to
-  // resolve — flagged in the ship report as a Chase product to-do.
-  launchpad: `${SITE_ORIGIN}/skool-invite`,
+  // The Pocket Agent Launchpad (Skool community) — links direct to the real Skool URL for
+  // trackability. The internal `${SITE_ORIGIN}/skool-invite` route 308-redirects to the same place.
+  launchpad: SKOOL_URL,
   pricing: `${SITE_ORIGIN}/pricing`,
   enterprise: `${SITE_ORIGIN}/enterprise`,
   start: `${SITE_ORIGIN}/start`,

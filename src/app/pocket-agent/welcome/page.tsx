@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SKOOL_URL } from "@/lib/constants/skool";
 import { createClient } from "@/lib/supabase/server";
 import { retrieveCheckoutSession } from "@/lib/stripe-checkout";
 
@@ -8,8 +9,6 @@ export const runtime = "nodejs";
 
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
-
-const SKOOL_URL = "https://www.skool.com/aipocketagency";
 
 export function generateMetadata(): Metadata {
   return {

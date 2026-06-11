@@ -10,11 +10,15 @@ type LaunchpadPromptProps = {
 
 /**
  * Pocket Agent Launchpad in-app prompt (GTM Phase 4, Part 7S). Shows the not-joined pitch or the
- * joined success message. The join link resolves to the Skool surface the email system points at;
- * Chase wires the real Skool community URL behind /app/skool. Presentational.
+ * joined success message. The join CTA points at the real Skool community URL (SKOOL_URL) — an
+ * external link, so it renders as a plain anchor opening in a new tab; an internal href still
+ * routes through next/link. Presentational.
  */
 export function LaunchpadPrompt({ joined, href = "/app/skool", className = "" }: LaunchpadPromptProps) {
   const copy = joined ? LAUNCHPAD.joined : LAUNCHPAD.notJoined;
+  const isExternal = href.startsWith("http://") || href.startsWith("https://");
+  const ctaClassName =
+    "mt-3 inline-block rounded-lg bg-[#22d3ee] px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-[#67e8f9]";
   return (
     <div
       className={`rounded-xl border border-slate-700/60 bg-slate-900/60 p-4${
@@ -28,12 +32,15 @@ export function LaunchpadPrompt({ joined, href = "/app/skool", className = "" }:
         ))}
       </div>
       {copy.cta ? (
-        <Link
-          href={href}
-          className="mt-3 inline-block rounded-lg bg-[#22d3ee] px-3 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-[#67e8f9]"
-        >
-          {copy.cta}
-        </Link>
+        isExternal ? (
+          <a href={href} target="_blank" rel="noopener noreferrer" className={ctaClassName}>
+            {copy.cta}
+          </a>
+        ) : (
+          <Link href={href} className={ctaClassName}>
+            {copy.cta}
+          </Link>
+        )
       ) : null}
     </div>
   );
