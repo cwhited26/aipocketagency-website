@@ -222,6 +222,37 @@ export async function cancelPendingTriggersForOwner(
   return { ok: true, data: rows.length };
 }
 
+/**
+ * Cancel pending rows for an email within a single sequence. Used by webinar re-registration to clear
+ * the prior schedule before re-enqueueing (webinar registrants have no owner_id, so the owner-scoped
+ * cancel doesn't apply). No-op (count 0) pre-migration.
+ */
+export async function cancelPendingForEmailSequence(
+  email: string,
+  sequence: string,
+  reason: string,
+): Promise<PaResult<number>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+  const lower = email.trim().toLowerCase();
+  const url =
+    `${env.url}/rest/v1/${QUEUE}?email=eq.${encodeURIComponent(lower)}` +
+    `&status=eq.pending&sequence_slug=eq.${encodeURIComponent(sequence)}`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { ...authHeaders(env.key), "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify({ status: "cancelled", cancel_reason: reason }),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    if (isMissingTable(res.status, body, QUEUE)) return { ok: true, data: 0 };
+    return { ok: false, status: res.status, error: body };
+  }
+  const rows = (await res.json()) as unknown[];
+  return { ok: true, data: rows.length };
+}
+
 /** Cancel all pending marketing rows for an email (unsubscribe path). Transactional rows are left. */
 export async function cancelPendingForEmail(email: string, reason: string): Promise<PaResult<number>> {
   const env = paEnv();

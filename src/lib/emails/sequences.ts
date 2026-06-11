@@ -101,3 +101,58 @@ export function planWelcomeStep(tier: Tier): SequenceStep {
 
 /** Sequences that should be cancelled when a subscription is deleted. */
 export const CANCELLABLE_SEQUENCES: readonly string[] = [SEQUENCE.onboarding, SEQUENCE.pilot];
+
+// ── Webinar funnel (Part 3D / GTM Phase 5A). Unlike the post-purchase sequences, these are anchored to
+// the live-session timestamp, not the trigger time: the reminders fire before it, live/replay at and
+// after it, and the 12-email nurture across the 12 days after. The registration confirmation is the only
+// "now"-anchored step — it goes out the instant they register. ──
+export type WebinarBase = "now" | "webinar";
+
+export type WebinarSequenceStep = {
+  slug: string;
+  base: WebinarBase;
+  /** Minutes relative to `base`. Negative = before the webinar. */
+  offsetMinutes: number;
+};
+
+export const WEBINAR_SEQUENCE: WebinarSequenceStep[] = [
+  { slug: "webinar.registration-confirmation", base: "now", offsetMinutes: 0 },
+  { slug: "webinar.reminder-24h", base: "webinar", offsetMinutes: -24 * HOUR },
+  { slug: "webinar.morning-of", base: "webinar", offsetMinutes: -4 * HOUR },
+  { slug: "webinar.reminder-1h", base: "webinar", offsetMinutes: -1 * HOUR },
+  { slug: "webinar.reminder-15m", base: "webinar", offsetMinutes: -15 },
+  { slug: "webinar.live-now", base: "webinar", offsetMinutes: 0 },
+  { slug: "webinar.missed-replay", base: "webinar", offsetMinutes: 4 * HOUR },
+  { slug: "webinar.attendee-recap", base: "webinar", offsetMinutes: 4 * HOUR },
+  { slug: "webinar.problem-agitation", base: "webinar", offsetMinutes: 1 * DAY },
+  { slug: "webinar.business-brain", base: "webinar", offsetMinutes: 2 * DAY },
+  { slug: "webinar.personas", base: "webinar", offsetMinutes: 3 * DAY },
+  { slug: "webinar.apps", base: "webinar", offsetMinutes: 4 * DAY },
+  { slug: "webinar.idea-engine", base: "webinar", offsetMinutes: 5 * DAY },
+  { slug: "webinar.lead-scout", base: "webinar", offsetMinutes: 6 * DAY },
+  { slug: "webinar.mission-control", base: "webinar", offsetMinutes: 7 * DAY },
+  { slug: "webinar.guarantee", base: "webinar", offsetMinutes: 8 * DAY },
+  { slug: "webinar.plan-choice", base: "webinar", offsetMinutes: 9 * DAY },
+  { slug: "webinar.last-call", base: "webinar", offsetMinutes: 10 * DAY },
+  { slug: "webinar.pilot-pitch", base: "webinar", offsetMinutes: 11 * DAY },
+  { slug: "webinar.diy-kit-pitch", base: "webinar", offsetMinutes: 12 * DAY },
+];
+
+export type WebinarScheduledEmail = { slug: string; sendAt: string };
+
+/**
+ * Resolve each webinar step to an absolute send_at (ISO). `now` steps anchor to nowMs; `webinar` steps
+ * anchor to webinarAtMs. A step whose computed time is already in the past is dropped (a late registrant
+ * skips reminders that already passed) — except the immediate registration confirmation, always kept.
+ */
+export function computeWebinarSchedule(webinarAtMs: number, nowMs: number): WebinarScheduledEmail[] {
+  const out: WebinarScheduledEmail[] = [];
+  for (const step of WEBINAR_SEQUENCE) {
+    const anchor = step.base === "now" ? nowMs : webinarAtMs;
+    const at = anchor + step.offsetMinutes * 60_000;
+    const immediate = step.base === "now" && step.offsetMinutes === 0;
+    if (!immediate && at < nowMs) continue;
+    out.push({ slug: step.slug, sendAt: new Date(at).toISOString() });
+  }
+  return out;
+}

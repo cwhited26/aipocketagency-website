@@ -73,6 +73,28 @@ import {
   aawToEnterprise,
 } from "./templates/upgrades/upgrades";
 import { cancellationConfirmation } from "./templates/cancellation/cancellation";
+import {
+  registrationConfirmation,
+  reminder24h,
+  morningOf,
+  reminder1h,
+  reminder15m,
+  liveNow,
+  missedReplay,
+  attendeeRecap,
+  problemAgitation,
+  businessBrain,
+  personas,
+  apps,
+  ideaEngine,
+  leadScout,
+  missionControl,
+  guarantee,
+  planChoice,
+  lastCall,
+  pilotPitch,
+  diyKitPitch,
+} from "./templates/webinar/webinar";
 
 const baseSchema = z.object({
   email: z.string().min(3),
@@ -121,6 +143,7 @@ export const SEQUENCE = {
   pilot: "pilot.nurture",
   dwy: "dwy.setup",
   diy: "diy.delivery",
+  webinar: "webinar.sequence",
 } as const;
 
 export const EMAIL_REGISTRY: Record<string, RegistryEntry> = {
@@ -198,6 +221,29 @@ export const EMAIL_REGISTRY: Record<string, RegistryEntry> = {
 
   // ── Cancellation (1) — transactional ──
   "cancellation.confirmation": base(cancellationConfirmation, true, null),
+
+  // ── Webinar funnel (20) — GTM Phase 5A, Part 3D. All marketing (opt-in webinar list), all ride the
+  // `webinar.sequence` so an unsubscribe/cancel clears the whole set. ──
+  "webinar.registration-confirmation": base(registrationConfirmation, false, SEQUENCE.webinar),
+  "webinar.reminder-24h": base(reminder24h, false, SEQUENCE.webinar),
+  "webinar.morning-of": base(morningOf, false, SEQUENCE.webinar),
+  "webinar.reminder-1h": base(reminder1h, false, SEQUENCE.webinar),
+  "webinar.reminder-15m": base(reminder15m, false, SEQUENCE.webinar),
+  "webinar.live-now": base(liveNow, false, SEQUENCE.webinar),
+  "webinar.missed-replay": base(missedReplay, false, SEQUENCE.webinar),
+  "webinar.attendee-recap": base(attendeeRecap, false, SEQUENCE.webinar),
+  "webinar.problem-agitation": base(problemAgitation, false, SEQUENCE.webinar),
+  "webinar.business-brain": base(businessBrain, false, SEQUENCE.webinar),
+  "webinar.personas": base(personas, false, SEQUENCE.webinar),
+  "webinar.apps": base(apps, false, SEQUENCE.webinar),
+  "webinar.idea-engine": base(ideaEngine, false, SEQUENCE.webinar),
+  "webinar.lead-scout": base(leadScout, false, SEQUENCE.webinar),
+  "webinar.mission-control": base(missionControl, false, SEQUENCE.webinar),
+  "webinar.guarantee": base(guarantee, false, SEQUENCE.webinar),
+  "webinar.plan-choice": base(planChoice, false, SEQUENCE.webinar),
+  "webinar.last-call": base(lastCall, false, SEQUENCE.webinar),
+  "webinar.pilot-pitch": base(pilotPitch, false, SEQUENCE.webinar),
+  "webinar.diy-kit-pitch": base(diyKitPitch, false, SEQUENCE.webinar),
 };
 
 export type EmailTemplateSlug = keyof typeof EMAIL_REGISTRY;

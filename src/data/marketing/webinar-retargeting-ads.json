@@ -1,0 +1,41 @@
+{
+  "source": "Part 3F — Simple Retargeting Sequence (GTM Phase 5A)",
+  "domain": "aipocketagent.com",
+  "ads": [
+    {
+      "id": "webinar-retarget-1-no-show",
+      "audience": "Registered but did not attend.",
+      "hook": "You missed the training.",
+      "copy": "The replay is up.\n\nWatch how Pocket Agent helps owner-led businesses build a Business Brain, clone Personas, use Apps, and review everything in Mission Control.\n\nGeneric AI starts from zero. Pocket Agent starts from your business.",
+      "cta": "Watch Replay"
+    },
+    {
+      "id": "webinar-retarget-2-watched-no-click",
+      "audience": "Watched replay but did not click.",
+      "hook": "Your business does not need another blank chatbot.",
+      "copy": "It needs an AI Agent Workspace that starts from your business.\n\nBusiness Brain. Personas. Apps. Mission Control.",
+      "cta": "Build My AI Team"
+    },
+    {
+      "id": "webinar-retarget-3-pricing-no-buy",
+      "audience": "Clicked pricing but did not buy.",
+      "hook": "Start with Business Agent.",
+      "copy": "Business Agent is $97/month and is the main starting point for most owner-led businesses.\n\nYou get Personas, Apps, Mission Control, Launch Kit, Launchpad access, and 20 Skills.",
+      "cta": "Start Pocket Agent"
+    },
+    {
+      "id": "webinar-retarget-4-idea-engine-no-buy",
+      "audience": "Clicked Idea Engine but did not buy.",
+      "hook": "Your idea should not die in Notes.",
+      "copy": "Idea Engine validates the idea, plans what should ship, builds it, gets a sales page live, and lines up the first 25 prospects to email.\n\nOther tools give you prompts.\n\nPocket Agent gives you a working website you can share.",
+      "cta": "Unlock AI Agent Workspace"
+    },
+    {
+      "id": "webinar-retarget-5-checkout-abandon",
+      "audience": "Started checkout but did not buy.",
+      "hook": "You were one step away.",
+      "copy": "Your first milestone is simple: 3 Business Brain assets. 3 trained Personas. 3 working workflows.\n\nStart Pocket Agent and get the AI Office Launch Kit included free.",
+      "cta": "Finish Setup"
+    }
+  ]
+}

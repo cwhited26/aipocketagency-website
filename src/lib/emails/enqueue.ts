@@ -16,6 +16,7 @@ import {
   DIY_KIT_SEQUENCE,
   ONBOARDING_SEQUENCE,
   PILOT_SEQUENCE,
+  computeWebinarSchedule,
   dwySequence,
   planWelcomeStep,
   type SequenceStep,
@@ -80,6 +81,29 @@ export async function enqueueDiyKit(
 ): Promise<EnqueueResult> {
   const base = downloadUrl ? { downloadUrl } : {};
   return enqueueSteps(who, DIY_KIT_SEQUENCE, SEQUENCE.diy, base, nowMs);
+}
+
+/**
+ * 20-email webinar sequence (Part 3D). Anchored to the live-session timestamp: reminders before it,
+ * live/replay at and after it, the 12-email nurture across the 12 days after. Past-due reminders are
+ * dropped (late registrant), the registration confirmation is always kept. Returns the count enqueued.
+ */
+export async function enqueueWebinar(
+  who: Recipient,
+  webinarAtMs: number,
+  nowMs: number = Date.now(),
+): Promise<EnqueueResult> {
+  const scheduled = computeWebinarSchedule(webinarAtMs, nowMs);
+  const inputs: EnqueueInput[] = scheduled.map((s) => ({
+    ownerId: who.ownerId,
+    email: who.email,
+    templateSlug: s.slug,
+    templateProps: { email: who.email, firstName: who.firstName ?? null },
+    sequenceSlug: SEQUENCE.webinar,
+    sendAt: s.sendAt,
+  }));
+  const r = await enqueueMany(inputs);
+  return r.ok ? { ok: true, count: r.data.length } : { ok: false, error: r.error };
 }
 
 /** Done-With-You Setup sequence (Standard or Premium fork). */
