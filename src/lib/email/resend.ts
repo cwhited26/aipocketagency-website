@@ -9,9 +9,8 @@
 // Verified Resend sender domain: aipocketagent.com (verified 2026-05-23).
 // Sender: chase@aipocketagent.com. The legacy aipocketagency.com is NOT canonical —
 // see memory/feedback_resend_aipocketagent_verified.md and feedback_pa_domain_is_aipocketagent_com.md
-// in the whited-brain repo for the standing rule. (Some legacy senders — lib/personas/notify.ts,
-// the connector re-auth alerts, the Stripe webhook — still carry the 'cy' domain pending a sweep;
-// this transport's default is the canonical 't' domain.)
+// in the whited-brain repo for the standing rule. Every PA sender now uses the canonical 't' domain
+// (the legacy senders were swept in Phase 5C); the no-legacy-domain test guards against regressions.
 
 const DEFAULT_FROM = "Pocket Agent <chase@aipocketagent.com>";
 

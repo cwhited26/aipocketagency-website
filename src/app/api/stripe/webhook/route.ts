@@ -58,7 +58,7 @@ export const dynamic = "force-dynamic";
 
 const STRIPE_SIGNATURE_TOLERANCE_SECONDS = 5 * 60;
 const SITE_ORIGIN = "https://aipocketagent.com";
-const FROM = "Chase Whited <chase@aipocketagency.com>";
+const FROM = "Chase Whited <chase@aipocketagent.com>";
 
 type StripeEvent = {
   id: string;

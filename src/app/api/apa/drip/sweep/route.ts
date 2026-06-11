@@ -18,8 +18,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const FROM = "Chase Whited <chase@aipocketagency.com>";
-const REPLY_TO = "chase@aipocketagency.com";
+const FROM = "Chase Whited <chase@aipocketagent.com>";
+const REPLY_TO = "chase@aipocketagent.com";
 const MAX_SENDS_PER_SWEEP = 200;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const MS_PER_MINUTE = 60 * 1000;

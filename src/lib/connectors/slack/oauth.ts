@@ -132,7 +132,7 @@ export async function ensureFreshSlackToken(
 
 // ─── Re-auth system email (roadmap §3.5 — shared Resend transport) ──────────────
 
-const REAUTH_FROM = "Pocket Agent <agent@aipocketagency.com>";
+const REAUTH_FROM = "Pocket Agent <agent@aipocketagent.com>";
 
 /**
  * Notify the owner that Slack disconnected and needs a reconnect. Best-effort: a transport

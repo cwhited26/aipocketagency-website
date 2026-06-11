@@ -8,8 +8,8 @@ import { createInboxItem } from "@/lib/pa-inbox-items";
 import { sendEmail } from "@/lib/resend";
 import type { PersonaLeadRow, PersonaRow } from "./types";
 
-const FROM = "Pocket Agent <chase@aipocketagency.com>";
-const REPLY_TO = "chase@aipocketagency.com";
+const FROM = "Pocket Agent <chase@aipocketagent.com>";
+const REPLY_TO = "chase@aipocketagent.com";
 
 function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) =>

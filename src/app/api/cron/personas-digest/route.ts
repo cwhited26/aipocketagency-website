@@ -14,8 +14,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
-const FROM = "Chase Whited <chase@aipocketagency.com>";
-const REPLY_TO = "chase@aipocketagency.com";
+const FROM = "Chase Whited <chase@aipocketagent.com>";
+const REPLY_TO = "chase@aipocketagent.com";
 const WINDOW_DAYS = 7;
 
 type DigestResult = {

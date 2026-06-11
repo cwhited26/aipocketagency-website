@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const FROM = "Chase Whited <chase@aipocketagency.com>";
+const FROM = "Chase Whited <chase@aipocketagent.com>";
 const GUIDE_URL =
   "https://aipocketagent.com/guide/how-i-run-4-businesses-from-my-phone.pdf";
 const START_URL = "https://aipocketagent.com/start";

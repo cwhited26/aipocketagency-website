@@ -198,7 +198,7 @@ export async function fetchAccountDisplayName(
 // transport failure (e.g. RESEND_API_KEY unset) is returned, never thrown, so a re-auth never
 // crashes an action.
 
-const REAUTH_FROM = "Pocket Agent <agent@aipocketagency.com>";
+const REAUTH_FROM = "Pocket Agent <agent@aipocketagent.com>";
 
 export async function notifyStripeReauthNeeded(ownerEmail: string | null): Promise<void> {
   if (!ownerEmail) return;

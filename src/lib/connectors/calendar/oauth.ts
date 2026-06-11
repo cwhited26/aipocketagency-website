@@ -235,7 +235,7 @@ export async function ensureFreshCalendarAccessToken(
 // The Resend transport shipped (lib/resend.ts). Sending is best-effort — a transport
 // failure never masks the underlying auth error the caller already returns.
 
-const REAUTH_FROM = "Pocket Agent <notifications@aipocketagency.com>";
+const REAUTH_FROM = "Pocket Agent <notifications@aipocketagent.com>";
 const RECONNECT_URL = "https://aipocketagent.com/app/settings/connections";
 
 async function sendCalendarReauthEmail(toEmail: string | null): Promise<void> {

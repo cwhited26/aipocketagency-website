@@ -322,7 +322,7 @@ export default function RoutinesClient() {
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
               Refreshing the page should fix it. If it persists,{" "}
               <a
-                href="mailto:support@aipocketagency.com"
+                href="mailto:support@aipocketagent.com"
                 className="text-[#22d3ee]/70 hover:text-[#22d3ee] transition-colors"
               >
                 contact support

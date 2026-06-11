@@ -17,8 +17,8 @@ import { SEAT_ROLES, type PersonaShareTokenRow } from "@/lib/personas/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const FROM = "Chase Whited <chase@aipocketagency.com>";
-const REPLY_TO = "chase@aipocketagency.com";
+const FROM = "Chase Whited <chase@aipocketagent.com>";
+const REPLY_TO = "chase@aipocketagent.com";
 
 type Params = { params: { id: string } };
 

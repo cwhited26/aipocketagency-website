@@ -300,7 +300,7 @@ export async function ensureFreshCalendlyToken(
 // On a dead Calendly grant, send a one-tap reconnect notice. Best-effort: a transport failure
 // (e.g. RESEND_API_KEY unset) never masks the auth error the caller already returns.
 
-const REAUTH_FROM = "Pocket Agent <notifications@aipocketagency.com>";
+const REAUTH_FROM = "Pocket Agent <notifications@aipocketagent.com>";
 
 async function sendCalendlyReauthEmail(toEmail: string | null): Promise<void> {
   if (!toEmail) return;

@@ -25,7 +25,7 @@ import { cronNextRun } from "./parser";
 import { resolveRitualTarget } from "./seed";
 import { RITUAL_MAX_CONSECUTIVE_FAILURES, type Ritual } from "./types";
 
-const DIGEST_FROM = "Pocket Agent <notifications@aipocketagency.com>";
+const DIGEST_FROM = "Pocket Agent <notifications@aipocketagent.com>";
 const APP_BASE_URL = "https://aipocketagent.com";
 
 export type RitualRunReport = {
