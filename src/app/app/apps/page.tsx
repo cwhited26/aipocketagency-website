@@ -4,7 +4,7 @@ import {
   getCurrentTier,
   tierAllowsLandingPageBuilder,
   tierCanSeeLandingPageBuilder,
-  tierCanSeeIdeaEngine,
+  tierAllowsIdeaEngine,
 } from "@/lib/personas/tier-caps";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -46,10 +46,13 @@ export default async function AppsPage() {
   // upgrade nudge, the free Starter tier doesn't see it at all.
   const tier = await getCurrentTier(user.id);
   const canBuildLandingPages = tierAllowsLandingPageBuilder(tier);
+  // The Idea Engine is a Pro+ feature (PA-IDEA-3). The card is always on the grid — the product
+  // exists, so we show it with an "Upgrade to Pro+" chip below Pro+ rather than hiding it (the card
+  // vanishing on lower tiers is what made a paying customer think it wasn't shipped). The Idea Engine
+  // app page enforces the real gate and shows the same upgrade state for anyone who follows the card.
+  const canUseIdeaEngine = tierAllowsIdeaEngine(tier);
   const visibleApps = apps.filter((app) => {
     if (app.id === "landing-page-builder") return tierCanSeeLandingPageBuilder(tier);
-    // The Idea Engine is Pro+ and above (PA-IDEA-3); below that it stays off the grid entirely.
-    if (app.id === "idea-engine") return tierCanSeeIdeaEngine(tier);
     return true;
   });
 
@@ -124,21 +127,26 @@ export default async function AppsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {visibleApps.map((app) => {
             const lockedLandingPages = app.id === "landing-page-builder" && !canBuildLandingPages;
+            const lockedIdeaEngine = app.id === "idea-engine" && !canUseIdeaEngine;
+            // Either gate puts the card in its "show with upgrade chip" state. The chip text is the
+            // tier each App unlocks at — Studio for the builder, Pro+ for the Idea Engine.
+            const locked = lockedLandingPages || lockedIdeaEngine;
+            const unlockTier = lockedLandingPages ? "Studio" : "Pro+";
             return (
               <GlowCard key={app.href} href={app.href} className="px-5 py-5 group">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <h2 className="text-sm font-semibold text-slate-100">{app.label}</h2>
                   <span
                     className={`text-[10px] font-mono border rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0 ${
-                      lockedLandingPages ? "text-slate-500 border-slate-700 bg-transparent" : tagClass(app.tagColor)
+                      locked ? "text-slate-500 border-slate-700 bg-transparent" : tagClass(app.tagColor)
                     }`}
                   >
-                    {lockedLandingPages ? "Studio" : app.tag}
+                    {locked ? unlockTier : app.tag}
                   </span>
                 </div>
                 <p className="text-sm text-slate-400 leading-relaxed">{app.description}</p>
                 <div className="mt-3 text-[11px] text-[#22d3ee]/50 group-hover:text-[#22d3ee] transition-colors font-mono">
-                  {lockedLandingPages ? "Upgrade to Studio →" : "Open →"}
+                  {locked ? `Upgrade to ${unlockTier} →` : "Open →"}
                 </div>
               </GlowCard>
             );

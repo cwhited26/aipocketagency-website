@@ -15,6 +15,36 @@ describe("apps catalog", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("every shipped App (per APA/Roadmap.md) is present — drift guard", () => {
+    // The canonical list of Apps that have shipped and are sold on the marketing site. If an
+    // App ships but isn't added here AND to APP_CATALOG, the Apps tab silently drops it (this is
+    // exactly how the Idea Engine appeared "missing" on a customer call). Adding a shipped App
+    // means adding it in both places; this fails loudly if the catalog drifts behind the roadmap.
+    const SHIPPED_APPS = [
+      "quote",
+      "email-drafter",
+      "followups",
+      "daily-brief",
+      "upcoming",
+      "youtube",
+      "podcasts",
+      "lead-scout",
+      "follow-up-sweeps",
+      "landing-page-builder",
+      "idea-engine",
+      "capture-inbox",
+      "brain-map",
+      "workflow-vault",
+      "ritual-scheduler",
+    ];
+    const catalogIds = new Set<string>(APP_CATALOG.map((a) => a.id));
+    for (const id of SHIPPED_APPS) {
+      expect(catalogIds.has(id)).toBe(true);
+    }
+    // The Idea Engine specifically — it shipped 2026-06-09 and is sold on the funnel.
+    expect(catalogIds.has("idea-engine")).toBe(true);
+  });
+
   it("every app has the fields the Apps tab and persona surface need", () => {
     for (const a of APP_CATALOG) {
       expect(a.href.startsWith("/app/")).toBe(true);
