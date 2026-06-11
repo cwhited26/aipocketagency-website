@@ -48,7 +48,7 @@ const PERSONAS: { name: string; body: string }[] = [
   },
 ];
 
-const APPS: { name: string; body: string; soon?: boolean }[] = [
+const APPS: { name: string; body: string }[] = [
   {
     name: "Email Drafter",
     body: "Drafts replies and outreach in your voice, staged for one-tap approval. Forward an email from anywhere and get back a reply written the way you’d write it.",
@@ -79,7 +79,6 @@ const APPS: { name: string; body: string; soon?: boolean }[] = [
   },
   {
     name: "Follow-Up Sweeps",
-    soon: true,
     body: "Finds every conversation that went quiet — a quote with no reply, a lead that ghosted — and drafts the next touch in your voice, staged for one tap. The follow-up you always mean to do.",
   },
 ];
@@ -449,19 +448,9 @@ export default function HomePage() {
                   key={a.name}
                   className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
                 >
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-base font-semibold text-slate-100">
-                      {a.name}
-                    </h3>
-                    {a.soon ? (
-                      <span
-                        className="rounded-full bg-cyan-300/10 px-2.5 py-0.5 text-[11px] font-medium text-cyan-300"
-                        style={{ fontFamily: MONO_FONT }}
-                      >
-                        we ship this week
-                      </span>
-                    ) : null}
-                  </div>
+                  <h3 className="text-base font-semibold text-slate-100">
+                    {a.name}
+                  </h3>
                   <p className="mt-2 text-[15px] leading-relaxed text-slate-400">
                     {a.body}
                   </p>
