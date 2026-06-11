@@ -15,7 +15,7 @@ import { stageConnectorAction, scopeToken } from "@/lib/orchestrator/tool-use";
 import type { CostContext } from "@/lib/cost/log";
 import { generateLandingCopy } from "./generate-copy";
 import { assembleLandingBundle, landingSlug, nextCursorAfter, stagePlanFor } from "./build";
-import { getTemplate } from "./templates";
+import { resolveLandingTemplate } from "./directions";
 import { getPage, updatePage } from "./pages";
 import type { BuildStep, LandingPageRow } from "./types";
 
@@ -61,7 +61,7 @@ export async function startLandingPageBuild(params: {
   brainRepo: string | null;
   githubToken: string | null;
 }): Promise<AdvanceResult> {
-  const template = getTemplate(params.page.template);
+  const template = resolveLandingTemplate(params.page.template);
   if (!template) {
     return { ok: false, status: 422, error: `Unknown template "${params.page.template}".` };
   }

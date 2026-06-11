@@ -8,9 +8,9 @@ import type {
   LandingPageRow,
   LandingPageStatus,
   LandingPageView,
-  TemplateId,
 } from "./types";
 import { isTemplateId } from "./types";
+import { isDirectionRef } from "./directions";
 
 type PaResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
 
@@ -70,7 +70,8 @@ export async function createPage(params: {
   ownerId: string;
   title: string;
   description: string;
-  template: TemplateId;
+  /** A starter template id or a gallery direction ref (validated by the route before this runs). */
+  template: string;
   projectId?: string | null;
 }): Promise<PaResult<LandingPageRow>> {
   const env = paEnv();
@@ -164,7 +165,7 @@ export function toView(row: LandingPageRow): LandingPageView {
     id: row.id,
     title: row.title,
     description: row.description,
-    template: isTemplateId(row.template) ? row.template : "single-cta",
+    template: isTemplateId(row.template) || isDirectionRef(row.template) ? row.template : "single-cta",
     status: row.status,
     buildStep: row.build_step,
     githubRepoName: row.github_repo_name,

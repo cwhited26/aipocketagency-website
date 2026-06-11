@@ -53,7 +53,8 @@ export function isTemplateId(value: string): value is TemplateId {
  * constant — so the copy is injected as data, never spliced into JSX (no escaping hazard).
  */
 export type LandingTemplate = {
-  id: TemplateId;
+  /** A starter template id ("single-cta") or a gallery direction ref ("direction:<slug>"). */
+  id: string;
   label: string;
   /** Owner-facing one-liner on the template picker. */
   description: string;
@@ -64,6 +65,11 @@ export type LandingTemplate = {
   defaultCopyPrompts: Record<string, string>;
   /** The Next.js app/page.tsx skeleton with a `{{COPY_JSON}}` placeholder. */
   componentTemplate: string;
+  /**
+   * The full design spec the code generator follows (Template Gallery directions carry the brain's
+   * direction file here, PA-TG-7). Absent on the three starter templates.
+   */
+  designBrief?: string;
 };
 
 /** The copy the model produced, keyed by section key. */
@@ -108,7 +114,8 @@ export type LandingPageView = {
   id: string;
   title: string;
   description: string;
-  template: TemplateId;
+  /** A starter template id or a gallery direction ref ("direction:<slug>"). */
+  template: string;
   status: LandingPageStatus;
   buildStep: BuildStep;
   githubRepoName: string | null;

@@ -134,6 +134,13 @@ export async function generateComponentCode(
 ): Promise<string> {
   const deterministic = fillTemplate(params.template, params.copy);
 
+  // A gallery direction carries its full design spec (PA-TG-7); the model follows it as far as one
+  // self-contained page allows. The deterministic fallback already ships the direction's palette +
+  // typography, so a model miss still looks like the direction, just simpler.
+  const designSection = params.template.designBrief
+    ? `\n\nDESIGN DIRECTION (follow it as far as a single self-contained page with inline styles allows — the palette, the typography, the section feel, the simpler motifs; skip anything that needs external packages or assets you don't have):\n${params.template.designBrief}`
+    : "";
+
   const system = `You generate a single Next.js App Router page component (app/page.tsx) for a landing page.
 
 Here is a working skeleton. Keep its structure and styling approach (a single default-exported component, inline style objects, NO imports beyond React types, NO external packages, NO Tailwind). You may refine the layout and styling, but the result MUST compile as-is and render the provided copy faithfully.
@@ -147,7 +154,7 @@ const copy: Copy = ${JSON.stringify(params.copy, null, 2)};
 RULES:
 - Output ONLY the contents of app/page.tsx. No markdown fences, no commentary.
 - It must contain "export default function" and reference the copy object.
-- No imports except "import type" for React types if needed. No third-party packages.`;
+- No imports except "import type" for React types if needed. No third-party packages.${designSection}`;
 
   let res: Response;
   try {
@@ -160,7 +167,8 @@ RULES:
       },
       body: JSON.stringify({
         model: CODE_MODEL,
-        max_tokens: 4000,
+        // A direction build renders a richer page than the starter skeletons — give it headroom.
+        max_tokens: params.template.designBrief ? 8000 : 4000,
         system,
         messages: [{ role: "user", content: "Return the full app/page.tsx now — code only." }],
       }),

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { LandingPageView, TemplateId } from "@/lib/landing-pages/types";
+import type { LandingPageView } from "@/lib/landing-pages/types";
 import { AppEmptyState } from "@/app/app/_components/AppEmptyState";
 import { AddonPrompt } from "@/app/app/_components/AddonPrompt";
 import { LANDING_PAGE } from "@/lib/copy/in-app";
 
-type TemplateOption = { id: TemplateId; label: string; description: string; bestFor: string };
+type TemplateOption = { id: string; label: string; description: string; bestFor: string };
 
 type Props = {
   initialPages: LandingPageView[];
@@ -43,7 +43,7 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
   const [pages, setPages] = useState<LandingPageView[]>(initialPages);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [template, setTemplate] = useState<TemplateId>(templates[0]?.id ?? "single-cta");
+  const [template, setTemplate] = useState<string>(templates[0]?.id ?? "single-cta");
   const [creating, setCreating] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -164,9 +164,21 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
         </div>
       )}
 
+      {/* The Template Gallery (PA-TG-1) — the direction catalog; the form below stays as quick start. */}
+      <a
+        href="/app/apps/landing-pages/templates"
+        className="block mb-6 rounded-2xl border border-[#22d3ee]/30 bg-gradient-to-r from-[#22d3ee]/10 to-transparent px-5 py-4 hover:border-[#22d3ee]/50 transition-colors"
+      >
+        <p className="text-sm font-semibold text-slate-100">Browse the template gallery →</p>
+        <p className="text-[13px] text-slate-300 mt-1 leading-relaxed">
+          Twenty looks, each one a different starting point — luxury, conversion-first, cinematic,
+          editorial. Pick the one that fits your business and PA builds the page in your voice.
+        </p>
+      </a>
+
       {/* Create a page */}
       <div className="rounded-2xl border border-slate-800/70 bg-slate-950/50 p-5 mb-8">
-        <p className="text-sm font-semibold text-slate-100 mb-3">Create a landing page</p>
+        <p className="text-sm font-semibold text-slate-100 mb-3">Quick start — create a landing page</p>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}

@@ -8,7 +8,7 @@
 import { singleCtaTemplate } from "@/data/landing-page-templates/single-cta";
 import { verticalPackTemplate } from "@/data/landing-page-templates/vertical-pack";
 import { personalBrandTemplate } from "@/data/landing-page-templates/personal-brand";
-import { isTemplateId, type LandingTemplate, type TemplateId } from "./types";
+import { isTemplateId, type LandingTemplate } from "./types";
 
 /** The copy placeholder every component template must carry exactly once. */
 export const COPY_PLACEHOLDER = "{{COPY_JSON}}";
@@ -19,7 +19,7 @@ const TEMPLATES: readonly LandingTemplate[] = [
   personalBrandTemplate,
 ];
 
-const BY_ID = new Map<TemplateId, LandingTemplate>(TEMPLATES.map((t) => [t.id, t]));
+const BY_ID = new Map<string, LandingTemplate>(TEMPLATES.map((t) => [t.id, t]));
 
 /** All templates in display order (for the picker). */
 export function listTemplates(): readonly LandingTemplate[] {

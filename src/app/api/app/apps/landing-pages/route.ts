@@ -8,8 +8,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentTier, tierAllowsLandingPageBuilder } from "@/lib/personas/tier-caps";
 import { createPage, listPages, toView } from "@/lib/landing-pages/pages";
-import { getTemplate } from "@/lib/landing-pages/templates";
-import { isTemplateId } from "@/lib/landing-pages/types";
+import {
+  directionTierLabel,
+  getDirection,
+  isDirectionRef,
+  resolveLandingTemplate,
+  tierAllowsDirection,
+  DIRECTION_REF_PREFIX,
+} from "@/lib/landing-pages/directions";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -19,7 +25,8 @@ export const dynamic = "force-dynamic";
 const createSchema = z.object({
   title: z.string().min(1).max(120),
   description: z.string().min(1).max(4000),
-  template: z.string().refine(isTemplateId, "Unknown template"),
+  /** A starter template id or a gallery direction ref ("direction:<slug>") — resolved below. */
+  template: z.string().min(1).max(120),
   projectId: z.string().uuid().optional(),
 });
 
@@ -63,8 +70,26 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.message }, { status: 422 });
   }
-  if (!getTemplate(parsed.data.template)) {
+  if (!resolveLandingTemplate(parsed.data.template)) {
     return NextResponse.json({ error: "Unknown template" }, { status: 422 });
+  }
+
+  // Per-direction tier gate (PA-TG-2): a gallery direction can sit above the owner's tier even when
+  // the App itself is open to them. Locked directions return the upgrade path, never a silent swap.
+  if (isDirectionRef(parsed.data.template)) {
+    const direction = getDirection(parsed.data.template.slice(DIRECTION_REF_PREFIX.length));
+    if (!direction) {
+      return NextResponse.json({ error: "Unknown template" }, { status: 422 });
+    }
+    if (!tierAllowsDirection(tier, direction)) {
+      return NextResponse.json(
+        {
+          error: "upgrade_required",
+          message: `"${direction.name}" unlocks at ${directionTierLabel(direction.tierRequired)}. Pick another template, or upgrade and it's yours.`,
+        },
+        { status: 403 },
+      );
+    }
   }
 
   const created = await createPage({
