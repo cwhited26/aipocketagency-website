@@ -145,6 +145,11 @@ export default async function AppsPage() {
                   </span>
                 </div>
                 <p className="text-sm text-slate-400 leading-relaxed">{app.description}</p>
+                {app.id === "landing-page-builder" && (
+                  <p className="mt-2 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                    Powered by 21 distinct templates
+                  </p>
+                )}
                 <div className="mt-3 text-[11px] text-[#22d3ee]/50 group-hover:text-[#22d3ee] transition-colors font-mono">
                   {locked ? `Upgrade to ${unlockTier} →` : "Open →"}
                 </div>

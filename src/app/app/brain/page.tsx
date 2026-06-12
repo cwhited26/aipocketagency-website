@@ -6,6 +6,7 @@ import { gatherActivation } from "@/lib/activation/gather";
 import { computeActivation, selectNudge } from "@/lib/activation/state";
 import { ActivationWidget } from "../_components/ActivationWidget";
 import { ActivationNudge } from "../_components/ActivationNudge";
+import { TemplateGalleryTile } from "../_components/TemplateGalleryTile";
 
 export default async function BrainPage() {
   const supabase = createClient();
@@ -30,6 +31,7 @@ export default async function BrainPage() {
     <div className="space-y-4">
       {nudge ? <ActivationNudge nudge={nudge} /> : null}
       <ActivationWidget state={activation} />
+      <TemplateGalleryTile />
       <BrainHealthClient
         brainRepo={brainRepo}
         hasGithubToken={hasGithubToken}

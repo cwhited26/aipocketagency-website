@@ -48,7 +48,7 @@ const PERSONAS: { name: string; body: string }[] = [
   },
 ];
 
-const APPS: { name: string; body: string }[] = [
+const APPS: { name: string; body: string; badge?: { label: string; href: string } }[] = [
   {
     name: "Email Drafter",
     body: "Drafts replies and outreach in your voice, staged for one-tap approval. Forward an email from anywhere and get back a reply written the way you’d write it.",
@@ -80,6 +80,11 @@ const APPS: { name: string; body: string }[] = [
   {
     name: "Follow-Up Sweeps",
     body: "Finds every conversation that went quiet — a quote with no reply, a lead that ghosted — and drafts the next touch in your voice, staged for one tap. The follow-up you always mean to do.",
+  },
+  {
+    name: "Landing Page Builder",
+    body: "Pick a template from the gallery — a phone-first trades page, a booking-led med spa, a luxury listing site — and PA writes the copy in your voice and builds the page on your own accounts. You approve every step, and the code is yours.",
+    badge: { label: "Powered by 21 distinct templates →", href: "/templates" },
   },
 ];
 
@@ -266,6 +271,14 @@ export default function HomePage() {
               <SecondaryCTA href="/pricing" label="See how it works" />
             </div>
             <p className="mt-6 text-sm text-slate-400">
+              <Link
+                href="/templates"
+                className="text-slate-300 underline decoration-cyan-300/40 underline-offset-4 transition hover:text-cyan-300"
+              >
+                21 landing-page templates included. Pick one your business actually fits.
+              </Link>
+            </p>
+            <p className="mt-3 text-sm text-slate-400">
               Generic AI starts from zero. Pocket Agent starts from your business.
             </p>
           </div>
@@ -454,6 +467,15 @@ export default function HomePage() {
                   <p className="mt-2 text-[15px] leading-relaxed text-slate-400">
                     {a.body}
                   </p>
+                  {a.badge && (
+                    <Link
+                      href={a.badge.href}
+                      className="mt-3 inline-block text-xs text-cyan-300/70 transition hover:text-cyan-300"
+                      style={{ fontFamily: MONO_FONT }}
+                    >
+                      {a.badge.label}
+                    </Link>
+                  )}
                 </div>
               ))}
             </div>

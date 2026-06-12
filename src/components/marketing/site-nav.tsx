@@ -53,6 +53,7 @@ export function SiteFooter() {
   const product: { label: string; href: string; external?: boolean }[] = [
     { label: "How it works", href: "/pocket-agent" },
     { label: "Why Pocket Agent", href: "/why-pa" },
+    { label: "Template Gallery", href: "/templates" },
     { label: "Pricing", href: "/pricing" },
     { label: "Open the app", href: "/app" },
   ];

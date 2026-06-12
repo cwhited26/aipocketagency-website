@@ -48,6 +48,12 @@ export default async function LandingPagesPage() {
             Your agent builds the page
           </div>
           <h1 className="text-2xl font-bold text-slate-100">Landing Page Builder</h1>
+          <Link
+            href="/app/apps/landing-pages/templates"
+            className="mt-2 inline-block rounded-full border border-[#22d3ee]/30 bg-[#22d3ee]/5 px-2.5 py-0.5 text-[10px] font-mono uppercase tracking-wider text-[#22d3ee]/80 transition-colors hover:border-[#22d3ee]/60 hover:text-[#22d3ee]"
+          >
+            Powered by 21 distinct templates →
+          </Link>
           <p className="text-slate-300 text-sm mt-2 leading-relaxed">
             Describe the page you need. PA picks a layout, writes the copy in your voice from your
             brain, and builds it on your own GitHub and Vercel — and you approve every step before it
