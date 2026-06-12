@@ -3378,8 +3378,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/nara-stablecoin-light-fintech.png",
+      "animated": "/templates/nara-stablecoin-light-fintech.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -4449,8 +4449,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/studiocraft-academy-shiny-gradient.png",
+      "animated": "/templates/studiocraft-academy-shiny-gradient.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -5128,8 +5128,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/backchannel-gesture-scrub-magenta.png",
+      "animated": "/templates/backchannel-gesture-scrub-magenta.mp4"
     },
     "typography": {
       "display": "Michroma",
@@ -5198,8 +5198,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/billora-saas-orange-glow-video.png",
+      "animated": "/templates/billora-saas-orange-glow-video.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -5535,8 +5535,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/corvane-payments-grayscale-video.png",
+      "animated": "/templates/corvane-payments-grayscale-video.mp4"
     },
     "typography": {
       "display": "Jost",
@@ -6411,8 +6411,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/kestrel-space-monochrome-hairline-grid.png",
+      "animated": "/templates/kestrel-space-monochrome-hairline-grid.mp4"
     },
     "typography": {
       "display": "Space Grotesk",
@@ -8625,8 +8625,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/stryde-athletic-spotlight-reveal.png",
+      "animated": "/templates/stryde-athletic-spotlight-reveal.mp4"
     },
     "typography": {
       "display": "Manrope",
@@ -8694,8 +8694,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/sunfield-renewable-cream-video-hero.png",
+      "animated": "/templates/sunfield-renewable-cream-video-hero.mp4"
     },
     "typography": {
       "display": "Inter",
