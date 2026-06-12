@@ -66,6 +66,10 @@ const UNLOCK_ORDER = [
   "velar-luxury-real-estate",
   "yacht-club-liquid-cursor-luxury",
   "cyberpunk-red-augmented-self",
+  // Added to the library 2026-06-11 after the Phase-2 capture run — ships placeholder-only at
+  // Studio until its mock + capture land. Flag for Chase: if this conversion-first solar
+  // direction belongs lower on the ladder, reorder here and re-run.
+  "solar-energy-day-night-toggle",
 ];
 
 function tierForPosition(index) {

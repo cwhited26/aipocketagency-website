@@ -29,17 +29,17 @@ const MD_DIR = join(process.cwd(), "src", "data", "landing-page-templates", "dir
 const PREVIEW_DIR = join(process.cwd(), "public", "templates");
 
 describe("direction catalog invariants", () => {
-  it("ships 20 directions with unique slugs", () => {
-    expect(DIRECTIONS).toHaveLength(20);
-    expect(new Set(DIRECTIONS.map((d) => d.slug)).size).toBe(20);
+  it("ships 21 directions with unique slugs", () => {
+    expect(DIRECTIONS).toHaveLength(21);
+    expect(new Set(DIRECTIONS.map((d) => d.slug)).size).toBe(21);
   });
 
-  it("uses the documented unlock ladder: 3 starter / 3 pro / 4 pro_plus / 10 studio (PA-TG-2/6)", () => {
+  it("uses the documented unlock ladder: 3 starter / 3 pro / 4 pro_plus / 11 studio (PA-TG-2/6)", () => {
     const counts = DIRECTIONS.reduce<Record<string, number>>((acc, d) => {
       acc[d.tierRequired] = (acc[d.tierRequired] ?? 0) + 1;
       return acc;
     }, {});
-    expect(counts).toEqual({ starter: 3, pro: 3, pro_plus: 4, studio: 10 });
+    expect(counts).toEqual({ starter: 3, pro: 3, pro_plus: 4, studio: 11 });
   });
 
   it("every direction carries the fields the gallery renders", () => {
@@ -70,23 +70,17 @@ describe("direction catalog invariants", () => {
     }
   });
 
-  it("the 8 Phase-2 priority directions ship real previews, still + animated (PA-TG-3)", () => {
-    const phase2 = [
-      "trades-phone-first-emergency",
-      "contractor-photo-first-trust",
-      "bookedup-deep-shadow-saas",
-      "medspa-booking-calendar-first",
-      "real-estate-listing-grid-search",
-      "modern-agency-mental-wellness",
-      "cognitra-ai-agency-gray-panel",
-      "glassmorphism-purple-pink-agency",
-    ];
-    for (const slug of phase2) {
-      const d = DIRECTIONS.find((x) => x.slug === slug);
-      expect(d).toBeDefined();
-      expect(d?.visualPreview.static).toBe(`/templates/${slug}.png`);
-      expect(d?.visualPreview.animated).toBe(`/templates/${slug}.mp4`);
+  it("every direction with a built mock ships a real preview, still + animated (PA-TG-3)", () => {
+    // All 20 mocks in cwhited26/bos-template-mocks. The only placeholder-only direction is
+    // solar-energy-day-night-toggle (added to the library after the Phase-2 capture run).
+    const captured = DIRECTIONS.filter((d) => d.slug !== "solar-energy-day-night-toggle");
+    expect(captured).toHaveLength(20);
+    for (const d of captured) {
+      expect(d.visualPreview.static).toBe(`/templates/${d.slug}.png`);
+      expect(d.visualPreview.animated).toBe(`/templates/${d.slug}.mp4`);
     }
+    const solar = DIRECTIONS.find((d) => d.slug === "solar-energy-day-night-toggle");
+    expect(solar?.visualPreview.static).toBeNull();
   });
 });
 

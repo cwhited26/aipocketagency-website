@@ -3,7 +3,7 @@
 // the committed .md snapshots next to this file ride along for the drift-guard test. To change a
 // direction, edit the brain file and re-run `node scripts/gen-landing-page-directions.mjs`.
 //
-// The Template Gallery catalog (PA-TG-1..2): 20 visually distinct landing page directions, each
+// The Template Gallery catalog (PA-TG-1..2): 21 visually distinct landing page directions, each
 // with per-direction tier gating, the palette + typography that drive the gallery preview, and the
 // full design prompt the build lane feeds into code generation.
 
@@ -662,8 +662,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "pro_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/targo-logistics-dark-red-clipped.png",
+      "animated": "/templates/targo-logistics-dark-red-clipped.mp4"
     },
     "typography": {
       "display": "Rubik",
@@ -729,8 +729,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "pro_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/codenest-coding-education-dev-platform.png",
+      "animated": "/templates/codenest-coding-education-dev-platform.mp4"
     },
     "typography": {
       "display": "Inter Extra Bold",
@@ -798,8 +798,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/vanguard-fierce-creative-collective.png",
+      "animated": "/templates/vanguard-fierce-creative-collective.mp4"
     },
     "typography": {
       "display": "FSP DEMO PODIUM Sharp 4.11",
@@ -862,8 +862,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/prisma-cinematic-cream-collective.png",
+      "animated": "/templates/prisma-cinematic-cream-collective.mp4"
     },
     "typography": {
       "display": "Almarai",
@@ -933,8 +933,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/jack-3d-creator-portfolio.png",
+      "animated": "/templates/jack-3d-creator-portfolio.mp4"
     },
     "typography": {
       "display": "Kanit",
@@ -1003,8 +1003,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/mainframe-mouse-scrub-agency.png",
+      "animated": "/templates/mainframe-mouse-scrub-agency.mp4"
     },
     "typography": {
       "display": "HelveticaNowDisplay-Medium",
@@ -1073,8 +1073,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/lithos-geology-editorial.png",
+      "animated": "/templates/lithos-geology-editorial.mp4"
     },
     "typography": {
       "display": "Playfair Display ITALIC",
@@ -1141,8 +1141,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/spd-luxury-automation-cinematic.png",
+      "animated": "/templates/spd-luxury-automation-cinematic.mp4"
     },
     "typography": {
       "display": "Italiana",
@@ -1213,8 +1213,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/cinematic-space-travel-aerospace.png",
+      "animated": "/templates/cinematic-space-travel-aerospace.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -1284,8 +1284,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/velar-luxury-real-estate.png",
+      "animated": "/templates/velar-luxury-real-estate.mp4"
     },
     "typography": {
       "display": "Syne",
@@ -1360,8 +1360,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/yacht-club-liquid-cursor-luxury.png",
+      "animated": "/templates/yacht-club-liquid-cursor-luxury.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -1430,8 +1430,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/cyberpunk-red-augmented-self.png",
+      "animated": "/templates/cyberpunk-red-augmented-self.mp4"
     },
     "typography": {
       "display": "JetBrains Mono",
@@ -1472,5 +1472,73 @@ export const DIRECTIONS: readonly Direction[] = [
     "featured": false,
     "newUntil": null,
     "promptText": "## Hero treatment\nFull viewport hero with a RED-tinted portrait as the base image and a SECOND image revealed through a cursor-following spotlight mask. As the visitor moves their cursor, a soft circular hole opens in the base image and shows the alternate image underneath (canvas-based radial gradient mask). All hero text is bottom-anchored, left-aligned, layered over the imagery. A decorative SVG arc with three stats sweeps in from the right side along concentric arcs (stroke-draw animation on load).\n\n## Page layout\nSingle viewport hero (`100dvh`). Layers in z-index order:\n1. SVG grid background (z-0, 48px square pattern, parallax-shifts with cursor)\n2. Base image with Ken Burns zoom-out intro (z-10)\n3. Cursor spotlight reveal layer (z-30)\n4. Decorative arc stats sweeping from the right (z-50)\n5. Bottom-anchored hero text block + CTA (z-50)\n6. Centered black pill navbar at the top (z-50)\n\n## Typography\n- Display + body: JetBrains Mono — globally applied (`* { font-family: 'JetBrains Mono', monospace; }`), weights 300/400/500/600/700/800 + italic 400/500\n- Hero heading: `text-4xl sm:text-5xl md:text-6xl`, `leading-[1.05]`, `tracking-[-0.08em]`, white\n- Eyebrow: `text-[11px] sm:text-xs`, font-semibold, `tracking-[0.12em]`, with one italic phrase (\"Gateway to your *augmented self*\")\n- Tracking: globally tight at `tracking-[-0.02em]` on the root wrapper\n\n## Color palette\n- Background: red-tinted imagery provides the dominant warmth\n- Primary text: white (with `text-white/90` for de-emphasized body)\n- CTA: white pill (`bg-white`) with `text-gray-900`, shine sweep on hover\n- Navbar: `bg-black/60 backdrop-blur-md` floating centered pill\n- Stats arc: white strokes/text at varying opacity (0 → 0.5 → 0.1 → 0 across the arc)\n- Accent on grid: `stroke: #64748b` at 0.1 opacity (very subtle slate)\n\n## Visual motifs\n- **Cursor spotlight reveal** (the headline mechanic) — base image is fully visible, a soft 260px-radius circular gradient mask reveals a SECOND image underneath wherever the cursor goes. Implementation uses a hidden canvas that renders a radial gradient each frame (`toDataURL` → applied as `maskImage`/`webkitMaskImage` on the reveal div). Cursor position is smoothed via rAF lerp at 0.1 factor.\n- **Parallax grid background** — SVG pattern of 48px squares whose x/y offset follows the cursor (target = `(normalized cursor − 0.5) × 16px`, eased at 0.06 per frame)\n- **Decorative concentric arc stats** — three SVG arcs at radii 330/395/460, centered off-canvas left, sweep across the right portion. Each arc has a per-arc `userSpaceOnUse` linearGradient (white with stop-opacities 0 → 0.5 → 0.5 → 0.1 → 0 so both ends fade). Stroke-draw animation on load (1.6s `cubic-bezier(0.65,0,0.35,1)`, delays staggered 0.4s + i × 0.22s). Each arc has a dot, ring (infinite pulse), number, and uppercase label.\n- **Hanging centered nav pill** with logo + 5 links + dark CTA\n- **CTA shine sweep** — pseudo-gradient span translates from `-translate-x-full` to `translate-x-full` over 700ms on group hover\n- **Ken Burns intro** on base image (`scale 1.12 → 1.0` over 2.4s `cubic-bezier(0.22,1,0.36,1)`)\n- **Blur-rise hero text intro** (`heroReveal` keyframe: opacity 0 + y 26px + blur 8px → clear)\n\n## When to use\n- Biotech / health-tech / deep-tech startups\n- Augmented reality, VR, gaming brands\n- Performance / athletic-tech brands (high-end gear)\n- Futurist consumer products\n- Premium technical services (security firms, intelligence consultancies)\n- Anything where the visitor's first emotional response should be \"this looks like the future\"\n- Hanes Environmental tier (technical restoration positioned as evidence-based + precise)\n\n## When to NOT use\n- Local trades — the cursor mechanic is too clever, visitors come to convert\n- Family-friendly services (childcare, education, family-owned shops) — wrong emotional register\n- Restoration / emergency services — too slow to load, too clever\n- Health/medical that needs to feel approachable (this feels clinical-cold)\n- Any business whose customer base is over 55 or non-technical\n\n## Reference source\nmotionsites.ai Cyberpunk hero prompt — extracted 2026-06-11.\n\n## Library cross-references\n- Motif: `cursor-spotlight-reveal-canvas-mask` (the star mechanic)\n- Motif: `parallax-grid-svg-pattern`\n- Motif: `concentric-arc-stats-fading`\n- Motif: `cta-shine-sweep`\n- Motif: `ken-burns-intro-on-base-image`\n- Typography: `jetbrains-mono-mono-everywhere`\n- Color palette: `red-tinted-white-text-tech`"
+  },
+  {
+    "slug": "solar-energy-day-night-toggle",
+    "name": "Solar Energy — Day/Night Toggle Hero",
+    "vibe": [
+      "photorealistic",
+      "premium-residential",
+      "energy-tech",
+      "demo-as-design",
+      "value-prop-as-interaction"
+    ],
+    "industries": [
+      "solar energy",
+      "residential energy storage",
+      "smart home tech",
+      "HVAC with smart-home tie-in",
+      "sustainability brands",
+      "energy efficiency consulting",
+      "EV chargers (residential)",
+      "water filtration (whole-home)",
+      "home automation",
+      "premium home services with a year-round value angle"
+    ],
+    "useCases": [
+      "hero",
+      "full-landing"
+    ],
+    "tierRequired": "studio",
+    "visualPreview": {
+      "static": null,
+      "animated": null
+    },
+    "typography": {
+      "display": "a clean modern sans",
+      "body": "a clean modern sans"
+    },
+    "colorPalette": [
+      "#f5e9cc",
+      "#ffffff"
+    ],
+    "motifs": [
+      "Day/Night toggle as inline hero UI",
+      "Crossfade between time-of-day states",
+      "Photorealistic hero photo, NOT illustration",
+      "Bottom-anchored composition",
+      "Value-prop as the headline",
+      "Same-headline rule"
+    ],
+    "whenToUse": [
+      "**Residential solar / energy storage brands** — the original use case",
+      "**Smart home tech** with a \"works while you sleep\" pitch (security, HVAC with smart-home, water filtration whole-home, EV chargers)",
+      "**Sustainability / energy efficiency consulting**",
+      "**Premium residential services** with a year-round / all-conditions value angle (gutters with leaf guards, irrigation, generator install)",
+      "**Demo-led product categories** where the visitor needs to SEE the product in action, not read about it",
+      "**Brands selling to homeowners over 40** — the photorealistic house + clear value prop reads as trustworthy, not gimmicky"
+    ],
+    "whenNotToUse": [
+      "**Anyone whose product doesn't have a day/night (or hot/cold, indoor/outdoor, before/after) demonstrable state** — the toggle is a value prop made visual. If your product doesn't have two states to show, the toggle is decorative and the whole direction collapses",
+      "**B2B SaaS** — wrong audience entirely",
+      "**Local trades where the call IS the conversion** — too slow, too clever",
+      "**Anyone without photorealistic house photography** — stock illustration kills it",
+      "**Anyone whose value prop is COMPLEX and needs a paragraph to explain** — this direction works ONLY for value props that can be made visual in a single side-by-side toggle"
+    ],
+    "buildComplexity": "low",
+    "source": "motionsites.ai (Solar Energy Hero — verified Jun 11 2026 by direct observation of the live preview, NOT extracted from prompt text)",
+    "featured": false,
+    "newUntil": null,
+    "promptText": "## Hero treatment\nA single photorealistic photo of a beautiful modern house (with solar panels visible on the roof) anchored at the bottom-center of the viewport. A confident two-line value-prop headline reads \"$0 Electricity Bills / for the next 7 years\" with the dollar figure and the timeframe both emphasized at display scale. Below the headline, anchored to the photo itself, sit TWO TOGGLE PILLS labeled **Morning** and **Night** — each with a \"$0 for Electricity\" sub-label. Below the pills, a single supporting line: \"Forget the energy market, weather conditions and seasons; our Smart Controller guarantees you get no electricity bill for seven years.\"\n\n**The signature mechanic — toggle the time of day on the same photo.** When the visitor clicks (or hovers) Morning, the house photo crossfades to its morning version (golden warm light, soft sky). Click Night and it crossfades to the night version (dark sky, warm interior lights glowing through the windows, deep blue / black atmospheric tone). The SAME house, same composition, same headline — just lit differently. The toggle BECOMES the demo of the product: the solar system works in BOTH states.\n\nThe interaction isn't decorative — it's the value prop made visual. The visitor SEES that this works at night without needing to read about batteries or storage.\n\n## Page layout\nSingle full-viewport hero designed around the toggle interaction. The photo + toggle + value prop are the whole composition — no portfolio, no testimonials, no second section above the fold. The visitor's first move IS the demo.\n\nA small \"reposit\" brand wordmark + top nav sit in the corners but don't compete with the hero photo.\n\n## Typography\n- Display: a clean modern sans (Inter or similar — restrained, not editorial)\n- Headline weight: SEMI-BOLD, not display-bold (the photo carries the visual weight; the headline supports)\n- Number emphasis (`$0`, `7 years`) gets the heaviest weight + slightly larger size\n- Body / pill labels: light, low-emphasis — they're functional UI, not decorative\n\n## Color palette\n- Background: photographic (whichever time-of-day is currently shown)\n- Headline text on photo: white with subtle drop-shadow for legibility\n- Toggle pill ACTIVE state: solid warm cream (`#F5E9CC` or similar warm white) with dark text\n- Toggle pill INACTIVE state: translucent white with white text + thin border\n- The palette IS the photo — the toggle changes the entire scene, including the mood color\n\n## Visual motifs\n- **Day/Night toggle as inline hero UI** — two pills directly on the hero photo, the visitor's first interaction\n- **Crossfade between time-of-day states** on the SAME composition — `opacity` cross-fade between two pre-rendered photo files (`/hero-morning.webp`, `/hero-night.webp`), or a CSS variable swap with `transition: opacity 0.6s`. Don't animate filter / hue-rotate — pre-rendered photos read MUCH cleaner.\n- **Photorealistic hero photo, NOT illustration** — the entire direction depends on the photo being convincing. Stock house illustration kills the impression.\n- **Bottom-anchored composition** — the house sits at the BOTTOM of the viewport, with the sky/atmosphere taking the top half. Different from most hero treatments where the photo is centered.\n- **Value-prop as the headline** with NUMBERS doing the visual lifting (`$0`, `7 years`) — not \"save money on bills\" but \"$0 electricity bills\"\n- **Same-headline rule** — the headline DOES NOT change when the toggle flips. The point is the value prop is universal; the photo just shows you it works around the clock.\n\n## When to use\n- **Residential solar / energy storage brands** — the original use case\n- **Smart home tech** with a \"works while you sleep\" pitch (security, HVAC with smart-home, water filtration whole-home, EV chargers)\n- **Sustainability / energy efficiency consulting**\n- **Premium residential services** with a year-round / all-conditions value angle (gutters with leaf guards, irrigation, generator install)\n- **Demo-led product categories** where the visitor needs to SEE the product in action, not read about it\n- **Brands selling to homeowners over 40** — the photorealistic house + clear value prop reads as trustworthy, not gimmicky\n\n## When to NOT use\n- **Anyone whose product doesn't have a day/night (or hot/cold, indoor/outdoor, before/after) demonstrable state** — the toggle is a value prop made visual. If your product doesn't have two states to show, the toggle is decorative and the whole direction collapses\n- **B2B SaaS** — wrong audience entirely\n- **Local trades where the call IS the conversion** — too slow, too clever\n- **Anyone without photorealistic house photography** — stock illustration kills it\n- **Anyone whose value prop is COMPLEX and needs a paragraph to explain** — this direction works ONLY for value props that can be made visual in a single side-by-side toggle\n\n## Build complexity\nLOW-MEDIUM complexity. The toggle + crossfade is straightforward (two photos, opacity transition). The expense is the PHOTOGRAPHY — getting matching shots of the same house at morning + night requires either a real photoshoot or AI-generated photo pairs that maintain composition consistency.\n\n## Adapting the mechanic to other products\n\nThe \"two states demonstrated by a toggle that visually proves the value prop\" mechanic generalizes to:\n\n- **Smart HVAC** — Summer / Winter toggle showing the same room at different seasons with the unit handling both\n- **Whole-home water filtration** — Before / After toggle showing the same glass of water\n- **Generator install** — Storm / Clear toggle showing the same house in both conditions, both with power on\n- **EV charger** — Day / Night toggle showing the car charged regardless of time\n- **Leaf guards / gutter protection** — Fall / Winter toggle showing the same gutter clear in both seasons\n- **Lawn / irrigation** — Drought / Wet toggle showing the same lawn green in both\n- **Security system** — Empty / Occupied toggle showing the same home protected in both states\n\nThe mechanic is REUSABLE for any product whose value prop is \"works in all conditions\" or \"demonstrates a binary improvement.\"\n\n## Library cross-references\n- Motif: `time-of-day-toggle-crossfade` (the signature)\n- Motif: `value-prop-as-headline-with-numbers`\n- Motif: `inline-hero-ui-toggle-pills`\n- Motif: `photorealistic-hero-photo-bottom-anchored`\n- Typography: `clean-modern-sans-restrained-display`\n- Color palette: `photo-driven-warm-cream-translucent-toggle`"
   }
 ];
