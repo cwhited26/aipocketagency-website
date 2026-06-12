@@ -12,7 +12,12 @@ const nextConfig = {
         "./src/data/persona-templates-md/**/*.md",
         "./src/data/workflow-vault/**/*.json",
       ],
+      // The URL extraction worker (recon Lane C) launches @sparticuz/chromium at runtime — trace the
+      // brotli-packed browser binary into the capture route's serverless bundle.
+      "/api/app/apps/competitor-inspector/**": ["./node_modules/@sparticuz/chromium/bin/**"],
     },
+    // Keep webpack from bundling the browser engine — both resolve via require at runtime.
+    serverComponentsExternalPackages: ["playwright-core", "@sparticuz/chromium"],
   },
   async redirects() {
     return [

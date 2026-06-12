@@ -16,7 +16,7 @@
 // be fractional (e.g. one Haiku input token = 0.8 micro-cents); the ledger writer rounds to the integer
 // BIGINT column on write — rounding to whole micro-cents, never to whole cents, is the whole point.
 
-export type CostBackend = "anthropic" | "openai" | "bright_data" | "modal" | "twilio" | "resend";
+export type CostBackend = "anthropic" | "openai" | "bright_data" | "modal" | "twilio" | "resend" | "vercel";
 
 /** The usage payload a metered call returns. Every field optional — each backend reads what it needs. */
 export type CostUsage = {
@@ -64,6 +64,11 @@ const BRIGHT_DATA_USD_PER_REQUEST = 3 / 1000;
 const MODAL_USD_PER_CPU_SECOND = 0.000131;
 const MODAL_USD_PER_GB_HOUR = 0.024;
 
+// ── Vercel Functions active CPU (approximate — the URL extraction worker's browser runs) ────
+// Pro plan Active CPU ~$0.128 per CPU-hour. The worker bills wall-clock run seconds as a proxy
+// for active CPU — a deliberate over-estimate (idle waits count), reconciled like Modal's rates.
+const VERCEL_USD_PER_CPU_SECOND = 0.128 / 3600;
+
 // 1 USD = 100 cents = 1,000,000 micro-cents (1 cent = 10,000 micro-cents).
 const USD_TO_MICRO_CENTS = 1_000_000;
 
@@ -99,6 +104,9 @@ export function getCostMicroCents(backend: CostBackend, model: string | null, us
       const cpuUsd = (usage.cpuSeconds ?? 0) * MODAL_USD_PER_CPU_SECOND;
       const memUsd = (usage.memoryGbHours ?? 0) * MODAL_USD_PER_GB_HOUR;
       return (cpuUsd + memUsd) * USD_TO_MICRO_CENTS;
+    }
+    case "vercel": {
+      return (usage.cpuSeconds ?? 0) * VERCEL_USD_PER_CPU_SECOND * USD_TO_MICRO_CENTS;
     }
     default: {
       console.warn("[cost/prices] no price model for backend — pricing as 0 micro-cents", { backend });
@@ -168,6 +176,13 @@ export function priceReference(): PriceReferenceEntry[] {
         { name: "Active CPU", rate: `${USD(MODAL_USD_PER_CPU_SECOND)} / sec` },
         { name: "Provisioned memory", rate: `${USD(MODAL_USD_PER_GB_HOUR)} / GB-hr` },
       ],
+    },
+    {
+      backend: "vercel",
+      label: "Vercel (extraction worker)",
+      unit: "per run-second",
+      estimated: true,
+      lines: [{ name: "Active CPU", rate: `${USD(VERCEL_USD_PER_CPU_SECOND)} / sec` }],
     },
   ];
 }

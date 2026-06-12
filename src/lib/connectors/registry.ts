@@ -31,6 +31,11 @@ import {
   SUPABASE_CONNECTOR,
   type SupabaseExecuteResult,
 } from "./supabase";
+import {
+  executeBrainConnectorAction,
+  BRAIN_CONNECTOR,
+  type BrainExecuteResult,
+} from "@/lib/competitor-inspector/execute";
 
 // All in-process executors share the same terminal result shape ({ok,summary,data} |
 // {ok,status,error}); the union keeps that explicit as more connectors register.
@@ -42,7 +47,8 @@ export type ConnectorExecuteResult =
   | ModalSandboxExecuteResult
   | GithubBuildExecuteResult
   | VercelExecuteResult
-  | SupabaseExecuteResult;
+  | SupabaseExecuteResult
+  | BrainExecuteResult;
 
 export type ExecuteConnectorActionInput = {
   connector: string;
@@ -135,6 +141,15 @@ export async function executeConnectorAction(
       payload: input.payload,
       subAgentRunId: input.subAgentRunId ?? null,
       ownerEmail: input.ownerEmail ?? null,
+    });
+  }
+  if (input.connector === BRAIN_CONNECTOR) {
+    // The Competitor Inspector's staged profile commit (recon Lane C): writes the generated
+    // profile + extraction log + screenshots to the owner's own brain repo in one commit.
+    return executeBrainConnectorAction({
+      userId: input.userId,
+      action: input.action,
+      payload: input.payload,
     });
   }
   if (input.connector === SUPABASE_CONNECTOR) {

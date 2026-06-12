@@ -31,7 +31,11 @@ export type CostFeatureSlug =
   | "rag"
   | "capture_triage"
   // One row per inbound Channels Gateway roundtrip (PA-CHAN spec §8.4); Slack adapter, Sonnet 4.6.
-  | "channels:slack";
+  | "channels:slack"
+  // One row per headless URL extraction run (recon Lane C, PA-CINS); backend 'vercel', priced by run time.
+  | "url_extraction"
+  // The Competitor Inspector's metered offer-summary call (DNA + role hierarchy only, never copy).
+  | "competitor_inspector";
 
 /**
  * The per-call-site context a metered backend carries: who's paying, which feature area, and a

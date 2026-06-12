@@ -21,6 +21,7 @@ export const APP_IDS = [
   "brain-map",
   "workflow-vault",
   "ritual-scheduler",
+  "competitor-inspector",
 ] as const;
 
 export type AppId = (typeof APP_IDS)[number];
@@ -126,6 +127,17 @@ export const APP_CATALOG: AppDef[] = [
       "New: subscribe to a vertical pack and PA runs the full sweep + outreach loop for you — roofing, HVAC, painting, med spa, law firm, and more, each pre-tuned. Or build your own: sweep Google Maps for a category in a place (roofers near Knoxville without a website) or paste your own URLs. Either way PA sorts them by fit and drafts a first email in your voice for Approve & Send.",
     blurb: "Find businesses that fit and draft the first outreach.",
     tag: "Finds Leads",
+    tagColor: "cyan",
+  },
+  {
+    id: "competitor-inspector",
+    href: "/app/apps/competitor-inspector",
+    label: "Competitor Inspector",
+    shortLabel: "Competitor Inspector",
+    description:
+      "Paste a competitor's web address and PA reads their site the way a designer would — colors, type, layout, what moves and when — and writes a structured profile into your brain. You see what they sell and how the page sells it, what's worth borrowing, and what to skip. You approve before anything lands. No copying: PA records the style, never their words or images.",
+    blurb: "Read a rival's site and file a style-and-offer profile in your brain.",
+    tag: "Research",
     tagColor: "cyan",
   },
   {

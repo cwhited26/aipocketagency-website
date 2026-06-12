@@ -434,7 +434,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Finds businesses that fit your best customers, sorts them by fit, and tees up who's worth reaching out to.",
     sampleQuestion: "Find roofers near Knoxville without a website and sort them by fit.",
     defaultTone: "direct",
-    defaultApps: ["lead-scout", "idea-engine", "brain-map", "capture-inbox"],
+    defaultApps: ["lead-scout", "idea-engine", "brain-map", "capture-inbox", "competitor-inspector"],
     starterPrompt: "Find businesses in our area that look like our best customers and rank them by fit.",
     fields: {
       problem:

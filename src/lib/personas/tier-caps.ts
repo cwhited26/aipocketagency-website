@@ -96,6 +96,15 @@ export function tierCanSeeLandingPageBuilder(tier: Tier): boolean {
 }
 
 /**
+ * Can this tier run the Competitor Inspector (PA-CINS)? Pro+ and above — each capture is a real
+ * headless browser run plus a model read, so it sits one rung above the entry Business Agent tier.
+ * Every tier sees the App card; below Pro+ the surface shows the upgrade path instead of the form.
+ */
+export function tierAllowsCompetitorInspector(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("pro_plus");
+}
+
+/**
  * Should this tier even SEE the Idea Engine card (PA-IDEA-3)? The Idea Engine turns an idea into a
  * shipped MVP by chaining the build-grade Apps, so it's a Pro+ and above feature — Free and Pro don't
  * see it at all. Pro+ gets prompt-pack mode (stages 1–3 + prompts for 4–6).

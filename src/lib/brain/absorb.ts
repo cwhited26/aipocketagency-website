@@ -264,6 +264,20 @@ export async function commitBrainTextFile(params: {
 }
 
 /**
+ * Commit several files (text and/or base64 binary) to arbitrary brain paths in ONE commit.
+ * Used by the Competitor Inspector to land a profile.md, its extraction log, and the screenshot
+ * captures together — one approval, one commit, no half-written profiles.
+ */
+export async function commitBrainFiles(params: {
+  repo: string;
+  token: string;
+  files: Map<string, CommitFile>;
+  commitMessage: string;
+}): Promise<{ ok: true; sha: string } | { ok: false; error: string }> {
+  return commitFiles(params.repo, params.token, params.files, params.commitMessage);
+}
+
+/**
  * Hard-delete a file from the brain repo via the GitHub Contents API (resolve its blob sha,
  * then DELETE). Backs the privacy-page "Purge from brain" button. A missing file is treated
  * as already-gone (idempotent success).
