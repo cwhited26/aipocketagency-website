@@ -424,13 +424,27 @@ function MissingRootFilesBanner({ missing }: { missing: string[] }) {
 
 // ─── Memory index section ───────────────────────────────────────────────────────
 
-const TYPE_ORDER: MemoryEntryType[] = ["user", "feedback", "project", "reference", "unknown"];
+const TYPE_ORDER: MemoryEntryType[] = [
+  "user",
+  "feedback",
+  "project",
+  "decision",
+  "spec",
+  "open_question",
+  "reference",
+  "change_log_entry",
+  "unknown",
+];
 
 const TYPE_LABELS: Record<MemoryEntryType, string> = {
   user: "About you",
   feedback: "Working style",
   project: "Projects & context",
+  decision: "Decisions",
+  spec: "Specs & plans",
+  open_question: "Open questions",
   reference: "References",
+  change_log_entry: "Change log",
   unknown: "Other entries",
 };
 

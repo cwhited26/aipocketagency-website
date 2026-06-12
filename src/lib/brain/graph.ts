@@ -8,11 +8,24 @@
 // the existing pa-brain helpers (direct REST, no SDK).
 
 import { listRepoTree, fetchFileContent } from "@/lib/pa-brain";
+import {
+  classifyDeepPath,
+  extractDecisionEntries,
+  extractOpenQuestionEntries,
+  extractSpecEntry,
+} from "@/lib/brain/deep-entries";
 
 // ── Public types ───────────────────────────────────────────────────────────────
 
 // Structural kind of a node — what the thing IS.
-export type BrainNodeType = "memory" | "voice" | "customer" | "tool" | "competitive";
+export type BrainNodeType =
+  | "memory"
+  | "voice"
+  | "customer"
+  | "tool"
+  | "competitive"
+  | "decision"
+  | "spec";
 
 // Memory frontmatter type, present only on memory nodes.
 export type MemoryKind = "user" | "feedback" | "project" | "reference" | "unknown";
@@ -25,6 +38,7 @@ export type KnowledgeArea =
   | "customers"
   | "tools"
   | "decisions"
+  | "specs"
   | "standing-rules"
   | "business"
   | "competitive";
@@ -167,6 +181,7 @@ const AREA_LABELS: Record<KnowledgeArea, string> = {
   customers: "Customers & people",
   tools: "Tools & connectors",
   decisions: "Decisions & projects",
+  specs: "Specs & plans",
   "standing-rules": "Standing rules",
   business: "About the business",
   competitive: "Competitive intel",
@@ -609,7 +624,72 @@ export function buildGraphFromFiles(
     for (const f of mentioning) edges.push({ source: f.path, target: id, kind: "uses-tool" });
   }
 
-  // 6) Degree counts for layout sizing.
+  // 6) Deep entries — decision logs and SPEC docs from across the whole repo.
+  // Each decision log becomes a hub with one node per decision hanging off it,
+  // so the BOS log reads as a cluster of 200+ amber dots around its file. Specs
+  // are one node each. Open questions don't become nodes — they feed the
+  // "what PA doesn't know" panel, which is what they are.
+  const clipLabel = (text: string): string =>
+    text.length > 48 ? `${text.slice(0, 47).trimEnd()}…` : text;
+
+  let openQuestionCount = 0;
+  for (const f of files) {
+    const deepKind = classifyDeepPath(f.path);
+    if (deepKind === "open_question") {
+      openQuestionCount += extractOpenQuestionEntries(f.path, f.content).length;
+      continue;
+    }
+    if (deepKind === "spec") {
+      const spec = extractSpecEntry(f.path, f.content);
+      addNode({
+        id: f.path,
+        label: clipLabel(spec.name),
+        type: "spec",
+        area: "specs",
+        path: f.path,
+        date: null,
+        superseded: false,
+        summary: spec.description ?? "",
+        refs: [],
+        degree: 0,
+      });
+      continue;
+    }
+    if (deepKind !== "decision") continue;
+
+    const decisions = extractDecisionEntries(f.path, f.content);
+    if (decisions.length === 0) continue;
+    const hubId = f.path;
+    addNode({
+      id: hubId,
+      label: clipLabel(humanizeSlug(slugFromPath(f.path))),
+      type: "decision",
+      area: "decisions",
+      path: f.path,
+      date: null,
+      superseded: false,
+      summary: `Decision log — ${decisions.length} ${decisions.length === 1 ? "decision" : "decisions"} on file.`,
+      refs: [],
+      degree: 0,
+    });
+    for (const d of decisions) {
+      addNode({
+        id: d.path,
+        label: clipLabel(d.name),
+        type: "decision",
+        area: "decisions",
+        path: f.path,
+        date: d.date,
+        superseded: false,
+        summary: d.description ?? "",
+        refs: [],
+        degree: 0,
+      });
+      edges.push({ source: hubId, target: d.path, kind: "reference" });
+    }
+  }
+
+  // 7) Degree counts for layout sizing.
   for (const e of edges) {
     const s = nodeById.get(e.source);
     const t = nodeById.get(e.target);
@@ -621,7 +701,7 @@ export function buildGraphFromFiles(
     nodes,
     edges,
     areas: computeAreaCounts(nodes),
-    gaps: computeGaps(nodes, files),
+    gaps: computeGaps(nodes, files, { openQuestions: openQuestionCount }),
     fileCount: files.length,
   };
 }
@@ -634,6 +714,7 @@ export function computeAreaCounts(nodes: BrainNode[]): AreaCount[] {
     "customers",
     "tools",
     "decisions",
+    "specs",
     "standing-rules",
     "business",
     "competitive",
@@ -651,11 +732,26 @@ export function computeAreaCounts(nodes: BrainNode[]): AreaCount[] {
 //
 // The felt-value piece: turn thin coverage into a concrete next thing to feed PA.
 
-export function computeGaps(nodes: BrainNode[], files: RawFile[]): Gap[] {
+export function computeGaps(
+  nodes: BrainNode[],
+  files: RawFile[],
+  opts: { openQuestions?: number } = {},
+): Gap[] {
   const gaps: Gap[] = [];
   const countByArea = (area: KnowledgeArea): number =>
     nodes.filter((n) => n.area === area).length;
   const corpus = files.map((f) => `${f.path} ${f.content}`).join("\n").toLowerCase();
+
+  if ((opts.openQuestions ?? 0) > 0) {
+    const n = opts.openQuestions ?? 0;
+    gaps.push({
+      area: "Open questions",
+      message:
+        n === 1
+          ? "1 open question is sitting in your brain waiting on an answer. Close it out and your agent stops guessing on the thing it blocks."
+          : `${n} open questions are sitting in your brain waiting on answers. Close them out and your agent stops guessing on the things they block.`,
+    });
+  }
 
   const voiceNodes = nodes.filter((n) => n.type === "voice").length;
   if (voiceNodes === 0) {
@@ -727,7 +823,11 @@ function isGraphRelevant(path: string): boolean {
   if (path.startsWith("voice/influences/")) return true;
   if (/\/competitive\//.test(path)) return true;
   if (path.startsWith("brain/")) return true;
-  return false;
+  // Deep entries: decision logs, SPEC docs, and open-question files anywhere in
+  // the repo. Change logs stay out of the galaxy — they're history, not
+  // knowledge — but the DB indexer still picks them up.
+  const deepKind = classifyDeepPath(path);
+  return deepKind === "decision" || deepKind === "spec" || deepKind === "open_question";
 }
 
 /**

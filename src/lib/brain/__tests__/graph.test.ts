@@ -152,7 +152,7 @@ describe("buildGraphFromFiles", () => {
 });
 
 describe("computeAreaCounts", () => {
-  it("partitions nodes into the seven areas in order", () => {
+  it("partitions nodes into the eight areas in order", () => {
     const g = buildGraphFromFiles([
       { path: "memory/feedback_a.md", content: "---\ntype: feedback\n---\nx" },
       { path: "memory/project_b.md", content: "---\ntype: project\n---\ny" },
@@ -163,6 +163,7 @@ describe("computeAreaCounts", () => {
       "customers",
       "tools",
       "decisions",
+      "specs",
       "standing-rules",
       "business",
       "competitive",
@@ -195,5 +196,72 @@ describe("computeGaps", () => {
     const gaps = computeGaps(buildGraphFromFiles(files).nodes, files);
     expect(gaps.map((x) => x.area)).not.toContain("Testimonials");
     expect(gaps.map((x) => x.area)).not.toContain("Pricing");
+  });
+});
+
+describe("deep entries in the galaxy", () => {
+  const deepFiles: RawFile[] = [
+    { path: "memory/project_a.md", content: "---\ntype: project\n---\nsomething" },
+    {
+      path: "BOS/BOS_Decision_Log.md",
+      content: [
+        "# BOS Decision Log",
+        "",
+        "## Decision 12 — 2026-04-04 — Seed Data Enrichment",
+        "Body of twelve.",
+        "",
+        "**Decision #206** — 2026-06-11 — **BOS Sites productized**",
+        "Decision: three tiers.",
+      ].join("\n"),
+    },
+    {
+      path: "APA/Products/Pocket_Agent_Skills_SPEC_v1.md",
+      content: "# Pocket Agent — Skills SPEC v1\n\nSkills are accumulated techniques.",
+    },
+    {
+      path: "BOS/HanesEnvironmental/Open_Questions.md",
+      content: [
+        "# Open Questions",
+        "",
+        "## HE-Q-1 — Native or embedded?",
+        "",
+        "**Blocks:** §8 of the spec.",
+      ].join("\n"),
+    },
+  ];
+
+  it("turns each decision into a node hanging off its log-file hub", () => {
+    const g = buildGraphFromFiles(deepFiles);
+    const decisionNodes = g.nodes.filter((n) => n.type === "decision");
+    // 1 hub + 2 decisions
+    expect(decisionNodes).toHaveLength(3);
+    const hub = g.nodes.find((n) => n.id === "BOS/BOS_Decision_Log.md");
+    expect(hub).toBeDefined();
+    expect(hub!.summary).toContain("2 decisions");
+    const entry = g.nodes.find((n) => n.id.includes("#decision-206"));
+    expect(entry).toBeDefined();
+    expect(entry!.area).toBe("decisions");
+    expect(entry!.path).toBe("BOS/BOS_Decision_Log.md");
+    expect(
+      g.edges.some((e) => e.source === "BOS/BOS_Decision_Log.md" && e.target === entry!.id),
+    ).toBe(true);
+  });
+
+  it("counts decisions and specs in the area strip", () => {
+    const g = buildGraphFromFiles(deepFiles);
+    const byArea = new Map(g.areas.map((a) => [a.area, a.count]));
+    // 2 decisions + 1 hub + the project memory entry
+    expect(byArea.get("decisions")).toBe(4);
+    expect(byArea.get("specs")).toBe(1);
+    const spec = g.nodes.find((n) => n.type === "spec");
+    expect(spec!.label).toContain("Skills SPEC");
+  });
+
+  it("surfaces open questions in the gaps panel, not as nodes", () => {
+    const g = buildGraphFromFiles(deepFiles);
+    expect(g.nodes.some((n) => n.id.includes("Open_Questions"))).toBe(false);
+    const gap = g.gaps.find((x) => x.area === "Open questions");
+    expect(gap).toBeDefined();
+    expect(gap!.message).toContain("1 open question");
   });
 });

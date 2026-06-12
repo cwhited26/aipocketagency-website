@@ -1,8 +1,22 @@
 import { z } from "zod";
+import { listRepoTree } from "@/lib/pa-brain";
+import { classifyDeepPath, extractDeepEntries } from "@/lib/brain/deep-entries";
 
 // ── Public types ────────────────────────────────────────────────────────────────
 
-export type MemoryEntryType = "user" | "feedback" | "project" | "reference" | "unknown";
+// The four deep types come from the deep walk (decision logs, SPEC docs,
+// open-question files, change logs across the whole repo); the first five come
+// from the memory/ walker as before.
+export type MemoryEntryType =
+  | "user"
+  | "feedback"
+  | "project"
+  | "reference"
+  | "unknown"
+  | "decision"
+  | "spec"
+  | "open_question"
+  | "change_log_entry";
 
 export type MemoryIndexRow = {
   id: string;
@@ -29,11 +43,23 @@ export type BrainIndexResult = {
   skipped: number;
   errors: string[];
   rootFiles: RootFile[];
+  /** Upserted entries per type — lets callers verify the index shape at a glance. */
+  byType: Record<string, number>;
 };
 
 // ── Zod schemas ─────────────────────────────────────────────────────────────────
 
-const VALID_TYPES = ["user", "feedback", "project", "reference", "unknown"] as const;
+const VALID_TYPES = [
+  "user",
+  "feedback",
+  "project",
+  "reference",
+  "unknown",
+  "decision",
+  "spec",
+  "open_question",
+  "change_log_entry",
+] as const;
 
 const IndexRowInsertSchema = z.object({
   user_id: z.string().uuid(),
@@ -64,34 +90,71 @@ function paEnv(): { url: string; key: string } | { error: string } {
   return { url: url.replace(/\/$/, ""), key };
 }
 
+// The deep walk pushes a brain past PostgREST's per-request row cap, so both
+// readers page until a short page comes back.
+const PAGE_SIZE = 1000;
+
+async function fetchAllPages<T>(buildUrl: (offset: number) => string, key: string): Promise<T[]> {
+  const out: T[] = [];
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const res = await fetch(buildUrl(offset), {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return out;
+    const page = (await res.json()) as T[];
+    out.push(...page);
+    if (page.length < PAGE_SIZE) return out;
+  }
+}
+
 async function fetchExistingIndex(userId: string): Promise<Pick<MemoryIndexRow, "path" | "file_sha">[]> {
   const env = paEnv();
   if ("error" in env) return [];
 
-  const res = await fetch(
-    `${env.url}/rest/v1/pocket_agent_memory_index?user_id=eq.${encodeURIComponent(userId)}&select=path,file_sha&limit=500`,
-    {
-      headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },
-      cache: "no-store",
-    },
+  return fetchAllPages(
+    (offset) =>
+      `${env.url}/rest/v1/pocket_agent_memory_index?user_id=eq.${encodeURIComponent(userId)}&select=path,file_sha&order=path.asc&limit=${PAGE_SIZE}&offset=${offset}`,
+    env.key,
   );
-  if (!res.ok) return [];
-  return (await res.json()) as Pick<MemoryIndexRow, "path" | "file_sha">[];
 }
 
 export async function fetchMemoryIndex(userId: string): Promise<MemoryIndexRow[]> {
   const env = paEnv();
   if ("error" in env) return [];
 
-  const res = await fetch(
-    `${env.url}/rest/v1/pocket_agent_memory_index?user_id=eq.${encodeURIComponent(userId)}&order=type.asc,name.asc&limit=500`,
-    {
-      headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },
-      cache: "no-store",
-    },
+  return fetchAllPages(
+    (offset) =>
+      `${env.url}/rest/v1/pocket_agent_memory_index?user_id=eq.${encodeURIComponent(userId)}&order=type.asc,name.asc&limit=${PAGE_SIZE}&offset=${offset}`,
+    env.key,
   );
-  if (!res.ok) return [];
-  return (await res.json()) as MemoryIndexRow[];
+}
+
+// Removes the fragment rows of multi-entry files whose content changed, so a
+// renumbered or deleted decision doesn't leave a stale row behind. One DELETE
+// per file: fragments share the `<file>#` prefix.
+async function deleteFragmentRows(userId: string, filePaths: string[]): Promise<void> {
+  const env = paEnv();
+  if ("error" in env) throw new Error(env.error);
+
+  for (const filePath of filePaths) {
+    const pattern = encodeURIComponent(`${filePath}#*`);
+    const res = await fetch(
+      `${env.url}/rest/v1/pocket_agent_memory_index?user_id=eq.${encodeURIComponent(userId)}&path=like.${pattern}`,
+      {
+        method: "DELETE",
+        headers: {
+          apikey: env.key,
+          Authorization: `Bearer ${env.key}`,
+          Prefer: "return=minimal",
+        },
+        cache: "no-store",
+      },
+    );
+    if (!res.ok) {
+      throw new Error(`Fragment cleanup failed for ${filePath} (${res.status}): ${await res.text()}`);
+    }
+  }
 }
 
 async function upsertIndexRows(rows: IndexRowInsert[]): Promise<void> {
@@ -333,11 +396,13 @@ export async function indexBrain(params: {
   const errors: string[] = [];
   let indexed = 0;
   let skipped = 0;
+  const byType: Record<string, number> = {};
 
   try {
-    const [memoryItems, existingRows] = await Promise.all([
+    const [memoryItems, existingRows, tree] = await Promise.all([
       listDirItems(repo, token, "memory"),
       fetchExistingIndex(userId),
+      listRepoTree(repo, token),
     ]);
 
     const mdFiles = memoryItems.filter((f) => f.type === "file" && f.name.endsWith(".md"));
@@ -382,12 +447,85 @@ export async function indexBrain(params: {
 
             entriesToUpsert.push(parsed.data);
             indexed++;
+            byType[parsed.data.type] = (byType[parsed.data.type] ?? 0) + 1;
           } catch (e) {
             const msg = e instanceof Error ? e.message : "unknown error";
             errors.push(`Failed to index ${file.path}: ${msg}`);
           }
         }),
       );
+    }
+
+    // ── Deep walk — decision logs, SPEC docs, open questions, change logs ──────
+    // The whole repo tree, not just memory/. Multi-entry files index one row per
+    // entry under `<file>#<anchor>`; the file's blob sha rides on every fragment,
+    // so an unchanged file is one map lookup to skip.
+    const existingFileSha = new Map<string, string>();
+    for (const r of existingRows) {
+      const hashIdx = r.path.indexOf("#");
+      existingFileSha.set(hashIdx === -1 ? r.path : r.path.slice(0, hashIdx), r.file_sha);
+    }
+
+    const deepBlobs = tree.filter(
+      (e) => e.type === "blob" && classifyDeepPath(e.path) !== null,
+    );
+    const changedMultiEntryFiles: string[] = [];
+
+    for (let i = 0; i < deepBlobs.length; i += BATCH) {
+      const batch = deepBlobs.slice(i, i + BATCH);
+      await Promise.all(
+        batch.map(async (blob) => {
+          if (existingFileSha.get(blob.path) === blob.sha) {
+            skipped++;
+            return;
+          }
+
+          try {
+            const content = await fetchBlobContent(repo, blob.sha, token);
+            const deepEntries = extractDeepEntries(blob.path, content);
+            if (deepEntries.length === 0) return;
+            if (deepEntries.some((d) => d.path !== blob.path) && existingFileSha.has(blob.path)) {
+              changedMultiEntryFiles.push(blob.path);
+            }
+
+            for (const entry of deepEntries) {
+              const rawEntry = {
+                user_id: userId,
+                path: entry.path,
+                file_sha: blob.sha,
+                name: entry.name,
+                description: entry.description,
+                type: entry.type,
+                frontmatter_raw: {
+                  source_file: entry.filePath,
+                  ...(entry.ref ? { ref: entry.ref } : {}),
+                  ...(entry.date ? { date: entry.date } : {}),
+                },
+                body_excerpt: entry.bodyExcerpt,
+                indexed_at: now,
+              };
+
+              const parsed = IndexRowInsertSchema.safeParse(rawEntry);
+              if (!parsed.success) {
+                errors.push(`Validation error for ${entry.path}: ${parsed.error.message}`);
+                continue;
+              }
+              entriesToUpsert.push(parsed.data);
+              indexed++;
+              byType[parsed.data.type] = (byType[parsed.data.type] ?? 0) + 1;
+            }
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : "unknown error";
+            errors.push(`Failed to index ${blob.path}: ${msg}`);
+          }
+        }),
+      );
+    }
+
+    // Changed multi-entry files first lose their old fragments, then the upsert
+    // writes the fresh set — renumbered anchors can't leave stale rows behind.
+    if (changedMultiEntryFiles.length > 0) {
+      await deleteFragmentRows(userId, changedMultiEntryFiles);
     }
 
     if (entriesToUpsert.length > 0) {
@@ -397,7 +535,7 @@ export async function indexBrain(params: {
     const rootFiles = await checkRootFiles(repo, token);
     await saveRootIndexToUser(userId, rootFiles, now);
 
-    return { ok: true, result: { indexed, skipped, errors, rootFiles } };
+    return { ok: true, result: { indexed, skipped, errors, rootFiles, byType } };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "unknown error";
     return { ok: false, error: msg };

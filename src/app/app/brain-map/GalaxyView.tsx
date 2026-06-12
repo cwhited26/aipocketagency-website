@@ -18,6 +18,7 @@ const AREA_COLOR: Record<KnowledgeArea, string> = {
   customers: "#22d3ee",
   tools: "#34d399",
   decisions: "#f59e0b",
+  specs: "#e879f9",
   "standing-rules": "#f472b6",
   business: "#60a5fa",
   competitive: "#fb7185",
@@ -28,6 +29,7 @@ const AREA_BLURB: Record<KnowledgeArea, string> = {
   customers: "customers & people",
   tools: "tools & connectors",
   decisions: "decisions & projects",
+  specs: "specs & plans",
   "standing-rules": "standing rules",
   business: "facts about the business",
   competitive: "competitive notes",
@@ -40,7 +42,14 @@ type SimNode = BrainNode & { x: number; y: number; vx: number; vy: number };
 type FileContentResponse = { path: string; content: string; kind: string };
 
 function radiusFor(node: BrainNode): number {
-  const base = node.type === "memory" || node.type === "competitive" ? 7 : 9;
+  // Decisions are the most numerous nodes by far — a smaller base keeps the
+  // clusters readable. Their log hubs still grow with degree.
+  const base =
+    node.type === "decision"
+      ? 5.5
+      : node.type === "memory" || node.type === "competitive" || node.type === "spec"
+        ? 7
+        : 9;
   return base + Math.min(11, Math.sqrt(node.degree) * 2.4);
 }
 
@@ -373,8 +382,12 @@ export default function GalaxyView({ brainRepo }: { brainRepo: string | null }) 
         <svg width={size.w} height={size.h} className="block">
           <g>
             {graph.edges.map((e, i) => {
-              const a = simRef.current.find((s) => s.id === e.source);
-              const b = simRef.current.find((s) => s.id === e.target);
+              // Indexed lookup, not .find — with a deep-indexed brain this loop
+              // runs hundreds of edges across hundreds of nodes every frame.
+              const ai = indexById.get(e.source);
+              const bi = indexById.get(e.target);
+              const a = ai === undefined ? undefined : simRef.current[ai];
+              const b = bi === undefined ? undefined : simRef.current[bi];
               if (!a || !b) return null;
               const pa = toScreen(a.x, a.y);
               const pb = toScreen(b.x, b.y);
@@ -572,10 +585,14 @@ function InspectPanel({
   const [content, setContent] = useState<string | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
 
+  // Docs whose full content renders in the panel. Decision nodes stay summary-
+  // only — their path points at the whole log file, which can run hundreds of
+  // entries — but they still deep-link into Documents below.
   const isDoc =
-    (node.type === "memory" || node.type === "competitive") &&
+    (node.type === "memory" || node.type === "competitive" || node.type === "spec") &&
     !!node.path &&
     /\.mdx?$/i.test(node.path);
+  const canOpenInDocuments = !!node.path && /\.mdx?$/i.test(node.path);
 
   useEffect(() => {
     if (!isDoc || !node.path) {
@@ -615,6 +632,8 @@ function InspectPanel({
     customer: "Customer / person",
     tool: "Tool / connector",
     competitive: "Competitive intel",
+    decision: "Decision",
+    spec: "Spec / plan",
   };
 
   return (
@@ -702,7 +721,7 @@ function InspectPanel({
         </div>
 
         {/* Open in Documents */}
-        {isDoc && node.path && (
+        {canOpenInDocuments && node.path && (
           <div className="px-5 py-3 border-t border-slate-800/50 shrink-0">
             <a
               href={`/app/documents?path=${encodeURIComponent(node.path)}`}
@@ -723,6 +742,7 @@ function Legend({ areas }: { areas: KnowledgeArea[] }) {
     "customers",
     "tools",
     "decisions",
+    "specs",
     "standing-rules",
     "business",
     "competitive",
