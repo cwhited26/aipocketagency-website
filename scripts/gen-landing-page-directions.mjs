@@ -16,10 +16,14 @@
 // The source dir defaults to ../../whited-brain/BOS/Sites/prompt_library/directions relative to the
 // repo (override with the first CLI arg or BRAIN_DIRECTIONS_DIR).
 //
-// Tier assignment (PA-TG-2 + the SPEC's count ladder) is positional over UNLOCK_ORDER below:
-// the first 3 directions are the Starter foundation set, the next 3 unlock at Pro, the next 4 at
-// Pro+, and the rest at Studio. A direction file that isn't listed in UNLOCK_ORDER fails the run —
-// adding a direction to the library forces an explicit unlock-ladder decision here.
+// Tier assignment (PA-TG-11, superseding the PA-TG-6 positional ladder) is explicit per direction
+// in TIER_LADDER below, keyed to the direction's motionsites.ai source availability per
+// BOS/Sites/prompt_library/motionsites-ai-inventory.md: a direction whose source prompt was free
+// ("Copy") on motionsites — or that Chase wrote himself — sits at starter, the lowest paid tier;
+// a direction extracted from a motionsites Premium prompt sits at studio_plus. Every tier still
+// sees every card (preview, palette, typography, when-to-use); the tier only gates the build CTA.
+// A direction file that isn't listed in TIER_LADDER fails the run — adding a direction to the
+// library forces an explicit tier decision here.
 
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -40,44 +44,41 @@ const SOURCE_DIR =
   join(ROOT, "..", "..", "whited-brain", "BOS", "Sites", "prompt_library", "directions");
 
 /**
- * The unlock ladder, in order (PA-TG-6): conversion-first directions for owner-led service
- * businesses come first, broad-SMB looks next, niche/tech next, and the cinematic-luxury,
- * high-complexity directions sit at Studio. Positions 1-3 → starter, 4-6 → pro, 7-10 → pro_plus,
- * 11+ → studio.
+ * The tier ladder (PA-TG-11), in gallery display order. Each entry's tier comes from the
+ * direction's motionsites.ai availability recorded in motionsites-ai-inventory.md (the catalog
+ * title each direction was extracted under is in its comment): free-on-motionsites ("Copy") and
+ * Chase-original directions → starter; motionsites-Premium extractions → studio_plus. The five
+ * conversion-first originals lead, then the free extractions, then the Premium set.
  */
-const UNLOCK_ORDER = [
-  "trades-phone-first-emergency",
-  "contractor-photo-first-trust",
-  "bookedup-deep-shadow-saas",
-  "medspa-booking-calendar-first",
-  "real-estate-listing-grid-search",
-  "modern-agency-mental-wellness",
-  "cognitra-ai-agency-gray-panel",
-  "glassmorphism-purple-pink-agency",
-  "targo-logistics-dark-red-clipped",
-  "codenest-coding-education-dev-platform",
-  "vanguard-fierce-creative-collective",
-  "prisma-cinematic-cream-collective",
-  "jack-3d-creator-portfolio",
-  "mainframe-mouse-scrub-agency",
-  "lithos-geology-editorial",
-  "spd-luxury-automation-cinematic",
-  "cinematic-space-travel-aerospace",
-  "velar-luxury-real-estate",
-  "yacht-club-liquid-cursor-luxury",
-  "cyberpunk-red-augmented-self",
-  // Added to the library 2026-06-11 after the Phase-2 capture run — ships placeholder-only at
-  // Studio until its mock + capture land. Flag for Chase: if this conversion-first solar
-  // direction belongs lower on the ladder, reorder here and re-run.
-  "solar-energy-day-night-toggle",
+const TIER_LADDER = [
+  // Chase-original, conversion-first (not from motionsites) → starter.
+  { slug: "trades-phone-first-emergency", tier: "starter" },
+  { slug: "contractor-photo-first-trust", tier: "starter" },
+  { slug: "medspa-booking-calendar-first", tier: "starter" },
+  { slug: "real-estate-listing-grid-search", tier: "starter" },
+  // Chase-written from observing the live "Solar Energy Hero" preview (no prompt text extracted) —
+  // grouped with the originals at starter on Chase's call. Ships placeholder-only until its mock +
+  // capture land.
+  { slug: "solar-energy-day-night-toggle", tier: "starter" },
+  // Free ("Copy") on motionsites.ai → starter.
+  { slug: "vanguard-fierce-creative-collective", tier: "starter" }, // Bold Studio
+  { slug: "prisma-cinematic-cream-collective", tier: "starter" }, // Prisma Creative Studio
+  { slug: "jack-3d-creator-portfolio", tier: "starter" }, // 3D Portfolio
+  { slug: "lithos-geology-editorial", tier: "starter" }, // Interactive Discovery
+  { slug: "velar-luxury-real-estate", tier: "starter" }, // Velorah
+  { slug: "modern-agency-mental-wellness", tier: "starter" }, // Modern Agency
+  // Premium on motionsites.ai → studio_plus.
+  { slug: "bookedup-deep-shadow-saas", tier: "studio_plus" }, // BookedUp
+  { slug: "cognitra-ai-agency-gray-panel", tier: "studio_plus" }, // Reveal Hero
+  { slug: "glassmorphism-purple-pink-agency", tier: "studio_plus" }, // Glassmorphism Agency Hero
+  { slug: "targo-logistics-dark-red-clipped", tier: "studio_plus" }, // Targo Logistics Hero
+  { slug: "codenest-coding-education-dev-platform", tier: "studio_plus" }, // Luxury Botanical
+  { slug: "mainframe-mouse-scrub-agency", tier: "studio_plus" }, // Liquid Glass Agency
+  { slug: "spd-luxury-automation-cinematic", tier: "studio_plus" }, // Luxury Real Estate
+  { slug: "cinematic-space-travel-aerospace", tier: "studio_plus" }, // Cinematic Brand
+  { slug: "yacht-club-liquid-cursor-luxury", tier: "studio_plus" }, // Yacht Club
+  { slug: "cyberpunk-red-augmented-self", tier: "studio_plus" }, // Cyberpunk Reveal
 ];
-
-function tierForPosition(index) {
-  if (index < 3) return "starter";
-  if (index < 6) return "pro";
-  if (index < 10) return "pro_plus";
-  return "studio";
-}
 
 // ── Parsing ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -194,7 +195,7 @@ function parseComplexity(sections) {
   return text ? "medium" : "medium";
 }
 
-function parseDirection(file, raw, unlockIndex) {
+function parseDirection(file, raw, tier) {
   const { frontmatter: fm, body } = parseFrontmatter(raw, file);
   const slug = fm.slug;
   if (!slug || `${slug}.md` !== file) throw new Error(`${file}: frontmatter slug "${slug}" doesn't match the filename`);
@@ -220,7 +221,7 @@ function parseDirection(file, raw, unlockIndex) {
     // Every library direction defines a hero treatment + a full page layout; about/contact-only
     // directions don't exist in the library yet, so the derivation is deterministic from sections.
     useCases: ["hero", "full-landing"],
-    tierRequired: tierForPosition(unlockIndex),
+    tierRequired: tier,
     // A direction whose capture exists in public/templates/ gets the real preview paths; the rest
     // keep null and the gallery renders the styled placeholder with its "Real preview coming" chip.
     visualPreview: {
@@ -251,14 +252,15 @@ if (!existsSync(SOURCE_DIR)) {
 const sourceFiles = readdirSync(SOURCE_DIR).filter((f) => f.endsWith(".md")).sort();
 const bySlug = new Map(sourceFiles.map((f) => [f.replace(/\.md$/, ""), f]));
 
-const missingFromOrder = sourceFiles.map((f) => f.replace(/\.md$/, "")).filter((s) => !UNLOCK_ORDER.includes(s));
-const missingFromSource = UNLOCK_ORDER.filter((s) => !bySlug.has(s));
-if (missingFromOrder.length > 0) {
-  console.error(`Directions not in UNLOCK_ORDER (add them with an explicit tier position): ${missingFromOrder.join(", ")}`);
+const ladderSlugs = TIER_LADDER.map((e) => e.slug);
+const missingFromLadder = sourceFiles.map((f) => f.replace(/\.md$/, "")).filter((s) => !ladderSlugs.includes(s));
+const missingFromSource = ladderSlugs.filter((s) => !bySlug.has(s));
+if (missingFromLadder.length > 0) {
+  console.error(`Directions not in TIER_LADDER (add them with an explicit tier): ${missingFromLadder.join(", ")}`);
   process.exit(1);
 }
 if (missingFromSource.length > 0) {
-  console.error(`UNLOCK_ORDER lists directions missing from the library: ${missingFromSource.join(", ")}`);
+  console.error(`TIER_LADDER lists directions missing from the library: ${missingFromSource.join(", ")}`);
   process.exit(1);
 }
 
@@ -266,10 +268,10 @@ rmSync(MD_OUT_DIR, { recursive: true, force: true });
 mkdirSync(MD_OUT_DIR, { recursive: true });
 
 const directions = [];
-for (const [index, slug] of UNLOCK_ORDER.entries()) {
+for (const { slug, tier } of TIER_LADDER) {
   const file = bySlug.get(slug);
   const raw = readFileSync(join(SOURCE_DIR, file), "utf8");
-  directions.push(parseDirection(file, raw, index));
+  directions.push(parseDirection(file, raw, tier));
   writeFileSync(join(MD_OUT_DIR, file), raw);
 }
 
@@ -282,7 +284,7 @@ const header = `// directions.ts — GENERATED by scripts/gen-landing-page-direc
 // with per-direction tier gating, the palette + typography that drive the gallery preview, and the
 // full design prompt the build lane feeds into code generation.
 
-export type DirectionTier = "starter" | "pro" | "pro_plus" | "studio";
+export type DirectionTier = "starter" | "pro" | "pro_plus" | "studio" | "studio_plus";
 export type DirectionUseCase = "hero" | "full-landing" | "about" | "contact";
 export type DirectionComplexity = "low" | "medium" | "high";
 
@@ -293,7 +295,11 @@ export type Direction = {
   vibe: string[];
   industries: string[];
   useCases: DirectionUseCase[];
-  /** The lowest tier that can build with this direction (PA-TG-2). */
+  /**
+   * The lowest tier that can build with this direction (PA-TG-2 + PA-TG-11): starter for
+   * free-on-motionsites and Chase-original directions, studio_plus for motionsites-Premium
+   * extractions. Every tier browses every card; this only gates the build CTA.
+   */
   tierRequired: DirectionTier;
   /**
    * Captured preview paths under public/ (PA-TG-3): static is the 1440×900 still, animated the

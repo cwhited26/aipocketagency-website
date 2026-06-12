@@ -358,12 +358,20 @@ export default function TemplateGalleryClient({
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-sm font-semibold text-slate-100 leading-snug">{d.name}</p>
-                  {d.featured && (
+                  {d.locked && (
+                    <a
+                      href="/pricing"
+                      className="shrink-0 rounded border border-[#22d3ee]/40 bg-[#22d3ee]/10 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-[#22d3ee] hover:bg-[#22d3ee]/20"
+                    >
+                      {d.tierLabel} unlock
+                    </a>
+                  )}
+                  {d.featured && !d.locked && (
                     <span className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-amber-300">
                       Featured
                     </span>
                   )}
-                  {d.isNew && !d.featured && (
+                  {d.isNew && !d.featured && !d.locked && (
                     <span className="shrink-0 rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-emerald-300">
                       New
                     </span>
@@ -379,14 +387,24 @@ export default function TemplateGalleryClient({
                 <p className="mt-2 text-[11px] text-slate-500 leading-snug">
                   {d.industries.slice(0, 3).join(" · ")}
                 </p>
-                <div className="mt-3 flex items-center gap-2">
+                <div className="mt-3 flex flex-wrap items-center gap-2">
                   {d.locked ? (
-                    <a
-                      href="/pricing"
-                      className="rounded-lg border border-slate-700 px-3 py-1.5 text-[12px] text-slate-300 hover:border-slate-500"
-                    >
-                      Unlocks at {d.tierLabel} →
-                    </a>
+                    <>
+                      <button
+                        type="button"
+                        disabled
+                        title={`Unlocks at ${d.tierLabel}`}
+                        className="cursor-not-allowed rounded-lg border border-slate-800 bg-slate-900 px-3 py-1.5 text-[12px] font-semibold text-slate-600"
+                      >
+                        Use this template
+                      </button>
+                      <a
+                        href="/pricing"
+                        className="rounded-full border border-[#22d3ee]/40 bg-[#22d3ee]/10 px-2.5 py-1 text-[11px] text-[#22d3ee] hover:bg-[#22d3ee]/20"
+                      >
+                        Unlocks at {d.tierLabel} →
+                      </a>
+                    </>
                   ) : (
                     <button
                       type="button"
@@ -503,12 +521,22 @@ export default function TemplateGalleryClient({
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               {detail.locked ? (
-                <a
-                  href="/pricing"
-                  className="rounded-lg border border-[#22d3ee]/50 bg-[#22d3ee]/10 px-4 py-2 text-sm font-semibold text-[#22d3ee]"
-                >
-                  Unlocks at {detail.tierLabel} — see plans →
-                </a>
+                <>
+                  <button
+                    type="button"
+                    disabled
+                    title={`Unlocks at ${detail.tierLabel}`}
+                    className="cursor-not-allowed rounded-lg border border-slate-800 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-600"
+                  >
+                    Use this template
+                  </button>
+                  <a
+                    href="/pricing"
+                    className="rounded-lg border border-[#22d3ee]/50 bg-[#22d3ee]/10 px-4 py-2 text-sm font-semibold text-[#22d3ee]"
+                  >
+                    Unlocks at {detail.tierLabel} — see plans →
+                  </a>
+                </>
               ) : (
                 <button
                   type="button"

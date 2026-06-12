@@ -7,7 +7,7 @@
 // with per-direction tier gating, the palette + typography that drive the gallery preview, and the
 // full design prompt the build lane feeds into code generation.
 
-export type DirectionTier = "starter" | "pro" | "pro_plus" | "studio";
+export type DirectionTier = "starter" | "pro" | "pro_plus" | "studio" | "studio_plus";
 export type DirectionUseCase = "hero" | "full-landing" | "about" | "contact";
 export type DirectionComplexity = "low" | "medium" | "high";
 
@@ -18,7 +18,11 @@ export type Direction = {
   vibe: string[];
   industries: string[];
   useCases: DirectionUseCase[];
-  /** The lowest tier that can build with this direction (PA-TG-2). */
+  /**
+   * The lowest tier that can build with this direction (PA-TG-2 + PA-TG-11): starter for
+   * free-on-motionsites and Chase-original directions, studio_plus for motionsites-Premium
+   * extractions. Every tier browses every card; this only gates the build CTA.
+   */
   tierRequired: DirectionTier;
   /**
    * Captured preview paths under public/ (PA-TG-3): static is the 1440×900 still, animated the
@@ -192,83 +196,6 @@ export const DIRECTIONS: readonly Direction[] = [
     "promptText": "## Hero treatment\nThe hero is dominated by a SINGLE large photo of an actual completed project (a real roof, a real exterior remodel, a real deck — never stock). Beside or below the photo, a concise headline that names the region and the work (\"Roofing in East Tennessee, done right the first time\"), a 3-line proof stack (\"Family-owned since 1998 · GAF Master Elite Certified · 4.9★ from 1,200+ jobs\"), and a primary CTA pair: \"See our work\" (scrolls to portfolio gallery) + \"Get a free inspection\" (form modal or scroll-to). A secondary tap-to-call phone link sits in the header but is NOT the visual centerpiece (contrast with `trades-phone-first-emergency` — contractors get the call after seeing the work, not before).\n\n## Page layout\nVisitor scrolls. The page is structured to walk them through proof points before asking for the call. Sections in order:\n\n1. Hero with one big project photo + name + region + proof stack\n2. Three-line value prop (\"What separates us\") — short paragraphs, not bullets, written like a person talked\n3. Portfolio gallery — 12-20 real project photos with before/after pairings where the trade allows (roofing, exterior, deck — yes; landscaping — yes; gutters — maybe). Mason-grid layout with `loading=\"lazy\"`, mobile collapses to single column or horizontal scroll.\n4. Customer review carousel — actual Google Reviews with reviewer photos and full names, plus star ratings. Embed-style not screenshot — feels real.\n5. Service area map — metro coverage area drawn out\n6. \"Manufacturers we trust\" / \"Certifications\" badge strip — real brand logos of GAF / CertainTeed / Trex / TimberTech / etc. — recognition is the trust signal\n7. Financing section (if relevant — most contractors offer it) with the financing partner's logo (Hearth, GreenSky, Service Finance)\n8. \"Get a free inspection\" form (name, address, phone, what you're considering)\n9. Footer with phone + email + physical address\n\n## Typography\n- Display: a slightly editorial sans (Manrope, Plus Jakarta Sans, Outfit, or Geist) — distinctive enough to feel curated, restrained enough to feel professional\n- Body: Inter or system sans\n- Numbers in the proof stack get emphasis weight (700 on numbers, 500 on labels)\n\n## Color palette\n- Background: warm white or very light cream (`#FAF8F4` / `#F9F7F2`) — feels established, not sterile\n- Brand color: one strong accent (navy + a warm secondary like burnt orange or terra cotta works for many contractors; forest green for landscapers)\n- Photo dominance: the project photos provide most of the color — the palette is restrained so the photos pop\n- Trust badges: real brand colors of manufacturers\n\n## Visual motifs\n- **Single hero project photo** dominating the first viewport — not a slider, not a video, not stock\n- **Proof stack in the hero** — concrete trust signals stacked vertically, ALWAYS with real numbers\n- **Before/after gallery** with side-by-side pairings where the trade allows\n- **Real customer review carousel** with reviewer photos + full names — not anonymized\n- **Manufacturer / certification badge strip** with REAL brand logos at full color\n- **Financing offer with real partner logo** if applicable\n- **\"Get a free inspection\" form** as the primary lead-gen — not a quote (a quote implies pricing without seeing the work; an inspection is free, valuable, and easy to say yes to)\n- **Service-area map** establishing the territory\n- **Owner / founder photo** in the about section — humanizes the brand\n\n## When to use\n- Roofing companies, exterior contractors, siding installers, gutter pros\n- General contractors, deck builders, remodelers, hardscape installers\n- Fencing companies, paving / asphalt contractors\n- Landscape installation (NOT lawn maintenance — that's `trades-phone-first-emergency` territory)\n- Anyone whose customer wants to SEE the work before committing\n- Family-owned regional brands where the founder's story matters\n- Anyone with a strong portfolio of completed projects\n\n## When to NOT use\n- Emergency services where the call IS the conversion (HVAC, plumbing, restoration — use `trades-phone-first-emergency` instead)\n- Anyone without a real portfolio of completed work (this direction exposes weak photos)\n- B2B SaaS or services\n- Med spas, salons, or anything booking-driven (use the conversion-first med spa direction)\n- Luxury real estate (use Velar)\n\n## Build complexity\nLOW-MEDIUM complexity. Tier 1 with this direction takes a few hours once photos are organized. The portfolio gallery is the only piece that scales with content quantity.\n\n## Library cross-references\n- Motif: `single-hero-project-photo`\n- Motif: `proof-stack-concrete-numbers`\n- Motif: `before-after-portfolio-grid`\n- Motif: `real-review-carousel-with-photos`\n- Motif: `manufacturer-badge-strip`\n- Motif: `free-inspection-as-primary-cta`\n- Typography: `manrope-or-outfit-restrained-display`\n- Color palette: `warm-white-navy-orange`"
   },
   {
-    "slug": "bookedup-deep-shadow-saas",
-    "name": "BookedUp — Deep Shadow SaaS / Productized Service",
-    "vibe": [
-      "warm",
-      "premium-but-approachable",
-      "productized",
-      "fully-booked",
-      "social-proof-heavy"
-    ],
-    "industries": [
-      "productized agencies",
-      "consultancies",
-      "lead-gen / growth marketing services",
-      "fractional executives",
-      "course creators",
-      "SaaS with a service component",
-      "booked-out solo operators",
-      "premium freelancers"
-    ],
-    "useCases": [
-      "hero",
-      "full-landing"
-    ],
-    "tierRequired": "starter",
-    "visualPreview": {
-      "static": "/templates/bookedup-deep-shadow-saas.png",
-      "animated": "/templates/bookedup-deep-shadow-saas.mp4"
-    },
-    "typography": {
-      "display": "SK Reykjavik Rounded Regular",
-      "body": "Inter"
-    },
-    "colorPalette": [
-      "#f7f7f7",
-      "#202020",
-      "#f25c40",
-      "#52d352",
-      "#d1f2d1",
-      "#ffb648"
-    ],
-    "motifs": [
-      "Pulse badge",
-      "DeepShadow components",
-      "`DeepShadowIcon`: a small box (e.g. for an inline TrendingUp icon embedded mid-headline) w",
-      "`DeepShadowButton`: a CTA pill with a `bg-[#212121] blur-[25px]` glowing shadow that scale",
-      "`DeepShadowAvatar`: a portrait with a black blur underneath; one of the four avatars in th",
-      "Inline display-icon-mid-headline",
-      "Infinite vertical client marquee",
-      "Top + bottom fade masks",
-      "4-avatar social proof row",
-      "5-star amber rating",
-      "Tracking-tight giant headline"
-    ],
-    "whenToUse": [
-      "Productized agencies / consultancies (the headline pitch is \"we are booked out and you should book now\")",
-      "Lead-gen / growth-marketing services",
-      "Fractional executives (CMO, COO, CFO services)",
-      "Course creators with high-touch cohorts",
-      "SaaS with a service component (where the founder's calendar is the conversion path)",
-      "Booked-out solo operators wanting to scale to a small team",
-      "Premium freelancers / consultants",
-      "Anyone who can demo \"look at how full my calendar is\" as social proof"
-    ],
-    "whenNotToUse": [
-      "Anyone NOT booked out — the marquee is the conversion driver; an empty calendar destroys the pitch",
-      "E-commerce — wrong format entirely",
-      "Local services / blue collar — wrong audience register, the warm off-white reads as too soft",
-      "Brands where speed-to-call IS the conversion (use `trades-phone-first-emergency`)",
-      "Anyone whose conversion is buying a product, not booking a time"
-    ],
-    "buildComplexity": "medium",
-    "source": "motionsites.ai (BookedUp prompt — premium tier, extracted Jun 11 2026)",
-    "featured": false,
-    "newUntil": null,
-    "promptText": "## Hero treatment\nA split-column hero on warm off-white (`#F7F7F7`). The LEFT column carries the value prop: a small pulse-dot badge (\"● BOOKING FOR SUMMER\" — signaling fully booked but accepting), a giant tracking-tight headline (\"Expanding [inline glowing icon] reach with every lead\") that embeds a small `DeepShadow` icon BOX inline mid-sentence, a soft subhead, a CTA pair (primary \"Scale revenue now\" with glowing button shadow + secondary \"Start Here\" with Play icon), and a social-proof row showing 4 verified-client avatars (with a glowing accent on the 2nd) beside a 5-star \"Top tier quality 5/5\" rating.\n\nThe RIGHT column is the SECRET SAUCE: an INFINITE VERTICAL MARQUEE of fake \"client booking\" cards scrolling slowly upward, each card showing a day + date + 1-2 mock consultation entries with avatar + name + time slot. The cards alternate a slight rotation (`rotate-3` / `-rotate-3`) for visual rhythm. Top and bottom fade masks blur the marquee edges. The whole right column signals \"I am SO booked out, look at this calendar.\"\n\n## Page layout\nSingle hero designed for `lg:grid-cols-[1.2fr_0.8fr] gap-12`. On mobile, the marquee column drops below the value prop column (or hides entirely on the smallest screens). Max width `1440px`. The marquee is the conversion driver — it's the visible-proof-of-demand element that makes the visitor want to book NOW before the slots fill.\n\n## Typography\n- Display: SK Reykjavik Rounded Regular (custom from `onlinewebfonts.com`) — a slightly rounded display with personality\n- Body + nav: Inter — weights 100-900, including italic variants\n- Display tracking: `tracking-tight` or `tracking-[-0.02em]` (negative letterspacing for tight elegance)\n- Body color: `#202020` (warm near-black)\n- Subhead color: `text-neutral-500`\n\n## Color palette\n- Background: `#F7F7F7` (warm off-white — feels like premium paper, NOT pure white)\n- Body text: `#202020` (warm near-black)\n- Subhead text: `neutral-500` (mid-gray)\n- Accent (CTA + inline icon + glowing avatar): `#F25C40` (warm orange-red — feels modern + warm)\n- Pulse dot badge accent: `#52D352` (green) with pale green border `#D1F2D1`\n- Star rating: `#FFB648` (amber)\n- Card surfaces: `bg-white` with `shadow-[0_4px_20px_rgba(0,0,0,0.03)]` (very soft drop shadow)\n\n## Visual motifs\n- **Pulse badge** with a green dot (`bg-[#52D352] animate-pulse shadow-[0_0_8px_rgba(82,211,82,0.6)]`) signaling live availability — \"BOOKING FOR SUMMER\" — the freshness is the conversion driver\n- **DeepShadow components** (the signature): inline icon boxes, buttons, and avatars get an underlying blurred glowing layer + an inner inset white shadow + an outer warm box-shadow. Three components:\n  - `DeepShadowIcon`: a small box (e.g. for an inline TrendingUp icon embedded mid-headline) with an orange glow underneath + inset highlight\n  - `DeepShadowButton`: a CTA pill with a `bg-[#212121] blur-[25px]` glowing shadow that scales up on hover\n  - `DeepShadowAvatar`: a portrait with a black blur underneath; one of the four avatars in the social proof row has `hasGlow={true}` so the underglow is orange instead of black (a single accent in a row of 4)\n- **Inline display-icon-mid-headline** — the headline `\"Expanding [TrendingUp icon box] reach with every lead\"` has the icon BOX embedded inline as a typography element, not as a separate element. The icon is rotated `-rotate-6` for personality.\n- **Infinite vertical client marquee** (the secret sauce) — a `motion.div` with `animate={{ y: [0, -1200] }}` looping forever, populated by `[...CLIENT_CALLS, ...CLIENT_CALLS, ...CLIENT_CALLS]` (the array tripled for seamless looping). Cards rotate alternately (`rotate-3` / `-rotate-3`) for visual rhythm.\n- **Top + bottom fade masks** on the marquee — `bg-gradient-to-b` / `bg-gradient-to-t from-[#F7F7F7] to-transparent` blur the edges so the marquee feels infinite, not clipped\n- **4-avatar social proof row** with ONE accented (glowing orange) — a tiny detail that draws the eye to a specific \"VIP\" client and reads as curated, not generic\n- **5-star amber rating** as concrete trust signal\n- **Tracking-tight giant headline** — `tracking-tight` or `tracking-[-0.02em]` for editorial elegance on the SK Reykjavik display font\n\n## When to use\n- Productized agencies / consultancies (the headline pitch is \"we are booked out and you should book now\")\n- Lead-gen / growth-marketing services\n- Fractional executives (CMO, COO, CFO services)\n- Course creators with high-touch cohorts\n- SaaS with a service component (where the founder's calendar is the conversion path)\n- Booked-out solo operators wanting to scale to a small team\n- Premium freelancers / consultants\n- Anyone who can demo \"look at how full my calendar is\" as social proof\n\n## When to NOT use\n- Anyone NOT booked out — the marquee is the conversion driver; an empty calendar destroys the pitch\n- E-commerce — wrong format entirely\n- Local services / blue collar — wrong audience register, the warm off-white reads as too soft\n- Brands where speed-to-call IS the conversion (use `trades-phone-first-emergency`)\n- Anyone whose conversion is buying a product, not booking a time\n\n## Build complexity\nMEDIUM complexity. The DeepShadow components are reusable. The infinite vertical marquee is straightforward Framer Motion. Mock client data is the variable — real client booking data (anonymized) reads MUCH better than lorem ipsum. Tier 3 build can ship this in a focused day with anonymized data.\n\n## Library cross-references\n- Motif: `deep-shadow-glowing-component-system` (the signature)\n- Motif: `pulse-badge-with-fresh-availability`\n- Motif: `inline-display-icon-mid-headline`\n- Motif: `infinite-vertical-client-marquee` (vs. the horizontal one in Jack 3D Creator)\n- Motif: `marquee-fade-mask-edges`\n- Motif: `social-proof-row-with-one-glowing-accent`\n- Typography: `sk-reykjavik-plus-inter`\n- Color palette: `warm-off-white-orange-accent-warm-near-black`"
-  },
-  {
     "slug": "medspa-booking-calendar-first",
     "name": "Med Spa — Booking-Calendar-First",
     "vibe": [
@@ -295,7 +222,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "pro",
+    "tierRequired": "starter",
     "visualPreview": {
       "static": "/templates/medspa-booking-calendar-first.png",
       "animated": "/templates/medspa-booking-calendar-first.mp4"
@@ -366,7 +293,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "pro",
+    "tierRequired": "starter",
     "visualPreview": {
       "static": "/templates/real-estate-listing-grid-search.png",
       "animated": "/templates/real-estate-listing-grid-search.mp4"
@@ -413,6 +340,423 @@ export const DIRECTIONS: readonly Direction[] = [
     "promptText": "## Hero treatment\nThe hero centers a SEARCH BAR. The visitor's path to conversion is \"search a neighborhood → see listings → contact the agent.\" The search bar is the largest interactive element above the fold, pre-populated with the local market the brand serves (e.g. \"Search homes in Knoxville, TN...\"). Beside or below the search bar, the agent / team photo and a short positioning line (\"Selling Knoxville for 12 years · $48M closed in 2025\"). Phone number is in the header but not the visual centerpiece — the search is.\n\nIf the brand is an INDIVIDUAL agent rather than a team, the hero photo skews to the agent's professional headshot. If it's a TEAM, the hero photo is a group shot of the team.\n\n## Page layout\nSearch-driven, listing-led, agent-personal. Sections in order:\n\n1. Hero with search bar + agent/team photo + positioning line\n2. Featured listings grid — 6-12 active listings with photos, beds/baths/sqft, price, neighborhood, individual \"View listing\" button per card. Each card opens the full listing detail (or links out to MLS / IDX feed if the broker uses one)\n3. Neighborhood guides — 3-6 short market profiles of the neighborhoods the brand specializes in, each with a \"See homes in [neighborhood] →\" CTA back into the listing grid\n4. Recent sales — 6-9 cards showing recent closed deals with photos, list/sale price, days on market — concrete proof of the agent's track record\n5. About the agent / team — full bio, real story, why they do this, designations and credentials\n6. Real client review carousel (Google / Zillow / RealSatisfied)\n7. Contact form — but with TWO conversion paths: \"I'm thinking of buying\" (routes to buyer flow) and \"I'm thinking of selling\" (routes to a home-valuation request form). The split-CTA captures both sides of the market without a generic \"contact us\"\n8. Footer with license number, brokerage affiliation (legally required for many state real-estate boards), social handles, office location\n\n## Typography\n- Display: an editorial serif or sophisticated sans — examples: Cormorant Garamond, Playfair Display, Canela (paid), Outfit (sans), DM Serif Display\n- Body: clean sans (Inter, Manrope, DM Sans)\n- Number emphasis (price, sqft, days on market) — `tracking-tight`, weight 600\n\n## Color palette\n- Background: white or very light gray (`#FAFAF9`, `#F9F8F6`) — keeps the focus on the listing photos\n- Brand color: a single brand accent — navy is the safe bet (trust, real estate convention); deep green or burgundy work for prestige brands\n- Photos provide most of the color — the palette is restrained\n- Stat numbers: brand accent at brand weight\n\n## Visual motifs\n- **Search bar as the hero centerpiece** — pre-populated with the local market, autocompletes on neighborhood/city\n- **Listing grid with consistent card structure** — photo, price, beds/baths/sqft, neighborhood, \"View\" CTA\n- **Neighborhood guides** that map to the local market — establishes territory expertise\n- **Recent sales carousel** — concrete proof of closed deals, not just listings\n- **Agent / team photo as part of the brand**, not a footer afterthought\n- **Split-CTA contact form** — buyer flow vs. seller flow\n- **License number + brokerage affiliation** visible in the footer (legally required + builds trust)\n- **NO video hero** — real estate visitors are browsing for listings, not movies\n- **MLS / IDX integration** for active listings if the brand uses one (build lane should confirm)\n\n## When to use\n- Real estate brokers and teams (residential or commercial)\n- Individual real estate agents with a personal brand\n- Property managers (residential — for sale + for rent)\n- Boutique real estate firms\n- Brands whose business is closing transactions, not generating leads for someone else\n- Markets where local pride is part of the pitch (Knoxville agent selling Knoxville, Austin agent selling Austin)\n\n## When to NOT use\n- Real estate INVESTMENT firms (different audience — investors, not homebuyers)\n- Mortgage brokers (different conversion — pre-approval, not listing search)\n- Real estate developers selling NEW construction at scale (use a hospitality/luxury direction)\n- Property managers focused on COMMERCIAL leasing (different conversion path)\n- Anyone without active listings (the listing grid is the centerpiece — empty grids kill conversion)\n\n## Build complexity\nMEDIUM-HIGH complexity — the MLS / IDX integration is the variable. iHomeFinder, Sierra Interactive, BoomTown, Real Geeks each have different embed paths. If the brand doesn't have IDX, the listing grid pulls from a manual CMS. Build lane should confirm the data source BEFORE starting.\n\n## Library cross-references\n- Motif: `search-bar-as-hero-centerpiece`\n- Motif: `listing-grid-consistent-cards`\n- Motif: `neighborhood-guide-tiles`\n- Motif: `recent-sales-proof-carousel`\n- Motif: `split-cta-buyer-vs-seller`\n- Motif: `idx-feed-integration`\n- Typography: `playfair-serif-plus-inter` (similar to Lithos but used differently)\n- Color palette: `white-bg-navy-accent`"
   },
   {
+    "slug": "solar-energy-day-night-toggle",
+    "name": "Solar Energy — Day/Night Toggle Hero",
+    "vibe": [
+      "photorealistic",
+      "premium-residential",
+      "energy-tech",
+      "demo-as-design",
+      "value-prop-as-interaction"
+    ],
+    "industries": [
+      "solar energy",
+      "residential energy storage",
+      "smart home tech",
+      "HVAC with smart-home tie-in",
+      "sustainability brands",
+      "energy efficiency consulting",
+      "EV chargers (residential)",
+      "water filtration (whole-home)",
+      "home automation",
+      "premium home services with a year-round value angle"
+    ],
+    "useCases": [
+      "hero",
+      "full-landing"
+    ],
+    "tierRequired": "starter",
+    "visualPreview": {
+      "static": null,
+      "animated": null
+    },
+    "typography": {
+      "display": "a clean modern sans",
+      "body": "a clean modern sans"
+    },
+    "colorPalette": [
+      "#f5e9cc",
+      "#ffffff"
+    ],
+    "motifs": [
+      "Day/Night toggle as inline hero UI",
+      "Crossfade between time-of-day states",
+      "Photorealistic hero photo, NOT illustration",
+      "Bottom-anchored composition",
+      "Value-prop as the headline",
+      "Same-headline rule"
+    ],
+    "whenToUse": [
+      "**Residential solar / energy storage brands** — the original use case",
+      "**Smart home tech** with a \"works while you sleep\" pitch (security, HVAC with smart-home, water filtration whole-home, EV chargers)",
+      "**Sustainability / energy efficiency consulting**",
+      "**Premium residential services** with a year-round / all-conditions value angle (gutters with leaf guards, irrigation, generator install)",
+      "**Demo-led product categories** where the visitor needs to SEE the product in action, not read about it",
+      "**Brands selling to homeowners over 40** — the photorealistic house + clear value prop reads as trustworthy, not gimmicky"
+    ],
+    "whenNotToUse": [
+      "**Anyone whose product doesn't have a day/night (or hot/cold, indoor/outdoor, before/after) demonstrable state** — the toggle is a value prop made visual. If your product doesn't have two states to show, the toggle is decorative and the whole direction collapses",
+      "**B2B SaaS** — wrong audience entirely",
+      "**Local trades where the call IS the conversion** — too slow, too clever",
+      "**Anyone without photorealistic house photography** — stock illustration kills it",
+      "**Anyone whose value prop is COMPLEX and needs a paragraph to explain** — this direction works ONLY for value props that can be made visual in a single side-by-side toggle"
+    ],
+    "buildComplexity": "low",
+    "source": "motionsites.ai (Solar Energy Hero — verified Jun 11 2026 by direct observation of the live preview, NOT extracted from prompt text)",
+    "featured": false,
+    "newUntil": null,
+    "promptText": "## Hero treatment\nA single photorealistic photo of a beautiful modern house (with solar panels visible on the roof) anchored at the bottom-center of the viewport. A confident two-line value-prop headline reads \"$0 Electricity Bills / for the next 7 years\" with the dollar figure and the timeframe both emphasized at display scale. Below the headline, anchored to the photo itself, sit TWO TOGGLE PILLS labeled **Morning** and **Night** — each with a \"$0 for Electricity\" sub-label. Below the pills, a single supporting line: \"Forget the energy market, weather conditions and seasons; our Smart Controller guarantees you get no electricity bill for seven years.\"\n\n**The signature mechanic — toggle the time of day on the same photo.** When the visitor clicks (or hovers) Morning, the house photo crossfades to its morning version (golden warm light, soft sky). Click Night and it crossfades to the night version (dark sky, warm interior lights glowing through the windows, deep blue / black atmospheric tone). The SAME house, same composition, same headline — just lit differently. The toggle BECOMES the demo of the product: the solar system works in BOTH states.\n\nThe interaction isn't decorative — it's the value prop made visual. The visitor SEES that this works at night without needing to read about batteries or storage.\n\n## Page layout\nSingle full-viewport hero designed around the toggle interaction. The photo + toggle + value prop are the whole composition — no portfolio, no testimonials, no second section above the fold. The visitor's first move IS the demo.\n\nA small \"reposit\" brand wordmark + top nav sit in the corners but don't compete with the hero photo.\n\n## Typography\n- Display: a clean modern sans (Inter or similar — restrained, not editorial)\n- Headline weight: SEMI-BOLD, not display-bold (the photo carries the visual weight; the headline supports)\n- Number emphasis (`$0`, `7 years`) gets the heaviest weight + slightly larger size\n- Body / pill labels: light, low-emphasis — they're functional UI, not decorative\n\n## Color palette\n- Background: photographic (whichever time-of-day is currently shown)\n- Headline text on photo: white with subtle drop-shadow for legibility\n- Toggle pill ACTIVE state: solid warm cream (`#F5E9CC` or similar warm white) with dark text\n- Toggle pill INACTIVE state: translucent white with white text + thin border\n- The palette IS the photo — the toggle changes the entire scene, including the mood color\n\n## Visual motifs\n- **Day/Night toggle as inline hero UI** — two pills directly on the hero photo, the visitor's first interaction\n- **Crossfade between time-of-day states** on the SAME composition — `opacity` cross-fade between two pre-rendered photo files (`/hero-morning.webp`, `/hero-night.webp`), or a CSS variable swap with `transition: opacity 0.6s`. Don't animate filter / hue-rotate — pre-rendered photos read MUCH cleaner.\n- **Photorealistic hero photo, NOT illustration** — the entire direction depends on the photo being convincing. Stock house illustration kills the impression.\n- **Bottom-anchored composition** — the house sits at the BOTTOM of the viewport, with the sky/atmosphere taking the top half. Different from most hero treatments where the photo is centered.\n- **Value-prop as the headline** with NUMBERS doing the visual lifting (`$0`, `7 years`) — not \"save money on bills\" but \"$0 electricity bills\"\n- **Same-headline rule** — the headline DOES NOT change when the toggle flips. The point is the value prop is universal; the photo just shows you it works around the clock.\n\n## When to use\n- **Residential solar / energy storage brands** — the original use case\n- **Smart home tech** with a \"works while you sleep\" pitch (security, HVAC with smart-home, water filtration whole-home, EV chargers)\n- **Sustainability / energy efficiency consulting**\n- **Premium residential services** with a year-round / all-conditions value angle (gutters with leaf guards, irrigation, generator install)\n- **Demo-led product categories** where the visitor needs to SEE the product in action, not read about it\n- **Brands selling to homeowners over 40** — the photorealistic house + clear value prop reads as trustworthy, not gimmicky\n\n## When to NOT use\n- **Anyone whose product doesn't have a day/night (or hot/cold, indoor/outdoor, before/after) demonstrable state** — the toggle is a value prop made visual. If your product doesn't have two states to show, the toggle is decorative and the whole direction collapses\n- **B2B SaaS** — wrong audience entirely\n- **Local trades where the call IS the conversion** — too slow, too clever\n- **Anyone without photorealistic house photography** — stock illustration kills it\n- **Anyone whose value prop is COMPLEX and needs a paragraph to explain** — this direction works ONLY for value props that can be made visual in a single side-by-side toggle\n\n## Build complexity\nLOW-MEDIUM complexity. The toggle + crossfade is straightforward (two photos, opacity transition). The expense is the PHOTOGRAPHY — getting matching shots of the same house at morning + night requires either a real photoshoot or AI-generated photo pairs that maintain composition consistency.\n\n## Adapting the mechanic to other products\n\nThe \"two states demonstrated by a toggle that visually proves the value prop\" mechanic generalizes to:\n\n- **Smart HVAC** — Summer / Winter toggle showing the same room at different seasons with the unit handling both\n- **Whole-home water filtration** — Before / After toggle showing the same glass of water\n- **Generator install** — Storm / Clear toggle showing the same house in both conditions, both with power on\n- **EV charger** — Day / Night toggle showing the car charged regardless of time\n- **Leaf guards / gutter protection** — Fall / Winter toggle showing the same gutter clear in both seasons\n- **Lawn / irrigation** — Drought / Wet toggle showing the same lawn green in both\n- **Security system** — Empty / Occupied toggle showing the same home protected in both states\n\nThe mechanic is REUSABLE for any product whose value prop is \"works in all conditions\" or \"demonstrates a binary improvement.\"\n\n## Library cross-references\n- Motif: `time-of-day-toggle-crossfade` (the signature)\n- Motif: `value-prop-as-headline-with-numbers`\n- Motif: `inline-hero-ui-toggle-pills`\n- Motif: `photorealistic-hero-photo-bottom-anchored`\n- Typography: `clean-modern-sans-restrained-display`\n- Color palette: `photo-driven-warm-cream-translucent-toggle`"
+  },
+  {
+    "slug": "vanguard-fierce-creative-collective",
+    "name": "Vanguard — Fierce Creative Collective",
+    "vibe": [
+      "bold",
+      "fierce",
+      "world-class",
+      "premium agency",
+      "immersive video"
+    ],
+    "industries": [
+      "creative agency",
+      "design studio",
+      "brand collective",
+      "marketing agency",
+      "video production"
+    ],
+    "useCases": [
+      "hero",
+      "full-landing"
+    ],
+    "tierRequired": "starter",
+    "visualPreview": {
+      "static": "/templates/vanguard-fierce-creative-collective.png",
+      "animated": "/templates/vanguard-fierce-creative-collective.mp4"
+    },
+    "typography": {
+      "display": "FSP DEMO PODIUM Sharp 4.11",
+      "body": "Inter"
+    },
+    "colorPalette": [
+      "#000000",
+      "#ffffff"
+    ],
+    "motifs": [
+      "Looping video background, autoplay-muted-loop-playsInline, `object-cover` fill",
+      "Staggered fade-up animations on every hero element (0s, 0.2s, 0.4s, 0.6s, 0.8s delays)",
+      "Bordered \"GET IN TOUCH\" pill button alongside a solid black \"SEE OUR WORK\" pill",
+      "Award icon + two-line micro-label adjacent to the primary CTA",
+      "Stats row with `flex-wrap`: large bold number + tight tracking, small uppercase label belo",
+      "Mobile full-screen menu overlay with staggered link entrance animations"
+    ],
+    "whenToUse": [
+      "Creative agencies and design studios with great existing video footage",
+      "Brand collectives wanting to feel collaborative + premium",
+      "Production houses, video studios, motion design shops",
+      "Marketing agencies pitching enterprise / mid-market work",
+      "Boutique studios where the founder wants the audience to feel impressed before reading a single word",
+      "Any business where the visitor's first emotional response should be \"this looks expensive\""
+    ],
+    "whenNotToUse": [
+      "Local trades (HVAC, plumbing, roofing, electrical) — visitors need phone number + price hint above the fold, not cinematic video",
+      "Restoration / emergency services — visitor is in a hurry, not browsing",
+      "Medical / legal / financial — credibility comes from clean structure + credentials, not video drama",
+      "Anything that needs to load fast on a poor connection (video bg kills LCP)",
+      "Anything where the client doesn't have great existing video assets (placeholder stock video looks vibe-coded)"
+    ],
+    "buildComplexity": "medium",
+    "source": "motionsites.ai (VANGUARD prompt)",
+    "featured": false,
+    "newUntil": null,
+    "promptText": "## Hero treatment\nSingle viewport-height section with fullscreen looping background video. All content overlaid. Hero text is LEFT-aligned, vertically centered. Three-line display heading dominates the page (\"Design. Disrupt. Conquer.\" style). Stats row at the bottom shows quantitative trust (\"250+ Brands Transformed / 95% Client Retention / 10+ Years in the Game\"). Award badge sits next to the primary CTA. Tagline above the heading uses a small icon + spaced-out caps label.\n\n## Page layout\nSingle viewport hero (h-screen). Mobile-first padding scaling from `px-6` to `px-16` at large screens. Content is bottom-anchored on mobile, vertically centered on desktop. Stats row uses `flex-wrap` to prevent overflow.\n\n## Typography\n- Display: FSP DEMO PODIUM Sharp 4.11 — clamp(2.8rem, 8vw, 7rem), uppercase, `leading-[0.92]`, tight tracking. The brand wordmark uses the same display face at `text-2xl sm:text-3xl`.\n- Body: Inter — weights 400/500/600/700. Nav and CTAs use `text-xs` with `tracking-widest` uppercase. Subtext uses `text-sm sm:text-base`, `leading-relaxed`.\n- Accent: Small caps tagline above the heading uses `tracking-[0.3em]` to feel editorial.\n\n## Color palette\n- Primary: `#000000` (pure black for the CTA button)\n- Secondary: video footage tone provides the warm/dark hue\n- Accent: white (`#FFFFFF`) for all text\n- Text on overlay: `text-white/70` for de-emphasized body, `text-white/50` for stats labels\n- Translucent borders: `border-white/30` on the bordered \"GET IN TOUCH\" CTA\n\n## Visual motifs\n- Looping video background, autoplay-muted-loop-playsInline, `object-cover` fill\n- Staggered fade-up animations on every hero element (0s, 0.2s, 0.4s, 0.6s, 0.8s delays)\n- Bordered \"GET IN TOUCH\" pill button alongside a solid black \"SEE OUR WORK\" pill\n- Award icon + two-line micro-label adjacent to the primary CTA\n- Stats row with `flex-wrap`: large bold number + tight tracking, small uppercase label below\n- Mobile full-screen menu overlay with staggered link entrance animations\n\n## When to use\n- Creative agencies and design studios with great existing video footage\n- Brand collectives wanting to feel collaborative + premium\n- Production houses, video studios, motion design shops\n- Marketing agencies pitching enterprise / mid-market work\n- Boutique studios where the founder wants the audience to feel impressed before reading a single word\n- Any business where the visitor's first emotional response should be \"this looks expensive\"\n\n## When to NOT use\n- Local trades (HVAC, plumbing, roofing, electrical) — visitors need phone number + price hint above the fold, not cinematic video\n- Restoration / emergency services — visitor is in a hurry, not browsing\n- Medical / legal / financial — credibility comes from clean structure + credentials, not video drama\n- Anything that needs to load fast on a poor connection (video bg kills LCP)\n- Anything where the client doesn't have great existing video assets (placeholder stock video looks vibe-coded)\n\n## Reference source\nmotionsites.ai VANGUARD prompt — extracted 2026-06-11.\n\n## Library cross-references\n- Motif: `cursor-spotlight-reveal-canvas-mask` (alternative hero treatment for this vibe)\n- Typography: `podium-display-inter-body` (the specific pairing)\n- Color palette: `monochrome-on-video-overlay` (the color system)"
+  },
+  {
+    "slug": "prisma-cinematic-cream-collective",
+    "name": "Prisma — Cinematic Cream Collective",
+    "vibe": [
+      "cinematic",
+      "moody",
+      "editorial",
+      "warm-cream",
+      "sophisticated"
+    ],
+    "industries": [
+      "creative studio",
+      "filmmakers",
+      "photographers",
+      "visual arts",
+      "hospitality (boutique)",
+      "high-end brand identity"
+    ],
+    "useCases": [
+      "hero",
+      "full-landing"
+    ],
+    "tierRequired": "starter",
+    "visualPreview": {
+      "static": "/templates/prisma-cinematic-cream-collective.png",
+      "animated": "/templates/prisma-cinematic-cream-collective.mp4"
+    },
+    "typography": {
+      "display": "Almarai",
+      "body": "Almarai"
+    },
+    "colorPalette": [
+      "#000000",
+      "#101010",
+      "#212121",
+      "#e1e0cc",
+      "#dedbc8"
+    ],
+    "motifs": [
+      "Inset hero container with rounded corners (`rounded-2xl md:rounded-[2rem]`)",
+      "SVG noise texture overlay on hero video (`feTurbulence baseFrequency=0.85 numOctaves=3`, 0",
+      "Hanging black pill navbar (rounded-b only, sits flush with top edge)",
+      "Giant display word as the focal point, bottom-anchored in the hero",
+      "Superscript asterisk on final character of the display word",
+      "Words-pull-up text animation: each word slides up from `y:20` with 0.08s staggered delay, ",
+      "Mixed style heading where one phrase inside a longer heading switches to italic serif",
+      "Scroll-linked character-by-character opacity reveal on body text (uses `useScroll` + `useT",
+      "4-column feature card grid that combines a video card (full bleed) + 3 dark icon+checklist",
+      "Each feature card has a numbered indicator (01, 02, 03) and a \"Learn more →\" link with a r"
+    ],
+    "whenToUse": [
+      "Creative studios and production houses",
+      "Filmmakers, directors, cinematographers",
+      "Photographers (high-end portrait, fashion, editorial)",
+      "Visual artists and visual development collectives",
+      "Boutique hotels and hospitality brands wanting an editorial / \"designed by an art director\" feel",
+      "High-end brand identity agencies",
+      "Anyone whose audience reads design magazines"
+    ],
+    "whenNotToUse": [
+      "Local trades — too slow to load, too editorial, not enough trust signal",
+      "Health / legal / financial — wrong emotional register entirely",
+      "E-commerce (the focal display word competes with product photography)",
+      "Anything where the visitor needs to convert quickly",
+      "Anything that needs to look \"approachable / family-friendly\" instead of \"curated\""
+    ],
+    "buildComplexity": "medium",
+    "source": "motionsites.ai (Prisma prompt)",
+    "featured": false,
+    "newUntil": null,
+    "promptText": "## Hero treatment\nFull viewport with `p-4 md:p-6` outer padding creating an inset effect (the page itself frames the hero). Inside is a rounded-2xl container with overflow-hidden. Background video fills the inset frame with a noise overlay (`mix-blend-overlay`, 0.7 opacity) and a subtle gradient. The brand name \"Prisma\" sits as a giant display word at the BOTTOM of the hero in a 12-column grid (left 8 cols), with a 4-column description paragraph + CTA on the right. The display word features a superscript asterisk (*) on its final letter.\n\nThe navbar is a black pill that HANGS DOWN from the top edge (rounded-b-2xl) with the centered links.\n\n## Page layout\nThree sections total: Hero (inset framed) → About (centered black card with italic display + scroll-revealed body text) → Features (4-column card grid with mixed video + image content). The About section uses a scroll-linked character-by-character opacity reveal on the body paragraph — characters fade in from 0.2 → 1 opacity as the reader scrolls past.\n\n## Typography\n- Primary face: Almarai (Google Fonts) — weights 300/400/700/800. Used globally including the giant \"Prisma\" word.\n- Italic accent: Instrument Serif (italic only) — used for a single italic phrase inside an otherwise sans heading (\"I am Marcus Chen, *a self-taught director.* I have skills in...\")\n- Display sizing: clamp-style responsive — the brand word uses `text-[26vw] sm:text-[24vw] md:text-[22vw] lg:text-[20vw]` with `tracking-[-0.07em]` and `leading-[0.85]`\n- Color: globally `text-primary` = `#E1E0CC` (warm cream)\n\n## Color palette\n- Background: `#000000` global, `#101010` for the About card, `#212121` for Features cards\n- Primary text: `#E1E0CC` (warm cream — applied via inline style; differs subtly from the Tailwind primary)\n- Tailwind primary: `#DEDBC8` (warm cream — used in utility classes like `text-primary/70`)\n- Gray: `text-gray-400`, `text-gray-500` (secondary copy)\n- Nav link: `rgba(225,224,204,0.8)` with hover `#E1E0CC`\n\n## Visual motifs\n- Inset hero container with rounded corners (`rounded-2xl md:rounded-[2rem]`) — the page itself frames the hero\n- SVG noise texture overlay on hero video (`feTurbulence baseFrequency=0.85 numOctaves=3`, 0.7 opacity, `mix-blend-overlay`)\n- Hanging black pill navbar (rounded-b only, sits flush with top edge)\n- Giant display word as the focal point, bottom-anchored in the hero\n- Superscript asterisk on final character of the display word\n- Words-pull-up text animation: each word slides up from `y:20` with 0.08s staggered delay, triggered by `useInView`\n- Mixed style heading where one phrase inside a longer heading switches to italic serif\n- Scroll-linked character-by-character opacity reveal on body text (uses `useScroll` + `useTransform`, each character's opacity tied to scroll progress)\n- 4-column feature card grid that combines a video card (full bleed) + 3 dark icon+checklist cards\n- Each feature card has a numbered indicator (01, 02, 03) and a \"Learn more →\" link with a rotated arrow (-45deg)\n\n## When to use\n- Creative studios and production houses\n- Filmmakers, directors, cinematographers\n- Photographers (high-end portrait, fashion, editorial)\n- Visual artists and visual development collectives\n- Boutique hotels and hospitality brands wanting an editorial / \"designed by an art director\" feel\n- High-end brand identity agencies\n- Anyone whose audience reads design magazines\n\n## When to NOT use\n- Local trades — too slow to load, too editorial, not enough trust signal\n- Health / legal / financial — wrong emotional register entirely\n- E-commerce (the focal display word competes with product photography)\n- Anything where the visitor needs to convert quickly\n- Anything that needs to look \"approachable / family-friendly\" instead of \"curated\"\n\n## Reference source\nmotionsites.ai Prisma prompt — extracted 2026-06-11.\n\n## Library cross-references\n- Motif: `scroll-linked-character-opacity-reveal` (the standout body-text effect)\n- Motif: `noise-overlay-svg-fractal` (the cinematic film grain)\n- Motif: `inset-rounded-hero-frame` (the page-frames-the-hero pattern)\n- Typography: `almarai-instrument-serif-italic` (the specific pairing)\n- Color palette: `warm-cream-on-deep-black` (the color system)"
+  },
+  {
+    "slug": "jack-3d-creator-portfolio",
+    "name": "Jack — 3D Creator Portfolio",
+    "vibe": [
+      "bold",
+      "premium",
+      "portfolio",
+      "gradient-display",
+      "interactive"
+    ],
+    "industries": [
+      "3D artists",
+      "motion designers",
+      "brand identity studios",
+      "individual creator portfolios",
+      "agencies showcasing personal craft"
+    ],
+    "useCases": [
+      "hero",
+      "full-landing"
+    ],
+    "tierRequired": "starter",
+    "visualPreview": {
+      "static": "/templates/jack-3d-creator-portfolio.png",
+      "animated": "/templates/jack-3d-creator-portfolio.mp4"
+    },
+    "typography": {
+      "display": "Kanit",
+      "body": "Kanit"
+    },
+    "colorPalette": [
+      "#0c0c0c",
+      "#ffffff",
+      "#d7e2ea",
+      "#646973",
+      "#bbccd7",
+      "#18011f"
+    ],
+    "motifs": [
+      "Magnetic hover portrait",
+      "Parallax marquee rows",
+      "Gradient display text",
+      "Sticky-stacking project cards",
+      "Multi-color gradient pill CTA",
+      "Character-by-character scroll-reveal",
+      "Decorative corner 3D icons",
+      "Numbered service rows"
+    ],
+    "whenToUse": [
+      "Individual creator portfolios (3D artists, motion designers, illustrators, photographers)",
+      "Personal brand sites for agency principals or freelancers",
+      "Brand identity studios where the founder IS the brand",
+      "Anyone with a strong visual aesthetic and a real body of work to showcase",
+      "High-end portfolio-driven verticals (architecture, interior design, industrial design)",
+      "Studios where \"the founder's craft is the product\""
+    ],
+    "whenNotToUse": [
+      "Local services / blue collar — the gradient pill CTA reads as \"tech startup\" not \"neighborhood pro\"",
+      "E-commerce — the scroll-driven page is too long for product browsing",
+      "Anything that needs to convert in the first viewport",
+      "B2B SaaS marketing — too portfolio-feel",
+      "Anyone without a strong existing visual portfolio (this style is brutal to fake)"
+    ],
+    "buildComplexity": "medium",
+    "source": "motionsites.ai (Jack — 3D Creator prompt)",
+    "featured": false,
+    "newUntil": null,
+    "promptText": "## Hero treatment\nMassive gradient-filled display heading (\"Hi, I'm jack\") spans nearly the full viewport width using `text-[14vw]` scaling to `text-[17.5vw]` at desktop. The display gradient runs `#646973 → #BBCCD7` (cool gunmetal to icy steel) via `-webkit-background-clip: text`. A magnetic-hover portrait sits centered absolutely below the heading — the portrait follows the cursor within a 150px radius with a strength factor of 3, smoothly easing out on cursor exit. The page background is `#0C0C0C`.\n\nA bottom bar pairs a short ALL-CAPS tagline on the left with a colorful gradient pill CTA on the right (the CTA uses a multicolor gradient: deep purple → magenta → orange).\n\n## Page layout\nFive sections:\n1. Hero (full viewport, gradient display + magnetic portrait)\n2. Marquee (two horizontal rows of 21 portfolio thumbnails that scroll opposite directions based on page scroll position — parallax effect)\n3. About (centered, with 4 decorative 3D icons in each corner, gradient display heading, character-reveal body text)\n4. Services (WHITE background, 5 numbered service rows separated by hairline borders)\n5. Projects (dark background, 3 STICKY-STACKING cards that scale down 0.97 → 1.0 as scroll moves past, creating a depth-stack effect)\n\n## Typography\n- Display + body: Kanit (Google Fonts) — weights 300/400/500/700/900\n- Hero gradient: `linear-gradient(180deg, #646973 0%, #BBCCD7 100%)` clipped to text\n- Sizing approach: heavy use of `clamp()` for fluid typography across viewports\n- Service numbers: clamp(3rem, 10vw, 140px), font-black\n- Body text color: `#D7E2EA` (cool pale blue) on the dark sections, `#0C0C0C` on the white services section\n\n## Color palette\n- Background dark: `#0C0C0C` (true near-black)\n- Background light: `#FFFFFF` (services section only — strong contrast inversion)\n- Primary text on dark: `#D7E2EA` (cool icy blue)\n- Display gradient: `#646973 → #BBCCD7`\n- Pill CTA gradient: `#18011F → #B600A8 → #7621B0 → #BE4C00` (deep purple → magenta → orange)\n- Pill CTA shadow: inner shadow `0px 4px 4px rgba(181,1,167,0.25)` + `4px 4px 12px #7721B1`\n\n## Visual motifs\n- **Magnetic hover portrait** — image follows cursor within a 150px activation radius, transforms via translate3d divided by strength, smooth in/out transitions (0.3s/0.6s)\n- **Parallax marquee rows** — two horizontal rows of thumbnails, one scrolls right, one scrolls left, speed = `(scrollY - sectionTop + viewportHeight) * 0.3`\n- **Gradient display text** with -webkit-background-clip on a giant clamp-sized heading\n- **Sticky-stacking project cards** — each card uses `position: sticky; top: 6rem`, scales as scroll progresses, creating an accordion-depth stack\n- **Multi-color gradient pill CTA** with deep purple → magenta → orange and complex inner shadows\n- **Character-by-character scroll-reveal** on body text (same pattern as Prisma)\n- **Decorative corner 3D icons** anchoring the About section (moon, lego, 3D objects)\n- **Numbered service rows** with massive numbers (clamp 3rem-140px) + name + description, separated by hairline borders\n\n## When to use\n- Individual creator portfolios (3D artists, motion designers, illustrators, photographers)\n- Personal brand sites for agency principals or freelancers\n- Brand identity studios where the founder IS the brand\n- Anyone with a strong visual aesthetic and a real body of work to showcase\n- High-end portfolio-driven verticals (architecture, interior design, industrial design)\n- Studios where \"the founder's craft is the product\"\n\n## When to NOT use\n- Local services / blue collar — the gradient pill CTA reads as \"tech startup\" not \"neighborhood pro\"\n- E-commerce — the scroll-driven page is too long for product browsing\n- Anything that needs to convert in the first viewport\n- B2B SaaS marketing — too portfolio-feel\n- Anyone without a strong existing visual portfolio (this style is brutal to fake)\n\n## Reference source\nmotionsites.ai Jack — 3D Creator prompt — extracted 2026-06-11.\n\n## Library cross-references\n- Motif: `magnetic-portrait-hover-followup`\n- Motif: `parallax-marquee-scroll-rows`\n- Motif: `sticky-stacking-project-cards`\n- Motif: `gradient-display-text-clip`\n- Typography: `kanit-gradient-display`\n- Color palette: `near-black-icy-blue-multicolor-pill`"
+  },
+  {
+    "slug": "lithos-geology-editorial",
+    "name": "Lithos — Geology Editorial",
+    "vibe": [
+      "editorial",
+      "premium",
+      "evidence-based",
+      "geological",
+      "serious",
+      "magazine-quality"
+    ],
+    "industries": [
+      "restoration (high-end)",
+      "assessment",
+      "environmental services",
+      "science-based services",
+      "museums",
+      "premium consumer brands with a \"discovery\" angle",
+      "hospitality with a sense-of-place story"
+    ],
+    "useCases": [
+      "hero",
+      "full-landing"
+    ],
+    "tierRequired": "starter",
+    "visualPreview": {
+      "static": "/templates/lithos-geology-editorial.png",
+      "animated": "/templates/lithos-geology-editorial.mp4"
+    },
+    "typography": {
+      "display": "Playfair Display ITALIC",
+      "body": "Inter"
+    },
+    "colorPalette": [
+      "#e8702a",
+      "#d2611f",
+      "#ffffff",
+      "#000000"
+    ],
+    "motifs": [
+      "Cursor spotlight reveal between two images",
+      "Mixed-style display heading",
+      "Editorial corner anchors",
+      "Italic serif wordmark in the nav",
+      "Premium load animations",
+      "Ken Burns intro",
+      "Frosted navbar pill",
+      "Orange action CTA"
+    ],
+    "whenToUse": [
+      "High-end restoration / environmental services (Hanes Environmental tier)",
+      "Assessment + investigation services (forensic, geological, scientific)",
+      "Museums, science centers, planetariums",
+      "Premium consumer brands with a \"discovery / earth / origin\" story (artisan food, natural cosmetics, mineral-based skincare)",
+      "Hospitality brands with a strong sense-of-place narrative",
+      "Anyone where the visitor should feel they're learning something credible, not being sold to",
+      "Brands that want to feel \"Smithsonian\" / \"National Geographic\" / \"MoMA\" rather than \"Bay Area startup\""
+    ],
+    "whenNotToUse": [
+      "Local trades — wrong emotional register (too editorial, too slow)",
+      "E-commerce — the cursor mechanic competes with product browsing",
+      "Lifestyle brands targeting young, mass-market audiences — too slow-paced",
+      "Anything where the visitor needs to convert in seconds",
+      "Anyone without a credible \"discovery / depth / craft\" story to tell"
+    ],
+    "buildComplexity": "medium",
+    "source": "motionsites.ai (Lithos prompt)",
+    "featured": false,
+    "newUntil": null,
+    "promptText": "## Hero treatment\nFull viewport (`100dvh`) with a base geological-imagery background and a SECOND image revealed through a cursor-following spotlight (same canvas-mask mechanic as the Cyberpunk direction but applied to nature/material imagery rather than cyber/red). The display heading sits TOP-CENTER in two lines using Playfair Display ITALIC for line 1 and a tight non-italic sans for line 2 — a mixed-style heading reading like a magazine masthead. A short editorial paragraph anchors the bottom-LEFT corner; the primary CTA + supporting paragraph anchor the bottom-RIGHT.\n\nThe brand wordmark in the navbar uses the Playfair italic for a hand-set newspaper feel.\n\n## Page layout\nSingle viewport hero (`100dvh`) with content layered over a base image + cursor reveal layer. Heading is top-centered (instead of bottom-anchored as in most heroes). Two text columns anchor opposite bottom corners.\n\n## Typography\n- Display: Playfair Display ITALIC (Google Fonts, italic 400/500/600) — used for line 1 of the heading and the brand wordmark\n- Body + display line 2: Inter (Google Fonts) — weights 300/400/500/600/700, global default\n- Heading sizing: `text-5xl sm:text-7xl md:text-8xl` with `letterSpacing: '-0.05em'` on the italic line and `'-0.08em'` on the sans line\n- Global tracking: `tracking-[-0.02em]` on root\n\n## Color palette\n- Background: dark (full black + dark imagery)\n- Primary text: white (with `text-white/80` for body)\n- CTA: bright orange `#e8702a` with hover `#d2611f`, hover shadow `#e8702a/30`\n- Translucent surfaces: `bg-white/20 backdrop-blur-md` for the navbar pill, `border-white/30` borders\n\n## Visual motifs\n- **Cursor spotlight reveal between two images** (same mechanic as Cyberpunk, different content register — this is the geology / restoration / discovery version)\n- **Mixed-style display heading** — italic Playfair line 1 + tight sans line 2, top-centered like a magazine masthead\n- **Editorial corner anchors** — short paragraph bottom-left, CTA + paragraph bottom-right, deliberately asymmetric\n- **Italic serif wordmark in the nav** (the brand reads as a magazine masthead, not a SaaS logo)\n- **Premium load animations** — `heroReveal` keyframe (opacity 0 + y 28px + blur 12px → clear) staggered 0.25s / 0.42s / 0.7s / 0.85s\n- **Ken Burns intro** on base image (`scale 1.12 → 1.0` over 1.8s)\n- **Frosted navbar pill** (`bg-white/20 backdrop-blur-md border border-white/30 rounded-full`) — feels like a museum kiosk overlay\n- **Orange action CTA** that lifts the eye instantly without using a bright primary blue\n\n## When to use\n- High-end restoration / environmental services (Hanes Environmental tier)\n- Assessment + investigation services (forensic, geological, scientific)\n- Museums, science centers, planetariums\n- Premium consumer brands with a \"discovery / earth / origin\" story (artisan food, natural cosmetics, mineral-based skincare)\n- Hospitality brands with a strong sense-of-place narrative\n- Anyone where the visitor should feel they're learning something credible, not being sold to\n- Brands that want to feel \"Smithsonian\" / \"National Geographic\" / \"MoMA\" rather than \"Bay Area startup\"\n\n## When to NOT use\n- Local trades — wrong emotional register (too editorial, too slow)\n- E-commerce — the cursor mechanic competes with product browsing\n- Lifestyle brands targeting young, mass-market audiences — too slow-paced\n- Anything where the visitor needs to convert in seconds\n- Anyone without a credible \"discovery / depth / craft\" story to tell\n\n## Reference source\nmotionsites.ai Lithos prompt — extracted 2026-06-11.\n\n## Library cross-references\n- Motif: `cursor-spotlight-reveal-canvas-mask` (shared with cyberpunk)\n- Motif: `mixed-style-italic-display-heading`\n- Motif: `editorial-corner-anchors-asymmetric`\n- Motif: `frosted-navbar-pill`\n- Motif: `premium-blur-rise-load-animations`\n- Typography: `playfair-italic-inter`\n- Color palette: `dark-with-orange-action`"
+  },
+  {
+    "slug": "velar-luxury-real-estate",
+    "name": "Velar. — Luxury Real Estate",
+    "vibe": [
+      "luxury",
+      "editorial",
+      "scroll-driven",
+      "architectural",
+      "sophisticated",
+      "prestige"
+    ],
+    "industries": [
+      "luxury real estate",
+      "architecture firms",
+      "high-end interior design",
+      "prestige hospitality",
+      "art galleries",
+      "premium property management",
+      "estate brokers"
+    ],
+    "useCases": [
+      "hero",
+      "full-landing"
+    ],
+    "tierRequired": "starter",
+    "visualPreview": {
+      "static": "/templates/velar-luxury-real-estate.png",
+      "animated": "/templates/velar-luxury-real-estate.mp4"
+    },
+    "typography": {
+      "display": "Syne",
+      "body": "Inter"
+    },
+    "colorPalette": [
+      "#f5f0ea",
+      "#213138",
+      "#000000",
+      "#ffffff",
+      "#e8e4df"
+    ],
+    "motifs": [
+      "Typewriter preloader",
+      "Scroll-driven house animation",
+      "Color-shifting navigation",
+      "Sticky statement section",
+      "Section slides over previous section",
+      "Hover-expand video gallery",
+      "Background ticker",
+      "Per-viewport responsive type",
+      "Mobile menu as fullscreen overlay"
+    ],
+    "whenToUse": [
+      "Luxury real estate brokers, estate agents, building developers",
+      "Architecture firms with strong portfolio",
+      "High-end interior design studios",
+      "Boutique hotels with editorial-quality photography",
+      "Art galleries, antique dealers, auction houses",
+      "Yacht / private aviation / high-end leisure",
+      "Anyone whose target audience is HNW and reads The World of Interiors / Architectural Digest",
+      "Brands whose product is so visual that scroll-driven storytelling sells better than copy"
+    ],
+    "whenNotToUse": [
+      "Anyone without exceptional photography and video assets — this direction will EXPOSE weak imagery",
+      "Local services / blue collar — wrong audience entirely",
+      "Mobile-dominant traffic — the scroll choreography requires desktop or large tablet to read properly",
+      "Anyone with a tight budget on initial scope — this direction is a Custom Build per `feedback_bos_sites_productized.md`, NOT Tier 1/2/3",
+      "Conversion-driven landing pages — this direction is for browsing visitors, not action-taking visitors"
+    ],
+    "buildComplexity": "high",
+    "source": "motionsites.ai (catalog title \"Velorah\" — actual brand \"Velar.\" — extracted Jun 11 2026)",
+    "featured": false,
+    "newUntil": null,
+    "promptText": "## Hero treatment\nThis is the most complex direction in the library — a multi-section scroll-orchestrated luxury site. Section 1 is a TYPEWRITER PRELOADER (\"Velar.\" types out letter by letter on a deep teal `#213138` background with a blinking cursor, then the entire overlay slides up out of view). Section 2 is a fixed navigation with a wordmark that COLOR-CHANGES based on what section is currently at viewport top (white over dark sections, dark teal over the warm cream sections). Section 3 is the hero — a warm cream `#f5f0ea` background with a giant SYNE 800 display heading (\"LIVE IN\" + \"IRREPLACEABLE\") at architectural scale, plus a subtitle paragraph that swaps based on viewport (different subtitle text mobile vs desktop). Section 4 is a SCROLL-DRIVEN HOUSE ANIMATION — a house image that rises from below the viewport during the intro, then scales and moves with scroll progress as the visitor moves past the hero. Sections 5 and 6 stack: a sticky dark statement section with COUNT-UP STATS, then a HOVER-EXPAND VIDEO GALLERY that slides over it with negative margin-top.\n\n## Page layout\nSix choreographed sections, each with custom JavaScript controlling scroll position, transforms, and visibility. The page reads like a film unfolding rather than a website you skim. This is the apex of \"editorial luxury site\" — anything less complex won't read as Velar tier; anything more risks feeling overwrought.\n\n## Typography\n- Display: Syne (Google Fonts, weights 400/700/800/900) — used for the brand wordmark AND the giant display heading. Letter spacing tight (`letter-spacing: -0.02em` on the wordmark, `-0.03em` on the hero heading)\n- Body: Inter (Google Fonts, weights 300/400/500/600) — for body, paragraph, stats, labels\n- Mobile/desktop subtitle text differs (different line breaks, different word counts) — explicit per-viewport authoring\n- The wordmark has one character at weight 900 (the period after \"Velar.\") while the rest is weight 700 — a tiny weight emphasis that adds quality\n\n## Color palette\n- Background: `#f5f0ea` (warm off-white / cream)\n- Dark sections: `#213138` (deep teal — preloader, statement, and gallery)\n- Display + body text: `#000000` on cream, `#ffffff` on dark\n- Statement section text: `#e8e4df` (warm white — subtly different from pure white)\n- Nav color transitions between white and dark teal based on viewport (cross-fades over 0.35s)\n- Stat labels: `rgba(255,255,255,0.6)` (60% white)\n\n## Visual motifs\n- **Typewriter preloader** — letter-by-letter reveal with blinking cursor, then the entire overlay slides up out of view (`translateY(-100%) over 1.5s cubic-bezier(0.45, 0, 0.15, 1)`)\n- **Scroll-driven house animation** — a fixed-position image that rises from below the viewport, then scales (`finalScale = 1.45`) and translates with scroll progress using a smoothstep-of-smoothstep easing (`t = smoothstep(smoothstep(progress))`)\n- **Color-shifting navigation** — wordmark color changes based on which section is currently at viewport top (`rect.top <= 0 && rect.bottom > 0`)\n- **Sticky statement section** with **CountUp stat numbers** that animate from 0 to their final values over 2000ms when IntersectionObserver triggers, with cubic ease (`1 - (1 - t)^3`)\n- **Section slides over previous section** via negative `margin-top: -100vh` and higher z-index — the gallery slides up over the statement section like a film cut\n- **Hover-expand video gallery** — accordion expand: hover one tile, it grows to `flex: 4` while others shrink (`flex 0.5s cubic-bezier(0.4, 0, 0.2, 1)`)\n- **Background ticker** behind the gallery — repeating brand wordmark at giant scale (`clamp(100px, 14vw, 220px)`)\n- **Per-viewport responsive type** — mobile, tablet, and desktop each get DIFFERENT subtitle text, line breaks, and font sizes\n- **Mobile menu as fullscreen overlay** with `text-4xl` link list and uppercase letterspacing\n\n## When to use\n- Luxury real estate brokers, estate agents, building developers\n- Architecture firms with strong portfolio\n- High-end interior design studios\n- Boutique hotels with editorial-quality photography\n- Art galleries, antique dealers, auction houses\n- Yacht / private aviation / high-end leisure\n- Anyone whose target audience is HNW and reads The World of Interiors / Architectural Digest\n- Brands whose product is so visual that scroll-driven storytelling sells better than copy\n\n## When to NOT use\n- Anyone without exceptional photography and video assets — this direction will EXPOSE weak imagery\n- Local services / blue collar — wrong audience entirely\n- Mobile-dominant traffic — the scroll choreography requires desktop or large tablet to read properly\n- Anyone with a tight budget on initial scope — this direction is a Custom Build per `feedback_bos_sites_productized.md`, NOT Tier 1/2/3\n- Conversion-driven landing pages — this direction is for browsing visitors, not action-taking visitors\n\n## Reference source\nmotionsites.ai catalog title \"Velorah\" — actual brand inside the prompt is \"Velar.\" (period included). This is the apex luxury real estate direction in the library. Extracted Jun 11 2026.\n\n## Library cross-references\n- Motif: `typewriter-preloader-slide-up`\n- Motif: `scroll-driven-fixed-image-animation` (the rising house)\n- Motif: `color-shifting-navigation-by-section`\n- Motif: `sticky-statement-with-countup-stats`\n- Motif: `section-slides-over-previous-section`\n- Motif: `hover-expand-video-gallery`\n- Motif: `background-ticker-wordmark`\n- Motif: `per-viewport-distinct-subtitle-text`\n- Typography: `syne-inter-luxury`\n- Color palette: `warm-cream-deep-teal-luxury`\n\n## Build complexity warning\nThis direction is the most complex in the library. A real production build of Velar-tier will need 2-3x the time of a typical Tier 1 site. Quote it as Custom Build, not Tier 3."
+  },
+  {
     "slug": "modern-agency-mental-wellness",
     "name": "Modern Agency — Mental Wellness (\"mėntality\")",
     "vibe": [
@@ -436,7 +780,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "pro",
+    "tierRequired": "starter",
     "visualPreview": {
       "static": "/templates/modern-agency-mental-wellness.png",
       "animated": "/templates/modern-agency-mental-wellness.mp4"
@@ -485,6 +829,83 @@ export const DIRECTIONS: readonly Direction[] = [
     "promptText": "## Hero treatment\nFull viewport hero with a soft warm light-gray background (`#EDEEF5`), a glassmorphic top nav, a centered/left-aligned headline with a giant inline UI element (a pill-shaped \"eye\" element with a dot inside, set inline between words), and a centered \"Search Pill\" component with placeholder \"Ask me anything...\" plus a black circular action button. Background video sits BELOW the headline with a soft gradient fade into the page color, NOT as a fullscreen wash. The accent color is a single bright green (`#9fff00`) used ONLY for selection (selection highlight and selection text), not in the layout — which makes the page feel restrained and high-end.\n\n## Page layout\nSingle-section hero designed around the inline UI element. The brand wordmark \"mėntality\" uses a special character (e with dot above), set in a display sans (Outfit). The hero text mixes a dark color (`#1a1a1a`) and a soft mid-gray (`#8e8e8e`) on the same line, calling out which words are emphasized. Architectural anchors at bottom-left and bottom-right (\"2024\", \"mental health tools\") give the page a magazine masthead feel without dominating.\n\n## Typography\n- Display: Outfit (Google Fonts) — for the wordmark and emphasis\n- Body: Inter (Google Fonts) — global default, sets `--font-sans`\n- Tracking: `tracking-wider` on small labels\n- Headline mixes two colors mid-line — emphasizes selective words rather than the whole heading\n\n## Color palette\n- Background: `#EDEEF5` (warm off-white / light gray with a slight pink hint)\n- Primary text: `#1a1a1a` (near-black)\n- Secondary text: `#8e8e8e` (mid-gray for emphasis)\n- Accent: `#9fff00` (electric green — used ONLY in text selection)\n- Wrapper: `selection:bg-brand-green selection:text-black` — selection becomes part of the brand experience\n\n## Visual motifs\n- **Inline pill-shaped \"eye\" UI element** in the middle of a heading — `w-[16px] md:w-[42px] lg:w-[62px] border-[2px] border-[#1a1a1a] rounded-full inline-flex items-center justify-center` containing a tiny black dot (`w-2 h-2`). This is the standout visual — an interactive-looking inline component nested in the text.\n- **Glassmorphic top navbar** with `bg-gradient-to-b from-[#f1f1f1]/80 to-transparent backdrop-blur-[2px]` — feels integrated, not floating\n- **Mixed-color heading** where different words within the same line take different colors (dark + mid-gray)\n- **Search pill component** as the primary CTA — input + black circular button, feels conversational (matches the \"wellness\" promise of \"ask me anything\")\n- **Slide-up fade headline animation** (Framer Motion: `initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}`)\n- **Animated hamburger** for mobile drawer (AnimatePresence + motion.div slides down)\n- **Bottom-corner editorial anchors** (\"2024\" left, \"mental health tools\" right) — magazine masthead vibe\n- **Selection accent** — green selection highlight is the only brand color in the layout, making any selected text feel branded\n\n## When to use\n- Mental health / therapy practices\n- Wellness clinics, spas with a calm aesthetic\n- Health coaches, life coaches\n- Education centers, patient resource libraries\n- Pediatric practices wanting to feel warm but professional\n- Wellness-tech SaaS (meditation apps, sleep tracking, supplement brands)\n- Any brand that wants to feel approachable, calm, premium WITHOUT feeling sterile\n\n## When to NOT use\n- Anything where bold/loud first impression matters (trades, gyms, e-commerce)\n- Anything where conversion needs to happen in the first viewport — this is exploratory, not transactional\n- Anywhere the color palette demands strong brand colors (the only color here is electric green in selection)\n- Anyone whose audience finds the inline UI element gimmicky\n\n## Reference source\nmotionsites.ai \"Modern Agency\" prompt — actually builds the \"mėntality\" brand. Title on the catalog is misleading: this is a mental-wellness aesthetic, not a generic agency direction. Extracted Jun 11 2026.\n\n## Library cross-references\n- Motif: `inline-ui-element-in-heading` (the pill-eye element)\n- Motif: `mixed-color-headline-within-line`\n- Motif: `glassmorphic-top-navbar`\n- Motif: `selection-as-brand-accent`\n- Motif: `search-pill-as-primary-cta`\n- Typography: `inter-outfit-pairing`\n- Color palette: `warm-off-white-electric-green-selection`"
   },
   {
+    "slug": "bookedup-deep-shadow-saas",
+    "name": "BookedUp — Deep Shadow SaaS / Productized Service",
+    "vibe": [
+      "warm",
+      "premium-but-approachable",
+      "productized",
+      "fully-booked",
+      "social-proof-heavy"
+    ],
+    "industries": [
+      "productized agencies",
+      "consultancies",
+      "lead-gen / growth marketing services",
+      "fractional executives",
+      "course creators",
+      "SaaS with a service component",
+      "booked-out solo operators",
+      "premium freelancers"
+    ],
+    "useCases": [
+      "hero",
+      "full-landing"
+    ],
+    "tierRequired": "studio_plus",
+    "visualPreview": {
+      "static": "/templates/bookedup-deep-shadow-saas.png",
+      "animated": "/templates/bookedup-deep-shadow-saas.mp4"
+    },
+    "typography": {
+      "display": "SK Reykjavik Rounded Regular",
+      "body": "Inter"
+    },
+    "colorPalette": [
+      "#f7f7f7",
+      "#202020",
+      "#f25c40",
+      "#52d352",
+      "#d1f2d1",
+      "#ffb648"
+    ],
+    "motifs": [
+      "Pulse badge",
+      "DeepShadow components",
+      "`DeepShadowIcon`: a small box (e.g. for an inline TrendingUp icon embedded mid-headline) w",
+      "`DeepShadowButton`: a CTA pill with a `bg-[#212121] blur-[25px]` glowing shadow that scale",
+      "`DeepShadowAvatar`: a portrait with a black blur underneath; one of the four avatars in th",
+      "Inline display-icon-mid-headline",
+      "Infinite vertical client marquee",
+      "Top + bottom fade masks",
+      "4-avatar social proof row",
+      "5-star amber rating",
+      "Tracking-tight giant headline"
+    ],
+    "whenToUse": [
+      "Productized agencies / consultancies (the headline pitch is \"we are booked out and you should book now\")",
+      "Lead-gen / growth-marketing services",
+      "Fractional executives (CMO, COO, CFO services)",
+      "Course creators with high-touch cohorts",
+      "SaaS with a service component (where the founder's calendar is the conversion path)",
+      "Booked-out solo operators wanting to scale to a small team",
+      "Premium freelancers / consultants",
+      "Anyone who can demo \"look at how full my calendar is\" as social proof"
+    ],
+    "whenNotToUse": [
+      "Anyone NOT booked out — the marquee is the conversion driver; an empty calendar destroys the pitch",
+      "E-commerce — wrong format entirely",
+      "Local services / blue collar — wrong audience register, the warm off-white reads as too soft",
+      "Brands where speed-to-call IS the conversion (use `trades-phone-first-emergency`)",
+      "Anyone whose conversion is buying a product, not booking a time"
+    ],
+    "buildComplexity": "medium",
+    "source": "motionsites.ai (BookedUp prompt — premium tier, extracted Jun 11 2026)",
+    "featured": false,
+    "newUntil": null,
+    "promptText": "## Hero treatment\nA split-column hero on warm off-white (`#F7F7F7`). The LEFT column carries the value prop: a small pulse-dot badge (\"● BOOKING FOR SUMMER\" — signaling fully booked but accepting), a giant tracking-tight headline (\"Expanding [inline glowing icon] reach with every lead\") that embeds a small `DeepShadow` icon BOX inline mid-sentence, a soft subhead, a CTA pair (primary \"Scale revenue now\" with glowing button shadow + secondary \"Start Here\" with Play icon), and a social-proof row showing 4 verified-client avatars (with a glowing accent on the 2nd) beside a 5-star \"Top tier quality 5/5\" rating.\n\nThe RIGHT column is the SECRET SAUCE: an INFINITE VERTICAL MARQUEE of fake \"client booking\" cards scrolling slowly upward, each card showing a day + date + 1-2 mock consultation entries with avatar + name + time slot. The cards alternate a slight rotation (`rotate-3` / `-rotate-3`) for visual rhythm. Top and bottom fade masks blur the marquee edges. The whole right column signals \"I am SO booked out, look at this calendar.\"\n\n## Page layout\nSingle hero designed for `lg:grid-cols-[1.2fr_0.8fr] gap-12`. On mobile, the marquee column drops below the value prop column (or hides entirely on the smallest screens). Max width `1440px`. The marquee is the conversion driver — it's the visible-proof-of-demand element that makes the visitor want to book NOW before the slots fill.\n\n## Typography\n- Display: SK Reykjavik Rounded Regular (custom from `onlinewebfonts.com`) — a slightly rounded display with personality\n- Body + nav: Inter — weights 100-900, including italic variants\n- Display tracking: `tracking-tight` or `tracking-[-0.02em]` (negative letterspacing for tight elegance)\n- Body color: `#202020` (warm near-black)\n- Subhead color: `text-neutral-500`\n\n## Color palette\n- Background: `#F7F7F7` (warm off-white — feels like premium paper, NOT pure white)\n- Body text: `#202020` (warm near-black)\n- Subhead text: `neutral-500` (mid-gray)\n- Accent (CTA + inline icon + glowing avatar): `#F25C40` (warm orange-red — feels modern + warm)\n- Pulse dot badge accent: `#52D352` (green) with pale green border `#D1F2D1`\n- Star rating: `#FFB648` (amber)\n- Card surfaces: `bg-white` with `shadow-[0_4px_20px_rgba(0,0,0,0.03)]` (very soft drop shadow)\n\n## Visual motifs\n- **Pulse badge** with a green dot (`bg-[#52D352] animate-pulse shadow-[0_0_8px_rgba(82,211,82,0.6)]`) signaling live availability — \"BOOKING FOR SUMMER\" — the freshness is the conversion driver\n- **DeepShadow components** (the signature): inline icon boxes, buttons, and avatars get an underlying blurred glowing layer + an inner inset white shadow + an outer warm box-shadow. Three components:\n  - `DeepShadowIcon`: a small box (e.g. for an inline TrendingUp icon embedded mid-headline) with an orange glow underneath + inset highlight\n  - `DeepShadowButton`: a CTA pill with a `bg-[#212121] blur-[25px]` glowing shadow that scales up on hover\n  - `DeepShadowAvatar`: a portrait with a black blur underneath; one of the four avatars in the social proof row has `hasGlow={true}` so the underglow is orange instead of black (a single accent in a row of 4)\n- **Inline display-icon-mid-headline** — the headline `\"Expanding [TrendingUp icon box] reach with every lead\"` has the icon BOX embedded inline as a typography element, not as a separate element. The icon is rotated `-rotate-6` for personality.\n- **Infinite vertical client marquee** (the secret sauce) — a `motion.div` with `animate={{ y: [0, -1200] }}` looping forever, populated by `[...CLIENT_CALLS, ...CLIENT_CALLS, ...CLIENT_CALLS]` (the array tripled for seamless looping). Cards rotate alternately (`rotate-3` / `-rotate-3`) for visual rhythm.\n- **Top + bottom fade masks** on the marquee — `bg-gradient-to-b` / `bg-gradient-to-t from-[#F7F7F7] to-transparent` blur the edges so the marquee feels infinite, not clipped\n- **4-avatar social proof row** with ONE accented (glowing orange) — a tiny detail that draws the eye to a specific \"VIP\" client and reads as curated, not generic\n- **5-star amber rating** as concrete trust signal\n- **Tracking-tight giant headline** — `tracking-tight` or `tracking-[-0.02em]` for editorial elegance on the SK Reykjavik display font\n\n## When to use\n- Productized agencies / consultancies (the headline pitch is \"we are booked out and you should book now\")\n- Lead-gen / growth-marketing services\n- Fractional executives (CMO, COO, CFO services)\n- Course creators with high-touch cohorts\n- SaaS with a service component (where the founder's calendar is the conversion path)\n- Booked-out solo operators wanting to scale to a small team\n- Premium freelancers / consultants\n- Anyone who can demo \"look at how full my calendar is\" as social proof\n\n## When to NOT use\n- Anyone NOT booked out — the marquee is the conversion driver; an empty calendar destroys the pitch\n- E-commerce — wrong format entirely\n- Local services / blue collar — wrong audience register, the warm off-white reads as too soft\n- Brands where speed-to-call IS the conversion (use `trades-phone-first-emergency`)\n- Anyone whose conversion is buying a product, not booking a time\n\n## Build complexity\nMEDIUM complexity. The DeepShadow components are reusable. The infinite vertical marquee is straightforward Framer Motion. Mock client data is the variable — real client booking data (anonymized) reads MUCH better than lorem ipsum. Tier 3 build can ship this in a focused day with anonymized data.\n\n## Library cross-references\n- Motif: `deep-shadow-glowing-component-system` (the signature)\n- Motif: `pulse-badge-with-fresh-availability`\n- Motif: `inline-display-icon-mid-headline`\n- Motif: `infinite-vertical-client-marquee` (vs. the horizontal one in Jack 3D Creator)\n- Motif: `marquee-fade-mask-edges`\n- Motif: `social-proof-row-with-one-glowing-accent`\n- Typography: `sk-reykjavik-plus-inter`\n- Color palette: `warm-off-white-orange-accent-warm-near-black`"
+  },
+  {
     "slug": "cognitra-ai-agency-gray-panel",
     "name": "COGNITRA — AI Agency / Gray Panel Editorial",
     "vibe": [
@@ -509,7 +930,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "pro_plus",
+    "tierRequired": "studio_plus",
     "visualPreview": {
       "static": "/templates/cognitra-ai-agency-gray-panel.png",
       "animated": "/templates/cognitra-ai-agency-gray-panel.mp4"
@@ -585,7 +1006,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "pro_plus",
+    "tierRequired": "studio_plus",
     "visualPreview": {
       "static": "/templates/glassmorphism-purple-pink-agency.png",
       "animated": "/templates/glassmorphism-purple-pink-agency.mp4"
@@ -660,7 +1081,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "pro_plus",
+    "tierRequired": "studio_plus",
     "visualPreview": {
       "static": "/templates/targo-logistics-dark-red-clipped.png",
       "animated": "/templates/targo-logistics-dark-red-clipped.mp4"
@@ -727,7 +1148,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "pro_plus",
+    "tierRequired": "studio_plus",
     "visualPreview": {
       "static": "/templates/codenest-coding-education-dev-platform.png",
       "animated": "/templates/codenest-coding-education-dev-platform.mp4"
@@ -776,210 +1197,6 @@ export const DIRECTIONS: readonly Direction[] = [
     "promptText": "## Hero treatment\nDark-themed full-screen hero with an HLS-streamed video background at 60% opacity. A LIQUID GLASS card floats ABOVE the main headline (`translate-y-[-50px]`) carrying a small `[ 2025 ]` year tag, an italic-serif-accent heading (\"Taught by *Industry* Professionals\"), and a small description. Below the card, the main headline reads \"LAUNCH YOUR CODING CAREER.\" in heavy uppercase, with the final period in green accent. Subtle vertical grid lines at 25%/50%/75% suggest precision. A central SVG ellipse glow in cyan/dark-green adds depth without dominating.\n\nThe signature is the FLOATING LIQUID GLASS CARD positioned above the headline — a small piece of premium UI hovering in front of the main copy, signaling \"this is current / curated / by someone who knows.\"\n\n## Page layout\nSingle full-viewport hero. Vertical hierarchy: floating glass card → main headline → description → CTA. The vertical grid lines + the center-top SVG glow create implicit composition lines without competing with content.\n\n## Typography\n- Display: Inter Extra Bold — uppercase, `tracking-tight`, 40px mobile → 72px desktop\n- Body: Inter\n- Eyebrow: Plus Jakarta Sans, bold, 11px, color `#5ed29c`\n- Italic accent: Instrument Serif italic — used for one word INSIDE the floating card heading (\"Industry\")\n- The final period of the main headline gets the green accent color — a tiny detail that pulls the eye\n\n## Color palette\n- Background: deep near-black `#070b0a` (warm dark with a green hint)\n- Primary text: white\n- Body text: white at 70% opacity\n- Accent: vibrant green `#5ed29c` (mint / fresh / forward — feels modern + technical, NOT corporate green)\n- Glass card surface: `rgba(255, 255, 255, 0.01)` with `background-blend-mode: luminosity`, `backdrop-filter: blur(4px)`, inset 0 1px 1px rgba(255,255,255,0.1) box-shadow\n- Glow: cyan/dark-green hue via SVG ellipse + 25px Gaussian blur filter\n\n## Visual motifs\n- **HLS video streaming background** (the technical signal — using HLS instead of MP4 implies \"production-quality\") at 60% opacity\n- **Liquid glass floating card** above the headline — positioned with `translate-y-[-50px]` so it appears to hover, with a `::before` pseudo-element using `-webkit-mask-composite: xor` and `mask-composite: exclude` for a sharp gradient border frame\n- **Vertical grid lines** at 25% / 50% / 75% (white at 10% opacity) — visible only on desktop, suggests a designed grid system without dominating\n- **Center-top SVG ellipse glow** in cyan / dark green with 25px Gaussian blur — provides depth and color temperature\n- **Italic serif accent inside a sans heading** (\"Taught by *Industry* Professionals\") — the Prisma mixed-style pattern but condensed into a single small card\n- **Year tag `[ 2025 ]`** — signals freshness / current cohort\n- **Bracketed editorial tags** as a visual motif — `[ 2025 ]`, eyebrow labels, suggest curated press-style content\n- **Final-period accent color** — a tiny detail (the period after the headline is green) that demonstrates designer attention\n- **Dark linear gradient overlays** on the video (left to transparent + bottom-up) for headline readability without darkening the whole video\n\n## When to use\n- Coding bootcamps, dev education platforms\n- Technical course creators (online courses, cohort-based learning)\n- Dev tools SaaS marketing pages\n- AI / ML education platforms\n- Dev communities, paid memberships, technical newsletters\n- Technical career platforms (LeetCode-tier, interview prep, ML engineering paths)\n- Brands whose audience is technical AND aspirational (\"I want this to be my career\")\n\n## When to NOT use\n- Non-technical education (use a warmer / softer direction)\n- B2B SaaS that's not dev-tools-adjacent\n- Consumer brands wanting approachability\n- Anyone whose audience finds HLS streaming + glass cards \"trying too hard\"\n- Lifestyle / wellness brands (the technical signal is wrong)\n\n## Build complexity\nMEDIUM complexity. The HLS video streaming + the liquid glass card are reusable patterns, but tuning the glow + grid lines for a specific brand takes iteration. Tier 3 build can ship this direction in 2-3 days.\n\n## Library cross-references\n- Motif: `hls-video-streaming-background`\n- Motif: `floating-liquid-glass-card-above-headline`\n- Motif: `vertical-grid-lines-composition`\n- Motif: `svg-ellipse-glow-center-top`\n- Motif: `italic-serif-accent-in-sans-heading`\n- Motif: `final-period-accent-color`\n- Motif: `bracketed-editorial-year-tag`\n- Typography: `inter-extra-bold-plus-instrument-serif-italic`\n- Color palette: `warm-near-black-mint-green-accent`"
   },
   {
-    "slug": "vanguard-fierce-creative-collective",
-    "name": "Vanguard — Fierce Creative Collective",
-    "vibe": [
-      "bold",
-      "fierce",
-      "world-class",
-      "premium agency",
-      "immersive video"
-    ],
-    "industries": [
-      "creative agency",
-      "design studio",
-      "brand collective",
-      "marketing agency",
-      "video production"
-    ],
-    "useCases": [
-      "hero",
-      "full-landing"
-    ],
-    "tierRequired": "studio",
-    "visualPreview": {
-      "static": "/templates/vanguard-fierce-creative-collective.png",
-      "animated": "/templates/vanguard-fierce-creative-collective.mp4"
-    },
-    "typography": {
-      "display": "FSP DEMO PODIUM Sharp 4.11",
-      "body": "Inter"
-    },
-    "colorPalette": [
-      "#000000",
-      "#ffffff"
-    ],
-    "motifs": [
-      "Looping video background, autoplay-muted-loop-playsInline, `object-cover` fill",
-      "Staggered fade-up animations on every hero element (0s, 0.2s, 0.4s, 0.6s, 0.8s delays)",
-      "Bordered \"GET IN TOUCH\" pill button alongside a solid black \"SEE OUR WORK\" pill",
-      "Award icon + two-line micro-label adjacent to the primary CTA",
-      "Stats row with `flex-wrap`: large bold number + tight tracking, small uppercase label belo",
-      "Mobile full-screen menu overlay with staggered link entrance animations"
-    ],
-    "whenToUse": [
-      "Creative agencies and design studios with great existing video footage",
-      "Brand collectives wanting to feel collaborative + premium",
-      "Production houses, video studios, motion design shops",
-      "Marketing agencies pitching enterprise / mid-market work",
-      "Boutique studios where the founder wants the audience to feel impressed before reading a single word",
-      "Any business where the visitor's first emotional response should be \"this looks expensive\""
-    ],
-    "whenNotToUse": [
-      "Local trades (HVAC, plumbing, roofing, electrical) — visitors need phone number + price hint above the fold, not cinematic video",
-      "Restoration / emergency services — visitor is in a hurry, not browsing",
-      "Medical / legal / financial — credibility comes from clean structure + credentials, not video drama",
-      "Anything that needs to load fast on a poor connection (video bg kills LCP)",
-      "Anything where the client doesn't have great existing video assets (placeholder stock video looks vibe-coded)"
-    ],
-    "buildComplexity": "medium",
-    "source": "motionsites.ai (VANGUARD prompt)",
-    "featured": false,
-    "newUntil": null,
-    "promptText": "## Hero treatment\nSingle viewport-height section with fullscreen looping background video. All content overlaid. Hero text is LEFT-aligned, vertically centered. Three-line display heading dominates the page (\"Design. Disrupt. Conquer.\" style). Stats row at the bottom shows quantitative trust (\"250+ Brands Transformed / 95% Client Retention / 10+ Years in the Game\"). Award badge sits next to the primary CTA. Tagline above the heading uses a small icon + spaced-out caps label.\n\n## Page layout\nSingle viewport hero (h-screen). Mobile-first padding scaling from `px-6` to `px-16` at large screens. Content is bottom-anchored on mobile, vertically centered on desktop. Stats row uses `flex-wrap` to prevent overflow.\n\n## Typography\n- Display: FSP DEMO PODIUM Sharp 4.11 — clamp(2.8rem, 8vw, 7rem), uppercase, `leading-[0.92]`, tight tracking. The brand wordmark uses the same display face at `text-2xl sm:text-3xl`.\n- Body: Inter — weights 400/500/600/700. Nav and CTAs use `text-xs` with `tracking-widest` uppercase. Subtext uses `text-sm sm:text-base`, `leading-relaxed`.\n- Accent: Small caps tagline above the heading uses `tracking-[0.3em]` to feel editorial.\n\n## Color palette\n- Primary: `#000000` (pure black for the CTA button)\n- Secondary: video footage tone provides the warm/dark hue\n- Accent: white (`#FFFFFF`) for all text\n- Text on overlay: `text-white/70` for de-emphasized body, `text-white/50` for stats labels\n- Translucent borders: `border-white/30` on the bordered \"GET IN TOUCH\" CTA\n\n## Visual motifs\n- Looping video background, autoplay-muted-loop-playsInline, `object-cover` fill\n- Staggered fade-up animations on every hero element (0s, 0.2s, 0.4s, 0.6s, 0.8s delays)\n- Bordered \"GET IN TOUCH\" pill button alongside a solid black \"SEE OUR WORK\" pill\n- Award icon + two-line micro-label adjacent to the primary CTA\n- Stats row with `flex-wrap`: large bold number + tight tracking, small uppercase label below\n- Mobile full-screen menu overlay with staggered link entrance animations\n\n## When to use\n- Creative agencies and design studios with great existing video footage\n- Brand collectives wanting to feel collaborative + premium\n- Production houses, video studios, motion design shops\n- Marketing agencies pitching enterprise / mid-market work\n- Boutique studios where the founder wants the audience to feel impressed before reading a single word\n- Any business where the visitor's first emotional response should be \"this looks expensive\"\n\n## When to NOT use\n- Local trades (HVAC, plumbing, roofing, electrical) — visitors need phone number + price hint above the fold, not cinematic video\n- Restoration / emergency services — visitor is in a hurry, not browsing\n- Medical / legal / financial — credibility comes from clean structure + credentials, not video drama\n- Anything that needs to load fast on a poor connection (video bg kills LCP)\n- Anything where the client doesn't have great existing video assets (placeholder stock video looks vibe-coded)\n\n## Reference source\nmotionsites.ai VANGUARD prompt — extracted 2026-06-11.\n\n## Library cross-references\n- Motif: `cursor-spotlight-reveal-canvas-mask` (alternative hero treatment for this vibe)\n- Typography: `podium-display-inter-body` (the specific pairing)\n- Color palette: `monochrome-on-video-overlay` (the color system)"
-  },
-  {
-    "slug": "prisma-cinematic-cream-collective",
-    "name": "Prisma — Cinematic Cream Collective",
-    "vibe": [
-      "cinematic",
-      "moody",
-      "editorial",
-      "warm-cream",
-      "sophisticated"
-    ],
-    "industries": [
-      "creative studio",
-      "filmmakers",
-      "photographers",
-      "visual arts",
-      "hospitality (boutique)",
-      "high-end brand identity"
-    ],
-    "useCases": [
-      "hero",
-      "full-landing"
-    ],
-    "tierRequired": "studio",
-    "visualPreview": {
-      "static": "/templates/prisma-cinematic-cream-collective.png",
-      "animated": "/templates/prisma-cinematic-cream-collective.mp4"
-    },
-    "typography": {
-      "display": "Almarai",
-      "body": "Almarai"
-    },
-    "colorPalette": [
-      "#000000",
-      "#101010",
-      "#212121",
-      "#e1e0cc",
-      "#dedbc8"
-    ],
-    "motifs": [
-      "Inset hero container with rounded corners (`rounded-2xl md:rounded-[2rem]`)",
-      "SVG noise texture overlay on hero video (`feTurbulence baseFrequency=0.85 numOctaves=3`, 0",
-      "Hanging black pill navbar (rounded-b only, sits flush with top edge)",
-      "Giant display word as the focal point, bottom-anchored in the hero",
-      "Superscript asterisk on final character of the display word",
-      "Words-pull-up text animation: each word slides up from `y:20` with 0.08s staggered delay, ",
-      "Mixed style heading where one phrase inside a longer heading switches to italic serif",
-      "Scroll-linked character-by-character opacity reveal on body text (uses `useScroll` + `useT",
-      "4-column feature card grid that combines a video card (full bleed) + 3 dark icon+checklist",
-      "Each feature card has a numbered indicator (01, 02, 03) and a \"Learn more →\" link with a r"
-    ],
-    "whenToUse": [
-      "Creative studios and production houses",
-      "Filmmakers, directors, cinematographers",
-      "Photographers (high-end portrait, fashion, editorial)",
-      "Visual artists and visual development collectives",
-      "Boutique hotels and hospitality brands wanting an editorial / \"designed by an art director\" feel",
-      "High-end brand identity agencies",
-      "Anyone whose audience reads design magazines"
-    ],
-    "whenNotToUse": [
-      "Local trades — too slow to load, too editorial, not enough trust signal",
-      "Health / legal / financial — wrong emotional register entirely",
-      "E-commerce (the focal display word competes with product photography)",
-      "Anything where the visitor needs to convert quickly",
-      "Anything that needs to look \"approachable / family-friendly\" instead of \"curated\""
-    ],
-    "buildComplexity": "medium",
-    "source": "motionsites.ai (Prisma prompt)",
-    "featured": false,
-    "newUntil": null,
-    "promptText": "## Hero treatment\nFull viewport with `p-4 md:p-6` outer padding creating an inset effect (the page itself frames the hero). Inside is a rounded-2xl container with overflow-hidden. Background video fills the inset frame with a noise overlay (`mix-blend-overlay`, 0.7 opacity) and a subtle gradient. The brand name \"Prisma\" sits as a giant display word at the BOTTOM of the hero in a 12-column grid (left 8 cols), with a 4-column description paragraph + CTA on the right. The display word features a superscript asterisk (*) on its final letter.\n\nThe navbar is a black pill that HANGS DOWN from the top edge (rounded-b-2xl) with the centered links.\n\n## Page layout\nThree sections total: Hero (inset framed) → About (centered black card with italic display + scroll-revealed body text) → Features (4-column card grid with mixed video + image content). The About section uses a scroll-linked character-by-character opacity reveal on the body paragraph — characters fade in from 0.2 → 1 opacity as the reader scrolls past.\n\n## Typography\n- Primary face: Almarai (Google Fonts) — weights 300/400/700/800. Used globally including the giant \"Prisma\" word.\n- Italic accent: Instrument Serif (italic only) — used for a single italic phrase inside an otherwise sans heading (\"I am Marcus Chen, *a self-taught director.* I have skills in...\")\n- Display sizing: clamp-style responsive — the brand word uses `text-[26vw] sm:text-[24vw] md:text-[22vw] lg:text-[20vw]` with `tracking-[-0.07em]` and `leading-[0.85]`\n- Color: globally `text-primary` = `#E1E0CC` (warm cream)\n\n## Color palette\n- Background: `#000000` global, `#101010` for the About card, `#212121` for Features cards\n- Primary text: `#E1E0CC` (warm cream — applied via inline style; differs subtly from the Tailwind primary)\n- Tailwind primary: `#DEDBC8` (warm cream — used in utility classes like `text-primary/70`)\n- Gray: `text-gray-400`, `text-gray-500` (secondary copy)\n- Nav link: `rgba(225,224,204,0.8)` with hover `#E1E0CC`\n\n## Visual motifs\n- Inset hero container with rounded corners (`rounded-2xl md:rounded-[2rem]`) — the page itself frames the hero\n- SVG noise texture overlay on hero video (`feTurbulence baseFrequency=0.85 numOctaves=3`, 0.7 opacity, `mix-blend-overlay`)\n- Hanging black pill navbar (rounded-b only, sits flush with top edge)\n- Giant display word as the focal point, bottom-anchored in the hero\n- Superscript asterisk on final character of the display word\n- Words-pull-up text animation: each word slides up from `y:20` with 0.08s staggered delay, triggered by `useInView`\n- Mixed style heading where one phrase inside a longer heading switches to italic serif\n- Scroll-linked character-by-character opacity reveal on body text (uses `useScroll` + `useTransform`, each character's opacity tied to scroll progress)\n- 4-column feature card grid that combines a video card (full bleed) + 3 dark icon+checklist cards\n- Each feature card has a numbered indicator (01, 02, 03) and a \"Learn more →\" link with a rotated arrow (-45deg)\n\n## When to use\n- Creative studios and production houses\n- Filmmakers, directors, cinematographers\n- Photographers (high-end portrait, fashion, editorial)\n- Visual artists and visual development collectives\n- Boutique hotels and hospitality brands wanting an editorial / \"designed by an art director\" feel\n- High-end brand identity agencies\n- Anyone whose audience reads design magazines\n\n## When to NOT use\n- Local trades — too slow to load, too editorial, not enough trust signal\n- Health / legal / financial — wrong emotional register entirely\n- E-commerce (the focal display word competes with product photography)\n- Anything where the visitor needs to convert quickly\n- Anything that needs to look \"approachable / family-friendly\" instead of \"curated\"\n\n## Reference source\nmotionsites.ai Prisma prompt — extracted 2026-06-11.\n\n## Library cross-references\n- Motif: `scroll-linked-character-opacity-reveal` (the standout body-text effect)\n- Motif: `noise-overlay-svg-fractal` (the cinematic film grain)\n- Motif: `inset-rounded-hero-frame` (the page-frames-the-hero pattern)\n- Typography: `almarai-instrument-serif-italic` (the specific pairing)\n- Color palette: `warm-cream-on-deep-black` (the color system)"
-  },
-  {
-    "slug": "jack-3d-creator-portfolio",
-    "name": "Jack — 3D Creator Portfolio",
-    "vibe": [
-      "bold",
-      "premium",
-      "portfolio",
-      "gradient-display",
-      "interactive"
-    ],
-    "industries": [
-      "3D artists",
-      "motion designers",
-      "brand identity studios",
-      "individual creator portfolios",
-      "agencies showcasing personal craft"
-    ],
-    "useCases": [
-      "hero",
-      "full-landing"
-    ],
-    "tierRequired": "studio",
-    "visualPreview": {
-      "static": "/templates/jack-3d-creator-portfolio.png",
-      "animated": "/templates/jack-3d-creator-portfolio.mp4"
-    },
-    "typography": {
-      "display": "Kanit",
-      "body": "Kanit"
-    },
-    "colorPalette": [
-      "#0c0c0c",
-      "#ffffff",
-      "#d7e2ea",
-      "#646973",
-      "#bbccd7",
-      "#18011f"
-    ],
-    "motifs": [
-      "Magnetic hover portrait",
-      "Parallax marquee rows",
-      "Gradient display text",
-      "Sticky-stacking project cards",
-      "Multi-color gradient pill CTA",
-      "Character-by-character scroll-reveal",
-      "Decorative corner 3D icons",
-      "Numbered service rows"
-    ],
-    "whenToUse": [
-      "Individual creator portfolios (3D artists, motion designers, illustrators, photographers)",
-      "Personal brand sites for agency principals or freelancers",
-      "Brand identity studios where the founder IS the brand",
-      "Anyone with a strong visual aesthetic and a real body of work to showcase",
-      "High-end portfolio-driven verticals (architecture, interior design, industrial design)",
-      "Studios where \"the founder's craft is the product\""
-    ],
-    "whenNotToUse": [
-      "Local services / blue collar — the gradient pill CTA reads as \"tech startup\" not \"neighborhood pro\"",
-      "E-commerce — the scroll-driven page is too long for product browsing",
-      "Anything that needs to convert in the first viewport",
-      "B2B SaaS marketing — too portfolio-feel",
-      "Anyone without a strong existing visual portfolio (this style is brutal to fake)"
-    ],
-    "buildComplexity": "medium",
-    "source": "motionsites.ai (Jack — 3D Creator prompt)",
-    "featured": false,
-    "newUntil": null,
-    "promptText": "## Hero treatment\nMassive gradient-filled display heading (\"Hi, I'm jack\") spans nearly the full viewport width using `text-[14vw]` scaling to `text-[17.5vw]` at desktop. The display gradient runs `#646973 → #BBCCD7` (cool gunmetal to icy steel) via `-webkit-background-clip: text`. A magnetic-hover portrait sits centered absolutely below the heading — the portrait follows the cursor within a 150px radius with a strength factor of 3, smoothly easing out on cursor exit. The page background is `#0C0C0C`.\n\nA bottom bar pairs a short ALL-CAPS tagline on the left with a colorful gradient pill CTA on the right (the CTA uses a multicolor gradient: deep purple → magenta → orange).\n\n## Page layout\nFive sections:\n1. Hero (full viewport, gradient display + magnetic portrait)\n2. Marquee (two horizontal rows of 21 portfolio thumbnails that scroll opposite directions based on page scroll position — parallax effect)\n3. About (centered, with 4 decorative 3D icons in each corner, gradient display heading, character-reveal body text)\n4. Services (WHITE background, 5 numbered service rows separated by hairline borders)\n5. Projects (dark background, 3 STICKY-STACKING cards that scale down 0.97 → 1.0 as scroll moves past, creating a depth-stack effect)\n\n## Typography\n- Display + body: Kanit (Google Fonts) — weights 300/400/500/700/900\n- Hero gradient: `linear-gradient(180deg, #646973 0%, #BBCCD7 100%)` clipped to text\n- Sizing approach: heavy use of `clamp()` for fluid typography across viewports\n- Service numbers: clamp(3rem, 10vw, 140px), font-black\n- Body text color: `#D7E2EA` (cool pale blue) on the dark sections, `#0C0C0C` on the white services section\n\n## Color palette\n- Background dark: `#0C0C0C` (true near-black)\n- Background light: `#FFFFFF` (services section only — strong contrast inversion)\n- Primary text on dark: `#D7E2EA` (cool icy blue)\n- Display gradient: `#646973 → #BBCCD7`\n- Pill CTA gradient: `#18011F → #B600A8 → #7621B0 → #BE4C00` (deep purple → magenta → orange)\n- Pill CTA shadow: inner shadow `0px 4px 4px rgba(181,1,167,0.25)` + `4px 4px 12px #7721B1`\n\n## Visual motifs\n- **Magnetic hover portrait** — image follows cursor within a 150px activation radius, transforms via translate3d divided by strength, smooth in/out transitions (0.3s/0.6s)\n- **Parallax marquee rows** — two horizontal rows of thumbnails, one scrolls right, one scrolls left, speed = `(scrollY - sectionTop + viewportHeight) * 0.3`\n- **Gradient display text** with -webkit-background-clip on a giant clamp-sized heading\n- **Sticky-stacking project cards** — each card uses `position: sticky; top: 6rem`, scales as scroll progresses, creating an accordion-depth stack\n- **Multi-color gradient pill CTA** with deep purple → magenta → orange and complex inner shadows\n- **Character-by-character scroll-reveal** on body text (same pattern as Prisma)\n- **Decorative corner 3D icons** anchoring the About section (moon, lego, 3D objects)\n- **Numbered service rows** with massive numbers (clamp 3rem-140px) + name + description, separated by hairline borders\n\n## When to use\n- Individual creator portfolios (3D artists, motion designers, illustrators, photographers)\n- Personal brand sites for agency principals or freelancers\n- Brand identity studios where the founder IS the brand\n- Anyone with a strong visual aesthetic and a real body of work to showcase\n- High-end portfolio-driven verticals (architecture, interior design, industrial design)\n- Studios where \"the founder's craft is the product\"\n\n## When to NOT use\n- Local services / blue collar — the gradient pill CTA reads as \"tech startup\" not \"neighborhood pro\"\n- E-commerce — the scroll-driven page is too long for product browsing\n- Anything that needs to convert in the first viewport\n- B2B SaaS marketing — too portfolio-feel\n- Anyone without a strong existing visual portfolio (this style is brutal to fake)\n\n## Reference source\nmotionsites.ai Jack — 3D Creator prompt — extracted 2026-06-11.\n\n## Library cross-references\n- Motif: `magnetic-portrait-hover-followup`\n- Motif: `parallax-marquee-scroll-rows`\n- Motif: `sticky-stacking-project-cards`\n- Motif: `gradient-display-text-clip`\n- Typography: `kanit-gradient-display`\n- Color palette: `near-black-icy-blue-multicolor-pill`"
-  },
-  {
     "slug": "mainframe-mouse-scrub-agency",
     "name": "Mainframe — Mouse-Scrub Agency",
     "vibe": [
@@ -1001,7 +1218,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "studio",
+    "tierRequired": "studio_plus",
     "visualPreview": {
       "static": "/templates/mainframe-mouse-scrub-agency.png",
       "animated": "/templates/mainframe-mouse-scrub-agency.mp4"
@@ -1048,77 +1265,6 @@ export const DIRECTIONS: readonly Direction[] = [
     "promptText": "## Hero treatment\nFull viewport hero with a MOUSE-SCRUB CONTROLLED video as the background — the video doesn't autoplay; it advances/rewinds based on horizontal mouse movement (the cursor literally scrubs through the video). All content is overlaid: a blurred intro label (deliberately fuzzy: \"Hey there, meet A.R.I.A, Mainframe's Adaptive Response Interface Agent\"), a typewriter-revealed agent greeting (\"Glad you stopped in. Good taste tends to find us. Now, what are we building?\"), and a stack of 5 pill buttons offering pre-canned conversational entry points (\"Pitch us an idea / Come work here / Send a brief hello / See how we operate / Reach us: hello@mainframe.co\").\n\nThe brand wordmark \"Mainframe(R)\" sits in a tight top-left navbar pairing with a decorative asterisk character. Nav links are comma-separated inline at large display sizing (\"Labs, Studio, Openings, Shop\"). The whole page reads as if you've started a conversation with the agency rather than landed on a website.\n\n## Page layout\nSingle full-viewport hero with bottom-anchored content on mobile (`justify-end pb-12`), centered on desktop. The content sits in a `max-w-xl` block — narrow, like a chat thread — overlaid on the mouse-scrub video. The pill buttons are LEFT-aligned (not centered) which makes the page feel like a real interface, not a marketing landing page.\n\n## Typography\n- Display: HelveticaNowDisplay-Medium (via custom @font-face from `db.onlinewebfonts.com`)\n- Body: HelveticaNowDisplayW01-Rg (custom font)\n- CSS variables: `--font-heading` for the wordmark, `--font-body` everywhere else\n- Body sizing: `clamp(18px, 4vw, 26px)` for the headline and typewriter content (large but responsive)\n- Pill buttons: `text-[13px] sm:text-[15px]` (small, deliberately interface-like)\n\n## Color palette\n- Background: video provides ambient tone (Mainframe's video is dark/moody)\n- Primary text: black (`#000000`)\n- Body text: dark on light video sections\n- Pill buttons: white pills with black text, hover inverts to black with white text\n- Outline pill (for the email): white text with white border, hover inverts to white bg with black text\n- Mobile overlay: `bg-white/95 backdrop-blur-sm`\n\n## Visual motifs\n- **Mouse-scrub controlled video** (the signature mechanic) — the video doesn't autoplay; horizontal mouse movement advances or rewinds through it. Implementation: `mousemove` listener with `delta = currentX - prevX`, `(delta / window.innerWidth) * SENSITIVITY * video.duration`, `SENSITIVITY = 0.8`, clamp `targetTime` to `[0, video.duration]`, seek via `video.currentTime`, use `onSeeked` handler to queue the next seek (prevents flooding)\n- **Deliberately blurred intro label** with `filter: blur(4px)` — the visitor sees there's text, but it's not for them yet; it's an intro to the AGENT, not the visitor\n- **Typewriter agent greeting** with custom hook (38ms per char, 600ms start delay, blinking cursor that disappears when done)\n- **Pre-canned conversation entry pill buttons** — 4 white pills + 1 outline pill (the email contact with a copy icon that copies the email to clipboard on click)\n- **Comma-separated inline nav** — \"Labs, Studio, Openings, Shop\" with literal commas between, set at `text-[23px]` so they read as a sentence not a menu\n- **Decorative asterisk** (`✳︎`) alongside the brand wordmark — a tiny visual flourish that signals \"we have a sense of style\"\n- **Animated hamburger** with 3 bars that rotate to an X on toggle (300ms transitions)\n- **Stagger-in pill buttons** (fade + slide up after 400ms, INDEPENDENT of the typewriter — visitors don't have to wait for typing to finish to interact)\n\n## When to use\n- Creative agencies and design studios with a strong \"we have personality\" brand\n- AI-adjacent studios (the agent framing is on-brand)\n- Brand identity studios that lean technical (not arts-only)\n- Dev shops with a polished brand\n- Product studios pitching enterprise work\n- Agencies that want their site to feel like a chat with the founder, not a brochure\n- BOS Studios's own next-tier site if it ever needed a refresh (the agent framing fits the BOS narrative)\n\n## When to NOT use\n- Anyone without great existing video (the mouse-scrub is the whole point — needs interesting footage)\n- Anyone whose audience finds AI/agent framing performative\n- Local services / blue collar — wrong audience entirely\n- Conversion-driven landing pages where visitors need to find a phone number fast\n- E-commerce — the conversation framing doesn't fit \"browse products\"\n- Accessibility-critical sites — the mouse-scrub is hard to translate to touch/keyboard\n\n## Reference source\nmotionsites.ai catalog title \"Liquid Glass Agency\" — actual brand inside the prompt is \"Mainframe(R)\" with a decorative asterisk and a real AI-agent framing. Extracted Jun 11 2026. The \"Liquid Glass\" catalog name doesn't reflect the actual design.\n\n## Library cross-references\n- Motif: `mouse-scrub-video-control` (the signature mechanic)\n- Motif: `typewriter-agent-greeting`\n- Motif: `pre-canned-conversation-pill-buttons`\n- Motif: `comma-separated-inline-nav`\n- Motif: `deliberately-blurred-intro-label`\n- Motif: `decorative-asterisk-flourish`\n- Typography: `helvetica-now-display`\n- Color palette: `video-overlay-black-white-inverting-pills`"
   },
   {
-    "slug": "lithos-geology-editorial",
-    "name": "Lithos — Geology Editorial",
-    "vibe": [
-      "editorial",
-      "premium",
-      "evidence-based",
-      "geological",
-      "serious",
-      "magazine-quality"
-    ],
-    "industries": [
-      "restoration (high-end)",
-      "assessment",
-      "environmental services",
-      "science-based services",
-      "museums",
-      "premium consumer brands with a \"discovery\" angle",
-      "hospitality with a sense-of-place story"
-    ],
-    "useCases": [
-      "hero",
-      "full-landing"
-    ],
-    "tierRequired": "studio",
-    "visualPreview": {
-      "static": "/templates/lithos-geology-editorial.png",
-      "animated": "/templates/lithos-geology-editorial.mp4"
-    },
-    "typography": {
-      "display": "Playfair Display ITALIC",
-      "body": "Inter"
-    },
-    "colorPalette": [
-      "#e8702a",
-      "#d2611f",
-      "#ffffff",
-      "#000000"
-    ],
-    "motifs": [
-      "Cursor spotlight reveal between two images",
-      "Mixed-style display heading",
-      "Editorial corner anchors",
-      "Italic serif wordmark in the nav",
-      "Premium load animations",
-      "Ken Burns intro",
-      "Frosted navbar pill",
-      "Orange action CTA"
-    ],
-    "whenToUse": [
-      "High-end restoration / environmental services (Hanes Environmental tier)",
-      "Assessment + investigation services (forensic, geological, scientific)",
-      "Museums, science centers, planetariums",
-      "Premium consumer brands with a \"discovery / earth / origin\" story (artisan food, natural cosmetics, mineral-based skincare)",
-      "Hospitality brands with a strong sense-of-place narrative",
-      "Anyone where the visitor should feel they're learning something credible, not being sold to",
-      "Brands that want to feel \"Smithsonian\" / \"National Geographic\" / \"MoMA\" rather than \"Bay Area startup\""
-    ],
-    "whenNotToUse": [
-      "Local trades — wrong emotional register (too editorial, too slow)",
-      "E-commerce — the cursor mechanic competes with product browsing",
-      "Lifestyle brands targeting young, mass-market audiences — too slow-paced",
-      "Anything where the visitor needs to convert in seconds",
-      "Anyone without a credible \"discovery / depth / craft\" story to tell"
-    ],
-    "buildComplexity": "medium",
-    "source": "motionsites.ai (Lithos prompt)",
-    "featured": false,
-    "newUntil": null,
-    "promptText": "## Hero treatment\nFull viewport (`100dvh`) with a base geological-imagery background and a SECOND image revealed through a cursor-following spotlight (same canvas-mask mechanic as the Cyberpunk direction but applied to nature/material imagery rather than cyber/red). The display heading sits TOP-CENTER in two lines using Playfair Display ITALIC for line 1 and a tight non-italic sans for line 2 — a mixed-style heading reading like a magazine masthead. A short editorial paragraph anchors the bottom-LEFT corner; the primary CTA + supporting paragraph anchor the bottom-RIGHT.\n\nThe brand wordmark in the navbar uses the Playfair italic for a hand-set newspaper feel.\n\n## Page layout\nSingle viewport hero (`100dvh`) with content layered over a base image + cursor reveal layer. Heading is top-centered (instead of bottom-anchored as in most heroes). Two text columns anchor opposite bottom corners.\n\n## Typography\n- Display: Playfair Display ITALIC (Google Fonts, italic 400/500/600) — used for line 1 of the heading and the brand wordmark\n- Body + display line 2: Inter (Google Fonts) — weights 300/400/500/600/700, global default\n- Heading sizing: `text-5xl sm:text-7xl md:text-8xl` with `letterSpacing: '-0.05em'` on the italic line and `'-0.08em'` on the sans line\n- Global tracking: `tracking-[-0.02em]` on root\n\n## Color palette\n- Background: dark (full black + dark imagery)\n- Primary text: white (with `text-white/80` for body)\n- CTA: bright orange `#e8702a` with hover `#d2611f`, hover shadow `#e8702a/30`\n- Translucent surfaces: `bg-white/20 backdrop-blur-md` for the navbar pill, `border-white/30` borders\n\n## Visual motifs\n- **Cursor spotlight reveal between two images** (same mechanic as Cyberpunk, different content register — this is the geology / restoration / discovery version)\n- **Mixed-style display heading** — italic Playfair line 1 + tight sans line 2, top-centered like a magazine masthead\n- **Editorial corner anchors** — short paragraph bottom-left, CTA + paragraph bottom-right, deliberately asymmetric\n- **Italic serif wordmark in the nav** (the brand reads as a magazine masthead, not a SaaS logo)\n- **Premium load animations** — `heroReveal` keyframe (opacity 0 + y 28px + blur 12px → clear) staggered 0.25s / 0.42s / 0.7s / 0.85s\n- **Ken Burns intro** on base image (`scale 1.12 → 1.0` over 1.8s)\n- **Frosted navbar pill** (`bg-white/20 backdrop-blur-md border border-white/30 rounded-full`) — feels like a museum kiosk overlay\n- **Orange action CTA** that lifts the eye instantly without using a bright primary blue\n\n## When to use\n- High-end restoration / environmental services (Hanes Environmental tier)\n- Assessment + investigation services (forensic, geological, scientific)\n- Museums, science centers, planetariums\n- Premium consumer brands with a \"discovery / earth / origin\" story (artisan food, natural cosmetics, mineral-based skincare)\n- Hospitality brands with a strong sense-of-place narrative\n- Anyone where the visitor should feel they're learning something credible, not being sold to\n- Brands that want to feel \"Smithsonian\" / \"National Geographic\" / \"MoMA\" rather than \"Bay Area startup\"\n\n## When to NOT use\n- Local trades — wrong emotional register (too editorial, too slow)\n- E-commerce — the cursor mechanic competes with product browsing\n- Lifestyle brands targeting young, mass-market audiences — too slow-paced\n- Anything where the visitor needs to convert in seconds\n- Anyone without a credible \"discovery / depth / craft\" story to tell\n\n## Reference source\nmotionsites.ai Lithos prompt — extracted 2026-06-11.\n\n## Library cross-references\n- Motif: `cursor-spotlight-reveal-canvas-mask` (shared with cyberpunk)\n- Motif: `mixed-style-italic-display-heading`\n- Motif: `editorial-corner-anchors-asymmetric`\n- Motif: `frosted-navbar-pill`\n- Motif: `premium-blur-rise-load-animations`\n- Typography: `playfair-italic-inter`\n- Color palette: `dark-with-orange-action`"
-  },
-  {
     "slug": "spd-luxury-automation-cinematic",
     "name": "S.P.D — Luxury Automation Cinematic",
     "vibe": [
@@ -1139,7 +1285,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "studio",
+    "tierRequired": "studio_plus",
     "visualPreview": {
       "static": "/templates/spd-luxury-automation-cinematic.png",
       "animated": "/templates/spd-luxury-automation-cinematic.mp4"
@@ -1211,7 +1357,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "studio",
+    "tierRequired": "studio_plus",
     "visualPreview": {
       "static": "/templates/cinematic-space-travel-aerospace.png",
       "animated": "/templates/cinematic-space-travel-aerospace.mp4"
@@ -1259,80 +1405,6 @@ export const DIRECTIONS: readonly Direction[] = [
     "promptText": "## Hero treatment\nTwo full-viewport sections with looping background videos, custom-JavaScript crossfade transitions (NOT CSS transitions — every fade is rAF-driven), and a shared LIQUID-GLASS design system. Section 1 is the hero with a Mars / aerospace background video; section 2 is \"Capabilities\" with three feature cards. The signature visual element is the **liquid-glass chrome** — translucent surfaces with subtle inset gradient borders that look like polished glass over the video.\n\nThe brand is an aerospace collective (\"Aeon · Vela · Apex · Orbit · Zeno\") with a tagline about \"Maiden Crewed Voyage to Mars Arrives 2026.\" Every italic serif element uses Instrument Serif; body text uses Barlow.\n\n## Page layout\nTwo black-background sections, each min-h-screen. Section 1 holds the navbar, hero content (badge → headline → subheading → CTA pair → stats row), and a partners row at the bottom. Section 2 holds a kicker label, a two-line italic headline, and a three-card capabilities grid. All overlaid on full-bleed video without dark overlay — the contrast comes entirely from the liquid-glass chrome.\n\n## Typography\n- Display: Instrument Serif (Google Fonts, ital@0;1) — ALWAYS italic in use. Used for hero headline, large numbers, brand wordmarks, and section headings.\n- Body + nav: Barlow (weights 300/400/500/600)\n- Headline sizing: `text-6xl md:text-7xl lg:text-[5.5rem]` with `tracking-[-4px]` (very tight)\n- Tracking: heavy negative letter-spacing on display (`tracking-[-4px]`, `tracking-[-3px]`, `tracking-[-1px]`)\n\n## Color palette\n- Background: pure black (`#000`)\n- Primary text: white throughout (no gradient, no green, no other accent colors)\n- De-emphasized body: `text-white/90`, `text-white/80`\n- Liquid-glass surfaces: `background: rgba(255,255,255,0.01); background-blend-mode: luminosity; backdrop-filter: blur(4px)` (light) or `blur(50px)` (strong)\n- Liquid-glass border: 1.4px linear-gradient mask (top/bottom highlights at 0.45 opacity, fading to 0 in the middle)\n- CTA primary uses `liquid-glass-strong` (heavier blur + box-shadow)\n- CTA solid button: `bg-white text-black` for the small \"Claim a Spot\" navbar action\n\n## Visual motifs\n- **Liquid-glass utility system** (the signature) — two variants (`.liquid-glass` and `.liquid-glass-strong`) with inset gradient borders that mimic polished glass. Used on navbar pill, badge, stat cards, CTA, and feature cards.\n- **Custom rAF-driven video crossfade** — videos do NOT loop natively. Custom `FadingVideo` component reads current opacity from `video.style.opacity` so each new fade resumes from wherever the last one left off. On `timeupdate`, when `duration - currentTime <= 0.55s`, triggers `fadeTo(0)`. On `ended`, resets `currentTime = 0` and fades back to 1. Result: smooth crossfade loop with NO visible cut.\n- **Word-by-word BlurText animation** (the headline reveal) — IntersectionObserver at 10% visibility. Each word splits into a `motion.span` with three-step keyframes: `blur(10px) opacity 0 y 50 → blur(5px) opacity 0.5 y -5 → blur(0px) opacity 1 y 0`. Stagger: `delay = (i * 100) / 1000s`. Letter-spacing `-4px` eats the natural space, so explicit `marginRight: 0.28em` is used between words.\n- **Italic serif as DESIGN, not accent** — the entire headline is italic serif. Italic isn't a small flourish here; it's the primary display register.\n- **Liquid-glass badge pill** with embedded white \"New\" chip — pill-within-a-pill announcement\n- **Liquid-glass stat cards** with italic-serif numbers (`text-4xl`, `tracking-[-1px]`) and Material Icons SVG icons\n- **Material Icons (not Lucide)** for the feature card icons — different visual register from the rest of the library\n- **Partners row** as a flat list of italic serif wordmarks (\"Aeon · Vela · Apex · Orbit · Zeno\") — feels like the credits at the end of a film\n- **No CSS transitions on the videos** — every animation is JavaScript-driven (rAF for fade, motion components for entrance)\n\n## When to use\n- Aerospace, space-tech, premium science brands\n- Premium tech with a cinematic story (the brand is selling experience, not features)\n- High-end consumer products with luxury aspirations (premium audio, watches, automotive)\n- Futurist hospitality (space hotels, Antarctic expeditions, luxury cruise, eco-tourism)\n- Premium AI brands wanting to feel like Apollo program, not OpenAI\n- Brands that benefit from the \"Hollywood movie credits\" vibe (italic serif wordmarks)\n- Hanes Environmental tier if rebranded around the discovery/exploration angle\n\n## When to NOT use\n- Anyone without exceptional video assets — the entire direction depends on great background footage\n- Local services / blue collar — wrong audience, wrong register\n- Conversion-driven landing pages — too slow to take in\n- E-commerce — the liquid-glass chrome competes with product photography\n- Anyone whose brand is allergic to italic serif (some clients see it as \"fancy\" in a bad way)\n- Anyone with strict performance budgets — the custom rAF crossfade + Framer Motion + liquid-glass blurs are expensive\n\n## Reference source\nmotionsites.ai \"Cinematic Brand\" prompt — builds a space-travel aerospace collective. Extracted Jun 11 2026. Uses CDN-only React 18 + Tailwind via CDN + Framer Motion via CDN (not a standard Vite build), so a real production version would migrate to a normal Vite + npm install.\n\n## Library cross-references\n- Motif: `liquid-glass-utility-system`\n- Motif: `raf-driven-video-crossfade`\n- Motif: `word-by-word-blur-text-reveal`\n- Motif: `italic-serif-as-display-register`\n- Motif: `partners-as-film-credits`\n- Typography: `instrument-serif-italic-barlow`\n- Color palette: `pure-black-white-liquid-glass-chrome`"
   },
   {
-    "slug": "velar-luxury-real-estate",
-    "name": "Velar. — Luxury Real Estate",
-    "vibe": [
-      "luxury",
-      "editorial",
-      "scroll-driven",
-      "architectural",
-      "sophisticated",
-      "prestige"
-    ],
-    "industries": [
-      "luxury real estate",
-      "architecture firms",
-      "high-end interior design",
-      "prestige hospitality",
-      "art galleries",
-      "premium property management",
-      "estate brokers"
-    ],
-    "useCases": [
-      "hero",
-      "full-landing"
-    ],
-    "tierRequired": "studio",
-    "visualPreview": {
-      "static": "/templates/velar-luxury-real-estate.png",
-      "animated": "/templates/velar-luxury-real-estate.mp4"
-    },
-    "typography": {
-      "display": "Syne",
-      "body": "Inter"
-    },
-    "colorPalette": [
-      "#f5f0ea",
-      "#213138",
-      "#000000",
-      "#ffffff",
-      "#e8e4df"
-    ],
-    "motifs": [
-      "Typewriter preloader",
-      "Scroll-driven house animation",
-      "Color-shifting navigation",
-      "Sticky statement section",
-      "Section slides over previous section",
-      "Hover-expand video gallery",
-      "Background ticker",
-      "Per-viewport responsive type",
-      "Mobile menu as fullscreen overlay"
-    ],
-    "whenToUse": [
-      "Luxury real estate brokers, estate agents, building developers",
-      "Architecture firms with strong portfolio",
-      "High-end interior design studios",
-      "Boutique hotels with editorial-quality photography",
-      "Art galleries, antique dealers, auction houses",
-      "Yacht / private aviation / high-end leisure",
-      "Anyone whose target audience is HNW and reads The World of Interiors / Architectural Digest",
-      "Brands whose product is so visual that scroll-driven storytelling sells better than copy"
-    ],
-    "whenNotToUse": [
-      "Anyone without exceptional photography and video assets — this direction will EXPOSE weak imagery",
-      "Local services / blue collar — wrong audience entirely",
-      "Mobile-dominant traffic — the scroll choreography requires desktop or large tablet to read properly",
-      "Anyone with a tight budget on initial scope — this direction is a Custom Build per `feedback_bos_sites_productized.md`, NOT Tier 1/2/3",
-      "Conversion-driven landing pages — this direction is for browsing visitors, not action-taking visitors"
-    ],
-    "buildComplexity": "high",
-    "source": "motionsites.ai (catalog title \"Velorah\" — actual brand \"Velar.\" — extracted Jun 11 2026)",
-    "featured": false,
-    "newUntil": null,
-    "promptText": "## Hero treatment\nThis is the most complex direction in the library — a multi-section scroll-orchestrated luxury site. Section 1 is a TYPEWRITER PRELOADER (\"Velar.\" types out letter by letter on a deep teal `#213138` background with a blinking cursor, then the entire overlay slides up out of view). Section 2 is a fixed navigation with a wordmark that COLOR-CHANGES based on what section is currently at viewport top (white over dark sections, dark teal over the warm cream sections). Section 3 is the hero — a warm cream `#f5f0ea` background with a giant SYNE 800 display heading (\"LIVE IN\" + \"IRREPLACEABLE\") at architectural scale, plus a subtitle paragraph that swaps based on viewport (different subtitle text mobile vs desktop). Section 4 is a SCROLL-DRIVEN HOUSE ANIMATION — a house image that rises from below the viewport during the intro, then scales and moves with scroll progress as the visitor moves past the hero. Sections 5 and 6 stack: a sticky dark statement section with COUNT-UP STATS, then a HOVER-EXPAND VIDEO GALLERY that slides over it with negative margin-top.\n\n## Page layout\nSix choreographed sections, each with custom JavaScript controlling scroll position, transforms, and visibility. The page reads like a film unfolding rather than a website you skim. This is the apex of \"editorial luxury site\" — anything less complex won't read as Velar tier; anything more risks feeling overwrought.\n\n## Typography\n- Display: Syne (Google Fonts, weights 400/700/800/900) — used for the brand wordmark AND the giant display heading. Letter spacing tight (`letter-spacing: -0.02em` on the wordmark, `-0.03em` on the hero heading)\n- Body: Inter (Google Fonts, weights 300/400/500/600) — for body, paragraph, stats, labels\n- Mobile/desktop subtitle text differs (different line breaks, different word counts) — explicit per-viewport authoring\n- The wordmark has one character at weight 900 (the period after \"Velar.\") while the rest is weight 700 — a tiny weight emphasis that adds quality\n\n## Color palette\n- Background: `#f5f0ea` (warm off-white / cream)\n- Dark sections: `#213138` (deep teal — preloader, statement, and gallery)\n- Display + body text: `#000000` on cream, `#ffffff` on dark\n- Statement section text: `#e8e4df` (warm white — subtly different from pure white)\n- Nav color transitions between white and dark teal based on viewport (cross-fades over 0.35s)\n- Stat labels: `rgba(255,255,255,0.6)` (60% white)\n\n## Visual motifs\n- **Typewriter preloader** — letter-by-letter reveal with blinking cursor, then the entire overlay slides up out of view (`translateY(-100%) over 1.5s cubic-bezier(0.45, 0, 0.15, 1)`)\n- **Scroll-driven house animation** — a fixed-position image that rises from below the viewport, then scales (`finalScale = 1.45`) and translates with scroll progress using a smoothstep-of-smoothstep easing (`t = smoothstep(smoothstep(progress))`)\n- **Color-shifting navigation** — wordmark color changes based on which section is currently at viewport top (`rect.top <= 0 && rect.bottom > 0`)\n- **Sticky statement section** with **CountUp stat numbers** that animate from 0 to their final values over 2000ms when IntersectionObserver triggers, with cubic ease (`1 - (1 - t)^3`)\n- **Section slides over previous section** via negative `margin-top: -100vh` and higher z-index — the gallery slides up over the statement section like a film cut\n- **Hover-expand video gallery** — accordion expand: hover one tile, it grows to `flex: 4` while others shrink (`flex 0.5s cubic-bezier(0.4, 0, 0.2, 1)`)\n- **Background ticker** behind the gallery — repeating brand wordmark at giant scale (`clamp(100px, 14vw, 220px)`)\n- **Per-viewport responsive type** — mobile, tablet, and desktop each get DIFFERENT subtitle text, line breaks, and font sizes\n- **Mobile menu as fullscreen overlay** with `text-4xl` link list and uppercase letterspacing\n\n## When to use\n- Luxury real estate brokers, estate agents, building developers\n- Architecture firms with strong portfolio\n- High-end interior design studios\n- Boutique hotels with editorial-quality photography\n- Art galleries, antique dealers, auction houses\n- Yacht / private aviation / high-end leisure\n- Anyone whose target audience is HNW and reads The World of Interiors / Architectural Digest\n- Brands whose product is so visual that scroll-driven storytelling sells better than copy\n\n## When to NOT use\n- Anyone without exceptional photography and video assets — this direction will EXPOSE weak imagery\n- Local services / blue collar — wrong audience entirely\n- Mobile-dominant traffic — the scroll choreography requires desktop or large tablet to read properly\n- Anyone with a tight budget on initial scope — this direction is a Custom Build per `feedback_bos_sites_productized.md`, NOT Tier 1/2/3\n- Conversion-driven landing pages — this direction is for browsing visitors, not action-taking visitors\n\n## Reference source\nmotionsites.ai catalog title \"Velorah\" — actual brand inside the prompt is \"Velar.\" (period included). This is the apex luxury real estate direction in the library. Extracted Jun 11 2026.\n\n## Library cross-references\n- Motif: `typewriter-preloader-slide-up`\n- Motif: `scroll-driven-fixed-image-animation` (the rising house)\n- Motif: `color-shifting-navigation-by-section`\n- Motif: `sticky-statement-with-countup-stats`\n- Motif: `section-slides-over-previous-section`\n- Motif: `hover-expand-video-gallery`\n- Motif: `background-ticker-wordmark`\n- Motif: `per-viewport-distinct-subtitle-text`\n- Typography: `syne-inter-luxury`\n- Color palette: `warm-cream-deep-teal-luxury`\n\n## Build complexity warning\nThis direction is the most complex in the library. A real production build of Velar-tier will need 2-3x the time of a typical Tier 1 site. Quote it as Custom Build, not Tier 3."
-  },
-  {
     "slug": "yacht-club-liquid-cursor-luxury",
     "name": "Yacht Club — Liquid Cursor Luxury",
     "vibe": [
@@ -1358,7 +1430,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "studio",
+    "tierRequired": "studio_plus",
     "visualPreview": {
       "static": "/templates/yacht-club-liquid-cursor-luxury.png",
       "animated": "/templates/yacht-club-liquid-cursor-luxury.mp4"
@@ -1428,7 +1500,7 @@ export const DIRECTIONS: readonly Direction[] = [
       "hero",
       "full-landing"
     ],
-    "tierRequired": "studio",
+    "tierRequired": "studio_plus",
     "visualPreview": {
       "static": "/templates/cyberpunk-red-augmented-self.png",
       "animated": "/templates/cyberpunk-red-augmented-self.mp4"
@@ -1472,73 +1544,5 @@ export const DIRECTIONS: readonly Direction[] = [
     "featured": false,
     "newUntil": null,
     "promptText": "## Hero treatment\nFull viewport hero with a RED-tinted portrait as the base image and a SECOND image revealed through a cursor-following spotlight mask. As the visitor moves their cursor, a soft circular hole opens in the base image and shows the alternate image underneath (canvas-based radial gradient mask). All hero text is bottom-anchored, left-aligned, layered over the imagery. A decorative SVG arc with three stats sweeps in from the right side along concentric arcs (stroke-draw animation on load).\n\n## Page layout\nSingle viewport hero (`100dvh`). Layers in z-index order:\n1. SVG grid background (z-0, 48px square pattern, parallax-shifts with cursor)\n2. Base image with Ken Burns zoom-out intro (z-10)\n3. Cursor spotlight reveal layer (z-30)\n4. Decorative arc stats sweeping from the right (z-50)\n5. Bottom-anchored hero text block + CTA (z-50)\n6. Centered black pill navbar at the top (z-50)\n\n## Typography\n- Display + body: JetBrains Mono — globally applied (`* { font-family: 'JetBrains Mono', monospace; }`), weights 300/400/500/600/700/800 + italic 400/500\n- Hero heading: `text-4xl sm:text-5xl md:text-6xl`, `leading-[1.05]`, `tracking-[-0.08em]`, white\n- Eyebrow: `text-[11px] sm:text-xs`, font-semibold, `tracking-[0.12em]`, with one italic phrase (\"Gateway to your *augmented self*\")\n- Tracking: globally tight at `tracking-[-0.02em]` on the root wrapper\n\n## Color palette\n- Background: red-tinted imagery provides the dominant warmth\n- Primary text: white (with `text-white/90` for de-emphasized body)\n- CTA: white pill (`bg-white`) with `text-gray-900`, shine sweep on hover\n- Navbar: `bg-black/60 backdrop-blur-md` floating centered pill\n- Stats arc: white strokes/text at varying opacity (0 → 0.5 → 0.1 → 0 across the arc)\n- Accent on grid: `stroke: #64748b` at 0.1 opacity (very subtle slate)\n\n## Visual motifs\n- **Cursor spotlight reveal** (the headline mechanic) — base image is fully visible, a soft 260px-radius circular gradient mask reveals a SECOND image underneath wherever the cursor goes. Implementation uses a hidden canvas that renders a radial gradient each frame (`toDataURL` → applied as `maskImage`/`webkitMaskImage` on the reveal div). Cursor position is smoothed via rAF lerp at 0.1 factor.\n- **Parallax grid background** — SVG pattern of 48px squares whose x/y offset follows the cursor (target = `(normalized cursor − 0.5) × 16px`, eased at 0.06 per frame)\n- **Decorative concentric arc stats** — three SVG arcs at radii 330/395/460, centered off-canvas left, sweep across the right portion. Each arc has a per-arc `userSpaceOnUse` linearGradient (white with stop-opacities 0 → 0.5 → 0.5 → 0.1 → 0 so both ends fade). Stroke-draw animation on load (1.6s `cubic-bezier(0.65,0,0.35,1)`, delays staggered 0.4s + i × 0.22s). Each arc has a dot, ring (infinite pulse), number, and uppercase label.\n- **Hanging centered nav pill** with logo + 5 links + dark CTA\n- **CTA shine sweep** — pseudo-gradient span translates from `-translate-x-full` to `translate-x-full` over 700ms on group hover\n- **Ken Burns intro** on base image (`scale 1.12 → 1.0` over 2.4s `cubic-bezier(0.22,1,0.36,1)`)\n- **Blur-rise hero text intro** (`heroReveal` keyframe: opacity 0 + y 26px + blur 8px → clear)\n\n## When to use\n- Biotech / health-tech / deep-tech startups\n- Augmented reality, VR, gaming brands\n- Performance / athletic-tech brands (high-end gear)\n- Futurist consumer products\n- Premium technical services (security firms, intelligence consultancies)\n- Anything where the visitor's first emotional response should be \"this looks like the future\"\n- Hanes Environmental tier (technical restoration positioned as evidence-based + precise)\n\n## When to NOT use\n- Local trades — the cursor mechanic is too clever, visitors come to convert\n- Family-friendly services (childcare, education, family-owned shops) — wrong emotional register\n- Restoration / emergency services — too slow to load, too clever\n- Health/medical that needs to feel approachable (this feels clinical-cold)\n- Any business whose customer base is over 55 or non-technical\n\n## Reference source\nmotionsites.ai Cyberpunk hero prompt — extracted 2026-06-11.\n\n## Library cross-references\n- Motif: `cursor-spotlight-reveal-canvas-mask` (the star mechanic)\n- Motif: `parallax-grid-svg-pattern`\n- Motif: `concentric-arc-stats-fading`\n- Motif: `cta-shine-sweep`\n- Motif: `ken-burns-intro-on-base-image`\n- Typography: `jetbrains-mono-mono-everywhere`\n- Color palette: `red-tinted-white-text-tech`"
-  },
-  {
-    "slug": "solar-energy-day-night-toggle",
-    "name": "Solar Energy — Day/Night Toggle Hero",
-    "vibe": [
-      "photorealistic",
-      "premium-residential",
-      "energy-tech",
-      "demo-as-design",
-      "value-prop-as-interaction"
-    ],
-    "industries": [
-      "solar energy",
-      "residential energy storage",
-      "smart home tech",
-      "HVAC with smart-home tie-in",
-      "sustainability brands",
-      "energy efficiency consulting",
-      "EV chargers (residential)",
-      "water filtration (whole-home)",
-      "home automation",
-      "premium home services with a year-round value angle"
-    ],
-    "useCases": [
-      "hero",
-      "full-landing"
-    ],
-    "tierRequired": "studio",
-    "visualPreview": {
-      "static": null,
-      "animated": null
-    },
-    "typography": {
-      "display": "a clean modern sans",
-      "body": "a clean modern sans"
-    },
-    "colorPalette": [
-      "#f5e9cc",
-      "#ffffff"
-    ],
-    "motifs": [
-      "Day/Night toggle as inline hero UI",
-      "Crossfade between time-of-day states",
-      "Photorealistic hero photo, NOT illustration",
-      "Bottom-anchored composition",
-      "Value-prop as the headline",
-      "Same-headline rule"
-    ],
-    "whenToUse": [
-      "**Residential solar / energy storage brands** — the original use case",
-      "**Smart home tech** with a \"works while you sleep\" pitch (security, HVAC with smart-home, water filtration whole-home, EV chargers)",
-      "**Sustainability / energy efficiency consulting**",
-      "**Premium residential services** with a year-round / all-conditions value angle (gutters with leaf guards, irrigation, generator install)",
-      "**Demo-led product categories** where the visitor needs to SEE the product in action, not read about it",
-      "**Brands selling to homeowners over 40** — the photorealistic house + clear value prop reads as trustworthy, not gimmicky"
-    ],
-    "whenNotToUse": [
-      "**Anyone whose product doesn't have a day/night (or hot/cold, indoor/outdoor, before/after) demonstrable state** — the toggle is a value prop made visual. If your product doesn't have two states to show, the toggle is decorative and the whole direction collapses",
-      "**B2B SaaS** — wrong audience entirely",
-      "**Local trades where the call IS the conversion** — too slow, too clever",
-      "**Anyone without photorealistic house photography** — stock illustration kills it",
-      "**Anyone whose value prop is COMPLEX and needs a paragraph to explain** — this direction works ONLY for value props that can be made visual in a single side-by-side toggle"
-    ],
-    "buildComplexity": "low",
-    "source": "motionsites.ai (Solar Energy Hero — verified Jun 11 2026 by direct observation of the live preview, NOT extracted from prompt text)",
-    "featured": false,
-    "newUntil": null,
-    "promptText": "## Hero treatment\nA single photorealistic photo of a beautiful modern house (with solar panels visible on the roof) anchored at the bottom-center of the viewport. A confident two-line value-prop headline reads \"$0 Electricity Bills / for the next 7 years\" with the dollar figure and the timeframe both emphasized at display scale. Below the headline, anchored to the photo itself, sit TWO TOGGLE PILLS labeled **Morning** and **Night** — each with a \"$0 for Electricity\" sub-label. Below the pills, a single supporting line: \"Forget the energy market, weather conditions and seasons; our Smart Controller guarantees you get no electricity bill for seven years.\"\n\n**The signature mechanic — toggle the time of day on the same photo.** When the visitor clicks (or hovers) Morning, the house photo crossfades to its morning version (golden warm light, soft sky). Click Night and it crossfades to the night version (dark sky, warm interior lights glowing through the windows, deep blue / black atmospheric tone). The SAME house, same composition, same headline — just lit differently. The toggle BECOMES the demo of the product: the solar system works in BOTH states.\n\nThe interaction isn't decorative — it's the value prop made visual. The visitor SEES that this works at night without needing to read about batteries or storage.\n\n## Page layout\nSingle full-viewport hero designed around the toggle interaction. The photo + toggle + value prop are the whole composition — no portfolio, no testimonials, no second section above the fold. The visitor's first move IS the demo.\n\nA small \"reposit\" brand wordmark + top nav sit in the corners but don't compete with the hero photo.\n\n## Typography\n- Display: a clean modern sans (Inter or similar — restrained, not editorial)\n- Headline weight: SEMI-BOLD, not display-bold (the photo carries the visual weight; the headline supports)\n- Number emphasis (`$0`, `7 years`) gets the heaviest weight + slightly larger size\n- Body / pill labels: light, low-emphasis — they're functional UI, not decorative\n\n## Color palette\n- Background: photographic (whichever time-of-day is currently shown)\n- Headline text on photo: white with subtle drop-shadow for legibility\n- Toggle pill ACTIVE state: solid warm cream (`#F5E9CC` or similar warm white) with dark text\n- Toggle pill INACTIVE state: translucent white with white text + thin border\n- The palette IS the photo — the toggle changes the entire scene, including the mood color\n\n## Visual motifs\n- **Day/Night toggle as inline hero UI** — two pills directly on the hero photo, the visitor's first interaction\n- **Crossfade between time-of-day states** on the SAME composition — `opacity` cross-fade between two pre-rendered photo files (`/hero-morning.webp`, `/hero-night.webp`), or a CSS variable swap with `transition: opacity 0.6s`. Don't animate filter / hue-rotate — pre-rendered photos read MUCH cleaner.\n- **Photorealistic hero photo, NOT illustration** — the entire direction depends on the photo being convincing. Stock house illustration kills the impression.\n- **Bottom-anchored composition** — the house sits at the BOTTOM of the viewport, with the sky/atmosphere taking the top half. Different from most hero treatments where the photo is centered.\n- **Value-prop as the headline** with NUMBERS doing the visual lifting (`$0`, `7 years`) — not \"save money on bills\" but \"$0 electricity bills\"\n- **Same-headline rule** — the headline DOES NOT change when the toggle flips. The point is the value prop is universal; the photo just shows you it works around the clock.\n\n## When to use\n- **Residential solar / energy storage brands** — the original use case\n- **Smart home tech** with a \"works while you sleep\" pitch (security, HVAC with smart-home, water filtration whole-home, EV chargers)\n- **Sustainability / energy efficiency consulting**\n- **Premium residential services** with a year-round / all-conditions value angle (gutters with leaf guards, irrigation, generator install)\n- **Demo-led product categories** where the visitor needs to SEE the product in action, not read about it\n- **Brands selling to homeowners over 40** — the photorealistic house + clear value prop reads as trustworthy, not gimmicky\n\n## When to NOT use\n- **Anyone whose product doesn't have a day/night (or hot/cold, indoor/outdoor, before/after) demonstrable state** — the toggle is a value prop made visual. If your product doesn't have two states to show, the toggle is decorative and the whole direction collapses\n- **B2B SaaS** — wrong audience entirely\n- **Local trades where the call IS the conversion** — too slow, too clever\n- **Anyone without photorealistic house photography** — stock illustration kills it\n- **Anyone whose value prop is COMPLEX and needs a paragraph to explain** — this direction works ONLY for value props that can be made visual in a single side-by-side toggle\n\n## Build complexity\nLOW-MEDIUM complexity. The toggle + crossfade is straightforward (two photos, opacity transition). The expense is the PHOTOGRAPHY — getting matching shots of the same house at morning + night requires either a real photoshoot or AI-generated photo pairs that maintain composition consistency.\n\n## Adapting the mechanic to other products\n\nThe \"two states demonstrated by a toggle that visually proves the value prop\" mechanic generalizes to:\n\n- **Smart HVAC** — Summer / Winter toggle showing the same room at different seasons with the unit handling both\n- **Whole-home water filtration** — Before / After toggle showing the same glass of water\n- **Generator install** — Storm / Clear toggle showing the same house in both conditions, both with power on\n- **EV charger** — Day / Night toggle showing the car charged regardless of time\n- **Leaf guards / gutter protection** — Fall / Winter toggle showing the same gutter clear in both seasons\n- **Lawn / irrigation** — Drought / Wet toggle showing the same lawn green in both\n- **Security system** — Empty / Occupied toggle showing the same home protected in both states\n\nThe mechanic is REUSABLE for any product whose value prop is \"works in all conditions\" or \"demonstrates a binary improvement.\"\n\n## Library cross-references\n- Motif: `time-of-day-toggle-crossfade` (the signature)\n- Motif: `value-prop-as-headline-with-numbers`\n- Motif: `inline-hero-ui-toggle-pills`\n- Motif: `photorealistic-hero-photo-bottom-anchored`\n- Typography: `clean-modern-sans-restrained-display`\n- Color palette: `photo-driven-warm-cream-translucent-toggle`"
   }
 ];

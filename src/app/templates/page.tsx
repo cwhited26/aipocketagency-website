@@ -46,7 +46,12 @@ export default function PublicTemplatesPage() {
       vibe: d.vibe,
       industries: d.industries,
       useCases: d.useCases,
-      tierLabel: directionTierLabel(d.tierRequired),
+      // The plan badge a prospect sees on every card (PA-TG-11): starter-tier directions come with
+      // every plan; the premium set names the plan that opens it.
+      tierBadge:
+        d.tierRequired === "starter"
+          ? "Included in every plan"
+          : `Included in ${directionTierLabel(d.tierRequired)}`,
       previewStatic: d.visualPreview.static,
       previewAnimated: d.visualPreview.animated,
       palette: d.colorPalette.slice(0, 4),
@@ -116,8 +121,8 @@ export default function PublicTemplatesPage() {
             Start with Pocket Agent — the Template Gallery is built in from day one.
           </h2>
           <p className="mt-5 max-w-xl text-balance text-lg leading-relaxed text-slate-300">
-            Every plan opens templates from the first login, and the full gallery opens as you move
-            up. Pick yours, answer three quick questions, and PA builds the page in your voice.
+            Eleven templates are included with every plan, and the ten premium looks open at
+            Studio+. Pick yours, answer three quick questions, and PA builds the page in your voice.
           </p>
           <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
             <PrimaryCTA href="/start" label="Build My AI Team" />

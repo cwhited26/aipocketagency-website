@@ -16,7 +16,8 @@ export type PublicDirection = {
   vibe: string[];
   industries: string[];
   useCases: string[];
-  tierLabel: string;
+  /** The plan badge on every card ("Included in every plan" / "Included in Studio+", PA-TG-11). */
+  tierBadge: string;
   previewStatic: string | null;
   previewAnimated: string | null;
   palette: string[];
@@ -348,7 +349,7 @@ export default function PublicGalleryClient({ directions }: { directions: Public
                     Details
                   </button>
                   <span className="ml-auto shrink-0 text-[10px] font-mono uppercase tracking-wider text-slate-600">
-                    {d.tierLabel}
+                    {d.tierBadge}
                   </span>
                 </div>
               </div>
@@ -432,7 +433,7 @@ export default function PublicGalleryClient({ directions }: { directions: Public
                 Sign up to use this template
               </Link>
               <span className="text-[11px] font-mono uppercase tracking-wider text-slate-600">
-                Opens at {detail.tierLabel}
+                {detail.tierBadge}
               </span>
               <button
                 type="button"

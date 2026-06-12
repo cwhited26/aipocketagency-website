@@ -48,6 +48,8 @@ export function directionTierLabel(tier: DirectionTier): string {
       return "Pro+";
     case "studio":
       return "Studio";
+    case "studio_plus":
+      return "Studio+";
   }
 }
 

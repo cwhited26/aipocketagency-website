@@ -34,12 +34,33 @@ describe("direction catalog invariants", () => {
     expect(new Set(DIRECTIONS.map((d) => d.slug)).size).toBe(21);
   });
 
-  it("uses the documented unlock ladder: 3 starter / 3 pro / 4 pro_plus / 11 studio (PA-TG-2/6)", () => {
+  it("uses the motionsites-availability ladder: 11 starter / 10 studio_plus (PA-TG-11)", () => {
     const counts = DIRECTIONS.reduce<Record<string, number>>((acc, d) => {
       acc[d.tierRequired] = (acc[d.tierRequired] ?? 0) + 1;
       return acc;
     }, {});
-    expect(counts).toEqual({ starter: 3, pro: 3, pro_plus: 4, studio: 11 });
+    expect(counts).toEqual({ starter: 11, studio_plus: 10 });
+  });
+
+  it("puts exactly the motionsites-Premium extractions at studio_plus (PA-TG-11)", () => {
+    // Per BOS/Sites/prompt_library/motionsites-ai-inventory.md: these ten directions were extracted
+    // from Premium-tier motionsites prompts; everything free-on-motionsites or Chase-original sits
+    // at starter so every plan builds with it.
+    const premium = DIRECTIONS.filter((d) => d.tierRequired === "studio_plus").map((d) => d.slug);
+    expect(premium.sort()).toEqual(
+      [
+        "bookedup-deep-shadow-saas",
+        "cinematic-space-travel-aerospace",
+        "codenest-coding-education-dev-platform",
+        "cognitra-ai-agency-gray-panel",
+        "cyberpunk-red-augmented-self",
+        "glassmorphism-purple-pink-agency",
+        "mainframe-mouse-scrub-agency",
+        "spd-luxury-automation-cinematic",
+        "targo-logistics-dark-red-clipped",
+        "yacht-club-liquid-cursor-luxury",
+      ].sort(),
+    );
   });
 
   it("every direction carries the fields the gallery renders", () => {
@@ -166,17 +187,18 @@ describe("template resolution + tier gating (PA-TG-2)", () => {
     expect(isDirectionRef("single-cta")).toBe(false);
   });
 
-  it("gates a direction by its tier and opens everything at Studio and above", () => {
+  it("opens starter directions to every tier and gates the premium set at Studio+ (PA-TG-11)", () => {
     const starterDirection = listDirections().find((d) => d.tierRequired === "starter");
-    const studioDirection = listDirections().find((d) => d.tierRequired === "studio");
+    const premiumDirection = listDirections().find((d) => d.tierRequired === "studio_plus");
     expect(starterDirection).toBeDefined();
-    expect(studioDirection).toBeDefined();
-    if (!starterDirection || !studioDirection) return;
+    expect(premiumDirection).toBeDefined();
+    if (!starterDirection || !premiumDirection) return;
     expect(tierAllowsDirection("starter", starterDirection)).toBe(true);
-    expect(tierAllowsDirection("starter", studioDirection)).toBe(false);
-    expect(tierAllowsDirection("pro_plus", studioDirection)).toBe(false);
-    expect(tierAllowsDirection("studio", studioDirection)).toBe(true);
-    expect(tierAllowsDirection("enterprise", studioDirection)).toBe(true);
+    expect(tierAllowsDirection("starter", premiumDirection)).toBe(false);
+    expect(tierAllowsDirection("pro_plus", premiumDirection)).toBe(false);
+    expect(tierAllowsDirection("studio", premiumDirection)).toBe(false);
+    expect(tierAllowsDirection("studio_plus", premiumDirection)).toBe(true);
+    expect(tierAllowsDirection("enterprise", premiumDirection)).toBe(true);
   });
 
   it("getDirection round-trips every catalog slug", () => {
