@@ -32,6 +32,9 @@ CREATE INDEX IF NOT EXISTS idx_pa_url_extractions_owner_created
 
 ALTER TABLE pa_url_extractions ENABLE ROW LEVEL SECURITY;
 
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE pa_url_extractions TO service_role;
+GRANT SELECT ON TABLE pa_url_extractions TO authenticated;
+
 -- Owner reads their own rows; all writes ride the service role from gated API routes.
 DROP POLICY IF EXISTS pa_url_extractions_owner_select ON pa_url_extractions;
 CREATE POLICY pa_url_extractions_owner_select ON pa_url_extractions
