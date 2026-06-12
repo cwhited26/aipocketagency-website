@@ -28,6 +28,11 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT_DIR = join(ROOT, "src", "data", "landing-page-templates");
 const MD_OUT_DIR = join(OUT_DIR, "directions");
+// Captured previews (PA-TG-3, SPEC Phase 2) live in public/templates/<slug>.{png,mp4} — the
+// bos-template-mocks capture pipeline produces them. Presence on disk is what flips a direction
+// from the styled placeholder card to a real preview, so re-running this script after dropping a
+// new capture is the whole wiring step.
+const PREVIEW_DIR = join(ROOT, "public", "templates");
 
 const SOURCE_DIR =
   process.argv[2] ??
@@ -212,9 +217,12 @@ function parseDirection(file, raw, unlockIndex) {
     // directions don't exist in the library yet, so the derivation is deterministic from sections.
     useCases: ["hero", "full-landing"],
     tierRequired: tierForPosition(unlockIndex),
-    // Phase 1 ships without captured screenshots (PA-TG-3 capture pipeline is Phase 2) — the gallery
-    // renders a styled placeholder from the palette + typography until these paths are non-null.
-    visualPreview: { static: null, animated: null },
+    // A direction whose capture exists in public/templates/ gets the real preview paths; the rest
+    // keep null and the gallery renders the styled placeholder with its "Real preview coming" chip.
+    visualPreview: {
+      static: existsSync(join(PREVIEW_DIR, `${slug}.png`)) ? `/templates/${slug}.png` : null,
+      animated: existsSync(join(PREVIEW_DIR, `${slug}.mp4`)) ? `/templates/${slug}.mp4` : null,
+    },
     typography: parseTypography(sections.get("Typography"), file),
     colorPalette: parsePalette(sections.get("Color palette"), file),
     motifs,
@@ -283,7 +291,10 @@ export type Direction = {
   useCases: DirectionUseCase[];
   /** The lowest tier that can build with this direction (PA-TG-2). */
   tierRequired: DirectionTier;
-  /** Captured previews land in Phase 2 (PA-TG-3); null renders the styled placeholder card. */
+  /**
+   * Captured preview paths under public/ (PA-TG-3): static is the 1440×900 still, animated the
+   * 4s muted MP4 (Studio+ unlock). null renders the styled placeholder card.
+   */
   visualPreview: { static: string | null; animated: string | null };
   typography: { display: string; body: string };
   /** Hex colors in the order the direction file lists them. */

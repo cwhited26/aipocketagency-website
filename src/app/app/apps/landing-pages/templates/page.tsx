@@ -3,13 +3,13 @@
 // The motionsites-style picker over the brain's design-direction library: browse the catalog, filter
 // by industry / vibe / use case, open a direction's detail, answer three questions, and PA fires the
 // existing Landing Page Builder pipeline with the direction as the build input. Locked directions
-// show with an upgrade chip (per-direction tier gating, PA-TG-2). Phase 1 renders styled placeholder
-// previews from each direction's palette + typography; the captured-screenshot pipeline is Phase 2
-// (PA-TG-3).
+// show with an upgrade chip (per-direction tier gating, PA-TG-2). Directions with a captured
+// preview (PA-TG-3, the bos-template-mocks pipeline) render the real screenshot — plus the 4s
+// animated demo at Studio+ — while the rest keep the styled placeholder from palette + typography.
 
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
-import { getCurrentTier, tierAllowsLandingPageBuilder } from "@/lib/personas/tier-caps";
+import { getCurrentTier, tierAllowsLandingPageBuilder, tierRank } from "@/lib/personas/tier-caps";
 import {
   directionTierLabel,
   listDirections,
@@ -37,6 +37,8 @@ export default async function TemplateGalleryPage() {
 
   const tier = await getCurrentTier(user.id);
   const canBuild = tierAllowsLandingPageBuilder(tier);
+  // Animated previews are the Studio+ unlock (SPEC Phase 2); below that the card shows the still.
+  const animatedUnlocked = tierRank(tier) >= tierRank("studio_plus");
   const now = new Date();
 
   const directions: GalleryDirection[] = listDirections().map((d) => {
@@ -49,6 +51,8 @@ export default async function TemplateGalleryPage() {
       useCases: d.useCases,
       locked: !tierAllowsDirection(tier, d),
       tierLabel: directionTierLabel(d.tierRequired),
+      previewStatic: d.visualPreview.static,
+      previewAnimated: animatedUnlocked ? d.visualPreview.animated : null,
       palette: d.colorPalette.slice(0, 4),
       previewBackground: roles.background,
       previewInk: roles.ink,

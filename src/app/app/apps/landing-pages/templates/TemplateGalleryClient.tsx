@@ -7,6 +7,7 @@
 // starter templates ride at the bottom as the quick-start fallback.
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import type { LandingPageView } from "@/lib/landing-pages/types";
 
@@ -18,6 +19,10 @@ export type GalleryDirection = {
   useCases: string[];
   locked: boolean;
   tierLabel: string;
+  /** Captured still under /templates/ (PA-TG-3); null falls back to the styled placeholder. */
+  previewStatic: string | null;
+  /** 4s muted demo clip — non-null only when the owner's tier unlocks animated previews. */
+  previewAnimated: string | null;
   palette: string[];
   previewBackground: string;
   previewInk: string;
@@ -68,10 +73,53 @@ function previewFontFamily(d: GalleryDirection): string {
   return /serif/i.test(d.displayFont) && !/sans/i.test(d.displayFont) ? "Georgia, serif" : "inherit";
 }
 
-/** The styled stand-in for a captured screenshot (PA-TG-3 capture pipeline is Phase 2). */
+/**
+ * A direction's visual preview (PA-TG-3). With a captured still it renders the real screenshot;
+ * with an animated clip it plays it in the detail modal and on card hover (Studio+ only — the
+ * server nulls previewAnimated below that tier). Without a capture it falls back to the styled
+ * placeholder so the other directions keep their "Real preview coming" chip.
+ */
+function DirectionPreview({ d, large }: { d: GalleryDirection; large?: boolean }) {
+  const [hovered, setHovered] = useState(false);
+  if (!d.previewStatic) return <PlaceholderPreview d={d} large={large} />;
+  const playVideo = d.previewAnimated !== null && (large || hovered);
+  return (
+    <div
+      className="relative w-full overflow-hidden"
+      style={{ aspectRatio: "16 / 9", background: d.previewBackground }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {playVideo && d.previewAnimated ? (
+        <video
+          src={d.previewAnimated}
+          poster={d.previewStatic}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
+      ) : (
+        <Image
+          src={d.previewStatic}
+          alt={`Preview of the ${d.name} template`}
+          fill
+          sizes={large ? "672px" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"}
+          className="object-cover object-top"
+        />
+      )}
+      {d.previewAnimated && !large && (
+        <span className="absolute right-2 top-2 rounded bg-black/50 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-white/90">
+          Hover to play
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** The styled stand-in for a direction that doesn't have a captured preview yet. */
 function PlaceholderPreview({ d, large }: { d: GalleryDirection; large?: boolean }) {
-  // TODO: real preview — swap for the captured screenshot once the Phase-2 bos-template-mocks
-  // capture pipeline lands. The "Real preview coming" chip below is the owner-visible marker.
   return (
     <div
       className="relative w-full overflow-hidden"
@@ -305,7 +353,7 @@ export default function TemplateGalleryClient({
               className="group overflow-hidden rounded-xl border border-slate-800/70 bg-slate-950/50 transition-colors hover:border-slate-600"
             >
               <button type="button" onClick={() => setDetail(d)} className="block w-full text-left">
-                <PlaceholderPreview d={d} />
+                <DirectionPreview d={d} />
               </button>
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
@@ -389,7 +437,7 @@ export default function TemplateGalleryClient({
       {/* Detail modal */}
       {detail && (
         <Modal onClose={() => setDetail(null)}>
-          <PlaceholderPreview d={detail} large />
+          <DirectionPreview d={detail} large />
           <div className="p-6">
             <div className="flex items-start justify-between gap-3">
               <div>

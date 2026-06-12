@@ -20,7 +20,10 @@ export type Direction = {
   useCases: DirectionUseCase[];
   /** The lowest tier that can build with this direction (PA-TG-2). */
   tierRequired: DirectionTier;
-  /** Captured previews land in Phase 2 (PA-TG-3); null renders the styled placeholder card. */
+  /**
+   * Captured preview paths under public/ (PA-TG-3): static is the 1440×900 still, animated the
+   * 4s muted MP4 (Studio+ unlock). null renders the styled placeholder card.
+   */
   visualPreview: { static: string | null; animated: string | null };
   typography: { display: string; body: string };
   /** Hex colors in the order the direction file lists them. */
@@ -69,8 +72,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/trades-phone-first-emergency.png",
+      "animated": "/templates/trades-phone-first-emergency.mp4"
     },
     "typography": {
       "display": "a sturdy, legible sans",
@@ -143,8 +146,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/contractor-photo-first-trust.png",
+      "animated": "/templates/contractor-photo-first-trust.mp4"
     },
     "typography": {
       "display": "a slightly editorial sans",
@@ -214,8 +217,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/bookedup-deep-shadow-saas.png",
+      "animated": "/templates/bookedup-deep-shadow-saas.mp4"
     },
     "typography": {
       "display": "SK Reykjavik Rounded Regular",
@@ -294,8 +297,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "pro",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/medspa-booking-calendar-first.png",
+      "animated": "/templates/medspa-booking-calendar-first.mp4"
     },
     "typography": {
       "display": "a soft serif",
@@ -365,8 +368,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "pro",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/real-estate-listing-grid-search.png",
+      "animated": "/templates/real-estate-listing-grid-search.mp4"
     },
     "typography": {
       "display": "an editorial serif",
@@ -435,8 +438,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "pro",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/modern-agency-mental-wellness.png",
+      "animated": "/templates/modern-agency-mental-wellness.mp4"
     },
     "typography": {
       "display": "Outfit",
@@ -508,8 +511,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "pro_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/cognitra-ai-agency-gray-panel.png",
+      "animated": "/templates/cognitra-ai-agency-gray-panel.mp4"
     },
     "typography": {
       "display": "Helvetica Now Var",
@@ -584,8 +587,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "pro_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/glassmorphism-purple-pink-agency.png",
+      "animated": "/templates/glassmorphism-purple-pink-agency.mp4"
     },
     "typography": {
       "display": "modern sans-serif",

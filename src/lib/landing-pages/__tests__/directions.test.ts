@@ -7,7 +7,7 @@
 // stale re-run, or an orphaned .md all fail loudly.
 
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { DIRECTIONS } from "@/data/landing-page-templates/directions";
 import {
@@ -26,6 +26,7 @@ import { validateTemplate, COPY_PLACEHOLDER } from "../templates";
 import { fillTemplate } from "../build";
 
 const MD_DIR = join(process.cwd(), "src", "data", "landing-page-templates", "directions");
+const PREVIEW_DIR = join(process.cwd(), "public", "templates");
 
 describe("direction catalog invariants", () => {
   it("ships 20 directions with unique slugs", () => {
@@ -56,9 +57,35 @@ describe("direction catalog invariants", () => {
       expect(d.whenNotToUse.length).toBeGreaterThanOrEqual(1);
       expect(["low", "medium", "high"]).toContain(d.buildComplexity);
       expect(d.promptText.length).toBeGreaterThan(500);
-      // Phase 1 ships placeholder previews (PA-TG-3/8); a non-null path means Phase 2 landed —
-      // update the gallery card to render it before flipping this.
-      expect(d.visualPreview.static).toBeNull();
+      // A preview path must point at a real file the gallery can serve (PA-TG-3); null keeps the
+      // styled placeholder card.
+      if (d.visualPreview.static !== null) {
+        expect(d.visualPreview.static).toBe(`/templates/${d.slug}.png`);
+        expect(existsSync(join(PREVIEW_DIR, `${d.slug}.png`))).toBe(true);
+      }
+      if (d.visualPreview.animated !== null) {
+        expect(d.visualPreview.animated).toBe(`/templates/${d.slug}.mp4`);
+        expect(existsSync(join(PREVIEW_DIR, `${d.slug}.mp4`))).toBe(true);
+      }
+    }
+  });
+
+  it("the 8 Phase-2 priority directions ship real previews, still + animated (PA-TG-3)", () => {
+    const phase2 = [
+      "trades-phone-first-emergency",
+      "contractor-photo-first-trust",
+      "bookedup-deep-shadow-saas",
+      "medspa-booking-calendar-first",
+      "real-estate-listing-grid-search",
+      "modern-agency-mental-wellness",
+      "cognitra-ai-agency-gray-panel",
+      "glassmorphism-purple-pink-agency",
+    ];
+    for (const slug of phase2) {
+      const d = DIRECTIONS.find((x) => x.slug === slug);
+      expect(d).toBeDefined();
+      expect(d?.visualPreview.static).toBe(`/templates/${slug}.png`);
+      expect(d?.visualPreview.animated).toBe(`/templates/${slug}.mp4`);
     }
   });
 });
