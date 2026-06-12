@@ -367,8 +367,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/solar-energy-day-night-toggle.png",
+      "animated": "/templates/solar-energy-day-night-toggle.mp4"
     },
     "typography": {
       "display": "a clean modern sans",
@@ -1571,8 +1571,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/altane-ai-white-video-dissolve-hero.png",
+      "animated": "/templates/altane-ai-white-video-dissolve-hero.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -1640,8 +1640,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/astrel-nft-neon-space-glass.png",
+      "animated": "/templates/astrel-nft-neon-space-glass.mp4"
     },
     "typography": {
       "display": "Anton",
@@ -1710,8 +1710,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/caelum-nft-mouse-scrub-neon.png",
+      "animated": "/templates/caelum-nft-mouse-scrub-neon.mp4"
     },
     "typography": {
       "display": "Anton",
@@ -1776,8 +1776,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/calder-ventures-liquid-glass-video.png",
+      "animated": "/templates/calder-ventures-liquid-glass-video.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -1842,8 +1842,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/ciphra-pink-arc-neumorphic-pipeline.png",
+      "animated": "/templates/ciphra-pink-arc-neumorphic-pipeline.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -1911,8 +1911,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/draftwell-email-style-lime-course.png",
+      "animated": "/templates/draftwell-email-style-lime-course.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -1980,8 +1980,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/driftway-travel-glass-parallax.png",
+      "animated": "/templates/driftway-travel-glass-parallax.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -2044,8 +2044,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/ellora-glass-serif-email-morph.png",
+      "animated": "/templates/ellora-glass-serif-email-morph.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -2107,8 +2107,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/eonbridge-card-hero-bottom-navbar.png",
+      "animated": "/templates/eonbridge-card-hero-bottom-navbar.mp4"
     },
     "typography": {
       "display": "Outfit",
@@ -2174,8 +2174,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/eonix-cinematic-typing-hero.png",
+      "animated": "/templates/eonix-cinematic-typing-hero.mp4"
     },
     "typography": {
       "display": "Alegreya Sans",
@@ -2239,8 +2239,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/eterna-studio-serif-white-cinematic.png",
+      "animated": "/templates/eterna-studio-serif-white-cinematic.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -2303,8 +2303,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/fieldcraft-creative-stat-uppercase.png",
+      "animated": "/templates/fieldcraft-creative-stat-uppercase.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -2367,8 +2367,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/framecraft-ai-builder-gradient-headline.png",
+      "animated": "/templates/framecraft-ai-builder-gradient-headline.mp4"
     },
     "typography": {
       "display": "Instrument Sans",
@@ -2435,8 +2435,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/halden-museum-monogram-editorial.png",
+      "animated": "/templates/halden-museum-monogram-editorial.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -2504,8 +2504,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/halftone-red-creative-studio-giant-type.png",
+      "animated": "/templates/halftone-red-creative-studio-giant-type.mp4"
     },
     "typography": {
       "display": "Geist",
@@ -2573,8 +2573,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/imagra-pastel-radial-feature-cards.png",
+      "animated": "/templates/imagra-pastel-radial-feature-cards.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -2642,8 +2642,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/inquo-liquid-glass-dark-editorial.png",
+      "animated": "/templates/inquo-liquid-glass-dark-editorial.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -2708,8 +2708,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/jonas-abel-dark-serif-portfolio.png",
+      "animated": "/templates/jonas-abel-dark-serif-portfolio.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -2778,8 +2778,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/keyhaven-password-icon-headline.png",
+      "animated": "/templates/keyhaven-password-icon-headline.mp4"
     },
     "typography": {
       "display": "Archivo Black",
@@ -2845,8 +2845,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/kovert-security-staggered-type.png",
+      "animated": "/templates/kovert-security-staggered-type.mp4"
     },
     "typography": {
       "display": "Readex Pro",
@@ -2910,8 +2910,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/lodgio-booking-purple-serif-video.png",
+      "animated": "/templates/lodgio-booking-purple-serif-video.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -2978,8 +2978,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/lumara-signup-split-video-steps.png",
+      "animated": "/templates/lumara-signup-split-video-steps.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -3044,8 +3044,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/lumengate-portal-zoom-scroll.png",
+      "animated": "/templates/lumengate-portal-zoom-scroll.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -3111,8 +3111,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/lumetra-analytics-dark-parallax.png",
+      "animated": "/templates/lumetra-analytics-dark-parallax.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -3175,8 +3175,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/magna-ai-giant-gradient-wordmark.png",
+      "animated": "/templates/magna-ai-giant-gradient-wordmark.mp4"
     },
     "typography": {
       "display": "Hanken Grotesk",
@@ -3243,8 +3243,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/meridian-ai-white-tabbed-demo.png",
+      "animated": "/templates/meridian-ai-white-tabbed-demo.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -3310,8 +3310,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/murmur-calm-phone-typing-hero.png",
+      "animated": "/templates/murmur-calm-phone-typing-hero.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -3444,8 +3444,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/niko-friendly-404-floating-icons.png",
+      "animated": "/templates/niko-friendly-404-floating-icons.mp4"
     },
     "typography": {
       "display": "DM Sans",
@@ -3511,8 +3511,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/northform-agency-contact-video-card.png",
+      "animated": "/templates/northform-agency-contact-video-card.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -3578,8 +3578,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/operandi-automation-serif-dashboard.png",
+      "animated": "/templates/operandi-automation-serif-dashboard.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -3643,8 +3643,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/parlo-playful-green-styleguide.png",
+      "animated": "/templates/parlo-playful-green-styleguide.mp4"
     },
     "typography": {
       "display": "Fredoka",
@@ -3713,8 +3713,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/petalwork-liquid-glass-split-panel.png",
+      "animated": "/templates/petalwork-liquid-glass-split-panel.mp4"
     },
     "typography": {
       "display": "Poppins",
@@ -3779,8 +3779,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/pictora-italic-serif-boomerang-hero.png",
+      "animated": "/templates/pictora-italic-serif-boomerang-hero.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -3844,8 +3844,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/popdock-figurine-color-swap-carousel.png",
+      "animated": "/templates/popdock-figurine-color-swap-carousel.mp4"
     },
     "typography": {
       "display": "Anton",
@@ -3911,8 +3911,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/pressline-pr-saas-gauge-dashboard.png",
+      "animated": "/templates/pressline-pr-saas-gauge-dashboard.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -3981,8 +3981,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/promptcraft-course-parallax-dashboard.png",
+      "animated": "/templates/promptcraft-course-parallax-dashboard.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -4047,8 +4047,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/querra-ai-prompt-box-hero.png",
+      "animated": "/templates/querra-ai-prompt-box-hero.mp4"
     },
     "typography": {
       "display": "Fustat",
@@ -4113,8 +4113,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/quietfeed-mono-serif-newsletter.png",
+      "animated": "/templates/quietfeed-mono-serif-newsletter.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -4179,8 +4179,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/reviva-prosthetics-quiet-video-hero.png",
+      "animated": "/templates/reviva-prosthetics-quiet-video-hero.mp4"
     },
     "typography": {
       "display": "system sans-serif stack",
@@ -4247,8 +4247,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/roamline-electric-camper-black-serif.png",
+      "animated": "/templates/roamline-electric-camper-black-serif.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -4314,8 +4314,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/sojourne-curtain-portal-fantasy-voyage.png",
+      "animated": "/templates/sojourne-curtain-portal-fantasy-voyage.mp4"
     },
     "typography": {
       "display": "Viaoda Libre",
@@ -4383,8 +4383,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/stillpoint-liquid-glass-wellness-hero.png",
+      "animated": "/templates/stillpoint-liquid-glass-wellness-hero.mp4"
     },
     "typography": {
       "display": "Geist",
@@ -4514,8 +4514,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/vellair-private-jets-overlap-headline.png",
+      "animated": "/templates/vellair-private-jets-overlap-headline.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -4579,8 +4579,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/vinewire-green-boomerang-workflow.png",
+      "animated": "/templates/vinewire-green-boomerang-workflow.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -4647,8 +4647,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "starter",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/wardex-security-spline-green-dark.png",
+      "animated": "/templates/wardex-security-spline-green-dark.mp4"
     },
     "typography": {
       "display": "Sora",
@@ -4716,8 +4716,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/arden-warm-architecture-bird-hero.png",
+      "animated": "/templates/arden-warm-architecture-bird-hero.mp4"
     },
     "typography": {
       "display": "Hanken Grotesk",
@@ -4784,8 +4784,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/ascent-awards-chamfered-inset-shell.png",
+      "animated": "/templates/ascent-awards-chamfered-inset-shell.mp4"
     },
     "typography": {
       "display": "Archivo",
@@ -4853,8 +4853,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/astrane-space-consultancy-slide-sections.png",
+      "animated": "/templates/astrane-space-consultancy-slide-sections.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -4922,8 +4922,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/astreon-aerospace-engine-sky-hero.png",
+      "animated": "/templates/astreon-aerospace-engine-sky-hero.mp4"
     },
     "typography": {
       "display": "Geist",
@@ -4993,8 +4993,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/atmosa-cursor-spotlight-product-reveal.png",
+      "animated": "/templates/atmosa-cursor-spotlight-product-reveal.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -5060,8 +5060,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/axion-it-light-notched-corners.png",
+      "animated": "/templates/axion-it-light-notched-corners.mp4"
     },
     "typography": {
       "display": "Akshar",
@@ -5265,8 +5265,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/blockstep-floating-folders-hero.png",
+      "animated": "/templates/blockstep-floating-folders-hero.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -5334,8 +5334,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/boldframe-poster-type-hero.png",
+      "animated": "/templates/boldframe-poster-type-hero.mp4"
     },
     "typography": {
       "display": "Rubik",
@@ -5399,8 +5399,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/carrow-shader-haze-agency.png",
+      "animated": "/templates/carrow-shader-haze-agency.mp4"
     },
     "typography": {
       "display": "system UI sans in the prompt",
@@ -5468,8 +5468,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/cellara-biotech-inline-pill-headline.png",
+      "animated": "/templates/cellara-biotech-inline-pill-headline.mp4"
     },
     "typography": {
       "display": "Poppins",
@@ -5603,8 +5603,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/cutform-video-agency-serif-italic.png",
+      "animated": "/templates/cutform-video-agency-serif-italic.mp4"
     },
     "typography": {
       "display": "Barlow",
@@ -5668,8 +5668,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/draftworks-content-saas-scroll-zoom.png",
+      "animated": "/templates/draftworks-content-saas-scroll-zoom.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -5737,8 +5737,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/driftbank-3d-card-carousel-fintech.png",
+      "animated": "/templates/driftbank-3d-card-carousel-fintech.mp4"
     },
     "typography": {
       "display": "Manrope",
@@ -5806,8 +5806,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/emberdesk-video-signup-split-card.png",
+      "animated": "/templates/emberdesk-video-signup-split-card.mp4"
     },
     "typography": {
       "display": "system sans-serif stack",
@@ -5872,8 +5872,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/fernbank-warm-serif-fintech.png",
+      "animated": "/templates/fernbank-warm-serif-fintech.mp4"
     },
     "typography": {
       "display": "Fraunces",
@@ -5941,8 +5941,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/fluve-defi-light-rounded-video-cards.png",
+      "animated": "/templates/fluve-defi-light-rounded-video-cards.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -6007,8 +6007,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/forma-studio-pitch-deck-slides.png",
+      "animated": "/templates/forma-studio-pitch-deck-slides.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -6075,8 +6075,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/fournee-b2b-bakery-ellipse-reveal.png",
+      "animated": "/templates/fournee-b2b-bakery-ellipse-reveal.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -6143,8 +6143,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/glassline-liquid-glass-black-agency.png",
+      "animated": "/templates/glassline-liquid-glass-black-agency.mp4"
     },
     "typography": {
       "display": "Barlow",
@@ -6209,8 +6209,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/glasswing-liquid-glass-ai-agency.png",
+      "animated": "/templates/glasswing-liquid-glass-ai-agency.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -6275,8 +6275,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/gridwell-enterprise-tricolor-gradient.png",
+      "animated": "/templates/gridwell-enterprise-tricolor-gradient.mp4"
     },
     "typography": {
       "display": "Poppins",
@@ -6343,8 +6343,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/halewood-realty-sharp-corner-charts.png",
+      "animated": "/templates/halewood-realty-sharp-corner-charts.mp4"
     },
     "typography": {
       "display": "Lato",
@@ -6479,8 +6479,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/kinetra-bio-digital-white-minimal.png",
+      "animated": "/templates/kinetra-bio-digital-white-minimal.mp4"
     },
     "typography": {
       "display": "Outfit",
@@ -6546,8 +6546,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/korvant-security-vivid-green-dark.png",
+      "animated": "/templates/korvant-security-vivid-green-dark.mp4"
     },
     "typography": {
       "display": "Sora",
@@ -6615,8 +6615,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/loma-boomerang-triptych-waitlist.png",
+      "animated": "/templates/loma-boomerang-triptych-waitlist.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -6683,8 +6683,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/loomic-ai-automation-purple-dusk.png",
+      "animated": "/templates/loomic-ai-automation-purple-dusk.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -6748,8 +6748,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/loopdesk-light-saas-video-fade.png",
+      "animated": "/templates/loopdesk-light-saas-video-fade.mp4"
     },
     "typography": {
       "display": "Geist",
@@ -6814,8 +6814,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/maraveyo-bold-orange-portfolio-hero.png",
+      "animated": "/templates/maraveyo-bold-orange-portfolio-hero.mp4"
     },
     "typography": {
       "display": "Anton",
@@ -6883,8 +6883,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/markwell-anton-stat-corners-portfolio.png",
+      "animated": "/templates/markwell-anton-stat-corners-portfolio.mp4"
     },
     "typography": {
       "display": "Anton",
@@ -6950,8 +6950,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/medara-healthcare-ai-chat-input-hero.png",
+      "animated": "/templates/medara-healthcare-ai-chat-input-hero.mp4"
     },
     "typography": {
       "display": "Inria Serif",
@@ -7015,8 +7015,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/mentora-learning-accordion-cards.png",
+      "animated": "/templates/mentora-learning-accordion-cards.mp4"
     },
     "typography": {
       "display": "Outfit",
@@ -7085,8 +7085,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/milo-hart-solo-studio-narrow-column.png",
+      "animated": "/templates/milo-hart-solo-studio-narrow-column.mp4"
     },
     "typography": {
       "display": "Hanken Grotesk",
@@ -7155,8 +7155,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/nexel-black-floating-video-hero.png",
+      "animated": "/templates/nexel-black-floating-video-hero.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -7220,8 +7220,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/noctix-dark-video-waitlist.png",
+      "animated": "/templates/noctix-dark-video-waitlist.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -7285,8 +7285,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/noctura-shader-cinematic-dark-hero.png",
+      "animated": "/templates/noctura-shader-cinematic-dark-hero.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -7353,8 +7353,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/nocturne-streaming-blur-mask-hero.png",
+      "animated": "/templates/nocturne-streaming-blur-mask-hero.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -7419,8 +7419,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/northcircle-investor-club-glass-stats.png",
+      "animated": "/templates/northcircle-investor-club-glass-stats.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -7485,8 +7485,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/nyrion-web3-glow-pill-hero.png",
+      "animated": "/templates/nyrion-web3-glow-pill-hero.mp4"
     },
     "typography": {
       "display": "Hanken Grotesk",
@@ -7549,8 +7549,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/nyxen-dark-ai-poetic-monospace.png",
+      "animated": "/templates/nyxen-dark-ai-poetic-monospace.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -7613,8 +7613,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/oblique-portfolio-count-up-preloader.png",
+      "animated": "/templates/oblique-portfolio-count-up-preloader.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -7679,8 +7679,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/onetrack-focus-waitlist-glass-hero.png",
+      "animated": "/templates/onetrack-focus-waitlist-glass-hero.mp4"
     },
     "typography": {
       "display": "system font stack",
@@ -7746,8 +7746,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/outloud-green-serif-agency-hero.png",
+      "animated": "/templates/outloud-green-serif-agency-hero.mp4"
     },
     "typography": {
       "display": "Fraunces",
@@ -7812,8 +7812,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/outpace-ai-sales-serif-gradient-hero.png",
+      "animated": "/templates/outpace-ai-sales-serif-gradient-hero.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -7880,8 +7880,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/paylume-fintech-gradient-scroll-fill.png",
+      "animated": "/templates/paylume-fintech-gradient-scroll-fill.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -7949,8 +7949,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/plannery-glass-orb-light-saas.png",
+      "animated": "/templates/plannery-glass-orb-light-saas.mp4"
     },
     "typography": {
       "display": "Fustat",
@@ -8016,8 +8016,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/plotwise-geo-map-saas-hero.png",
+      "animated": "/templates/plotwise-geo-map-saas-hero.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -8083,8 +8083,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/quarry-ultralight-glass-saas-hero.png",
+      "animated": "/templates/quarry-ultralight-glass-saas-hero.mp4"
     },
     "typography": {
       "display": "Inter at weight 200",
@@ -8149,8 +8149,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/reelpeak-viral-video-agency-corner-marks.png",
+      "animated": "/templates/reelpeak-viral-video-agency-corner-marks.mp4"
     },
     "typography": {
       "display": "Barlow",
@@ -8215,8 +8215,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/roomora-ai-interior-serif-italic-glass.png",
+      "animated": "/templates/roomora-ai-interior-serif-italic-glass.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -8281,8 +8281,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/silt-skincare-split-video-shop.png",
+      "animated": "/templates/silt-skincare-split-video-shop.mp4"
     },
     "typography": {
       "display": "system UI sans in the prompt",
@@ -8349,8 +8349,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/solenne-fragrance-color-block-split.png",
+      "animated": "/templates/solenne-fragrance-color-block-split.mp4"
     },
     "typography": {
       "display": "system sans stack",
@@ -8418,8 +8418,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/solvera-renewable-boomerang-video.png",
+      "animated": "/templates/solvera-renewable-boomerang-video.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -8486,8 +8486,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/stepdoc-minimal-workflow-saas.png",
+      "animated": "/templates/stepdoc-minimal-workflow-saas.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -8555,8 +8555,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/stratum-vault-amber-terminal-cloud.png",
+      "animated": "/templates/stratum-vault-amber-terminal-cloud.mp4"
     },
     "typography": {
       "display": "IBM Plex Sans",
@@ -8763,8 +8763,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/talentarc-video-in-headline-ai-talent.png",
+      "animated": "/templates/talentarc-video-in-headline-ai-talent.mp4"
     },
     "typography": {
       "display": "Manrope weight 300",
@@ -8830,8 +8830,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/taskweave-pixel-serif-sidebar-saas.png",
+      "animated": "/templates/taskweave-pixel-serif-sidebar-saas.mp4"
     },
     "typography": {
       "display": "Pixelify Sans",
@@ -8899,8 +8899,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/terraway-travel-split-clip-headline.png",
+      "animated": "/templates/terraway-travel-split-clip-headline.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -8969,8 +8969,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/vantix-diagonal-cut-futurist.png",
+      "animated": "/templates/vantix-diagonal-cut-futurist.mp4"
     },
     "typography": {
       "display": "system sans",
@@ -9038,8 +9038,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/varo-football-scroll-scrub-video.png",
+      "animated": "/templates/varo-football-scroll-scrub-video.mp4"
     },
     "typography": {
       "display": "Manrope",
@@ -9106,8 +9106,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/vektra-automation-orbitron-spline-3d.png",
+      "animated": "/templates/vektra-automation-orbitron-spline-3d.mp4"
     },
     "typography": {
       "display": "Orbitron",
@@ -9177,8 +9177,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/verda-ventures-regeneration-video-hero.png",
+      "animated": "/templates/verda-ventures-regeneration-video-hero.mp4"
     },
     "typography": {
       "display": "Gilda Display",
@@ -9244,8 +9244,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/verdure-scroll-scrub-urban-greening.png",
+      "animated": "/templates/verdure-scroll-scrub-urban-greening.mp4"
     },
     "typography": {
       "display": "Syne",
@@ -9310,8 +9310,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/vesper-mail-dark-liquid-glass-app.png",
+      "animated": "/templates/vesper-mail-dark-liquid-glass-app.mp4"
     },
     "typography": {
       "display": "Inter",
@@ -9381,8 +9381,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/vespera-fragrance-orbit-collection.png",
+      "animated": "/templates/vespera-fragrance-orbit-collection.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -9449,8 +9449,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/vyra-giant-gradient-headline-talent.png",
+      "animated": "/templates/vyra-giant-gradient-headline-talent.mp4"
     },
     "typography": {
       "display": "Hanken Grotesk",
@@ -9517,8 +9517,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/wardgate-security-giant-lowercase-type.png",
+      "animated": "/templates/wardgate-security-giant-lowercase-type.mp4"
     },
     "typography": {
       "display": "Jost",
@@ -9586,8 +9586,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/welkin-crypto-amber-glow-serif.png",
+      "animated": "/templates/welkin-crypto-amber-glow-serif.mp4"
     },
     "typography": {
       "display": "Instrument Serif",
@@ -9653,8 +9653,8 @@ export const DIRECTIONS: readonly Direction[] = [
     ],
     "tierRequired": "studio_plus",
     "visualPreview": {
-      "static": null,
-      "animated": null
+      "static": "/templates/welleva-telehealth-rounded-ecom.png",
+      "animated": "/templates/welleva-telehealth-rounded-ecom.mp4"
     },
     "typography": {
       "display": "system font stack",
