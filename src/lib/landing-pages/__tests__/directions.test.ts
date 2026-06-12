@@ -111,21 +111,17 @@ describe("direction catalog invariants", () => {
     }
   });
 
-  it("every direction with a built mock ships a real preview; the expansion set is placeholder-only (PA-TG-3 + PA-TG-12)", () => {
-    // The 20 mocks in cwhited26/bos-template-mocks cover the curated set minus
-    // solar-energy-day-night-toggle. Every expansion direction ships placeholder-only (the
-    // "Real preview coming" card) until its mock + capture land — dropping a capture into
-    // public/templates/ and re-running the generator is the whole wiring step.
+  it("every direction with a built mock ships a real preview pair; the remaining gaps stay placeholder-only (PA-TG-13)", () => {
+    // PA-TG-13 filled the real-preview wave. Remaining gaps are explicit placeholder-only
+    // directions until their mock + capture land.
     const captured = DIRECTIONS.filter((d) => d.visualPreview.static !== null);
-    expect(captured).toHaveLength(20);
+    expect(captured).toHaveLength(134);
     for (const d of captured) {
       expect(d.visualPreview.static).toBe(`/templates/${d.slug}.png`);
       expect(d.visualPreview.animated).toBe(`/templates/${d.slug}.mp4`);
     }
-    const solar = DIRECTIONS.find((d) => d.slug === "solar-energy-day-night-toggle");
-    expect(solar?.visualPreview.static).toBeNull();
     const placeholders = DIRECTIONS.filter((d) => d.visualPreview.static === null);
-    expect(placeholders).toHaveLength(122);
+    expect(placeholders).toHaveLength(8);
     for (const d of placeholders) {
       expect(d.visualPreview.animated, d.slug).toBeNull();
     }

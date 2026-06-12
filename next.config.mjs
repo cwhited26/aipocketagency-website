@@ -12,12 +12,14 @@ const nextConfig = {
         "./src/data/persona-templates-md/**/*.md",
         "./src/data/workflow-vault/**/*.json",
       ],
-      // The URL extraction worker (recon Lane C) launches @sparticuz/chromium at runtime — trace the
-      // brotli-packed browser binary into the capture route's serverless bundle.
-      "/api/app/apps/competitor-inspector/**": ["./node_modules/@sparticuz/chromium/bin/**"],
+      // The URL extraction worker (recon Lane C) launches @sparticuz/chromium at runtime. Point
+      // tracing at pnpm's real package path so Vercel does not package node_modules symlink dirs.
+      "/api/app/apps/competitor-inspector/**": [
+        "./node_modules/.pnpm/@sparticuz+chromium@133.0.0/node_modules/@sparticuz/chromium/bin/**",
+      ],
     },
-    // Keep webpack from bundling the browser engine — both resolve via require at runtime.
-    serverComponentsExternalPackages: ["playwright-core", "@sparticuz/chromium"],
+    // Playwright's server package pulls optional browser/debug assets if bundled by webpack.
+    serverComponentsExternalPackages: ["playwright-core"],
   },
   async redirects() {
     return [
