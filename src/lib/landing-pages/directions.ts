@@ -131,14 +131,18 @@ export function paletteRoles(direction: Direction): PaletteRoles {
 
 // ── Typography (Google-Fonts-loadable families, honest fallbacks) ─────────────────────────────────
 
-/** The Google Fonts families the direction library actually names (checked against fonts.google.com). */
+/**
+ * The Google Fonts families the direction library actually names (checked against
+ * fonts.google.com). Order matters: a family that is a prefix of another ("Archivo" /
+ * "Archivo Black") must come after the longer one, because resolution is first-startsWith-wins.
+ */
 const GOOGLE_FAMILIES = [
   "Playfair Display",
   "Instrument Serif",
+  "Instrument Sans",
   "JetBrains Mono",
   "Plus Jakarta Sans",
   "DM Sans",
-  "Manrope",
   "Almarai",
   "Italiana",
   "Barlow",
@@ -147,6 +151,29 @@ const GOOGLE_FAMILIES = [
   "Rubik",
   "Syne",
   "Sora",
+  "Anton",
+  "Hanken Grotesk",
+  "Geist",
+  "Poppins",
+  "Fustat",
+  "Jost",
+  "Fraunces",
+  "Alegreya Sans",
+  "Archivo Black",
+  "Archivo",
+  "Readex Pro",
+  "Fredoka",
+  "Viaoda Libre",
+  "Akshar",
+  "Michroma",
+  "Lato",
+  "Space Grotesk",
+  "Inria Serif",
+  "IBM Plex Sans",
+  "Pixelify Sans",
+  "Orbitron",
+  "Gilda Display",
+  "Manrope",
   "Inter",
 ] as const;
 

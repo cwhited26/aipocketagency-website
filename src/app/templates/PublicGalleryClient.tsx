@@ -6,7 +6,7 @@
 // flow: every card's CTA is "Sign up to use" pointing at /start. Tier badges stay visible so a
 // prospect sees which plan opens which direction before they buy.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -46,6 +46,9 @@ const COMPLEXITY_LABEL: Record<PublicDirection["complexity"], string> = {
   medium: "Standard build",
   high: "Big build",
 };
+
+/** Cards rendered per "Show more" step — keeps the first paint light with a 142-card catalog. */
+const PAGE_SIZE = 24;
 
 function previewFontFamily(d: PublicDirection): string {
   if (d.displayFamily) return `'${d.displayFamily}', ${/serif/i.test(d.displayFont) ? "Georgia, serif" : "sans-serif"}`;
@@ -188,7 +191,15 @@ export default function PublicGalleryClient({ directions }: { directions: Public
   const [industryFilters, setIndustryFilters] = useState<string[]>([]);
   const [useCaseFilter, setUseCaseFilter] = useState<string | null>(null);
   const [showAllIndustries, setShowAllIndustries] = useState(false);
+  const [search, setSearch] = useState("");
+  // The grid renders in pages of PAGE_SIZE so a 142-card catalog doesn't mount 142 previews at
+  // once; "Show more" extends the window, and any filter/search change resets it.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [detail, setDetail] = useState<PublicDirection | null>(null);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [search, vibeFilters, industryFilters, useCaseFilter]);
 
   // Pills come from the catalog itself — the same derivation as the in-app gallery, so the two
   // surfaces always agree: vibes on 2+ directions, industries ranked by how many directions serve them.
@@ -210,12 +221,20 @@ export default function PublicGalleryClient({ directions }: { directions: Public
     return [...set];
   }, [directions]);
 
+  const query = search.trim().toLowerCase();
   const filtered = directions.filter((d) => {
     if (vibeFilters.length > 0 && !vibeFilters.some((v) => d.vibe.includes(v))) return false;
     if (industryFilters.length > 0 && !industryFilters.some((i) => d.industries.includes(i))) return false;
     if (useCaseFilter && !d.useCases.includes(useCaseFilter)) return false;
+    if (query) {
+      const haystack = [d.name, ...d.vibe, ...d.industries, ...d.motifs, d.displayFont, d.bodyFont]
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(query)) return false;
+    }
     return true;
   });
+  const visible = filtered.slice(0, visibleCount);
 
   const activeChips = [
     ...vibeFilters.map((v) => ({ label: v, clear: () => setVibeFilters((f) => f.filter((x) => x !== v)) })),
@@ -231,12 +250,28 @@ export default function PublicGalleryClient({ directions }: { directions: Public
     setDetail(null);
     setIndustryFilters([]);
     setUseCaseFilter(null);
+    setSearch("");
     setVibeFilters(d.vibe.filter((v) => vibePills.includes(v)).slice(0, 3));
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
     <div>
+      {/* Search */}
+      <div className="mb-4 flex items-center gap-3">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name, vibe, or industry"
+          aria-label="Search templates"
+          className="w-full max-w-md rounded-lg border border-white/15 bg-white/[0.03] px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-accent/50 focus:outline-none"
+        />
+        <span className="shrink-0 text-[12px] text-slate-500">
+          {filtered.length} of {directions.length} templates
+        </span>
+      </div>
+
       {/* Filter pills */}
       <div className="mb-6 flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -292,6 +327,7 @@ export default function PublicGalleryClient({ directions }: { directions: Public
               setVibeFilters([]);
               setIndustryFilters([]);
               setUseCaseFilter(null);
+              setSearch("");
             }}
             className="text-[12px] text-slate-500 hover:text-slate-300"
           >
@@ -303,11 +339,13 @@ export default function PublicGalleryClient({ directions }: { directions: Public
       {/* Grid */}
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-white/10 bg-white/[0.02] px-6 py-12 text-center">
-          <p className="text-sm text-slate-300">Nothing matches. Clear a filter or try a different vibe.</p>
+          <p className="text-sm text-slate-300">
+            {query ? "Nothing matches that search. Try a different word, or clear it and browse." : "Nothing matches. Clear a filter or try a different vibe."}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((d) => (
+          {visible.map((d) => (
             <div
               key={d.slug}
               className="group overflow-hidden rounded-xl border border-white/10 bg-white/[0.02] transition-colors hover:border-white/25"
@@ -355,6 +393,19 @@ export default function PublicGalleryClient({ directions }: { directions: Public
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Show more */}
+      {filtered.length > visibleCount && (
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            className="rounded-lg border border-white/15 px-5 py-2.5 text-sm text-slate-200 hover:border-white/30"
+          >
+            Show more templates ({filtered.length - visibleCount} left)
+          </button>
         </div>
       )}
 

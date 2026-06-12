@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { SiteHeader, SiteFooter } from "@/components/marketing/site-nav";
 import { PrimaryCTA, SecondaryCTA, MONO_FONT } from "@/components/marketing/cta";
+import { DIRECTION_COUNTS } from "@/data/landing-page-templates/directions-meta";
 
 const DESCRIPTION =
   "An AI Agent Workspace for owner-led businesses. Pocket Agent gives your business a Business Brain, clone-and-customize Personas, workflow Apps, and Mission Control — so your agents draft emails, find leads, capture ideas, build pages, and bring it all back for your approval. Generic AI starts from zero. Pocket Agent starts from your business.";
@@ -84,7 +85,7 @@ const APPS: { name: string; body: string; badge?: { label: string; href: string 
   {
     name: "Landing Page Builder",
     body: "Pick a template from the gallery — a phone-first trades page, a booking-led med spa, a luxury listing site — and PA writes the copy in your voice and builds the page on your own accounts. You approve every step, and the code is yours.",
-    badge: { label: "Powered by 21 distinct templates →", href: "/templates" },
+    badge: { label: `Powered by ${DIRECTION_COUNTS.total} distinct templates →`, href: "/templates" },
   },
 ];
 

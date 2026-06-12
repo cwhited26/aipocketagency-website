@@ -8,6 +8,7 @@ import {
   loadableFamily,
   paletteRoles,
 } from "@/lib/landing-pages/directions";
+import { DIRECTION_COUNTS } from "@/data/landing-page-templates/directions-meta";
 import PublicGalleryClient, { type PublicDirection } from "./PublicGalleryClient";
 
 // /templates — the public Template Gallery (Template Gallery prominence boost). The same catalog PA
@@ -16,15 +17,15 @@ import PublicGalleryClient, { type PublicDirection } from "./PublicGalleryClient
 // "Sign up to use." The catalog is static data, so the page prerenders.
 
 const PAGE_URL = "https://aipocketagent.com/templates";
-const DESCRIPTION =
-  "21 distinct landing-page templates inside Pocket Agent. Each one is a different design direction — trades, med spa, real estate, luxury, SaaS, editorial — so your page stands out instead of blending in. Pick the look that fits your business and PA builds it in your voice on your own accounts.";
+const DESCRIPTION = `${DIRECTION_COUNTS.total} distinct landing-page templates inside Pocket Agent. Each one is a different design direction — trades, med spa, real estate, luxury, SaaS, editorial — so your page stands out instead of blending in. Pick the look that fits your business and PA builds it in your voice on your own accounts.`;
+const OG_TITLE = `${DIRECTION_COUNTS.total} distinct templates. Pick one your business actually fits.`;
 
 export const metadata: Metadata = {
-  title: "The Template Gallery — 21 distinct landing-page templates | Pocket Agent",
+  title: `The Template Gallery — ${DIRECTION_COUNTS.total} distinct landing-page templates | Pocket Agent`,
   description: DESCRIPTION,
   alternates: { canonical: PAGE_URL },
   openGraph: {
-    title: "21 distinct templates. Pick one your business actually fits.",
+    title: OG_TITLE,
     description: DESCRIPTION,
     url: PAGE_URL,
     siteName: "AI Pocket Agency",
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "21 distinct templates. Pick one your business actually fits.",
+    title: OG_TITLE,
     description: DESCRIPTION,
   },
 };
@@ -91,7 +92,7 @@ export default function PublicTemplatesPage() {
             [ the template gallery · inside the Landing Page Builder ]
           </div>
           <h1 className="text-balance text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
-            21 distinct templates. Pick one your business actually fits.
+            {DIRECTION_COUNTS.total} distinct templates. Pick one your business actually fits.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg leading-relaxed text-slate-300">
             Most AI-built pages look like the same page wearing different logos. Every template here
@@ -121,8 +122,9 @@ export default function PublicTemplatesPage() {
             Start with Pocket Agent — the Template Gallery is built in from day one.
           </h2>
           <p className="mt-5 max-w-xl text-balance text-lg leading-relaxed text-slate-300">
-            Eleven templates are included with every plan, and the ten premium looks open at
-            Studio+. Pick yours, answer three quick questions, and PA builds the page in your voice.
+            {DIRECTION_COUNTS.starter} templates are included with every plan, and the{" "}
+            {DIRECTION_COUNTS.studioPlus} premium looks open at Studio+. Pick yours, answer three
+            quick questions, and PA builds the page in your voice.
           </p>
           <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
             <PrimaryCTA href="/start" label="Build My AI Team" />

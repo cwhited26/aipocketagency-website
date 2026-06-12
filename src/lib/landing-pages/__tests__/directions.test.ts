@@ -29,38 +29,58 @@ const MD_DIR = join(process.cwd(), "src", "data", "landing-page-templates", "dir
 const PREVIEW_DIR = join(process.cwd(), "public", "templates");
 
 describe("direction catalog invariants", () => {
-  it("ships 21 directions with unique slugs", () => {
-    expect(DIRECTIONS).toHaveLength(21);
-    expect(new Set(DIRECTIONS.map((d) => d.slug)).size).toBe(21);
+  it("ships the full 142-direction catalog with unique slugs (PA-TG-12)", () => {
+    expect(DIRECTIONS).toHaveLength(142);
+    expect(new Set(DIRECTIONS.map((d) => d.slug)).size).toBe(142);
   });
 
-  it("uses the motionsites-availability ladder: 11 starter / 10 studio_plus (PA-TG-11)", () => {
+  it("uses the motionsites-availability ladder: 58 starter / 84 studio_plus (PA-TG-11..12)", () => {
     const counts = DIRECTIONS.reduce<Record<string, number>>((acc, d) => {
       acc[d.tierRequired] = (acc[d.tierRequired] ?? 0) + 1;
       return acc;
     }, {});
-    expect(counts).toEqual({ starter: 11, studio_plus: 10 });
+    expect(counts).toEqual({ starter: 58, studio_plus: 84 });
   });
 
-  it("puts exactly the motionsites-Premium extractions at studio_plus (PA-TG-11)", () => {
-    // Per BOS/Sites/prompt_library/motionsites-ai-inventory.md: these ten directions were extracted
-    // from Premium-tier motionsites prompts; everything free-on-motionsites or Chase-original sits
-    // at starter so every plan builds with it.
-    const premium = DIRECTIONS.filter((d) => d.tierRequired === "studio_plus").map((d) => d.slug);
-    expect(premium.sort()).toEqual(
-      [
-        "bookedup-deep-shadow-saas",
-        "cinematic-space-travel-aerospace",
-        "codenest-coding-education-dev-platform",
-        "cognitra-ai-agency-gray-panel",
-        "cyberpunk-red-augmented-self",
-        "glassmorphism-purple-pink-agency",
-        "mainframe-mouse-scrub-agency",
-        "spd-luxury-automation-cinematic",
-        "targo-logistics-dark-red-clipped",
-        "yacht-club-liquid-cursor-luxury",
-      ].sort(),
-    );
+  it("preserves the curated 21's tier mappings exactly as PA-TG-11 set them", () => {
+    // The full-archive expansion (PA-TG-12) must never move a curated direction's tier. Per
+    // BOS/Sites/prompt_library/motionsites-ai-inventory.md: the ten Premium extractions sit at
+    // studio_plus, the free extractions + Chase originals at starter.
+    const curatedPremium = [
+      "bookedup-deep-shadow-saas",
+      "cinematic-space-travel-aerospace",
+      "codenest-coding-education-dev-platform",
+      "cognitra-ai-agency-gray-panel",
+      "cyberpunk-red-augmented-self",
+      "glassmorphism-purple-pink-agency",
+      "mainframe-mouse-scrub-agency",
+      "spd-luxury-automation-cinematic",
+      "targo-logistics-dark-red-clipped",
+      "yacht-club-liquid-cursor-luxury",
+    ];
+    const curatedStarter = [
+      "trades-phone-first-emergency",
+      "contractor-photo-first-trust",
+      "medspa-booking-calendar-first",
+      "real-estate-listing-grid-search",
+      "solar-energy-day-night-toggle",
+      "vanguard-fierce-creative-collective",
+      "prisma-cinematic-cream-collective",
+      "jack-3d-creator-portfolio",
+      "lithos-geology-editorial",
+      "velar-luxury-real-estate",
+      "modern-agency-mental-wellness",
+    ];
+    for (const slug of curatedPremium) {
+      expect(getDirection(slug)?.tierRequired, slug).toBe("studio_plus");
+    }
+    for (const slug of curatedStarter) {
+      expect(getDirection(slug)?.tierRequired, slug).toBe("starter");
+    }
+    // The expansion set only uses the two ladder rungs the availability rule produces.
+    for (const d of DIRECTIONS) {
+      expect(["starter", "studio_plus"], d.slug).toContain(d.tierRequired);
+    }
   });
 
   it("every direction carries the fields the gallery renders", () => {
@@ -91,10 +111,12 @@ describe("direction catalog invariants", () => {
     }
   });
 
-  it("every direction with a built mock ships a real preview, still + animated (PA-TG-3)", () => {
-    // All 20 mocks in cwhited26/bos-template-mocks. The only placeholder-only direction is
-    // solar-energy-day-night-toggle (added to the library after the Phase-2 capture run).
-    const captured = DIRECTIONS.filter((d) => d.slug !== "solar-energy-day-night-toggle");
+  it("every direction with a built mock ships a real preview; the expansion set is placeholder-only (PA-TG-3 + PA-TG-12)", () => {
+    // The 20 mocks in cwhited26/bos-template-mocks cover the curated set minus
+    // solar-energy-day-night-toggle. Every expansion direction ships placeholder-only (the
+    // "Real preview coming" card) until its mock + capture land — dropping a capture into
+    // public/templates/ and re-running the generator is the whole wiring step.
+    const captured = DIRECTIONS.filter((d) => d.visualPreview.static !== null);
     expect(captured).toHaveLength(20);
     for (const d of captured) {
       expect(d.visualPreview.static).toBe(`/templates/${d.slug}.png`);
@@ -102,6 +124,11 @@ describe("direction catalog invariants", () => {
     }
     const solar = DIRECTIONS.find((d) => d.slug === "solar-energy-day-night-toggle");
     expect(solar?.visualPreview.static).toBeNull();
+    const placeholders = DIRECTIONS.filter((d) => d.visualPreview.static === null);
+    expect(placeholders).toHaveLength(122);
+    for (const d of placeholders) {
+      expect(d.visualPreview.animated, d.slug).toBeNull();
+    }
   });
 });
 

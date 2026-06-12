@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { DIRECTION_COUNTS } from "@/data/landing-page-templates/directions-meta";
 
 // The Template Gallery dashboard tile (Template Gallery prominence boost). The gallery shipped at
 // /app/apps/landing-pages/templates but was only reachable through the Landing Page Builder App —
@@ -44,7 +45,7 @@ export function TemplateGalleryTile() {
       <div className="flex flex-wrap items-end justify-between gap-3 p-4">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-100">
-            21 distinct templates. Pick one your business actually fits.
+            {DIRECTION_COUNTS.total} distinct templates. Pick one your business actually fits.
           </p>
           <p className="mt-1 text-[13px] leading-relaxed text-slate-400">
             Every one is a different design direction — so your page doesn&apos;t read as another

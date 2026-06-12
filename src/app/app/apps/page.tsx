@@ -13,6 +13,7 @@ import { TabGuide } from "../_components/TabGuide";
 import { StarterBox } from "../_components/StarterBox";
 import YouTubeExplainerCard from "@/components/youtube/ExplainerCard";
 import { APP_CATALOG, type AppDef } from "@/lib/apps/catalog";
+import { DIRECTION_COUNTS } from "@/data/landing-page-templates/directions-meta";
 
 // The Apps menu reads from the shared catalog (lib/apps/catalog.ts) — the same source the
 // Personas surface uses to let each persona declare which Apps it can reach.
@@ -147,7 +148,7 @@ export default async function AppsPage() {
                 <p className="text-sm text-slate-400 leading-relaxed">{app.description}</p>
                 {app.id === "landing-page-builder" && (
                   <p className="mt-2 text-[10px] font-mono uppercase tracking-wider text-slate-500">
-                    Powered by 21 distinct templates
+                    Powered by {DIRECTION_COUNTS.total} distinct templates
                   </p>
                 )}
                 <div className="mt-3 text-[11px] text-[#22d3ee]/50 group-hover:text-[#22d3ee] transition-colors font-mono">
