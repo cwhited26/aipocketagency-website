@@ -62,6 +62,7 @@ const VISIBLE_TIERS: VisibleTier[] = [
       "Lead Scout vertical packs (7 verticals)",
       "Decision Roundtable",
       "All 30 prebuilt Skills + advanced Mission Control",
+      "The full Layoutbook + Field Book premium template gallery, included",
     ],
     ctaLabel: "Unlock AI Agent Workspace",
     anchor:
@@ -115,7 +116,8 @@ const HIDDEN_TIERS: { name: string; price: string; pitch: string; tier: string; 
     {
       name: "Pro+",
       price: "$149/mo",
-      pitch: "More connected tools and specialists, plus a first agent you can put on a private link.",
+      pitch:
+        "More connected tools and specialists, plus a first agent you can put on a private link. Field Book premium templates included — Layoutbook premium comes with the upgrade to the full workspace.",
       tier: "pro_plus",
     },
     {

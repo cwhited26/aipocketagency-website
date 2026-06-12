@@ -183,6 +183,10 @@ const FAQ: { q: string; a: string }[] = [
     a: "Yes — on Studio+. When you bring your own key, you see real dollar usage, because then it’s your money.",
   },
   {
+    q: "Is the Layoutbook + Field Book catalog included?",
+    a: "The premium templates are, from Pro+ up. Pro+ includes the Field Book premium conversion templates; the AI Agent Workspace includes the full gallery — Layoutbook and Field Book, every premium direction. The public catalogs stay separate products; the premium sets ride along with your workspace.",
+  },
+  {
     q: "Can I cancel?",
     a: "Any time. You keep your brain. There’s no lock-in.",
   },
@@ -231,6 +235,7 @@ const PRICING_TIERS: {
       { label: "Prebuilt Skills", value: "30" },
       { label: "Lead Scout packs", value: "✓" },
       { label: "Idea Engine", value: "✓" },
+      { label: "Layoutbook + Field Book premium gallery", value: "✓" },
     ],
   },
 ];
