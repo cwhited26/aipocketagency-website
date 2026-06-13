@@ -276,6 +276,18 @@ export async function importDesignSystemFromUrl(
   inFlight.add(lockK);
   const correlationId = options.correlationId ?? `import-ds-${Date.now()}`;
 
+  // PA-LPB-13: this code path is end-of-life. The Moonchild MCP at forge.moonchild.ai/mcp is
+  // read-only (13 export tools, zero generation tools). There is no "import design system from URL"
+  // tool on the server — findImportDsTool either falls back to tools[0] or returns null. The
+  // PA_MOONCHILD_URL_IMPORT_ENABLED flag gates the wizard option; it is intentionally unset in
+  // production so this branch is unreachable from the UI until PA-LPB-13 ships the correct flow.
+  log.warn("moonchild import-ds-from-url called — this code path is end-of-life pending PA-LPB-13", {
+    owner_id: options.ownerId,
+    correlation_id: correlationId,
+    url,
+    note: "Moonchild MCP is read-only. PA-LPB-13 replaces this with scene-pick (Path A) and URL-cloner (Path B).",
+  });
+
   try {
     const toolsResult = await listMoonchildTools(options.ownerId);
     if (!toolsResult.ok) return toolsResult;

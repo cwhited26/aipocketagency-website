@@ -26,6 +26,7 @@ export default async function LandingPagesPage() {
   const canBuild = tierAllowsLandingPageBuilder(tier);
   const pages = pagesResult.ok ? pagesResult.data.map(toView) : [];
   const moonchildConfigured = getMoonchildConfig().configured;
+  const urlImportEnabled = moonchildConfigured && process.env.PA_MOONCHILD_URL_IMPORT_ENABLED === "true";
 
   const templates = listTemplates().map((t) => ({
     id: t.id,
@@ -87,6 +88,7 @@ export default async function LandingPagesPage() {
           canBuild={canBuild}
           hasApiKey={Boolean(paUser.anthropic_api_key)}
           moonchildConfigured={moonchildConfigured}
+          urlImportEnabled={urlImportEnabled}
         />
       </div>
     </div>

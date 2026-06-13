@@ -15,6 +15,7 @@ type Props = {
   canBuild: boolean;
   hasApiKey: boolean;
   moonchildConfigured: boolean;
+  urlImportEnabled: boolean;
 };
 
 const STATUS_LABEL: Record<LandingPageView["status"], string> = {
@@ -41,7 +42,7 @@ function statusClass(status: LandingPageView["status"]): string {
   return "text-slate-400 border-slate-700 bg-slate-900/60";
 }
 
-export default function LandingPagesClient({ initialPages, templates, canBuild, hasApiKey, moonchildConfigured }: Props) {
+export default function LandingPagesClient({ initialPages, templates, canBuild, hasApiKey, moonchildConfigured, urlImportEnabled }: Props) {
   const [pages, setPages] = useState<LandingPageView[]>(initialPages);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -360,11 +361,11 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
             </p>
             <div className="grid grid-cols-3 gap-1.5 mb-2">
               {([
-                { key: "url", label: "Yes — paste a URL", sub: "Moonchild reads the site's design" },
+                { key: "url", label: "Match a site's look", sub: "Coming with the next update" },
                 { key: "existing", label: "Use existing brand.json", sub: "If the scope already has one" },
                 { key: "skip", label: "Skip — use defaults", sub: "PA picks the style" },
               ] as { key: DsChoice; label: string; sub: string }[]).map((opt) => {
-                const disabled = opt.key === "url" && !moonchildConfigured;
+                const disabled = opt.key === "url" && !urlImportEnabled;
                 return (
                   <button
                     key={opt.key}
@@ -385,9 +386,9 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
                 );
               })}
             </div>
-            {!moonchildConfigured && (
+            {!urlImportEnabled && (
               <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
-                Moonchild imports a real color palette, typography, and components from a reference URL — making the page feel more bespoke. Not required; the Builder works without it.
+                Pulling a design from a URL is coming with the next update. For now, pick &ldquo;Skip&rdquo; and PA will build against the template defaults.
               </p>
             )}
 
