@@ -270,6 +270,37 @@ export async function fetchInboxItemById(id: string): Promise<PaResult<InboxItem
   return { ok: true, data: rows[0] ?? null };
 }
 
+// ─── Update staged content ───────────────────────────────────────────────────
+
+export async function updateInboxItemPayload(
+  id: string,
+  payload: Record<string, unknown>,
+  content?: { title?: string; bodyMd?: string | null },
+): Promise<PaResult<InboxItem>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const body: Record<string, unknown> = { payload };
+  if (content?.title !== undefined) body.title = content.title;
+  if (content?.bodyMd !== undefined) body.body_md = content.bodyMd;
+
+  const res = await fetch(`${env.url}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: {
+      ...authHeaders(env.key),
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as InboxItem[];
+  if (!rows[0]) return { ok: false, status: 500, error: "No row returned after update." };
+  return { ok: true, data: rows[0] };
+}
+
 // ─── Resolve (approve / reject / expire) — service-role only ──────────────────
 
 export async function resolveInboxItem(
