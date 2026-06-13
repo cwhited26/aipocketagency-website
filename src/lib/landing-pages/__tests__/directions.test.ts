@@ -115,13 +115,13 @@ describe("direction catalog invariants", () => {
     // PA-TG-13 filled the real-preview wave. Remaining gaps are explicit placeholder-only
     // directions until their mock + capture land.
     const captured = DIRECTIONS.filter((d) => d.visualPreview.static !== null);
-    expect(captured).toHaveLength(134);
+    expect(captured).toHaveLength(142);
     for (const d of captured) {
       expect(d.visualPreview.static).toBe(`/templates/${d.slug}.png`);
       expect(d.visualPreview.animated).toBe(`/templates/${d.slug}.mp4`);
     }
     const placeholders = DIRECTIONS.filter((d) => d.visualPreview.static === null);
-    expect(placeholders).toHaveLength(8);
+    expect(placeholders).toHaveLength(0);
     for (const d of placeholders) {
       expect(d.visualPreview.animated, d.slug).toBeNull();
     }
