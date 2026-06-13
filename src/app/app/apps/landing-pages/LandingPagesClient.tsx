@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { LandingPageView } from "@/lib/landing-pages/types";
-import type { ProjectFolder } from "@/lib/landing-pages/scope";
 import { AppEmptyState } from "@/app/app/_components/AppEmptyState";
 import { AddonPrompt } from "@/app/app/_components/AddonPrompt";
 import { LANDING_PAGE } from "@/lib/copy/in-app";
+import WizardScopeStep, { type ScopeSelection } from "@/components/landing-pages/wizard/WizardScopeStep";
+import WizardDsStep, { type DsSelection } from "@/components/landing-pages/wizard/WizardDsStep";
 
 type TemplateOption = { id: string; label: string; description: string; bestFor: string };
 
@@ -18,6 +19,9 @@ type Props = {
   urlImportEnabled: boolean;
   moonchildOwnerConnected: boolean;
 };
+
+const DEFAULT_SCOPE: ScopeSelection = { mode: "personal", scope: null };
+const DEFAULT_DS: DsSelection = { kind: "skip" };
 
 const STATUS_LABEL: Record<LandingPageView["status"], string> = {
   planning: "Draft",
@@ -53,132 +57,17 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Scope picker state (PA-LPB-9)
-  const [scopeMode, setScopeMode] = useState<"personal" | "project">("personal");
-  const [selectedScope, setSelectedScope] = useState<string | null>(null);
-  const [folders, setFolders] = useState<ProjectFolder[] | null>(null);
-  const [loadingFolders, setLoadingFolders] = useState(false);
+  // Scope + DS selections (PA-LPB-9 / PA-LPB-13) — managed by shared wizard step components.
+  const [scopeSelection, setScopeSelection] = useState<ScopeSelection>(DEFAULT_SCOPE);
+  const [dsSelection, setDsSelection] = useState<DsSelection>(DEFAULT_DS);
 
-  // Design system wizard step (PA-LPB-13)
-  type DsChoice = "moonchild" | "clone" | "skip";
-  type DsPreview = {
-    designSystemId: string;
-    name?: string;
-    palette?: { name?: string; hex?: string; role?: string }[];
-    typography?: { heading?: { family?: string }; body?: { family?: string } };
-    importedFrom: string;
-  };
-  type MoonchildScene = { id: string; name: string; thumbnail_url?: string };
-  const [dsChoice, setDsChoice] = useState<DsChoice>("skip");
-  // Path A (Moonchild)
-  const [scenes, setScenes] = useState<MoonchildScene[] | null>(null);
-  const [loadingScenes, setLoadingScenes] = useState(false);
-  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
-  const [sceneImporting, setSceneImporting] = useState(false);
-  // Path B (clone)
-  const [cloneUrl, setCloneUrl] = useState("");
-  const [cloning, setCloning] = useState(false);
-  // Shared preview
-  const [dsPreview, setDsPreview] = useState<DsPreview | null>(null);
-  const [dsError, setDsError] = useState<string | null>(null);
+  // Brain-write offer state — post-create, owned here because it needs the pageId.
   const [dsBrainWritePageId, setDsBrainWritePageId] = useState<string | null>(null);
   const [dsBrainWriting, setDsBrainWriting] = useState(false);
   const [dsBrainWriteStaged, setDsBrainWriteStaged] = useState(false);
 
-  // Reset DS wizard when scope changes
-  useEffect(() => {
-    setDsChoice("skip");
-    setCloneUrl("");
-    setDsPreview(null);
-    setDsError(null);
-    setSelectedSceneId(null);
-  }, [selectedScope, scopeMode]);
-
-  // Load scenes when Path A is selected for the first time
-  useEffect(() => {
-    if (dsChoice !== "moonchild" || scenes !== null || loadingScenes) return;
-    setLoadingScenes(true);
-    fetch("/api/app/apps/landing-pages/moonchild-scenes")
-      .then((r) => r.json() as Promise<{ scenes?: MoonchildScene[]; error?: string }>)
-      .then((data) => setScenes(data.scenes ?? []))
-      .catch(() => setScenes([]))
-      .finally(() => setLoadingScenes(false));
-  }, [dsChoice, scenes, loadingScenes]);
-
-  useEffect(() => {
-    if (scopeMode !== "project" || folders !== null) return;
-    setLoadingFolders(true);
-    fetch("/api/app/apps/landing-pages/project-folders")
-      .then((r) => r.json() as Promise<{ folders: ProjectFolder[] }>)
-      .then((data) => setFolders(data.folders ?? []))
-      .catch(() => setFolders([]))
-      .finally(() => setLoadingFolders(false));
-  }, [scopeMode, folders]);
-
-  async function importScene(sceneId: string, sceneName: string) {
-    setSceneImporting(true);
-    setDsError(null);
-    setDsPreview(null);
-    try {
-      const res = await fetch("/api/app/apps/landing-pages/moonchild-import-scene", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sceneId, sceneName }),
-      });
-      const data = (await res.json()) as {
-        designSystem?: { name?: string; palette?: DsPreview["palette"]; typography?: DsPreview["typography"] };
-        designSystemId?: string;
-        importedFrom?: string;
-        error?: string;
-      };
-      if (!res.ok || !data.designSystemId) {
-        setDsError(data.error ?? "Couldn't read the design system from that scene.");
-        return;
-      }
-      setSelectedSceneId(sceneId);
-      setDsPreview({
-        designSystemId: data.designSystemId,
-        name: data.designSystem?.name ?? sceneName,
-        palette: data.designSystem?.palette,
-        typography: data.designSystem?.typography,
-        importedFrom: data.importedFrom ?? `moonchild:scene:${sceneId}`,
-      });
-    } finally {
-      setSceneImporting(false);
-    }
-  }
-
-  async function cloneDesign() {
-    if (!cloneUrl.trim()) return;
-    setCloning(true);
-    setDsError(null);
-    setDsPreview(null);
-    try {
-      const res = await fetch("/api/app/apps/landing-pages/clone-design", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: cloneUrl.trim() }),
-      });
-      const data = (await res.json()) as {
-        snapshot?: { name?: string; palette?: DsPreview["palette"]; typography?: DsPreview["typography"] };
-        importedFrom?: string;
-        error?: string;
-      };
-      if (!res.ok || !data.snapshot) {
-        setDsError(data.error ?? "Couldn't read the design from that site. Try a different URL.");
-        return;
-      }
-      setDsPreview({
-        designSystemId: `clone:${Date.now()}`,
-        name: data.snapshot.name,
-        palette: data.snapshot.palette,
-        typography: data.snapshot.typography,
-        importedFrom: data.importedFrom ?? `clone:${cloneUrl.trim()}`,
-      });
-    } finally {
-      setCloning(false);
-    }
-  }
+  // Scope key drives DS step remount when the owner switches scope — resets DS selection cleanly.
+  const dsScopeKey = `${scopeSelection.mode}-${scopeSelection.mode === "project" ? (scopeSelection.scope ?? "root") : "personal"}`;
 
   async function stageTosBrainWrite(pageId: string) {
     setDsBrainWriting(true);
@@ -199,7 +88,7 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
     setCreating(true);
     setError(null);
     setNotice(null);
-    const brainScope = scopeMode === "project" ? selectedScope : null;
+    const brainScope = scopeSelection.mode === "project" ? scopeSelection.scope : null;
     try {
       const res = await fetch("/api/app/apps/landing-pages", {
         method: "POST",
@@ -213,20 +102,19 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
       }
       const newPage = data.page as LandingPageView;
 
-      // If the owner imported a DS in the wizard, persist it on the new page row.
-      if (dsPreview && (dsChoice === "moonchild" || dsChoice === "clone")) {
-        const endpoint =
-          dsChoice === "moonchild"
-            ? "/api/app/apps/landing-pages/moonchild-import-scene"
-            : "/api/app/apps/landing-pages/clone-design";
-        const body =
-          dsChoice === "moonchild"
-            ? { sceneId: selectedSceneId, sceneName: dsPreview.name, pageId: newPage.id }
-            : { url: cloneUrl.trim(), pageId: newPage.id };
-        await fetch(endpoint, {
+      // If the owner picked a DS in the wizard, associate it with the new page.
+      if (dsSelection.kind === "moonchild") {
+        await fetch("/api/app/apps/landing-pages/moonchild-import-scene", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ sceneId: dsSelection.sceneId, sceneName: dsSelection.sceneName, pageId: newPage.id }),
+        });
+        setDsBrainWritePageId(newPage.id);
+      } else if (dsSelection.kind === "clone") {
+        await fetch("/api/app/apps/landing-pages/clone-design", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: dsSelection.url, pageId: newPage.id }),
         });
         setDsBrainWritePageId(newPage.id);
       }
@@ -349,224 +237,26 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
           className="w-full rounded-lg border border-slate-700 bg-slate-900/80 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-500 mb-3 focus:border-[#22d3ee]/50 focus:outline-none"
         />
 
-        {/* PA-LPB-9 — What is this page for? */}
-        <p className="text-[12px] font-medium text-slate-400 mb-2">What is this page for?</p>
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <button
-            type="button"
-            onClick={() => { setScopeMode("personal"); setSelectedScope(null); }}
-            className={`text-left rounded-lg border px-3 py-2.5 transition-colors ${
-              scopeMode === "personal"
-                ? "border-[#22d3ee]/50 bg-[#22d3ee]/10"
-                : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
-            }`}
-          >
-            <p className="text-[13px] font-semibold text-slate-100">Me / my business</p>
-            <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Reads your personal brain</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => setScopeMode("project")}
-            className={`text-left rounded-lg border px-3 py-2.5 transition-colors ${
-              scopeMode === "project"
-                ? "border-[#22d3ee]/50 bg-[#22d3ee]/10"
-                : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
-            }`}
-          >
-            <p className="text-[13px] font-semibold text-slate-100">A specific project or client</p>
-            <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Reads that project&apos;s brain folder</p>
-          </button>
-        </div>
+        {/* PA-LPB-9 — scope step (shared component) */}
+        <WizardScopeStep onChange={setScopeSelection} />
 
-        {scopeMode === "project" && (
-          <div className="mb-3">
-            {loadingFolders && (
-              <p className="text-[12px] text-slate-500 py-2">Looking for project folders in your brain…</p>
-            )}
-            {!loadingFolders && folders !== null && folders.length === 0 && (
-              <div className="rounded-lg border border-slate-800 bg-slate-900/60 px-4 py-3">
-                <p className="text-[12px] text-slate-300 leading-relaxed">
-                  Your brain doesn&apos;t have project folders yet. Drop a{" "}
-                  <code className="text-[#22d3ee] font-mono">brand.md</code> or a{" "}
-                  <code className="text-[#22d3ee] font-mono">memory/</code> folder under any path like{" "}
-                  <code className="text-[#22d3ee] font-mono">customers/name/</code> and PA will pick it up.
-                  Continuing builds against your personal brain.
-                </p>
-              </div>
-            )}
-            {!loadingFolders && folders && folders.length > 0 && (
-              <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
-                {folders.map((f) => (
-                  <button
-                    key={f.path}
-                    type="button"
-                    onClick={() => setSelectedScope(selectedScope === f.path ? null : f.path)}
-                    className={`text-left rounded-lg border px-3 py-2.5 transition-colors ${
-                      selectedScope === f.path
-                        ? "border-[#22d3ee]/50 bg-[#22d3ee]/10"
-                        : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {f.brandColor && (
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: f.brandColor }}
-                        />
-                      )}
-                      <p className="text-[13px] font-semibold text-slate-100">{f.name}</p>
-                    </div>
-                    <p className="text-[10px] font-mono text-slate-500 mt-0.5">{f.path}</p>
-                    <p className="text-[10px] text-slate-600 mt-0.5">{f.signals.join(" · ")}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* PA-LPB-13 — Design system wizard (shown for all scopes) */}
-        <div className="mb-3 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
-          <p className="text-[12px] font-medium text-slate-300 mb-2">
-            Base the page design on something specific?
-          </p>
-          <div className={`grid gap-1.5 mb-2 ${moonchildOwnerConnected ? "grid-cols-3" : "grid-cols-2"}`}>
-            {moonchildOwnerConnected && (
-              <button
-                type="button"
-                onClick={() => { setDsChoice("moonchild"); setDsPreview(null); setDsError(null); }}
-                className={`text-left rounded-lg border px-2.5 py-2 transition-colors ${
-                  dsChoice === "moonchild"
-                    ? "border-[#22d3ee]/50 bg-[#22d3ee]/10"
-                    : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
-                }`}
-              >
-                <p className="text-[12px] font-semibold text-slate-100 leading-snug">Pull from my Moonchild project</p>
-                <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">Pick a scene from your account</p>
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => { setDsChoice("clone"); setDsPreview(null); setDsError(null); }}
-              className={`text-left rounded-lg border px-2.5 py-2 transition-colors ${
-                dsChoice === "clone"
-                  ? "border-[#22d3ee]/50 bg-[#22d3ee]/10"
-                  : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
-              }`}
-            >
-              <p className="text-[12px] font-semibold text-slate-100 leading-snug">Match a site&apos;s look</p>
-              <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">Paste a URL — style tokens only</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => { setDsChoice("skip"); setDsPreview(null); setDsError(null); }}
-              className={`text-left rounded-lg border px-2.5 py-2 transition-colors ${
-                dsChoice === "skip"
-                  ? "border-[#22d3ee]/50 bg-[#22d3ee]/10"
-                  : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
-              }`}
-            >
-              <p className="text-[12px] font-semibold text-slate-100 leading-snug">Skip — let PA pick</p>
-              <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">Uses template defaults</p>
-            </button>
-          </div>
-
-          {/* Path A — Moonchild scene picker */}
-          {dsChoice === "moonchild" && (
-            <div className="mt-2">
-              {loadingScenes && (
-                <p className="text-[11px] text-slate-500 py-1">Loading your scenes…</p>
-              )}
-              {!loadingScenes && scenes !== null && scenes.length === 0 && (
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  No scenes found in your Moonchild account. Build a design system in{" "}
-                  <span className="text-[#22d3ee]/80 font-mono">studio.moonchild.ai</span> first, then come back.
-                </p>
-              )}
-              {!loadingScenes && scenes && scenes.length > 0 && (
-                <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
-                  {scenes.map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedSceneId(s.id);
-                        void importScene(s.id, s.name);
-                      }}
-                      disabled={sceneImporting}
-                      className={`text-left rounded-lg border px-3 py-2 transition-colors disabled:opacity-50 ${
-                        selectedSceneId === s.id && dsPreview
-                          ? "border-emerald-500/40 bg-emerald-500/5"
-                          : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
-                      }`}
-                    >
-                      <p className="text-[12px] font-semibold text-slate-100">{s.name}</p>
-                      {sceneImporting && selectedSceneId === s.id && (
-                        <p className="text-[10px] text-slate-500 mt-0.5">Reading design system…</p>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Path B — URL clone */}
-          {dsChoice === "clone" && (
-            <div className="flex gap-2 mt-2">
-              <input
-                value={cloneUrl}
-                onChange={(e) => setCloneUrl(e.target.value)}
-                placeholder="https://theclient.com"
-                className="flex-1 rounded-lg border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-[#22d3ee]/50 focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => void cloneDesign()}
-                disabled={cloning || !cloneUrl.trim()}
-                className="rounded-lg border border-slate-700 px-3 py-2 text-[13px] text-slate-200 hover:border-slate-600 disabled:opacity-50"
-              >
-                {cloning ? "Reading…" : "Read it"}
-              </button>
-            </div>
-          )}
-
-          {dsError && (
-            <p className="text-[11px] text-amber-300 mt-1.5">{dsError}</p>
-          )}
-
-          {dsPreview && dsChoice !== "skip" && (
-            <div className="mt-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 px-3 py-2.5">
-              <div className="flex items-center gap-2 mb-1">
-                {dsPreview.palette?.slice(0, 5).map((p, i) => (
-                  p.hex ? (
-                    <span
-                      key={i}
-                      className="w-4 h-4 rounded-full border border-white/10 shrink-0"
-                      style={{ backgroundColor: p.hex }}
-                      title={p.role ?? p.name ?? p.hex}
-                    />
-                  ) : null
-                ))}
-                <p className="text-[12px] font-semibold text-emerald-300">
-                  {dsPreview.name ?? "Design system"} ready
-                </p>
-              </div>
-              {dsPreview.typography?.heading?.family && (
-                <p className="text-[11px] text-slate-400">
-                  Typography: {dsPreview.typography.heading.family}
-                  {dsPreview.typography.body?.family &&
-                    dsPreview.typography.body.family !== dsPreview.typography.heading.family
-                    ? ` / ${dsPreview.typography.body.family}`
-                    : ""}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Brain-write offer after page is created */}
-          {dsBrainWritePageId && dsPreview && !dsBrainWriteStaged && (
-            <div className="mt-2.5 rounded-lg border border-[#22d3ee]/25 bg-[#22d3ee]/5 px-3 py-2.5">
+        {/* PA-LPB-13 — DS step (shared component); key resets it when scope changes) */}
+        <div className="mb-3">
+          <WizardDsStep
+            key={dsScopeKey}
+            moonchildOwnerConnected={moonchildOwnerConnected}
+            onChange={(ds) => {
+              setDsSelection(ds);
+              // Clear the brain-write offer when the DS selection resets to skip.
+              if (ds.kind === "skip") {
+                setDsBrainWritePageId(null);
+                setDsBrainWriteStaged(false);
+              }
+            }}
+          />
+          {/* Brain-write offer appears after a page is created with an imported DS. */}
+          {dsBrainWritePageId && dsSelection.kind !== "skip" && !dsBrainWriteStaged && (
+            <div className="mt-2 rounded-lg border border-[#22d3ee]/25 bg-[#22d3ee]/5 px-3 py-2.5">
               <p className="text-[12px] text-slate-200 font-medium mb-1.5">
                 Save this as brand.json in your brain?
               </p>

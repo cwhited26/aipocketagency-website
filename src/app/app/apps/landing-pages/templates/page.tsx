@@ -18,6 +18,8 @@ import {
   tierAllowsDirection,
 } from "@/lib/landing-pages/directions";
 import { listTemplates } from "@/lib/landing-pages/templates";
+import { getMoonchildConfig } from "@/lib/connectors/moonchild/client";
+import { fetchMoonchildConnectionPublic } from "@/lib/pa-moonchild-connections";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import TemplateGalleryClient, { type GalleryDirection } from "./TemplateGalleryClient";
@@ -35,10 +37,19 @@ export default async function TemplateGalleryPage() {
   if (!paResult.ok || !paResult.data) redirect("/app/onboarding");
   const paUser = paResult.data;
 
-  const tier = await getCurrentTier(user.id);
+  const [tier, moonchildConn] = await Promise.all([
+    getCurrentTier(user.id),
+    fetchMoonchildConnectionPublic(user.id),
+  ]);
   const canBuild = tierAllowsLandingPageBuilder(tier);
   // Animated previews are the Studio+ unlock (SPEC Phase 2); below that the card shows the still.
   const animatedUnlocked = tierRank(tier) >= tierRank("studio_plus");
+  const moonchildOwnerConnected =
+    getMoonchildConfig().configured &&
+    moonchildConn.ok &&
+    moonchildConn.data !== null &&
+    moonchildConn.data.status === "active" &&
+    moonchildConn.data.hasToken;
   const now = new Date();
 
   const directions: GalleryDirection[] = listDirections().map((d) => {
@@ -117,6 +128,7 @@ export default async function TemplateGalleryPage() {
           canBuild={canBuild}
           hasApiKey={Boolean(paUser.anthropic_api_key)}
           brainConnected={Boolean(paUser.brain_repo)}
+          moonchildOwnerConnected={moonchildOwnerConnected}
         />
       </div>
     </div>

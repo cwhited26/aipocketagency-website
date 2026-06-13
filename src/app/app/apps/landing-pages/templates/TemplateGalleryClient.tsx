@@ -10,6 +10,8 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { LandingPageView } from "@/lib/landing-pages/types";
+import WizardScopeStep, { type ScopeSelection } from "@/components/landing-pages/wizard/WizardScopeStep";
+import WizardDsStep, { type DsSelection } from "@/components/landing-pages/wizard/WizardDsStep";
 
 export type GalleryDirection = {
   slug: string;
@@ -51,6 +53,7 @@ type Props = {
   canBuild: boolean;
   hasApiKey: boolean;
   brainConnected: boolean;
+  moonchildOwnerConnected: boolean;
 };
 
 const USE_CASE_LABEL: Record<string, string> = {
@@ -202,6 +205,7 @@ export default function TemplateGalleryClient({
   canBuild,
   hasApiKey,
   brainConnected,
+  moonchildOwnerConnected,
 }: Props) {
   const [vibeFilters, setVibeFilters] = useState<string[]>([]);
   const [industryFilters, setIndustryFilters] = useState<string[]>([]);
@@ -619,6 +623,7 @@ export default function TemplateGalleryClient({
           canBuild={canBuild}
           hasApiKey={hasApiKey}
           brainConnected={brainConnected}
+          moonchildOwnerConnected={moonchildOwnerConnected}
           onClose={() => setUseTarget(null)}
         />
       )}
@@ -657,12 +662,14 @@ function UseTemplateModal({
   canBuild,
   hasApiKey,
   brainConnected,
+  moonchildOwnerConnected,
   onClose,
 }: {
   target: UseTarget;
   canBuild: boolean;
   hasApiKey: boolean;
   brainConnected: boolean;
+  moonchildOwnerConnected: boolean;
   onClose: () => void;
 }) {
   const templateName = target.kind === "direction" ? target.d.name : target.t.label;
@@ -678,6 +685,11 @@ function UseTemplateModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [doneMessage, setDoneMessage] = useState("");
+
+  // PA-LPB-9 + PA-LPB-13 — scope and DS selections; same components as fresh-create wizard.
+  const [scopeSelection, setScopeSelection] = useState<ScopeSelection>({ mode: "personal", scope: null });
+  const [dsSelection, setDsSelection] = useState<DsSelection>({ kind: "skip" });
+  const dsScopeKey = `${scopeSelection.mode}-${scopeSelection.mode === "project" ? (scopeSelection.scope ?? "root") : "personal"}`;
 
   const visitorAction = action === "Something else" ? otherAction.trim() : action;
 
@@ -698,6 +710,7 @@ function UseTemplateModal({
   async function fireBuild() {
     setSubmitting(true);
     setError(null);
+    const brainScope = scopeSelection.mode === "project" ? scopeSelection.scope : null;
     try {
       const createRes = await fetch("/api/app/apps/landing-pages", {
         method: "POST",
@@ -706,6 +719,7 @@ function UseTemplateModal({
           title: title.trim(),
           description: composedDescription(),
           template: templateRef,
+          brainScope,
         }),
       });
       const created = (await createRes.json()) as { page?: LandingPageView; message?: string; error?: string };
@@ -713,7 +727,24 @@ function UseTemplateModal({
         setError(created.message ?? created.error ?? "Couldn't create the page.");
         return;
       }
-      const buildRes = await fetch(`/api/app/apps/landing-pages/${created.page.id}/build`, { method: "POST" });
+      const pageId = created.page.id;
+
+      // Associate the design system with the new page (PA-LPB-13).
+      if (dsSelection.kind === "moonchild") {
+        await fetch("/api/app/apps/landing-pages/moonchild-import-scene", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sceneId: dsSelection.sceneId, sceneName: dsSelection.sceneName, pageId }),
+        });
+      } else if (dsSelection.kind === "clone") {
+        await fetch("/api/app/apps/landing-pages/clone-design", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: dsSelection.url, pageId }),
+        });
+      }
+
+      const buildRes = await fetch(`/api/app/apps/landing-pages/${pageId}/build`, { method: "POST" });
       const built = (await buildRes.json()) as { message?: string; error?: string };
       if (!buildRes.ok && buildRes.status !== 409) {
         setError(built.message ?? built.error ?? "The page is saved, but the build didn't start. Retry it from your pages list.");
@@ -751,6 +782,18 @@ function UseTemplateModal({
           </div>
         ) : step === "form" ? (
           <div className="mt-4 flex flex-col gap-4">
+            {/* PA-LPB-9 — scope step */}
+            <WizardScopeStep onChange={setScopeSelection} />
+
+            {/* PA-LPB-13 — DS step; key resets it when scope changes */}
+            <WizardDsStep
+              key={dsScopeKey}
+              moonchildOwnerConnected={moonchildOwnerConnected}
+              onChange={(ds) => {
+                setDsSelection(ds);
+              }}
+            />
+
             <div>
               <label className="text-[12px] text-slate-400 block mb-1">What&apos;s the page called?</label>
               <input
@@ -858,6 +901,22 @@ function UseTemplateModal({
               </p>
               <p className="mt-1">
                 <span className="text-slate-500">Page:</span> {title.trim()}
+              </p>
+              <p className="mt-1">
+                <span className="text-slate-500">Scope:</span>{" "}
+                {scopeSelection.mode === "personal"
+                  ? "Me / my business"
+                  : scopeSelection.scope
+                    ? scopeSelection.scope
+                    : "Project (no folder picked)"}
+              </p>
+              <p className="mt-1">
+                <span className="text-slate-500">Design system:</span>{" "}
+                {dsSelection.kind === "moonchild"
+                  ? `Moonchild — ${dsSelection.sceneName}`
+                  : dsSelection.kind === "clone"
+                    ? `Cloned from ${dsSelection.url}`
+                    : "Template defaults"}
               </p>
               <p className="mt-1">
                 <span className="text-slate-500">Headline:</span>{" "}
