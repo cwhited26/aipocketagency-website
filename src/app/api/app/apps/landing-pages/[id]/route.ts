@@ -1,11 +1,12 @@
 // GET    /api/app/apps/landing-pages/[id]  — read one page
 // PATCH  /api/app/apps/landing-pages/[id]  — { customDomain }  → stage a Vercel attachDomain approval
-//                                            (live pages only); or { title, description } edits
+//                                            (live pages only); or { title, description, brainScope } edits
 // DELETE /api/app/apps/landing-pages/[id]  — remove a page
 
 import { createClient } from "@/lib/supabase/server";
 import { deletePage, getPage, toView, updatePage } from "@/lib/landing-pages/pages";
 import { stageCustomDomain } from "@/lib/landing-pages/advance";
+import { sanitizeScope } from "@/lib/landing-pages/scope";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -21,6 +22,7 @@ const patchSchema = z.object({
     .optional(),
   title: z.string().min(1).max(120).optional(),
   description: z.string().min(1).max(4000).optional(),
+  brainScope: z.string().max(200).optional(),
 });
 
 export async function GET(
@@ -74,10 +76,26 @@ export async function PATCH(
     return NextResponse.json({ staged: true });
   }
 
-  if (parsed.data.title !== undefined || parsed.data.description !== undefined) {
+  if (
+    parsed.data.title !== undefined ||
+    parsed.data.description !== undefined ||
+    parsed.data.brainScope !== undefined
+  ) {
+    let sanitizedScope: string | null | undefined;
+    if (parsed.data.brainScope !== undefined) {
+      try {
+        sanitizedScope = sanitizeScope(parsed.data.brainScope);
+      } catch (err) {
+        return NextResponse.json(
+          { error: err instanceof Error ? err.message : "Invalid scope path." },
+          { status: 422 },
+        );
+      }
+    }
     const updated = await updatePage(params.id, user.id, {
       title: parsed.data.title,
       description: parsed.data.description,
+      ...(sanitizedScope !== undefined ? { brainScope: sanitizedScope } : {}),
     });
     if (!updated.ok) return NextResponse.json({ error: updated.error }, { status: updated.status });
     return NextResponse.json({ page: toView(updated.data) });

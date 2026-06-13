@@ -6,7 +6,8 @@
 // missing section degrades to a labeled placeholder rather than a blank block — never a silent gap.
 // Every call meters one pa_cost_events row via the optional CostContext (backend anthropic).
 
-import { buildMemoryBlocks, type MemoryBlock } from "@/lib/pa-brain";
+import { type MemoryBlock } from "@/lib/pa-brain";
+import { buildScopedMemoryBlocks } from "./scope";
 import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
 import { sectionKeys } from "./templates";
 import type { GeneratedCopy, LandingTemplate } from "./types";
@@ -96,11 +97,16 @@ function fallbackFor(template: LandingTemplate, key: string): string {
  * Generate the copy for a landing page in the owner's voice. Returns one string per section key. The
  * `cost` context (when supplied) meters the Anthropic call to the cost ledger. Throws only on a hard
  * Anthropic transport error — a malformed or partial model response degrades to per-section fallbacks.
+ *
+ * `scope` is the brain_scope from the page row (PA-LPB-7). Null/undefined → the owner's personal
+ * brain (existing behaviour). A path → scoped loader via buildScopedMemoryBlocks.
  */
 export async function generateLandingCopy(
   params: {
     template: LandingTemplate;
     description: string;
+    /** Repo-relative scope path from the page row; null/undefined = owner brain root. */
+    scope?: string | null;
   },
   anthropicApiKey: string,
   brainRepo: string | null,
@@ -108,7 +114,7 @@ export async function generateLandingCopy(
   cost?: CostContext,
 ): Promise<{ copy: GeneratedCopy; hasBrain: boolean }> {
   const memoryBlocks: MemoryBlock[] = brainRepo
-    ? await buildMemoryBlocks(brainRepo, githubToken)
+    ? await buildScopedMemoryBlocks(brainRepo, githubToken, params.scope)
     : [];
 
   const systemPrompt = buildSystemPrompt(params.template, params.description, memoryBlocks);

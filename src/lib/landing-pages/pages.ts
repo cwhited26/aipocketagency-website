@@ -73,6 +73,10 @@ export async function createPage(params: {
   /** A starter template id or a gallery direction ref (validated by the route before this runs). */
   template: string;
   projectId?: string | null;
+  /** Repo-relative scope path (sanitized by the route); null = owner brain root (PA-LPB-7). */
+  brainScope?: string | null;
+  /** Domain from scope's brand.json, read at create-time (PA-LPB-9). Null = none found. */
+  brainScopeDomain?: string | null;
 }): Promise<PaResult<LandingPageRow>> {
   const env = paEnv();
   if ("error" in env) return { ok: false, status: 500, error: env.error };
@@ -86,6 +90,8 @@ export async function createPage(params: {
       description: params.description,
       template: params.template,
       project_id: params.projectId ?? null,
+      brain_scope: params.brainScope ?? null,
+      brain_scope_domain: params.brainScopeDomain ?? null,
       status: "planning",
       build_step: "plan",
     }),
@@ -107,6 +113,7 @@ export type LandingPagePatch = {
   vercelProjectId?: string | null;
   vercelUrl?: string | null;
   customDomain?: string | null;
+  brainScope?: string | null;
 };
 
 export async function updatePage(
@@ -127,6 +134,7 @@ export async function updatePage(
   if (patch.vercelProjectId !== undefined) body.vercel_project_id = patch.vercelProjectId;
   if (patch.vercelUrl !== undefined) body.vercel_url = patch.vercelUrl;
   if (patch.customDomain !== undefined) body.custom_domain = patch.customDomain;
+  if (patch.brainScope !== undefined) body.brain_scope = patch.brainScope;
 
   const endpoint =
     `${env.url}/rest/v1/${TABLE}` +
@@ -166,6 +174,7 @@ export function toView(row: LandingPageRow): LandingPageView {
     title: row.title,
     description: row.description,
     template: isTemplateId(row.template) || isDirectionRef(row.template) ? row.template : "single-cta",
+    brainScope: row.brain_scope ?? null,
     status: row.status,
     buildStep: row.build_step,
     githubRepoName: row.github_repo_name,

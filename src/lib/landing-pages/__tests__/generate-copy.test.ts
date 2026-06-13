@@ -4,11 +4,18 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/pa-brain", () => ({
-  buildMemoryBlocks: vi.fn(async () => [
-    { path: "voice/chase-spec.md", content: "Write short. Direct. No filler words." },
-  ]),
-}));
+// The copy generator now calls buildScopedMemoryBlocks from ./scope, which in turn calls
+// buildMemoryBlocks from @/lib/pa-brain when scope is null. Mock the scope module directly
+// so the test controls what memory blocks the generator sees.
+vi.mock("@/lib/landing-pages/scope", async (importOriginal) => {
+  const orig = await importOriginal<typeof import("@/lib/landing-pages/scope")>();
+  return {
+    ...orig,
+    buildScopedMemoryBlocks: vi.fn(async () => [
+      { path: "voice/chase-spec.md", content: "Write short. Direct. No filler words." },
+    ]),
+  };
+});
 
 import { generateLandingCopy } from "../generate-copy";
 import { getTemplate } from "../templates";

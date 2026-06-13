@@ -7,6 +7,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentTier, tierAllowsLandingPageBuilder } from "@/lib/personas/tier-caps";
+import { fetchPaUser } from "@/lib/pa-supabase";
 import { createPage, listPages, toView } from "@/lib/landing-pages/pages";
 import {
   directionTierLabel,
@@ -16,6 +17,7 @@ import {
   tierAllowsDirection,
   DIRECTION_REF_PREFIX,
 } from "@/lib/landing-pages/directions";
+import { sanitizeScope, readScopeBrandDomain } from "@/lib/landing-pages/scope";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -28,6 +30,8 @@ const createSchema = z.object({
   /** A starter template id or a gallery direction ref ("direction:<slug>") — resolved below. */
   template: z.string().min(1).max(120),
   projectId: z.string().uuid().optional(),
+  /** Repo-relative scope path from the wizard picker (PA-LPB-7). Sanitized server-side. */
+  brainScope: z.string().max(200).optional(),
 });
 
 export async function GET(): Promise<NextResponse> {
@@ -92,12 +96,38 @@ export async function POST(req: Request): Promise<NextResponse> {
     }
   }
 
+  let brainScope: string | null = null;
+  try {
+    brainScope = sanitizeScope(parsed.data.brainScope);
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Invalid brain scope" },
+      { status: 422 },
+    );
+  }
+
+  // PA-LPB-9 locked answer #4: read the domain from brand.json at create-time so the build flow
+  // can propose attachDomain without re-fetching the brain after deploy.
+  let brainScopeDomain: string | null = null;
+  if (brainScope) {
+    const paResult = await fetchPaUser(user.id);
+    if (paResult.ok && paResult.data?.brain_repo && paResult.data.github_token) {
+      brainScopeDomain = await readScopeBrandDomain(
+        paResult.data.brain_repo,
+        paResult.data.github_token,
+        brainScope,
+      );
+    }
+  }
+
   const created = await createPage({
     ownerId: user.id,
     title: parsed.data.title,
     description: parsed.data.description,
     template: parsed.data.template,
     projectId: parsed.data.projectId ?? null,
+    brainScope,
+    brainScopeDomain,
   });
   if (!created.ok) return NextResponse.json({ error: created.error }, { status: created.status });
   return NextResponse.json({ page: toView(created.data) }, { status: 201 });

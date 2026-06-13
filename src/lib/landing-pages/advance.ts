@@ -66,28 +66,31 @@ export async function startLandingPageBuild(params: {
     return { ok: false, status: 422, error: `Unknown template "${params.page.template}".` };
   }
 
+  const scopeMeta = params.page.brain_scope ? { brain_scope: params.page.brain_scope } : undefined;
   const copyCost: CostContext = {
     ownerId: params.ownerId,
     featureSlug: "landing_page_builder",
     idempotencyKey: `landing:${params.page.id}:copy`,
+    metadata: scopeMeta,
   };
   const codeCost: CostContext = {
     ownerId: params.ownerId,
     featureSlug: "landing_page_builder",
     idempotencyKey: `landing:${params.page.id}:code`,
+    metadata: scopeMeta,
   };
 
   let bundle;
   try {
     const { copy } = await generateLandingCopy(
-      { template, description: params.page.description },
+      { template, description: params.page.description, scope: params.page.brain_scope },
       params.anthropicApiKey,
       params.brainRepo,
       params.githubToken,
       copyCost,
     );
     bundle = await assembleLandingBundle(
-      { template, copy, title: params.page.title },
+      { template, copy, title: params.page.title, scope: params.page.brain_scope },
       params.anthropicApiKey,
       codeCost,
     );
@@ -174,6 +177,30 @@ export async function advanceLandingPageBuildAfterApproval(params: {
     buildStep: "live",
   });
   if (!updated.ok) return updated;
+
+  // PA-LPB-9 locked answer #4: if the scope's brand.json had a `domain` field (read at create-time
+  // and stored in brain_scope_domain), propose attaching it via the existing Vercel attachDomain
+  // connector. Always approval-gated, never auto-fire.
+  const scopeDomain = updated.data.brain_scope_domain;
+  if (scopeDomain && updated.data.vercel_project_id) {
+    await stageConnectorAction({
+      userId: params.ownerId,
+      subAgentRunId: null,
+      connector: "vercel",
+      action: "attachDomain",
+      payload: {
+        projectId: updated.data.vercel_project_id,
+        domain: scopeDomain,
+        landing_page_id: page.id,
+      },
+      declaredScopes: [scopeToken("vercel", "attachDomain")],
+      title: `Attach ${scopeDomain} to "${page.title}"`,
+      preview: `Your ${page.brain_scope ?? "project"}'s brand.json lists ${scopeDomain}. Approve this step and Pocket Agent will point it at your live page. Add the DNS records Vercel shows to finish.`,
+      kind: "build_action_approval",
+    });
+    return { ok: true, staged: true };
+  }
+
   return { ok: true, staged: false };
 }
 

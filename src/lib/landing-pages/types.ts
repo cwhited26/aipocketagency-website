@@ -90,7 +90,7 @@ export type LandingPageStatus = "planning" | "building" | "live" | "failed";
  */
 export type BuildStep = "plan" | "repo" | "push" | "project" | "deploy" | "live" | "failed";
 
-/** A row of pa_landing_pages (migration 064). */
+/** A row of pa_landing_pages (migrations 064 + 079). */
 export type LandingPageRow = {
   id: string;
   owner_id: string;
@@ -98,6 +98,11 @@ export type LandingPageRow = {
   title: string;
   description: string;
   template: string;
+  /** Repo-relative scope path, or null for the owner brain root (PA-LPB-7). Migration 079. */
+  brain_scope: string | null;
+  /** Domain from the scope's brand.json at create-time. When set and the page goes live, the
+   *  Builder stages a Vercel attachDomain approval (PA-LPB-9, locked answer #4). Migration 079. */
+  brain_scope_domain: string | null;
   generated_copy: GeneratedBundle | null;
   github_repo_name: string | null;
   vercel_project_id: string | null;
@@ -116,6 +121,8 @@ export type LandingPageView = {
   description: string;
   /** A starter template id or a gallery direction ref ("direction:<slug>"). */
   template: string;
+  /** Repo-relative scope path, or null for the owner brain root (PA-LPB-7). */
+  brainScope: string | null;
   status: LandingPageStatus;
   buildStep: BuildStep;
   githubRepoName: string | null;

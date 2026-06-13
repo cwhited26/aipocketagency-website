@@ -17,6 +17,7 @@
 
 import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
 import { COPY_PLACEHOLDER } from "./templates";
+import { scopeLabel } from "./scope";
 import type { BuildStep, GeneratedBundle, GeneratedCopy, LandingPageRow, LandingTemplate } from "./types";
 
 const CODE_MODEL = "claude-sonnet-4-6";
@@ -44,9 +45,15 @@ export function fillTemplate(template: LandingTemplate, copy: GeneratedCopy): st
   return template.componentTemplate.split(COPY_PLACEHOLDER).join(JSON.stringify(copy, null, 2));
 }
 
-/** The static Next.js project files every generated landing page ships with (deployable as-is). */
-export function scaffoldFiles(title: string): Record<string, string> {
+/**
+ * The static Next.js project files every generated landing page ships with (deployable as-is).
+ * `scope` is the pa_landing_pages.brain_scope value, used to write the README provenance line
+ * (PA-LPB-8) so the code carries the audit trail.
+ */
+export function scaffoldFiles(title: string, scope?: string | null): Record<string, string> {
   const safeTitle = JSON.stringify(title);
+  const sourceLabel = scopeLabel(scope);
+  const isoDate = new Date().toISOString().slice(0, 10);
   return {
     "package.json": JSON.stringify(
       {
@@ -100,6 +107,7 @@ export function scaffoldFiles(title: string): Record<string, string> {
     "README.md":
       `# ${title}\n\n` +
       "Built with Pocket Agent — Landing Page Builder. This is your code, on your GitHub and your Vercel.\n\n" +
+      `Built by Pocket Agent from your ${sourceLabel} brain · ${isoDate}\n\n` +
       "Run it locally:\n\n```\nnpm install\nnpm run dev\n```\n",
   };
 }
@@ -202,10 +210,10 @@ RULES:
 /**
  * Assemble the full deployable project: generate the page component (metered) and combine it with the
  * static scaffold. Returns the bundle persisted on the page row (copy + files) so a later staged push
- * uses this exact generation.
+ * uses this exact generation. `scope` flows through to the README provenance line (PA-LPB-8).
  */
 export async function assembleLandingBundle(
-  params: { template: LandingTemplate; copy: GeneratedCopy; title: string },
+  params: { template: LandingTemplate; copy: GeneratedCopy; title: string; scope?: string | null },
   anthropicApiKey: string,
   cost?: CostContext,
 ): Promise<GeneratedBundle> {
@@ -214,7 +222,7 @@ export async function assembleLandingBundle(
     anthropicApiKey,
     cost,
   );
-  const files = { ...scaffoldFiles(params.title), "app/page.tsx": pageSource };
+  const files = { ...scaffoldFiles(params.title, params.scope), "app/page.tsx": pageSource };
   return { copy: params.copy, files };
 }
 
