@@ -18,7 +18,7 @@
 import { logCostFromUsage, type CostContext } from "@/lib/cost/log";
 import { COPY_PLACEHOLDER } from "./templates";
 import { scopeLabel } from "./scope";
-import type { BuildStep, GeneratedBundle, GeneratedCopy, LandingPageRow, LandingTemplate } from "./types";
+import type { BuildStep, DesignSystemSnapshot, GeneratedBundle, GeneratedCopy, LandingPageRow, LandingTemplate } from "./types";
 
 const CODE_MODEL = "claude-sonnet-4-6";
 
@@ -130,13 +130,40 @@ function looksLikeValidPage(src: string): boolean {
 }
 
 /**
+ * Serialize a DesignSystemSnapshot into a CSS custom-properties block the model can follow.
+ * Returns an empty string when no snapshot is provided.
+ */
+function buildDsTokensBlock(ds: DesignSystemSnapshot | null | undefined): string {
+  if (!ds) return "";
+
+  const lines: string[] = [];
+
+  // Palette → semantic role tokens
+  for (const p of ds.palette ?? []) {
+    if (p.hex && p.role) lines.push(`  --color-${p.role}: ${p.hex};`);
+    else if (p.hex && p.name) lines.push(`  --color-${p.name.toLowerCase().replace(/\s+/g, "-")}: ${p.hex};`);
+  }
+
+  // Typography
+  const h = ds.typography?.heading;
+  const b = ds.typography?.body;
+  if (h?.family) lines.push(`  --font-heading: '${h.family}', system-ui, sans-serif;`);
+  if (b?.family) lines.push(`  --font-body: '${b.family}', system-ui, sans-serif;`);
+  if (h?.weight) lines.push(`  --font-heading-weight: ${h.weight};`);
+  if (b?.weight) lines.push(`  --font-body-weight: ${b.weight};`);
+
+  if (!lines.length) return "";
+  return `:root {\n${lines.join("\n")}\n}`;
+}
+
+/**
  * Generate the final app/page.tsx for a landing page. Asks the model to render the template skeleton
  * with the copy as a self-contained, default-exported component, validates the result, and degrades
  * to the deterministic fill on a transport error or an unusable response. The metered call (when it
  * returns a billable response) writes one pa_cost_events row via `cost`.
  */
 export async function generateComponentCode(
-  params: { template: LandingTemplate; copy: GeneratedCopy },
+  params: { template: LandingTemplate; copy: GeneratedCopy; designSystem?: DesignSystemSnapshot | null },
   anthropicApiKey: string,
   cost?: CostContext,
 ): Promise<string> {
@@ -147,6 +174,13 @@ export async function generateComponentCode(
   // typography, so a model miss still looks like the direction, just simpler.
   const designSection = params.template.designBrief
     ? `\n\nDESIGN DIRECTION (follow it as far as a single self-contained page with inline styles allows — the palette, the typography, the section feel, the simpler motifs; skip anything that needs external packages or assets you don't have):\n${params.template.designBrief}`
+    : "";
+
+  // PA-LPB-10: inject the design system's CSS tokens when available so the model uses semantic
+  // role variables instead of scattering raw hex values through every inline style object.
+  const dsTokensBlock = buildDsTokensBlock(params.designSystem);
+  const dsSection = dsTokensBlock
+    ? `\n\nDESIGN SYSTEM TOKENS — use these CSS custom properties instead of hardcoding raw hex values. Emit a <style> tag at the top of the page JSX that declares these tokens, then reference them as var(--color-primary, #fallback) throughout the inline style objects:\n${dsTokensBlock}`
     : "";
 
   const system = `You generate a single Next.js App Router page component (app/page.tsx) for a landing page.
@@ -162,7 +196,7 @@ const copy: Copy = ${JSON.stringify(params.copy, null, 2)};
 RULES:
 - Output ONLY the contents of app/page.tsx. No markdown fences, no commentary.
 - It must contain "export default function" and reference the copy object.
-- No imports except "import type" for React types if needed. No third-party packages.${designSection}`;
+- No imports except "import type" for React types if needed. No third-party packages.${designSection}${dsSection}`;
 
   let res: Response;
   try {
@@ -213,12 +247,18 @@ RULES:
  * uses this exact generation. `scope` flows through to the README provenance line (PA-LPB-8).
  */
 export async function assembleLandingBundle(
-  params: { template: LandingTemplate; copy: GeneratedCopy; title: string; scope?: string | null },
+  params: {
+    template: LandingTemplate;
+    copy: GeneratedCopy;
+    title: string;
+    scope?: string | null;
+    designSystem?: DesignSystemSnapshot | null;
+  },
   anthropicApiKey: string,
   cost?: CostContext,
 ): Promise<GeneratedBundle> {
   const pageSource = await generateComponentCode(
-    { template: params.template, copy: params.copy },
+    { template: params.template, copy: params.copy, designSystem: params.designSystem },
     anthropicApiKey,
     cost,
   );

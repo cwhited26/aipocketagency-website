@@ -13,6 +13,14 @@ import { isTemplateId, type LandingTemplate } from "./types";
 /** The copy placeholder every component template must carry exactly once. */
 export const COPY_PLACEHOLDER = "{{COPY_JSON}}";
 
+/**
+ * The design-system tokens placeholder (PA-LPB-10). When a Moonchild design system has been
+ * imported for the page, the assembler replaces this with a CSS-variables style block; when no
+ * DS is present it is replaced with an empty string. The template skeletons DO NOT need to
+ * contain this literal — the assembler prepends it as a `<style>` injection at code-gen time.
+ */
+export const DS_TOKENS_PLACEHOLDER = "{{DS_TOKENS}}";
+
 const TEMPLATES: readonly LandingTemplate[] = [
   singleCtaTemplate,
   verticalPackTemplate,

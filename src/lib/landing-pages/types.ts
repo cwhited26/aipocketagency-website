@@ -75,6 +75,22 @@ export type LandingTemplate = {
 /** The copy the model produced, keyed by section key. */
 export type GeneratedCopy = Record<string, string>;
 
+/**
+ * Design system snapshot stored on the page row (migration 080, PA-LPB-10). A subset of the
+ * DesignSystem from the Moonchild connector — only the fields code-gen actually needs.
+ */
+export type DesignSystemSnapshot = {
+  id?: string;
+  name?: string;
+  importedFrom?: string;
+  palette?: Array<{ name?: string; hex?: string; role?: string }>;
+  typography?: {
+    heading?: { family?: string; weight?: string | number; size?: string };
+    body?: { family?: string; weight?: string | number; size?: string };
+  };
+  components?: Record<string, string>;
+};
+
 /** The generation output persisted on the page row: the copy strings + the assembled project files. */
 export type GeneratedBundle = {
   copy: GeneratedCopy;
@@ -90,7 +106,7 @@ export type LandingPageStatus = "planning" | "building" | "live" | "failed";
  */
 export type BuildStep = "plan" | "repo" | "push" | "project" | "deploy" | "live" | "failed";
 
-/** A row of pa_landing_pages (migrations 064 + 079). */
+/** A row of pa_landing_pages (migrations 064 + 079 + 080). */
 export type LandingPageRow = {
   id: string;
   owner_id: string;
@@ -103,6 +119,12 @@ export type LandingPageRow = {
   /** Domain from the scope's brand.json at create-time. When set and the page goes live, the
    *  Builder stages a Vercel attachDomain approval (PA-LPB-9, locked answer #4). Migration 079. */
   brain_scope_domain: string | null;
+  /** Opaque Moonchild reference returned by import-design-system (PA-LPB-10). Migration 080. */
+  design_system_id: string | null;
+  /** Source URL the design system was generated from (audit trail). Migration 080. */
+  design_system_imported_from: string | null;
+  /** Cached DS payload so code-gen never depends on Moonchild being reachable. Migration 080. */
+  design_system_snapshot: DesignSystemSnapshot | null;
   generated_copy: GeneratedBundle | null;
   github_repo_name: string | null;
   vercel_project_id: string | null;
@@ -123,6 +145,10 @@ export type LandingPageView = {
   template: string;
   /** Repo-relative scope path, or null for the owner brain root (PA-LPB-7). */
   brainScope: string | null;
+  /** Whether the page has an imported design system. Drives the DS badge in the UI. */
+  hasDesignSystem: boolean;
+  /** Source URL the design system was generated from, for the DS info chip. */
+  designSystemImportedFrom: string | null;
   status: LandingPageStatus;
   buildStep: BuildStep;
   githubRepoName: string | null;

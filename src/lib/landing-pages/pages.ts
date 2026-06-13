@@ -4,6 +4,7 @@
 
 import type {
   BuildStep,
+  DesignSystemSnapshot,
   GeneratedBundle,
   LandingPageRow,
   LandingPageStatus,
@@ -77,6 +78,10 @@ export async function createPage(params: {
   brainScope?: string | null;
   /** Domain from scope's brand.json, read at create-time (PA-LPB-9). Null = none found. */
   brainScopeDomain?: string | null;
+  /** Moonchild DS reference (PA-LPB-10, migration 080). */
+  designSystemId?: string | null;
+  designSystemImportedFrom?: string | null;
+  designSystemSnapshot?: DesignSystemSnapshot | null;
 }): Promise<PaResult<LandingPageRow>> {
   const env = paEnv();
   if ("error" in env) return { ok: false, status: 500, error: env.error };
@@ -92,6 +97,9 @@ export async function createPage(params: {
       project_id: params.projectId ?? null,
       brain_scope: params.brainScope ?? null,
       brain_scope_domain: params.brainScopeDomain ?? null,
+      design_system_id: params.designSystemId ?? null,
+      design_system_imported_from: params.designSystemImportedFrom ?? null,
+      design_system_snapshot: params.designSystemSnapshot ?? null,
       status: "planning",
       build_step: "plan",
     }),
@@ -114,6 +122,9 @@ export type LandingPagePatch = {
   vercelUrl?: string | null;
   customDomain?: string | null;
   brainScope?: string | null;
+  designSystemId?: string | null;
+  designSystemImportedFrom?: string | null;
+  designSystemSnapshot?: DesignSystemSnapshot | null;
 };
 
 export async function updatePage(
@@ -135,6 +146,9 @@ export async function updatePage(
   if (patch.vercelUrl !== undefined) body.vercel_url = patch.vercelUrl;
   if (patch.customDomain !== undefined) body.custom_domain = patch.customDomain;
   if (patch.brainScope !== undefined) body.brain_scope = patch.brainScope;
+  if (patch.designSystemId !== undefined) body.design_system_id = patch.designSystemId;
+  if (patch.designSystemImportedFrom !== undefined) body.design_system_imported_from = patch.designSystemImportedFrom;
+  if (patch.designSystemSnapshot !== undefined) body.design_system_snapshot = patch.designSystemSnapshot;
 
   const endpoint =
     `${env.url}/rest/v1/${TABLE}` +
@@ -175,6 +189,8 @@ export function toView(row: LandingPageRow): LandingPageView {
     description: row.description,
     template: isTemplateId(row.template) || isDirectionRef(row.template) ? row.template : "single-cta",
     brainScope: row.brain_scope ?? null,
+    hasDesignSystem: Boolean(row.design_system_id || row.design_system_snapshot),
+    designSystemImportedFrom: row.design_system_imported_from ?? null,
     status: row.status,
     buildStep: row.build_step,
     githubRepoName: row.github_repo_name,

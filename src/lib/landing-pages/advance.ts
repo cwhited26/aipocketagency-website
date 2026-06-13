@@ -66,7 +66,12 @@ export async function startLandingPageBuild(params: {
     return { ok: false, status: 422, error: `Unknown template "${params.page.template}".` };
   }
 
-  const scopeMeta = params.page.brain_scope ? { brain_scope: params.page.brain_scope } : undefined;
+  const moonchildUsed = Boolean(params.page.design_system_id || params.page.design_system_snapshot);
+  const scopeMeta: Record<string, string> = {
+    ...(params.page.brain_scope ? { brain_scope: params.page.brain_scope } : {}),
+    moonchild_used: String(moonchildUsed),
+    ...(params.page.design_system_id ? { design_system_id: params.page.design_system_id } : {}),
+  };
   const copyCost: CostContext = {
     ownerId: params.ownerId,
     featureSlug: "landing_page_builder",
@@ -90,7 +95,13 @@ export async function startLandingPageBuild(params: {
       copyCost,
     );
     bundle = await assembleLandingBundle(
-      { template, copy, title: params.page.title, scope: params.page.brain_scope },
+      {
+        template,
+        copy,
+        title: params.page.title,
+        scope: params.page.brain_scope,
+        designSystem: params.page.design_system_snapshot ?? undefined,
+      },
       params.anthropicApiKey,
       codeCost,
     );

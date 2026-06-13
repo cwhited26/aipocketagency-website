@@ -56,6 +56,26 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
   const [folders, setFolders] = useState<ProjectFolder[] | null>(null);
   const [loadingFolders, setLoadingFolders] = useState(false);
 
+  // Design system wizard step (PA-LPB-10)
+  type DsChoice = "url" | "existing" | "skip";
+  type DsPreview = { designSystemId: string; name?: string; palette?: { name?: string; hex?: string; role?: string }[]; typography?: { heading?: { family?: string }; body?: { family?: string } }; importedFrom: string };
+  const [dsChoice, setDsChoice] = useState<DsChoice>("skip");
+  const [dsUrl, setDsUrl] = useState("");
+  const [dsImporting, setDsImporting] = useState(false);
+  const [dsPreview, setDsPreview] = useState<DsPreview | null>(null);
+  const [dsError, setDsError] = useState<string | null>(null);
+  const [dsBrainWritePageId, setDsBrainWritePageId] = useState<string | null>(null);
+  const [dsBrainWriting, setDsBrainWriting] = useState(false);
+  const [dsBrainWriteStaged, setDsBrainWriteStaged] = useState(false);
+
+  // Reset DS wizard when scope changes
+  useEffect(() => {
+    setDsChoice("skip");
+    setDsUrl("");
+    setDsPreview(null);
+    setDsError(null);
+  }, [selectedScope, scopeMode]);
+
   useEffect(() => {
     if (scopeMode !== "project" || folders !== null) return;
     setLoadingFolders(true);
@@ -65,6 +85,45 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
       .catch(() => setFolders([]))
       .finally(() => setLoadingFolders(false));
   }, [scopeMode, folders]);
+
+  async function importDs() {
+    if (!dsUrl.trim()) return;
+    setDsImporting(true);
+    setDsError(null);
+    setDsPreview(null);
+    try {
+      const res = await fetch("/api/app/apps/landing-pages/import-design-system", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: dsUrl.trim() }),
+      });
+      const data = (await res.json()) as { designSystem?: { name?: string; palette?: DsPreview["palette"]; typography?: DsPreview["typography"] }; designSystemId?: string; importedFrom?: string; message?: string; error?: string };
+      if (!res.ok || !data.designSystemId) {
+        setDsError(data.message ?? data.error ?? "Couldn't read the design from that URL.");
+        return;
+      }
+      setDsPreview({
+        designSystemId: data.designSystemId,
+        name: data.designSystem?.name,
+        palette: data.designSystem?.palette,
+        typography: data.designSystem?.typography,
+        importedFrom: data.importedFrom ?? dsUrl.trim(),
+      });
+    } finally {
+      setDsImporting(false);
+    }
+  }
+
+  async function stageTosBrainWrite(pageId: string) {
+    setDsBrainWriting(true);
+    try {
+      const res = await fetch(`/api/app/apps/landing-pages/${pageId}/brand-brain-write`, { method: "POST" });
+      const data = (await res.json()) as { staged?: boolean; error?: string };
+      if (res.ok && data.staged) setDsBrainWriteStaged(true);
+    } finally {
+      setDsBrainWriting(false);
+    }
+  }
 
   async function createPage() {
     if (!title.trim() || !description.trim()) {
@@ -86,7 +145,19 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
         setError(data.message ?? data.error ?? "Couldn't create the page.");
         return;
       }
-      setPages((p) => [data.page as LandingPageView, ...p]);
+      const newPage = data.page as LandingPageView;
+
+      // If the owner imported a DS in the wizard, persist it on the new page row.
+      if (dsChoice === "url" && dsPreview) {
+        await fetch("/api/app/apps/landing-pages/import-design-system", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: dsPreview.importedFrom, pageId: newPage.id }),
+        });
+        setDsBrainWritePageId(newPage.id);
+      }
+
+      setPages((p) => [newPage, ...p]);
       setTitle("");
       setDescription("");
     } finally {
@@ -280,6 +351,111 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
           </div>
         )}
 
+        {/* PA-LPB-10 — Design system step (only when a project scope is selected) */}
+        {scopeMode === "project" && selectedScope && (
+          <div className="mb-3 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
+            <p className="text-[12px] font-medium text-slate-300 mb-2">
+              Base the design on a reference site?
+            </p>
+            <div className="grid grid-cols-3 gap-1.5 mb-2">
+              {([
+                { key: "url", label: "Yes — paste a URL", sub: "Moonchild reads the site's design" },
+                { key: "existing", label: "Use existing brand.json", sub: "If the scope already has one" },
+                { key: "skip", label: "Skip — use defaults", sub: "PA picks the style" },
+              ] as { key: DsChoice; label: string; sub: string }[]).map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setDsChoice(opt.key)}
+                  className={`text-left rounded-lg border px-2.5 py-2 transition-colors ${
+                    dsChoice === opt.key
+                      ? "border-[#22d3ee]/50 bg-[#22d3ee]/10"
+                      : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
+                  }`}
+                >
+                  <p className="text-[12px] font-semibold text-slate-100 leading-snug">{opt.label}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">{opt.sub}</p>
+                </button>
+              ))}
+            </div>
+
+            {dsChoice === "url" && (
+              <div className="flex gap-2 mt-2">
+                <input
+                  value={dsUrl}
+                  onChange={(e) => setDsUrl(e.target.value)}
+                  placeholder="https://theclient.com"
+                  className="flex-1 rounded-lg border border-slate-700 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-[#22d3ee]/50 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={importDs}
+                  disabled={dsImporting || !dsUrl.trim()}
+                  className="rounded-lg border border-slate-700 px-3 py-2 text-[13px] text-slate-200 hover:border-slate-600 disabled:opacity-50"
+                >
+                  {dsImporting ? "Reading…" : "Import"}
+                </button>
+              </div>
+            )}
+            {dsError && (
+              <p className="text-[11px] text-amber-300 mt-1.5">{dsError}</p>
+            )}
+            {dsPreview && dsChoice === "url" && (
+              <div className="mt-2.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 px-3 py-2.5">
+                <div className="flex items-center gap-2 mb-1">
+                  {dsPreview.palette?.slice(0, 4).map((p, i) => (
+                    p.hex ? (
+                      <span
+                        key={i}
+                        className="w-4 h-4 rounded-full border border-white/10 shrink-0"
+                        style={{ backgroundColor: p.hex }}
+                        title={p.role ?? p.name ?? p.hex}
+                      />
+                    ) : null
+                  ))}
+                  <p className="text-[12px] font-semibold text-emerald-300">
+                    {dsPreview.name ?? "Design system"} imported
+                  </p>
+                </div>
+                {dsPreview.typography?.heading?.family && (
+                  <p className="text-[11px] text-slate-400">
+                    Typography: {dsPreview.typography.heading.family}
+                    {dsPreview.typography.body?.family && dsPreview.typography.body.family !== dsPreview.typography.heading.family
+                      ? ` / ${dsPreview.typography.body.family}`
+                      : ""}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Brain-write offer: after page is created and DS is imported, offer to save brand.json */}
+            {dsBrainWritePageId && dsPreview && !dsBrainWriteStaged && (
+              <div className="mt-2.5 rounded-lg border border-[#22d3ee]/25 bg-[#22d3ee]/5 px-3 py-2.5">
+                <p className="text-[12px] text-slate-200 font-medium mb-1.5">
+                  Save this as brand.json in your brain?
+                </p>
+                <p className="text-[11px] text-slate-400 mb-2 leading-relaxed">
+                  Future pages for this project will reuse the same design tokens — no re-import
+                  needed.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => stageTosBrainWrite(dsBrainWritePageId)}
+                  disabled={dsBrainWriting}
+                  className="rounded-lg border border-[#22d3ee]/40 px-3 py-1.5 text-[12px] text-[#22d3ee] hover:bg-[#22d3ee]/10 disabled:opacity-50"
+                >
+                  {dsBrainWriting ? "Staging…" : "Stage for approval →"}
+                </button>
+              </div>
+            )}
+            {dsBrainWriteStaged && (
+              <p className="mt-2 text-[11px] text-emerald-300">
+                brand.json staged — approve the card in Mission Control to commit it.
+              </p>
+            )}
+          </div>
+        )}
+
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -370,9 +546,16 @@ function PageRow({
         </span>
       </div>
 
-      {page.brainScope && (
-        <p className="text-[10px] font-mono text-slate-600 mt-1">scope: {page.brainScope}</p>
-      )}
+      <div className="flex items-center gap-2 mt-1 flex-wrap">
+        {page.brainScope && (
+          <p className="text-[10px] font-mono text-slate-600">scope: {page.brainScope}</p>
+        )}
+        {page.hasDesignSystem && (
+          <span className="text-[10px] font-mono text-[#22d3ee]/70 border border-[#22d3ee]/20 rounded px-1 py-0.5">
+            DS
+          </span>
+        )}
+      </div>
       <p className="text-[11px] font-mono text-slate-500 mt-2">{STEP_LABEL[page.buildStep]}</p>
 
       {page.vercelUrl && (
