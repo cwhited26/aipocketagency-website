@@ -14,6 +14,7 @@ type Props = {
   templates: TemplateOption[];
   canBuild: boolean;
   hasApiKey: boolean;
+  moonchildConfigured: boolean;
 };
 
 const STATUS_LABEL: Record<LandingPageView["status"], string> = {
@@ -40,7 +41,7 @@ function statusClass(status: LandingPageView["status"]): string {
   return "text-slate-400 border-slate-700 bg-slate-900/60";
 }
 
-export default function LandingPagesClient({ initialPages, templates, canBuild, hasApiKey }: Props) {
+export default function LandingPagesClient({ initialPages, templates, canBuild, hasApiKey, moonchildConfigured }: Props) {
   const [pages, setPages] = useState<LandingPageView[]>(initialPages);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -362,22 +363,33 @@ export default function LandingPagesClient({ initialPages, templates, canBuild, 
                 { key: "url", label: "Yes — paste a URL", sub: "Moonchild reads the site's design" },
                 { key: "existing", label: "Use existing brand.json", sub: "If the scope already has one" },
                 { key: "skip", label: "Skip — use defaults", sub: "PA picks the style" },
-              ] as { key: DsChoice; label: string; sub: string }[]).map((opt) => (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => setDsChoice(opt.key)}
-                  className={`text-left rounded-lg border px-2.5 py-2 transition-colors ${
-                    dsChoice === opt.key
-                      ? "border-[#22d3ee]/50 bg-[#22d3ee]/10"
-                      : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
-                  }`}
-                >
-                  <p className="text-[12px] font-semibold text-slate-100 leading-snug">{opt.label}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">{opt.sub}</p>
-                </button>
-              ))}
+              ] as { key: DsChoice; label: string; sub: string }[]).map((opt) => {
+                const disabled = opt.key === "url" && !moonchildConfigured;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => !disabled && setDsChoice(opt.key)}
+                    disabled={disabled}
+                    className={`text-left rounded-lg border px-2.5 py-2 transition-colors ${
+                      disabled
+                        ? "border-slate-800 bg-slate-900/20 opacity-50 cursor-not-allowed"
+                        : dsChoice === opt.key
+                          ? "border-[#22d3ee]/50 bg-[#22d3ee]/10"
+                          : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
+                    }`}
+                  >
+                    <p className="text-[12px] font-semibold text-slate-100 leading-snug">{opt.label}</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">{opt.sub}</p>
+                  </button>
+                );
+              })}
             </div>
+            {!moonchildConfigured && (
+              <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
+                Moonchild imports a real color palette, typography, and components from a reference URL — making the page feel more bespoke. Not required; the Builder works without it.
+              </p>
+            )}
 
             {dsChoice === "url" && (
               <div className="flex gap-2 mt-2">

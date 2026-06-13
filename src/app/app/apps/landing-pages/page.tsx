@@ -3,6 +3,7 @@ import { fetchPaUser } from "@/lib/pa-supabase";
 import { getCurrentTier, tierAllowsLandingPageBuilder } from "@/lib/personas/tier-caps";
 import { listPages, toView } from "@/lib/landing-pages/pages";
 import { listTemplates } from "@/lib/landing-pages/templates";
+import { getMoonchildConfig } from "@/lib/connectors/moonchild/client";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import LandingPagesClient from "./LandingPagesClient";
@@ -24,6 +25,7 @@ export default async function LandingPagesPage() {
   const [tier, pagesResult] = await Promise.all([getCurrentTier(user.id), listPages(user.id)]);
   const canBuild = tierAllowsLandingPageBuilder(tier);
   const pages = pagesResult.ok ? pagesResult.data.map(toView) : [];
+  const moonchildConfigured = getMoonchildConfig().configured;
 
   const templates = listTemplates().map((t) => ({
     id: t.id,
@@ -84,6 +86,7 @@ export default async function LandingPagesPage() {
           templates={templates}
           canBuild={canBuild}
           hasApiKey={Boolean(paUser.anthropic_api_key)}
+          moonchildConfigured={moonchildConfigured}
         />
       </div>
     </div>
