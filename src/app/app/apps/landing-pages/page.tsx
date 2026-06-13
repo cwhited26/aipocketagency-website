@@ -4,6 +4,7 @@ import { getCurrentTier, tierAllowsLandingPageBuilder } from "@/lib/personas/tie
 import { listPages, toView } from "@/lib/landing-pages/pages";
 import { listTemplates } from "@/lib/landing-pages/templates";
 import { getMoonchildConfig } from "@/lib/connectors/moonchild/client";
+import { fetchMoonchildConnectionPublic } from "@/lib/pa-moonchild-connections";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import LandingPagesClient from "./LandingPagesClient";
@@ -22,11 +23,20 @@ export default async function LandingPagesPage() {
   if (!paResult.ok || !paResult.data) redirect("/app/onboarding");
   const paUser = paResult.data;
 
-  const [tier, pagesResult] = await Promise.all([getCurrentTier(user.id), listPages(user.id)]);
+  const [tier, pagesResult, moonchildConn] = await Promise.all([
+    getCurrentTier(user.id),
+    listPages(user.id),
+    fetchMoonchildConnectionPublic(user.id),
+  ]);
   const canBuild = tierAllowsLandingPageBuilder(tier);
   const pages = pagesResult.ok ? pagesResult.data.map(toView) : [];
   const moonchildConfigured = getMoonchildConfig().configured;
   const urlImportEnabled = moonchildConfigured && process.env.PA_MOONCHILD_URL_IMPORT_ENABLED === "true";
+  const moonchildOwnerConnected =
+    moonchildConn.ok &&
+    moonchildConn.data !== null &&
+    moonchildConn.data.status === "active" &&
+    moonchildConn.data.hasToken;
 
   const templates = listTemplates().map((t) => ({
     id: t.id,
@@ -89,6 +99,7 @@ export default async function LandingPagesPage() {
           hasApiKey={Boolean(paUser.anthropic_api_key)}
           moonchildConfigured={moonchildConfigured}
           urlImportEnabled={urlImportEnabled}
+          moonchildOwnerConnected={moonchildOwnerConnected}
         />
       </div>
     </div>

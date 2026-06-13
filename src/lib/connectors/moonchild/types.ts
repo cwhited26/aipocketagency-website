@@ -102,3 +102,46 @@ export type ImportDesignSystemResult = {
   /** The tool name that was actually called — logged for diagnostics (PA-LPB-11). */
   toolName: string;
 };
+
+// ── Scene (PA-LPB-13) ────────────────────────────────────────────────────────────────────────────
+// A "scene" is a page/screen in a Moonchild project — the unit the owner picks in Path A of the
+// PA-LPB-13 wizard. The Moonchild server returns extra fields we don't need; only id + name are
+// load-bearing. All other fields are optional with .catch(undefined) tolerance.
+
+export const MoonchildSceneSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  created_at: z.string().optional().catch(undefined),
+  updated_at: z.string().optional().catch(undefined),
+  thumbnail_url: z.string().optional().catch(undefined),
+  frame_id: z.string().optional().catch(undefined),
+});
+
+export type MoonchildScene = z.infer<typeof MoonchildSceneSchema>;
+
+export const MoonchildScenesResponseSchema = z.object({
+  scenes: z.array(MoonchildSceneSchema).catch([]),
+  nextCursor: z.string().optional(),
+});
+
+// ── DS bundle (PA-LPB-13) ────────────────────────────────────────────────────────────────────────
+// The design_system_get_bundle tool returns the full DS — same shape as DesignSystemSchema but
+// with the bundle wrapper Moonchild wraps it in. The inner DS is re-parsed via DesignSystemSchema.
+
+export const DesignSystemBundleSchema = z.object({
+  design_system: DesignSystemSchema.optional().catch(undefined),
+  bundle: DesignSystemSchema.optional().catch(undefined),
+  // Some versions return the DS at the root level
+}).catchall(z.unknown());
+
+export type DesignSystemBundle = z.infer<typeof DesignSystemBundleSchema>;
+
+// ── Scene import result (PA-LPB-13) ──────────────────────────────────────────────────────────────
+
+export type SceneImportResult = {
+  designSystem: DesignSystem;
+  designSystemId: string;
+  sceneId: string;
+  sceneName: string;
+  toolName: string;
+};

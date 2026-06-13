@@ -14,13 +14,17 @@
 import { z } from "zod";
 import {
   DesignSystemSchema,
+  DesignSystemBundleSchema,
   McpToolsListResponseSchema,
+  MoonchildScenesResponseSchema,
   type ConnectorError,
   type ConnectorResult,
   type DesignSystem,
   type ImportDesignSystemResult,
   type McpTool,
   type MoonchildConfig,
+  type MoonchildScene,
+  type SceneImportResult,
 } from "./types";
 
 // ── Structured logger ─────────────────────────────────────────────────────────────────────────────
@@ -424,6 +428,168 @@ export async function generateUiFromPrd(
   const obj = z.record(z.string(), z.unknown()).safeParse(content);
   if (!obj.success) return null;
   return { ok: true, data: obj.data };
+}
+
+// ── Path A: BYO-credential functions (PA-LPB-13) ─────────────────────────────────────────────────
+// These functions take explicit { mcpUrl, token } credentials from the owner's pa_connections row
+// rather than from the MOONCHILD_MCP_URL / MOONCHILD_MCP_TOKEN env vars. They do NOT use the
+// module-level discoveredTools cache — each call discovers tools fresh with the owner's token.
+
+type OwnerCredentials = { mcpUrl: string; token: string };
+
+const SCENE_LIST_KEYWORDS = ["scene_list", "list_scenes", "scenes/list", "frame_list", "list_frames"];
+const DS_BUNDLE_KEYWORDS = ["design_system_get_bundle", "design_system_bundle", "get_bundle", "ds_bundle"];
+
+async function listToolsWithCredentials(
+  creds: OwnerCredentials,
+  ownerId: string,
+): Promise<ConnectorResult<McpTool[]>> {
+  const correlationId = `discover-byo-${Date.now()}`;
+  const result = await mcpCall(
+    { mcpUrl: creds.mcpUrl.replace(/\/$/, ""), token: creds.token },
+    { jsonrpc: "2.0", id: 1, method: "tools/list", params: {} },
+    correlationId,
+    ownerId,
+  );
+  if (!result.ok) return result;
+
+  const parsed = McpToolsListResponseSchema.safeParse(result.data);
+  if (!parsed.success) {
+    log.error("moonchild byo tools/list schema mismatch", { owner_id: ownerId, error: parsed.error.message });
+    return { ok: false, error: { kind: "invalid_response", message: `tools/list response did not match expected shape: ${parsed.error.message}`, retryable: false } };
+  }
+  return { ok: true, data: parsed.data.tools };
+}
+
+/**
+ * List the owner's Moonchild scenes using their own msk_* token.
+ * Calls the scene_list (or equivalent) tool discovered on the server.
+ */
+export async function listMoonchildScenesWithCredentials(
+  creds: OwnerCredentials,
+  ownerId: string,
+): Promise<ConnectorResult<MoonchildScene[]>> {
+  const toolsResult = await listToolsWithCredentials(creds, ownerId);
+  if (!toolsResult.ok) return toolsResult;
+
+  const tool = toolsResult.data.find((t) =>
+    SCENE_LIST_KEYWORDS.some((kw) => t.name.toLowerCase().includes(kw.toLowerCase())),
+  );
+  if (!tool) {
+    log.warn("moonchild scene_list tool not found", {
+      owner_id: ownerId,
+      available_tools: toolsResult.data.map((t) => t.name),
+    });
+    return {
+      ok: false,
+      error: { kind: "tool_not_found", message: "Moonchild didn't expose a scene-list tool. Check that your token has the right scopes.", retryable: false },
+    };
+  }
+
+  const correlationId = `scene-list-${Date.now()}`;
+  log.info("moonchild scene_list start", { owner_id: ownerId, tool_name: tool.name, correlation_id: correlationId });
+
+  const result = await mcpCall(
+    { mcpUrl: creds.mcpUrl.replace(/\/$/, ""), token: creds.token },
+    { jsonrpc: "2.0", id: correlationId, method: "tools/call", params: { name: tool.name, arguments: {} } },
+    correlationId,
+    ownerId,
+  );
+  if (!result.ok) return result;
+
+  const content = extractToolContent(result.data);
+  const parsed = MoonchildScenesResponseSchema.safeParse(content);
+  if (!parsed.success) {
+    log.error("moonchild scene_list schema mismatch", { owner_id: ownerId, tool_name: tool.name, error: parsed.error.message });
+    return { ok: false, error: { kind: "invalid_response", message: `scene_list returned an unexpected shape: ${parsed.error.message}`, retryable: false } };
+  }
+
+  log.info("moonchild scene_list success", { owner_id: ownerId, scene_count: parsed.data.scenes.length });
+  return { ok: true, data: parsed.data.scenes };
+}
+
+/**
+ * Fetch the design system bundle for a scene using the owner's msk_* token.
+ * Calls design_system_get_bundle (or equivalent) — the tool PA-LPB-13 uses as the authoritative
+ * DS source (as noted in the brain standing rule).
+ *
+ * @param sceneId — The scene id from listMoonchildScenesWithCredentials. Optional; if absent, the
+ *   tool is called without a scene id (some versions return the project-level DS).
+ */
+export async function getDesignSystemBundleWithCredentials(
+  creds: OwnerCredentials,
+  ownerId: string,
+  sceneId?: string,
+): Promise<ConnectorResult<SceneImportResult>> {
+  const toolsResult = await listToolsWithCredentials(creds, ownerId);
+  if (!toolsResult.ok) return toolsResult;
+
+  const tool = toolsResult.data.find((t) =>
+    DS_BUNDLE_KEYWORDS.some((kw) => t.name.toLowerCase().includes(kw.toLowerCase())),
+  );
+  if (!tool) {
+    log.warn("moonchild design_system_get_bundle tool not found", {
+      owner_id: ownerId,
+      available_tools: toolsResult.data.map((t) => t.name),
+    });
+    return {
+      ok: false,
+      error: { kind: "tool_not_found", message: "Moonchild didn't expose a design-system bundle tool. Make sure the MCP server is up to date.", retryable: false },
+    };
+  }
+
+  const correlationId = `ds-bundle-${Date.now()}`;
+  const toolArgs: Record<string, unknown> = {};
+  if (sceneId) toolArgs["scene_id"] = sceneId;
+
+  log.info("moonchild ds_bundle start", { owner_id: ownerId, tool_name: tool.name, scene_id: sceneId ?? null, correlation_id: correlationId });
+
+  const result = await mcpCall(
+    { mcpUrl: creds.mcpUrl.replace(/\/$/, ""), token: creds.token },
+    { jsonrpc: "2.0", id: correlationId, method: "tools/call", params: { name: tool.name, arguments: toolArgs } },
+    correlationId,
+    ownerId,
+  );
+  if (!result.ok) return result;
+
+  const content = extractToolContent(result.data);
+
+  // Try to find the DS in the bundle wrapper — some versions nest it, some return it at root.
+  const bundleParsed = DesignSystemBundleSchema.safeParse(content);
+  const rawDs = bundleParsed.success
+    ? (bundleParsed.data.design_system ?? bundleParsed.data.bundle ?? content)
+    : content;
+
+  const dsParsed = DesignSystemSchema.safeParse(rawDs);
+  if (!dsParsed.success) {
+    log.error("moonchild ds_bundle schema mismatch", { owner_id: ownerId, tool_name: tool.name, error: dsParsed.error.message });
+    return {
+      ok: false,
+      error: { kind: "invalid_response", message: `design_system_get_bundle returned an unexpected shape: ${dsParsed.error.message}`, retryable: false },
+    };
+  }
+
+  const ds = dsParsed.data;
+  const designSystemId = typeof ds.id === "string" && ds.id ? ds.id : correlationId;
+
+  log.info("moonchild ds_bundle success", {
+    owner_id: ownerId,
+    tool_name: tool.name,
+    scene_id: sceneId ?? null,
+    design_system_id: designSystemId,
+    palette_count: ds.palette?.length ?? 0,
+  });
+
+  return {
+    ok: true,
+    data: {
+      designSystem: ds,
+      designSystemId,
+      sceneId: sceneId ?? "",
+      sceneName: ds.name ?? "",
+      toolName: tool.name,
+    },
+  };
 }
 
 // ── resetDiscoveredTools (test helper) ───────────────────────────────────────────────────────────
