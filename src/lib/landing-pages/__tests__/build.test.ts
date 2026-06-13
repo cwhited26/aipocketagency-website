@@ -41,6 +41,7 @@ function pageRow(overrides: Partial<LandingPageRow> = {}): LandingPageRow {
     description: "A roofing page",
     template: "single-cta",
     brain_scope: null,
+    brain_scope_domain: null,
     generated_copy: bundle(),
     github_repo_name: null,
     vercel_project_id: null,
