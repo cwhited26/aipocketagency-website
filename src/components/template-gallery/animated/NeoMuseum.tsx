@@ -299,24 +299,78 @@ export default function NeoMuseum({ isVisible }: { isVisible: boolean }) {
               alignItems: "center",
               justifyContent: "center",
             }}>
-              {/* Specimen silhouette — abstract circular forms */}
-              <svg width="220" height="220" viewBox="0 0 220 220" fill="none" opacity="0.2">
-                <circle cx="110" cy="110" r="90" stroke="rgba(248,245,238,0.7)" strokeWidth="1"/>
-                <circle cx="110" cy="110" r="60" stroke="rgba(248,245,238,0.5)" strokeWidth="1"/>
-                <ellipse cx="110" cy="110" rx="90" ry="45" stroke="rgba(248,245,238,0.3)" strokeWidth="1"/>
-                <line x1="20" y1="110" x2="200" y2="110" stroke="rgba(248,245,238,0.4)" strokeWidth="0.5"/>
-                <line x1="110" y1="20" x2="110" y2="200" stroke="rgba(248,245,238,0.4)" strokeWidth="0.5"/>
-                {[0, 45, 90, 135].map((a) => (
-                  <line
-                    key={a}
-                    x1={110 + Math.cos(a * Math.PI / 180) * 90}
-                    y1={110 + Math.sin(a * Math.PI / 180) * 90}
-                    x2={110 - Math.cos(a * Math.PI / 180) * 90}
-                    y2={110 - Math.sin(a * Math.PI / 180) * 90}
-                    stroke="rgba(248,245,238,0.15)"
-                    strokeWidth="0.5"
-                  />
-                ))}
+              {/* T-Rex skeleton silhouette */}
+              <svg width="340" height="280" viewBox="0 0 340 280" fill="none" opacity="0.55">
+                {/* Skull */}
+                <ellipse cx="262" cy="68" rx="38" ry="24" stroke="rgba(248,245,238,0.85)" strokeWidth="1.4" fill="none"/>
+                {/* Upper jaw extension */}
+                <path d="M262 80 L308 92 L298 102 L278 96" stroke="rgba(248,245,238,0.8)" strokeWidth="1.2" fill="none"/>
+                {/* Teeth */}
+                <path d="M278 95 L282 105 M288 98 L290 109 M298 102 L296 112" stroke="rgba(248,245,238,0.6)" strokeWidth="1"/>
+                {/* Eye socket */}
+                <circle cx="270" cy="62" r="8" stroke="rgba(248,245,238,0.7)" strokeWidth="1.2" fill="none"/>
+                {/* Lower jaw */}
+                <path d="M262 80 L305 96 L296 108 L272 100" stroke="rgba(248,245,238,0.65)" strokeWidth="1" fill="none"/>
+
+                {/* Neck vertebrae */}
+                <path d="M228 74 C215 70, 202 68, 190 66" stroke="rgba(248,245,238,0.75)" strokeWidth="2"/>
+                <circle cx="215" cy="71" r="4" stroke="rgba(248,245,238,0.55)" strokeWidth="1" fill="none"/>
+                <circle cx="202" cy="68" r="4" stroke="rgba(248,245,238,0.55)" strokeWidth="1" fill="none"/>
+
+                {/* Spine */}
+                <path d="M190 66 C175 68, 160 72, 140 78 C120 84, 100 90, 80 94 C60 98, 40 100, 22 102"
+                  stroke="rgba(248,245,238,0.8)" strokeWidth="2.2"/>
+                {/* Dorsal vertebrae spines */}
+                {[190, 175, 160, 145, 130, 115, 100, 85, 70, 55, 40].map((x, i) => {
+                  const y = 66 + i * 3.2;
+                  return (
+                    <line key={i} x1={x} y1={y - 14} x2={x} y2={y + 4}
+                      stroke="rgba(248,245,238,0.45)" strokeWidth="1"/>
+                  );
+                })}
+
+                {/* Ribcage */}
+                {[0, 1, 2, 3, 4].map((i) => {
+                  const rx = 160 - i * 18;
+                  const ry = 72 + i * 3;
+                  return (
+                    <path key={i}
+                      d={`M${rx} ${ry} C${rx - 8} ${ry + 28}, ${rx - 24} ${ry + 48}, ${rx - 32} ${ry + 52}`}
+                      stroke="rgba(248,245,238,0.5)" strokeWidth="1.1" fill="none"/>
+                  );
+                })}
+
+                {/* Hip girdle */}
+                <path d="M46 100 L30 118 L48 132 L70 120 L80 102" stroke="rgba(248,245,238,0.7)" strokeWidth="1.4" fill="none"/>
+
+                {/* Right hind leg */}
+                <path d="M48 128 C44 148, 38 168, 34 188" stroke="rgba(248,245,238,0.75)" strokeWidth="1.8"/>
+                <circle cx="36" cy="188" r="5" stroke="rgba(248,245,238,0.55)" strokeWidth="1.2" fill="none"/>
+                {/* Lower leg */}
+                <path d="M36 188 C34 208, 32 224, 28 238" stroke="rgba(248,245,238,0.7)" strokeWidth="1.5"/>
+                {/* Foot */}
+                <path d="M28 238 L14 248 M28 238 L28 252 M28 238 L40 248" stroke="rgba(248,245,238,0.6)" strokeWidth="1.2"/>
+
+                {/* Left hind leg (back) */}
+                <path d="M66 118 C65 140, 62 162, 58 184" stroke="rgba(248,245,238,0.55)" strokeWidth="1.4"/>
+                <path d="M58 184 C56 202, 52 218, 48 232" stroke="rgba(248,245,238,0.5)" strokeWidth="1.2"/>
+                <path d="M48 232 L36 242 M48 232 L50 244 M48 232 L60 240" stroke="rgba(248,245,238,0.4)" strokeWidth="1"/>
+
+                {/* Tiny forelimbs */}
+                <path d="M178 88 C186 102, 190 116, 186 126" stroke="rgba(248,245,238,0.65)" strokeWidth="1.4"/>
+                <path d="M186 126 L178 136 M186 126 L192 134" stroke="rgba(248,245,238,0.55)" strokeWidth="1"/>
+
+                {/* Tail */}
+                <path d="M22 102 C8 106, -10 112, -24 118 C-38 122, -52 126, -62 130"
+                  stroke="rgba(248,245,238,0.7)" strokeWidth="2"/>
+                {/* Tail vertebrae */}
+                {[8, -6, -20, -36, -50].map((x, i) => {
+                  const y = 104 + i * 5;
+                  return (
+                    <line key={i} x1={x} y1={y - 8} x2={x} y2={y + 6}
+                      stroke="rgba(248,245,238,0.35)" strokeWidth="1"/>
+                  );
+                })}
               </svg>
             </div>
 

@@ -132,33 +132,57 @@ function drawBall(
   ctx.save();
   ctx.translate(bx, by);
 
-  // Ball body
-  const grd = ctx.createRadialGradient(-r * 0.3, -r * 0.3, 0, 0, 0, r * 1.1);
-  grd.addColorStop(0, "#FF8C3A");
-  grd.addColorStop(0.55, "#FF6B1A");
-  grd.addColorStop(1, "#BF3A00");
+  // Drop shadow
+  const shadowGrd = ctx.createRadialGradient(r * 0.1, r * 0.15, 0, r * 0.1, r * 0.15, r * 1.4);
+  shadowGrd.addColorStop(0, "rgba(0,0,0,0.55)");
+  shadowGrd.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = shadowGrd;
+  ctx.beginPath();
+  ctx.arc(r * 0.1, r * 0.15, r * 1.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ball body — three-stop gradient for more depth
+  const grd = ctx.createRadialGradient(-r * 0.38, -r * 0.32, r * 0.04, 0, 0, r * 1.05);
+  grd.addColorStop(0, "#FFA050");
+  grd.addColorStop(0.28, "#FF7220");
+  grd.addColorStop(0.68, "#E04A00");
+  grd.addColorStop(1, "#8B2200");
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.fillStyle = grd;
   ctx.fill();
 
-  // Seam lines (rotated)
+  // Specular highlight
+  const spec = ctx.createRadialGradient(-r * 0.35, -r * 0.32, 0, -r * 0.25, -r * 0.22, r * 0.45);
+  spec.addColorStop(0, "rgba(255,220,180,0.55)");
+  spec.addColorStop(1, "rgba(255,150,80,0)");
+  ctx.fillStyle = spec;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Seam lines
   ctx.rotate(rotation);
-  ctx.strokeStyle = "rgba(0,0,0,0.35)";
-  ctx.lineWidth = 2;
-  // Vertical seam
+  ctx.strokeStyle = "rgba(0,0,0,0.38)";
+  ctx.lineWidth = Math.max(1.5, r * 0.07);
   ctx.beginPath();
   ctx.arc(0, 0, r, -Math.PI * 0.5, Math.PI * 0.5);
   ctx.stroke();
   ctx.beginPath();
   ctx.arc(0, 0, r, Math.PI * 0.5, Math.PI * 1.5);
   ctx.stroke();
-  // Horizontal seam
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI);
   ctx.stroke();
   ctx.beginPath();
   ctx.arc(0, 0, r, Math.PI, Math.PI * 2);
+  ctx.stroke();
+
+  // Seam highlight
+  ctx.strokeStyle = "rgba(255,180,100,0.18)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.98, -Math.PI * 0.6, Math.PI * 0.1);
   ctx.stroke();
 
   ctx.restore();
@@ -195,7 +219,7 @@ function drawEnergyBurst(ctx: CanvasRenderingContext2D, intensity: number) {
   const n = 18;
   for (let i = 0; i < n; i++) {
     const angle = (i / n) * Math.PI * 2;
-    const len = (60 + Math.random() * 80) * intensity;
+    const len = (60 + Math.abs(Math.sin(i * 2.3 + 1.7)) * 80) * intensity;
     const alpha = intensity * 0.9;
     ctx.save();
     ctx.translate(RIM_X, RIM_Y);

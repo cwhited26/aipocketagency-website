@@ -1,249 +1,490 @@
 "use client";
 
-// NewEraAutomotive: headlight sweep across a car silhouette reveal.
-// Dark canvas. Car silhouette revealed by a sweeping cone of light.
-// Palette: #050508 / #0E0F14 / #D4E0F5 (headlight blue-white) / #8090A0 (chrome)
-// Pure canvas + rAF. No external images or three.js.
+// NewEraAutomotive: R3F cinematic Porsche-style sports car with studio lighting.
+// Replaces canvas bezier silhouette. Matches motionsites orange-car studio-lit bar.
+// Palette: #050508 / #E87020 (orange) / #D4E0F5 (headlight) / #808090 (chrome)
 
-import { useEffect, useRef } from "react";
+import { useRef, useMemo } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import * as THREE from "three";
 
 const W = 1440;
 const H = 900;
-const LOOP_MS = 5200;
 
-export default function NewEraAutomotive({ isVisible }: { isVisible: boolean }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef    = useRef<number | null>(null);
-  const startRef  = useRef<number | null>(null);
+// ─── Shared materials ────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    const cv = canvasRef.current;
-    if (!cv) return;
-    const ctx = cv.getContext("2d");
-    if (!ctx) return;
+function useCarMaterials(bodyColor: THREE.Color) {
+  const body = useMemo(
+    () =>
+      new THREE.MeshPhongMaterial({
+        color: bodyColor,
+        specular: new THREE.Color(1, 0.9, 0.8),
+        shininess: 180,
+        emissive: bodyColor.clone().multiplyScalar(0.06),
+      }),
+    [bodyColor],
+  );
 
-    if (!isVisible) {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-      startRef.current = null;
-      return;
+  const chrome = useMemo(
+    () =>
+      new THREE.MeshPhongMaterial({
+        color: new THREE.Color(0.78, 0.8, 0.82),
+        specular: new THREE.Color(1, 1, 1),
+        shininess: 220,
+      }),
+    [],
+  );
+
+  const glass = useMemo(
+    () =>
+      new THREE.MeshPhongMaterial({
+        color: new THREE.Color(0.08, 0.1, 0.14),
+        specular: new THREE.Color(0.8, 0.85, 0.9),
+        shininess: 200,
+        transparent: true,
+        opacity: 0.75,
+      }),
+    [],
+  );
+
+  const rubber = useMemo(
+    () =>
+      new THREE.MeshPhongMaterial({
+        color: new THREE.Color(0.08, 0.08, 0.1),
+        shininess: 10,
+      }),
+    [],
+  );
+
+  const rim = useMemo(
+    () =>
+      new THREE.MeshPhongMaterial({
+        color: new THREE.Color(0.65, 0.66, 0.68),
+        specular: new THREE.Color(1, 1, 1),
+        shininess: 200,
+      }),
+    [],
+  );
+
+  const undercarriage = useMemo(
+    () =>
+      new THREE.MeshPhongMaterial({
+        color: new THREE.Color(0.12, 0.12, 0.16),
+        shininess: 20,
+      }),
+    [],
+  );
+
+  return { body, chrome, glass, rubber, rim, undercarriage };
+}
+
+// ─── Wheel ────────────────────────────────────────────────────────────────────
+
+function Wheel({
+  position,
+  rubberMat,
+  rimMat,
+}: {
+  position: [number, number, number];
+  rubberMat: THREE.Material;
+  rimMat: THREE.Material;
+}) {
+  const wheelRef = useRef<THREE.Group>(null);
+
+  useFrame(({ clock }) => {
+    if (wheelRef.current) {
+      // Rolling rotation: car moves ~0 so just decorative spin
+      wheelRef.current.rotation.x = clock.elapsedTime * 0.8;
     }
-
-    const carCX = W * 0.5;
-    const carCY = H * 0.72;
-    const s = 1.85;
-
-    function buildCarPath(): Path2D {
-      const p = new Path2D();
-      p.moveTo(carCX - 320 * s, carCY);
-      p.lineTo(carCX - 340 * s, carCY - 8 * s);
-      p.bezierCurveTo(carCX - 355 * s, carCY - 30 * s, carCX - 350 * s, carCY - 65 * s, carCX - 310 * s, carCY - 90 * s);
-      p.bezierCurveTo(carCX - 250 * s, carCY - 110 * s, carCX - 170 * s, carCY - 125 * s, carCX - 120 * s, carCY - 140 * s);
-      p.lineTo(carCX - 80 * s, carCY - 160 * s);
-      p.bezierCurveTo(carCX - 50 * s, carCY - 195 * s, carCX - 10 * s, carCY - 210 * s, carCX + 50 * s, carCY - 210 * s);
-      p.bezierCurveTo(carCX + 110 * s, carCY - 210 * s, carCX + 150 * s, carCY - 202 * s, carCX + 175 * s, carCY - 190 * s);
-      p.bezierCurveTo(carCX + 200 * s, carCY - 175 * s, carCX + 215 * s, carCY - 158 * s, carCX + 225 * s, carCY - 145 * s);
-      p.bezierCurveTo(carCX + 255 * s, carCY - 125 * s, carCX + 305 * s, carCY - 115 * s, carCX + 340 * s, carCY - 100 * s);
-      p.bezierCurveTo(carCX + 365 * s, carCY - 85 * s, carCX + 360 * s, carCY - 30 * s, carCX + 355 * s, carCY - 5 * s);
-      p.lineTo(carCX + 340 * s, carCY);
-      p.bezierCurveTo(carCX + 310 * s, carCY + 2 * s, carCX + 285 * s, carCY + 5 * s, carCX + 260 * s, carCY);
-      p.bezierCurveTo(carCX + 240 * s, carCY - 4 * s, carCX + 220 * s, carCY - 5 * s, carCX + 195 * s, carCY);
-      p.lineTo(carCX - 110 * s, carCY);
-      p.bezierCurveTo(carCX - 135 * s, carCY - 5 * s, carCX - 155 * s, carCY - 4 * s, carCX - 175 * s, carCY);
-      p.bezierCurveTo(carCX - 200 * s, carCY + 5 * s, carCX - 220 * s, carCY + 4 * s, carCX - 245 * s, carCY);
-      p.lineTo(carCX - 320 * s, carCY);
-      p.closePath();
-      return p;
-    }
-
-    const carPath = buildCarPath();
-    const headlightX = carCX - 343 * s;
-    const headlightY = carCY - 55 * s;
-    const carLeft  = carCX - 360 * s;
-    const carRight = carCX + 366 * s;
-    const carSpan  = carRight - carLeft;
-
-    function drawWheel(c: CanvasRenderingContext2D, wx: number, wy: number, sweepX: number, sweepW: number, alpha: number) {
-      c.save();
-      const wp = new Path2D();
-      wp.arc(wx, wy, 44 * s, 0, Math.PI * 2);
-      c.fillStyle = "#050508";
-      c.fill(wp);
-      // Rim spokes
-      c.clip(wp);
-      for (let i = 0; i < 5; i++) {
-        const a = (i / 5) * Math.PI * 2;
-        const rimGrd = c.createLinearGradient(sweepX - sweepW, 0, sweepX + sweepW, 0);
-        rimGrd.addColorStop(0, "rgba(80,100,130,0)");
-        rimGrd.addColorStop(0.5, `rgba(140,160,190,${0.7 * alpha})`);
-        rimGrd.addColorStop(1, "rgba(80,100,130,0)");
-        c.strokeStyle = rimGrd;
-        c.lineWidth = 3 * s;
-        c.beginPath();
-        c.moveTo(wx, wy);
-        c.lineTo(wx + Math.cos(a) * 35 * s, wy + Math.sin(a) * 35 * s);
-        c.stroke();
-      }
-      c.restore();
-      c.strokeStyle = "rgba(20,25,35,0.9)";
-      c.lineWidth = 2;
-      c.stroke(new Path2D(`M ${wx + 44 * s} ${wy} A ${44 * s} ${44 * s} 0 1 0 ${wx - 44 * s} ${wy}`));
-    }
-
-    function drawScene(c: CanvasRenderingContext2D, sweepFrac: number, revealAlpha: number) {
-      c.fillStyle = "#050508";
-      c.fillRect(0, 0, W, H);
-
-      // Ground fog
-      const fog = c.createLinearGradient(0, carCY, 0, H);
-      fog.addColorStop(0, "rgba(5,5,8,0)");
-      fog.addColorStop(1, "#050508");
-      c.fillStyle = fog;
-      c.fillRect(0, carCY, W, H - carCY);
-
-      // Headlight cone
-      for (let cone = 0; cone < 2; cone++) {
-        const hlY = headlightY + (cone === 0 ? -10 : 10);
-        const conePath = new Path2D();
-        conePath.moveTo(headlightX, hlY);
-        conePath.lineTo(headlightX - 850, hlY - 200 - cone * 25);
-        conePath.lineTo(headlightX - 850, hlY + 200 + cone * 25);
-        conePath.closePath();
-        const coneGrd = c.createLinearGradient(headlightX, hlY, headlightX - 850, hlY);
-        coneGrd.addColorStop(0, `rgba(212,224,245,${0.16 * revealAlpha})`);
-        coneGrd.addColorStop(0.4, `rgba(160,185,225,${0.05 * revealAlpha})`);
-        coneGrd.addColorStop(1, "rgba(100,130,180,0)");
-        c.save();
-        c.fillStyle = coneGrd;
-        c.fill(conePath);
-        c.restore();
-      }
-
-      // Moving sweep light
-      const sweepX = -400 + sweepFrac * (W + 800);
-      const sweepW = 280;
-      const sweepGrd = c.createLinearGradient(sweepX - sweepW, 0, sweepX + sweepW, 0);
-      sweepGrd.addColorStop(0, "rgba(212,224,245,0)");
-      sweepGrd.addColorStop(0.35, `rgba(212,224,245,${0.2 * revealAlpha})`);
-      sweepGrd.addColorStop(0.5, `rgba(235,245,255,${0.3 * revealAlpha})`);
-      sweepGrd.addColorStop(0.65, `rgba(212,224,245,${0.2 * revealAlpha})`);
-      sweepGrd.addColorStop(1, "rgba(212,224,245,0)");
-      c.fillStyle = sweepGrd;
-      c.fillRect(0, 0, W, H);
-
-      // Car dark base
-      c.fillStyle = "#09090E";
-      c.fill(carPath);
-
-      // Car lit surface
-      c.save();
-      c.clip(carPath);
-
-      // Base body sheen
-      const bodyGrd = c.createLinearGradient(carCX - 360 * s, carCY - 215 * s, carCX - 360 * s, carCY);
-      bodyGrd.addColorStop(0, "rgba(20,26,40,0.88)");
-      bodyGrd.addColorStop(0.6, "rgba(12,16,26,0.88)");
-      bodyGrd.addColorStop(1, "rgba(8,10,16,0.92)");
-      c.fillStyle = bodyGrd;
-      c.fillRect(carLeft, carCY - 215 * s, carSpan, 215 * s + 30);
-
-      // Sweep highlight
-      const carSweepGrd = c.createLinearGradient(sweepX - sweepW * 1.3, 0, sweepX + sweepW * 1.3, 0);
-      carSweepGrd.addColorStop(0, "rgba(25,40,65,0)");
-      carSweepGrd.addColorStop(0.3, `rgba(55,80,125,${0.6 * revealAlpha})`);
-      carSweepGrd.addColorStop(0.5, `rgba(80,115,175,${0.8 * revealAlpha})`);
-      carSweepGrd.addColorStop(0.7, `rgba(55,80,125,${0.6 * revealAlpha})`);
-      carSweepGrd.addColorStop(1, "rgba(25,40,65,0)");
-      c.fillStyle = carSweepGrd;
-      c.fillRect(carLeft, carCY - 215 * s, carSpan, 215 * s + 30);
-
-      // Chrome roofline trim
-      const trimGrd = c.createLinearGradient(sweepX - sweepW, 0, sweepX + sweepW, 0);
-      trimGrd.addColorStop(0, "rgba(128,144,160,0)");
-      trimGrd.addColorStop(0.5, `rgba(210,225,245,${0.88 * revealAlpha})`);
-      trimGrd.addColorStop(1, "rgba(128,144,160,0)");
-      c.strokeStyle = trimGrd;
-      c.lineWidth = 2;
-      const trim = new Path2D();
-      trim.moveTo(carCX - 80 * s, carCY - 160 * s);
-      trim.bezierCurveTo(carCX - 50 * s, carCY - 195 * s, carCX - 10 * s, carCY - 210 * s, carCX + 50 * s, carCY - 210 * s);
-      trim.bezierCurveTo(carCX + 110 * s, carCY - 210 * s, carCX + 150 * s, carCY - 202 * s, carCX + 175 * s, carCY - 190 * s);
-      c.stroke(trim);
-
-      c.restore();
-
-      // Wheels
-      drawWheel(c, carCX - 195 * s, carCY + 32 * s, sweepX, sweepW, revealAlpha);
-      drawWheel(c, carCX + 238 * s, carCY + 32 * s, sweepX, sweepW, revealAlpha);
-
-      // Headlight glow
-      const hlGrd = c.createRadialGradient(headlightX, headlightY, 0, headlightX, headlightY, 24);
-      hlGrd.addColorStop(0, `rgba(235,245,255,${0.95 * revealAlpha})`);
-      hlGrd.addColorStop(0.4, `rgba(200,220,250,${0.65 * revealAlpha})`);
-      hlGrd.addColorStop(1, "rgba(150,180,220,0)");
-      c.beginPath();
-      c.arc(headlightX, headlightY, 24, 0, Math.PI * 2);
-      c.fillStyle = hlGrd;
-      c.fill();
-
-      // Tail light
-      const tailX = carCX + 348 * s;
-      const tailY = carCY - 60 * s;
-      const tlGrd = c.createRadialGradient(tailX, tailY, 0, tailX, tailY, 20);
-      tlGrd.addColorStop(0, `rgba(220,40,20,${revealAlpha})`);
-      tlGrd.addColorStop(0.5, `rgba(180,20,10,${0.55 * revealAlpha})`);
-      tlGrd.addColorStop(1, "rgba(120,10,5,0)");
-      c.beginPath();
-      c.arc(tailX, tailY, 20, 0, Math.PI * 2);
-      c.fillStyle = tlGrd;
-      c.fill();
-    }
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      drawScene(ctx, 0.5, 1);
-      return;
-    }
-
-    function tick(now: number) {
-      if (!cv || !ctx) return;
-      if (startRef.current === null) startRef.current = now;
-      const elapsed = (now - startRef.current) % LOOP_MS;
-      const progress = elapsed / LOOP_MS;
-      const sweepFrac = Math.min(progress / 0.7, 1);
-      const revealAlpha = progress > 0.9 ? Math.max(0, 1 - (progress - 0.9) / 0.1) : sweepFrac;
-      drawScene(ctx, sweepFrac, revealAlpha);
-      rafRef.current = requestAnimationFrame(tick);
-    }
-
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [isVisible]);
+  });
 
   return (
-    <div style={{ width: W, height: H, background: "#050508", position: "relative", overflow: "hidden", userSelect: "none", fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <canvas ref={canvasRef} width={W} height={H} style={{ position: "absolute", inset: 0 }} />
+    <group position={position} rotation={[0, 0, Math.PI / 2]}>
+      {/* Tyre */}
+      <mesh geometry={new THREE.TorusGeometry(0.42, 0.16, 16, 36)}>
+        <primitive object={rubberMat} attach="material" />
+      </mesh>
+      {/* Rim disc */}
+      <mesh geometry={new THREE.CylinderGeometry(0.38, 0.38, 0.08, 24)} position={[0, 0, 0]}>
+        <primitive object={rimMat} attach="material" />
+      </mesh>
+      <group ref={wheelRef}>
+        {/* 5 spokes */}
+        {[0, 72, 144, 216, 288].map((deg, i) => (
+          <mesh
+            key={i}
+            geometry={new THREE.BoxGeometry(0.07, 0.62, 0.05)}
+            position={[0, 0, 0.01]}
+            rotation={[0, 0, (deg * Math.PI) / 180]}
+          >
+            <primitive object={rimMat} attach="material" />
+          </mesh>
+        ))}
+        {/* Center hub */}
+        <mesh geometry={new THREE.CylinderGeometry(0.075, 0.075, 0.12, 10)}>
+          <primitive object={rimMat} attach="material" />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+// ─── Car body ────────────────────────────────────────────────────────────────
+
+function Car() {
+  const groupRef = useRef<THREE.Group>(null);
+  const orange = useMemo(() => new THREE.Color(0.9, 0.42, 0.06), []);
+  const { body, chrome, glass, rubber, rim, undercarriage } = useCarMaterials(orange);
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return;
+    const t = clock.elapsedTime;
+    // Slow cinematic Y-rotate
+    groupRef.current.rotation.y = -0.25 + Math.sin(t * 0.18) * 0.12;
+    groupRef.current.position.y = Math.sin(t * 0.35) * 0.025;
+  });
+
+  return (
+    <group ref={groupRef} position={[0, -0.18, 0]}>
+      {/* ── Lower body / sill ── */}
+      <mesh geometry={new THREE.BoxGeometry(4.5, 0.28, 1.82)}>
+        <primitive object={body} attach="material" />
+      </mesh>
+
+      {/* ── Front bumper / spoiler ── */}
+      <mesh geometry={new THREE.BoxGeometry(0.18, 0.22, 1.72)} position={[2.24, -0.04, 0]}>
+        <primitive object={body} attach="material" />
+      </mesh>
+
+      {/* ── Front hood (tapered) ── */}
+      <mesh
+        geometry={new THREE.BoxGeometry(1.6, 0.16, 1.78)}
+        position={[1.45, 0.28, 0]}
+        rotation={[0.1, 0, 0]}
+      >
+        <primitive object={body} attach="material" />
+      </mesh>
+
+      {/* ── Roof / greenhouse ── */}
+      <group position={[-0.3, 0.54, 0]}>
+        {/* Windshield frame */}
+        <mesh geometry={new THREE.BoxGeometry(0.06, 0.62, 1.6)} position={[0.9, 0.08, 0]}>
+          <primitive object={chrome} attach="material" />
+        </mesh>
+        {/* Roof panel */}
+        <mesh geometry={new THREE.BoxGeometry(1.5, 0.1, 1.65)}>
+          <primitive object={body} attach="material" />
+        </mesh>
+        {/* Rear screen frame */}
+        <mesh geometry={new THREE.BoxGeometry(0.06, 0.5, 1.6)} position={[-0.75, 0.06, 0]}>
+          <primitive object={chrome} attach="material" />
+        </mesh>
+        {/* Windshield glass */}
+        <mesh geometry={new THREE.BoxGeometry(0.05, 0.6, 1.55)} position={[0.88, 0.08, 0]}>
+          <primitive object={glass} attach="material" />
+        </mesh>
+        {/* Rear glass */}
+        <mesh geometry={new THREE.BoxGeometry(0.05, 0.48, 1.55)} position={[-0.73, 0.06, 0]}>
+          <primitive object={glass} attach="material" />
+        </mesh>
+        {/* Side windows */}
+        <mesh geometry={new THREE.BoxGeometry(1.55, 0.4, 0.04)} position={[0.1, 0.05, 0.81]}>
+          <primitive object={glass} attach="material" />
+        </mesh>
+        <mesh geometry={new THREE.BoxGeometry(1.55, 0.4, 0.04)} position={[0.1, 0.05, -0.81]}>
+          <primitive object={glass} attach="material" />
+        </mesh>
+      </group>
+
+      {/* ── Rear deck / spoiler ── */}
+      <mesh geometry={new THREE.BoxGeometry(1.2, 0.24, 1.86)} position={[-1.55, 0.28, 0]}>
+        <primitive object={body} attach="material" />
+      </mesh>
+      {/* Rear wing */}
+      <mesh geometry={new THREE.BoxGeometry(0.72, 0.06, 2.1)} position={[-1.85, 0.62, 0]}>
+        <primitive object={chrome} attach="material" />
+      </mesh>
+      {/* Rear wing pillars */}
+      <mesh geometry={new THREE.BoxGeometry(0.06, 0.34, 0.06)} position={[-1.85, 0.46, 0.85]}>
+        <primitive object={chrome} attach="material" />
+      </mesh>
+      <mesh geometry={new THREE.BoxGeometry(0.06, 0.34, 0.06)} position={[-1.85, 0.46, -0.85]}>
+        <primitive object={chrome} attach="material" />
+      </mesh>
+
+      {/* ── Rear bumper ── */}
+      <mesh geometry={new THREE.BoxGeometry(0.22, 0.22, 1.78)} position={[-2.26, -0.04, 0]}>
+        <primitive object={undercarriage} attach="material" />
+      </mesh>
+
+      {/* ── Side skirts ── */}
+      <mesh geometry={new THREE.BoxGeometry(3.6, 0.12, 0.08)} position={[0, -0.08, 0.94]}>
+        <primitive object={body} attach="material" />
+      </mesh>
+      <mesh geometry={new THREE.BoxGeometry(3.6, 0.12, 0.08)} position={[0, -0.08, -0.94]}>
+        <primitive object={body} attach="material" />
+      </mesh>
+
+      {/* ── Door lines (chrome trim) ── */}
+      <mesh geometry={new THREE.BoxGeometry(1.8, 0.02, 0.06)} position={[0.0, 0.18, 0.92]}>
+        <primitive object={chrome} attach="material" />
+      </mesh>
+      <mesh geometry={new THREE.BoxGeometry(1.8, 0.02, 0.06)} position={[0.0, 0.18, -0.92]}>
+        <primitive object={chrome} attach="material" />
+      </mesh>
+
+      {/* ── Headlights ── */}
+      <group position={[2.1, 0.08, 0.65]}>
+        <mesh geometry={new THREE.BoxGeometry(0.1, 0.12, 0.35)}>
+          <meshBasicMaterial color="#EAF2FF" />
+        </mesh>
+        <pointLight color="#CCDCFF" intensity={2.5} distance={4} />
+      </group>
+      <group position={[2.1, 0.08, -0.65]}>
+        <mesh geometry={new THREE.BoxGeometry(0.1, 0.12, 0.35)}>
+          <meshBasicMaterial color="#EAF2FF" />
+        </mesh>
+        <pointLight color="#CCDCFF" intensity={2.5} distance={4} />
+      </group>
+
+      {/* ── Tail lights ── */}
+      <group position={[-2.15, 0.06, 0.6]}>
+        <mesh geometry={new THREE.BoxGeometry(0.08, 0.1, 0.32)}>
+          <meshBasicMaterial color="#FF2200" />
+        </mesh>
+        <pointLight color="#FF2200" intensity={0.8} distance={2.5} />
+      </group>
+      <group position={[-2.15, 0.06, -0.6]}>
+        <mesh geometry={new THREE.BoxGeometry(0.08, 0.1, 0.32)}>
+          <meshBasicMaterial color="#FF2200" />
+        </mesh>
+        <pointLight color="#FF2200" intensity={0.8} distance={2.5} />
+      </group>
+
+      {/* ── Wheels ── */}
+      <Wheel position={[1.35, -0.35, 1.02]} rubberMat={rubber} rimMat={rim} />
+      <Wheel position={[1.35, -0.35, -1.02]} rubberMat={rubber} rimMat={rim} />
+      <Wheel position={[-1.25, -0.35, 1.02]} rubberMat={rubber} rimMat={rim} />
+      <Wheel position={[-1.25, -0.35, -1.02]} rubberMat={rubber} rimMat={rim} />
+    </group>
+  );
+}
+
+// ─── Studio floor ─────────────────────────────────────────────────────────────
+
+function StudioFloor() {
+  const mat = useMemo(
+    () =>
+      new THREE.MeshPhongMaterial({
+        color: new THREE.Color(0.06, 0.05, 0.07),
+        specular: new THREE.Color(0.4, 0.35, 0.3),
+        shininess: 120,
+      }),
+    [],
+  );
+  return (
+    <mesh geometry={new THREE.PlaneGeometry(40, 40)} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.63, 0]}>
+      <primitive object={mat} attach="material" />
+    </mesh>
+  );
+}
+
+// ─── Scene ───────────────────────────────────────────────────────────────────
+
+function Scene() {
+  return (
+    <>
+      {/* Key light — warm orange from upper-right */}
+      <directionalLight color="#FF9040" intensity={4.5} position={[8, 7, 3]} />
+      {/* Fill — cool blue-white from left */}
+      <directionalLight color="#A0C0E0" intensity={1.4} position={[-7, 4, -2]} />
+      {/* Rim / backlight — strong warm from behind-right */}
+      <directionalLight color="#FFB060" intensity={2.8} position={[3, 3, -8]} />
+      {/* Top overhead */}
+      <directionalLight color="#FFF0E0" intensity={1.0} position={[0, 10, 0]} />
+      {/* Ambient */}
+      <ambientLight color="#1A0C08" intensity={1.5} />
+
+      {/* Studio floor */}
+      <StudioFloor />
+
+      {/* Car */}
+      <Car />
+
+      {/* Floor reflection highlight strip */}
+      <pointLight color="#E07820" intensity={1.2} distance={8} position={[0, -0.6, 0]} />
+    </>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
+
+export default function NewEraAutomotive({ isVisible }: { isVisible: boolean }) {
+  const prefersReduced =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  return (
+    <div
+      style={{
+        width: W,
+        height: H,
+        background: "#050508",
+        position: "relative",
+        overflow: "hidden",
+        userSelect: "none",
+        fontFamily: "'Inter', system-ui, sans-serif",
+      }}
+    >
+      {/* 3D Canvas */}
+      <Canvas
+        style={{ position: "absolute", inset: 0 }}
+        camera={{ position: [5.5, 1.8, 8], fov: 38, near: 0.1, far: 200 }}
+        gl={{ antialias: true, alpha: false }}
+        frameloop={isVisible && !prefersReduced ? "always" : "demand"}
+        dpr={[1, 1.5]}
+      >
+        <Scene />
+      </Canvas>
+
+      {/* Gradient vignette — bottom and sides */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(to top, rgba(5,5,8,0.85) 0%, transparent 45%), linear-gradient(to right, rgba(5,5,8,0.55) 0%, transparent 30%, transparent 70%, rgba(5,5,8,0.55) 100%)",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* ── UI Overlay ── */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        {/* Top branding */}
         <div style={{ position: "absolute", top: 52, left: 72 }}>
-          <p style={{ margin: "0 0 10px", color: "rgba(212,224,245,0.3)", fontSize: 9, letterSpacing: "0.38em", textTransform: "uppercase" }}>New Era</p>
-          <h2 style={{ margin: 0, color: "#D4E0F5", fontSize: 52, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.02em", textTransform: "uppercase" }}>Automotive</h2>
-          <p style={{ margin: "12px 0 0", color: "rgba(212,224,245,0.4)", fontSize: 12, letterSpacing: "0.12em" }}>Precision. Form. Motion.</p>
+          <p
+            style={{
+              margin: "0 0 10px",
+              color: "rgba(212,224,245,0.3)",
+              fontSize: 9,
+              letterSpacing: "0.38em",
+              textTransform: "uppercase",
+            }}
+          >
+            New Era
+          </p>
+          <h2
+            style={{
+              margin: 0,
+              color: "#D4E0F5",
+              fontSize: 52,
+              fontWeight: 800,
+              lineHeight: 1,
+              letterSpacing: "-0.02em",
+              textTransform: "uppercase",
+            }}
+          >
+            Automotive
+          </h2>
+          <p
+            style={{
+              margin: "12px 0 0",
+              color: "rgba(212,224,245,0.4)",
+              fontSize: 12,
+              letterSpacing: "0.12em",
+            }}
+          >
+            Precision. Form. Motion.
+          </p>
         </div>
         <div style={{ position: "absolute", top: 52, right: 72, textAlign: "right" }}>
-          <p style={{ margin: 0, color: "rgba(212,224,245,0.2)", fontSize: 8, letterSpacing: "0.32em", textTransform: "uppercase" }}>Model Year</p>
-          <p style={{ margin: "4px 0 0", color: "rgba(212,224,245,0.45)", fontSize: 24, fontWeight: 800, letterSpacing: "0.04em" }}>2026</p>
+          <p
+            style={{
+              margin: 0,
+              color: "rgba(212,224,245,0.2)",
+              fontSize: 8,
+              letterSpacing: "0.32em",
+              textTransform: "uppercase",
+            }}
+          >
+            Model Year
+          </p>
+          <p
+            style={{
+              margin: "4px 0 0",
+              color: "rgba(212,224,245,0.45)",
+              fontSize: 24,
+              fontWeight: 800,
+              letterSpacing: "0.04em",
+            }}
+          >
+            2026
+          </p>
         </div>
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, borderTop: "1px solid rgba(212,224,245,0.07)", background: "rgba(5,5,8,0.88)", display: "flex", alignItems: "center", padding: "18px 72px", gap: 52 }}>
-          {[["680 hp","Output"],["2.9 s","0–60 mph"],["210 mph","Top Speed"],["AWD","Drivetrain"]].map(([v,l]) => (
+
+        {/* Bottom stats */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            borderTop: "1px solid rgba(212,224,245,0.07)",
+            background: "rgba(5,5,8,0.88)",
+            display: "flex",
+            alignItems: "center",
+            padding: "18px 72px",
+            gap: 52,
+          }}
+        >
+          {[
+            ["680 hp", "Output"],
+            ["2.9 s", "0–60 mph"],
+            ["210 mph", "Top Speed"],
+            ["AWD", "Drivetrain"],
+          ].map(([v, l]) => (
             <div key={l}>
-              <p style={{ margin: 0, color: "rgba(212,224,245,0.28)", fontSize: 8, letterSpacing: "0.26em", textTransform: "uppercase" }}>{l}</p>
+              <p
+                style={{
+                  margin: 0,
+                  color: "rgba(212,224,245,0.28)",
+                  fontSize: 8,
+                  letterSpacing: "0.26em",
+                  textTransform: "uppercase",
+                }}
+              >
+                {l}
+              </p>
               <p style={{ margin: "4px 0 0", color: "#D4E0F5", fontSize: 18, fontWeight: 700 }}>{v}</p>
             </div>
           ))}
           <div style={{ marginLeft: "auto", display: "flex", gap: 14 }}>
-            <span style={{ border: "1px solid rgba(212,224,245,0.2)", color: "rgba(212,224,245,0.65)", fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", padding: "10px 24px" }}>Configure</span>
-            <span style={{ background: "#D4E0F5", color: "#050508", fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 700, padding: "10px 24px" }}>Reserve Now</span>
+            <span
+              style={{
+                border: "1px solid rgba(212,224,245,0.2)",
+                color: "rgba(212,224,245,0.65)",
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                padding: "10px 24px",
+              }}
+            >
+              Configure
+            </span>
+            <span
+              style={{
+                background: "#D4E0F5",
+                color: "#050508",
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                fontWeight: 700,
+                padding: "10px 24px",
+              }}
+            >
+              Reserve Now
+            </span>
           </div>
         </div>
       </div>
