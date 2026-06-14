@@ -1,8 +1,8 @@
 "use client";
 
 // Equilibrium: pendulum physics + balance scale with damped harmonic motion.
-// The scale tips in response to pendulum position; energy lines show tension.
-// No external video — pure canvas physics simulation.
+// Scale arm tilts with pendulum; weights slide continuously across pans (physics-consequential).
+// Tension lines (sage dashed curves) show energy coupling between bob and arm ends.
 // Palette: #F4F1EC (warm cream) / #1A1814 (deep warm black) / #8FA89C (sage)
 // Pure canvas + rAF. No external dependencies.
 
@@ -13,16 +13,14 @@ const H = 900;
 const CX = W / 2;
 const CY = 280;
 
-// Pendulum physics constants
-const PEND_LEN  = 220; // px from pivot to bob
+const PEND_LEN  = 220;
 const DAMPING   = 0.9985;
 const GRAVITY   = 0.0004;
-const START_ANG = 0.42; // radians
+const START_ANG = 0.42;
 
-// Scale constants
-const SCALE_ARM  = 180; // arm half-length
-const SCALE_ROPE = 120; // rope length to pan
-const SCALE_PAN  = 90;  // pan half-width
+const SCALE_ARM  = 180;
+const SCALE_ROPE = 120;
+const SCALE_PAN  = 90;
 
 interface PendState {
   angle: number;
@@ -61,13 +59,11 @@ export default function Equilibrium({ isVisible }: { isVisible: boolean }) {
       const dt = lastRef.current ? Math.min(now - lastRef.current, 32) : 16;
       lastRef.current = now;
 
-      // Physics step (Euler)
       const { angle, velocity } = pendRef.current;
       const accel = -GRAVITY * Math.sin(angle);
       const newVel = velocity * DAMPING + accel * dt;
-      let newAng = angle + newVel * dt;
+      const newAng = angle + newVel * dt;
 
-      // If nearly stopped, restart with slight push
       if (Math.abs(newVel) < 0.0004 && Math.abs(newAng) < 0.04) {
         pendRef.current = { angle: -START_ANG, velocity: 0 };
       } else {
@@ -92,28 +88,43 @@ export default function Equilibrium({ isVisible }: { isVisible: boolean }) {
   }
 
   function drawFrame(ctx: CanvasRenderingContext2D, angle: number) {
-    // Background
     ctx.fillStyle = "#F4F1EC";
     ctx.fillRect(0, 0, W, H);
 
-    // Subtle texture gradient
     const bgGrd = ctx.createRadialGradient(CX, CY, 0, CX, H * 0.6, 680);
     bgGrd.addColorStop(0, "rgba(240,237,228,0.8)");
     bgGrd.addColorStop(1, "rgba(215,210,200,0.4)");
     ctx.fillStyle = bgGrd;
     ctx.fillRect(0, 0, W, H);
 
+    // Decorative horizontal rule lines
+    ctx.strokeStyle = "rgba(26,24,20,0.07)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++) {
+      const ry = 120 + i * 180;
+      ctx.beginPath(); ctx.moveTo(0, ry); ctx.lineTo(W, ry); ctx.stroke();
+    }
+
+    // Ghost arc showing pendulum's full swing range
+    ctx.save();
+    ctx.strokeStyle = "rgba(26,24,20,0.055)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(CX, CY, PEND_LEN, Math.PI / 2 - START_ANG - 0.06, Math.PI / 2 + START_ANG + 0.06);
+    ctx.stroke();
+    ctx.restore();
+
     // === MAIN PENDULUM ===
     const bobX = CX + Math.sin(angle) * PEND_LEN;
     const bobY = CY + Math.cos(angle) * PEND_LEN;
 
-    // Pivot point
+    // Pivot
     ctx.beginPath();
     ctx.arc(CX, CY, 10, 0, Math.PI * 2);
     ctx.fillStyle = "#1A1814";
     ctx.fill();
 
-    // Pendulum rod
+    // Rod
     ctx.beginPath();
     ctx.moveTo(CX, CY);
     ctx.lineTo(bobX, bobY);
@@ -121,7 +132,18 @@ export default function Equilibrium({ isVisible }: { isVisible: boolean }) {
     ctx.lineWidth = 2.5;
     ctx.stroke();
 
-    // Bob (weighted ball)
+    // Bob sage glow (halo that pulses with velocity)
+    const glowR = 52 + Math.abs(angle) * 30;
+    const bobGlow = ctx.createRadialGradient(bobX, bobY, 0, bobX, bobY, glowR);
+    bobGlow.addColorStop(0, "rgba(143,168,156,0.2)");
+    bobGlow.addColorStop(0.5, "rgba(143,168,156,0.07)");
+    bobGlow.addColorStop(1, "rgba(143,168,156,0)");
+    ctx.beginPath();
+    ctx.arc(bobX, bobY, glowR, 0, Math.PI * 2);
+    ctx.fillStyle = bobGlow;
+    ctx.fill();
+
+    // Bob
     const bobR = 26;
     const bobGrd = ctx.createRadialGradient(bobX - 8, bobY - 8, 0, bobX, bobY, bobR * 1.1);
     bobGrd.addColorStop(0, "#2E2A24");
@@ -131,19 +153,19 @@ export default function Equilibrium({ isVisible }: { isVisible: boolean }) {
     ctx.arc(bobX, bobY, bobR, 0, Math.PI * 2);
     ctx.fillStyle = bobGrd;
     ctx.fill();
-    // Bob highlight
     ctx.beginPath();
     ctx.arc(bobX - 9, bobY - 9, 7, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(255,255,255,0.12)";
     ctx.fill();
 
     // === BALANCE SCALE ===
-    // Scale placed below and centered
     const scaleCY = CY + PEND_LEN + 160;
     const scaleCX = CX;
-
-    // Scale responds to pendulum angle (scaled down for elegance)
     const tiltAngle = angle * 0.55;
+
+    // Sliding offset: weights shift continuously with pendulum angle.
+    // When right side dips (angle > 0), all weights drift right — consequential physics feel.
+    const slideOffset = angle * 70;
 
     // Center post
     ctx.beginPath();
@@ -159,7 +181,7 @@ export default function Equilibrium({ isVisible }: { isVisible: boolean }) {
     ctx.fillStyle = "#1A1814";
     ctx.fill();
 
-    // Arm (tilts with tiltAngle)
+    // Arm
     const armLX = scaleCX + Math.cos(Math.PI + tiltAngle) * SCALE_ARM;
     const armLY = scaleCY - 30 + Math.sin(Math.PI + tiltAngle) * SCALE_ARM;
     const armRX = scaleCX + Math.cos(tiltAngle) * SCALE_ARM;
@@ -172,12 +194,10 @@ export default function Equilibrium({ isVisible }: { isVisible: boolean }) {
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Left arm end knob
     ctx.beginPath(); ctx.arc(armLX, armLY, 5, 0, Math.PI * 2); ctx.fillStyle = "#1A1814"; ctx.fill();
-    // Right arm end knob
     ctx.beginPath(); ctx.arc(armRX, armRY, 5, 0, Math.PI * 2); ctx.fill();
 
-    // Left pan rope + pan
+    // Left pan ropes
     const lRopeX = armLX, lRopeY = armLY + SCALE_ROPE;
     ctx.beginPath();
     ctx.moveTo(armLX, armLY);
@@ -188,16 +208,7 @@ export default function Equilibrium({ isVisible }: { isVisible: boolean }) {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Left pan
-    ctx.beginPath();
-    ctx.ellipse(lRopeX, lRopeY + 3, SCALE_PAN, 10, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(26,24,20,0.15)";
-    ctx.fill();
-    ctx.strokeStyle = "#1A1814";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Right pan rope + pan
+    // Right pan ropes
     const rRopeX = armRX, rRopeY = armRY + SCALE_ROPE;
     ctx.beginPath();
     ctx.moveTo(armRX, armRY);
@@ -208,43 +219,74 @@ export default function Equilibrium({ isVisible }: { isVisible: boolean }) {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Right pan
+    // Left pan dish
     ctx.beginPath();
-    ctx.ellipse(rRopeX, rRopeY + 3, SCALE_PAN, 10, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(26,24,20,0.15)";
+    ctx.ellipse(lRopeX, lRopeY + 3, SCALE_PAN, 10, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(26,24,20,0.13)";
     ctx.fill();
     ctx.strokeStyle = "#1A1814";
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Symbolic weights on pans
-    const lPanItems = angle > 0.05 ? 3 : angle < -0.05 ? 1 : 2;
-    const rPanItems = angle < -0.05 ? 3 : angle > 0.05 ? 1 : 2;
-    const drawWeights = (panX: number, panY: number, count: number) => {
-      for (let i = 0; i < count; i++) {
-        ctx.beginPath();
-        ctx.arc(panX + (i - (count - 1) / 2) * 28, panY - 22 - i * 8, 9, 0, Math.PI * 2);
-        ctx.fillStyle = "#3A3630";
-        ctx.fill();
-      }
-    };
-    drawWeights(lRopeX, lRopeY, lPanItems);
-    drawWeights(rRopeX, rRopeY, rPanItems);
+    // Right pan dish
+    ctx.beginPath();
+    ctx.ellipse(rRopeX, rRopeY + 3, SCALE_PAN, 10, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(26,24,20,0.13)";
+    ctx.fill();
+    ctx.strokeStyle = "#1A1814";
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
-    // === TENSION LINES between pendulum bob and scale ===
+    // === SLIDING WEIGHTS ===
+    // Two dark weights + one sage accent weight per pan.
+    // All slide horizontally by slideOffset — visibly rolls with scale tilt.
+    function drawWeight(wx: number, wy: number, radius: number, isAccent: boolean) {
+      const wGrd = ctx.createRadialGradient(
+        wx - radius * 0.32, wy - radius * 0.32, 0,
+        wx, wy, radius * 1.15
+      );
+      if (isAccent) {
+        wGrd.addColorStop(0, "#B0CAC0");
+        wGrd.addColorStop(0.55, "#8FA89C");
+        wGrd.addColorStop(1, "#6A8A80");
+      } else {
+        wGrd.addColorStop(0, "#3E3A34");
+        wGrd.addColorStop(0.55, "#2A2620");
+        wGrd.addColorStop(1, "#16140F");
+      }
+      ctx.beginPath();
+      ctx.arc(wx, wy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = wGrd;
+      ctx.fill();
+      // specular highlight
+      ctx.beginPath();
+      ctx.arc(wx - radius * 0.3, wy - radius * 0.3, radius * 0.28, 0, Math.PI * 2);
+      ctx.fillStyle = isAccent ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.11)";
+      ctx.fill();
+    }
+
+    // Left pan: two dark weights side by side + sage accent on top
+    drawWeight(lRopeX - 22 + slideOffset, lRopeY - 26, 14, false);
+    drawWeight(lRopeX + 22 + slideOffset, lRopeY - 26, 14, false);
+    drawWeight(lRopeX + slideOffset * 0.65, lRopeY - 52, 10, true);
+
+    // Right pan: same layout
+    drawWeight(rRopeX - 22 + slideOffset, rRopeY - 26, 14, false);
+    drawWeight(rRopeX + 22 + slideOffset, rRopeY - 26, 14, false);
+    drawWeight(rRopeX + slideOffset * 0.65, rRopeY - 52, 10, true);
+
+    // === TENSION LINES — bob to arm ends (visible sage dashed curves) ===
     const tension = Math.abs(angle) * 2.2;
-    if (tension > 0.05) {
+    if (tension > 0.015) {
       ctx.save();
-      ctx.globalAlpha = Math.min(0.25, tension * 0.25);
+      ctx.globalAlpha = Math.min(0.58, 0.15 + tension * 0.52);
       ctx.strokeStyle = "#8FA89C";
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 8]);
-      // Bob to left arm end
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([5, 7]);
       ctx.beginPath();
       ctx.moveTo(bobX, bobY);
       ctx.quadraticCurveTo(CX - 80, (bobY + armLY) / 2, armLX, armLY);
       ctx.stroke();
-      // Bob to right arm end
       ctx.beginPath();
       ctx.moveTo(bobX, bobY);
       ctx.quadraticCurveTo(CX + 80, (bobY + armRY) / 2, armRX, armRY);
@@ -263,20 +305,11 @@ export default function Equilibrium({ isVisible }: { isVisible: boolean }) {
     ctx.fillStyle = "rgba(26,24,20,0.4)";
     ctx.fill();
 
-    // Floor shadow
     const shadowGrd = ctx.createLinearGradient(0, scaleCY + 36, 0, scaleCY + 100);
     shadowGrd.addColorStop(0, "rgba(26,24,20,0.08)");
     shadowGrd.addColorStop(1, "rgba(26,24,20,0)");
     ctx.fillStyle = shadowGrd;
     ctx.fillRect(scaleCX - 200, scaleCY + 36, 400, 64);
-
-    // Decorative horizontal rule lines
-    ctx.strokeStyle = "rgba(26,24,20,0.08)";
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 4; i++) {
-      const ry = 120 + i * 180;
-      ctx.beginPath(); ctx.moveTo(0, ry); ctx.lineTo(W, ry); ctx.stroke();
-    }
   }
 
   return (
@@ -305,7 +338,6 @@ export default function Equilibrium({ isVisible }: { isVisible: boolean }) {
           borderBottom: "1px solid rgba(26,24,20,0.08)",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {/* Logo mark — infinity-ish */}
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
               <path d="M11 4 C5 4 5 18 11 11 C17 4 17 18 11 18" stroke="#1A1814" strokeWidth="1.8" fill="none" strokeLinecap="round"/>
             </svg>
@@ -401,7 +433,6 @@ export default function Equilibrium({ isVisible }: { isVisible: boolean }) {
             </div>
           </div>
 
-          {/* Right — method badges */}
           <div style={{
             display: "flex", flexDirection: "column", gap: 12, textAlign: "right",
           }}>
