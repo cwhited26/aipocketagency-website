@@ -324,7 +324,7 @@ export default function NeoMuseum({ isVisible }: { isVisible: boolean }) {
                 {[190, 175, 160, 145, 130, 115, 100, 85, 70, 55, 40].map((x, i) => {
                   const y = 66 + i * 3.2;
                   return (
-                    <line key={i} x1={x} y1={y - 14} x2={x} y2={y + 4}
+                    <line key={`dv-${i}`} x1={x} y1={y - 14} x2={x} y2={y + 4}
                       stroke="rgba(248,245,238,0.45)" strokeWidth="1"/>
                   );
                 })}
@@ -334,7 +334,7 @@ export default function NeoMuseum({ isVisible }: { isVisible: boolean }) {
                   const rx = 160 - i * 18;
                   const ry = 72 + i * 3;
                   return (
-                    <path key={i}
+                    <path key={`rib-${i}`}
                       d={`M${rx} ${ry} C${rx - 8} ${ry + 28}, ${rx - 24} ${ry + 48}, ${rx - 32} ${ry + 52}`}
                       stroke="rgba(248,245,238,0.5)" strokeWidth="1.1" fill="none"/>
                   );
@@ -367,7 +367,7 @@ export default function NeoMuseum({ isVisible }: { isVisible: boolean }) {
                 {[8, -6, -20, -36, -50].map((x, i) => {
                   const y = 104 + i * 5;
                   return (
-                    <line key={i} x1={x} y1={y - 8} x2={x} y2={y + 6}
+                    <line key={`tv-${i}`} x1={x} y1={y - 8} x2={x} y2={y + 6}
                       stroke="rgba(248,245,238,0.35)" strokeWidth="1"/>
                   );
                 })}
