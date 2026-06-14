@@ -404,7 +404,7 @@ export default function NeoMuseum({ isVisible }: { isVisible: boolean }) {
             display: "flex", flexDirection: "column", gap: 10,
           }}>
             {CHAPTERS.map((_, i) => (
-              <div key={i} style={{
+              <div key={`dot-${i}`} style={{
                 width: i === idx ? 24 : 6,
                 height: 6,
                 background: i === idx ? "#111111" : "rgba(17,17,17,0.2)",
@@ -430,9 +430,9 @@ export default function NeoMuseum({ isVisible }: { isVisible: boolean }) {
           animation: prefersReduced ? "none" : "neo-ticker 24s linear infinite",
           whiteSpace: "nowrap",
         }}>
-          {[...Array(2)].flatMap(() =>
+          {[...Array(2)].flatMap((_, rep) =>
             CHAPTERS.map((c, i) => (
-              <span key={i} style={{
+              <span key={`ticker-${rep}-${i}`} style={{
                 color: "rgba(248,245,238,0.45)",
                 fontSize: 9, letterSpacing: "0.28em", textTransform: "uppercase",
                 marginRight: 48,
