@@ -43,6 +43,11 @@ export type Direction = {
   newUntil: string | null;
   /** The full direction body (the design spec the build lane uses), verbatim from the brain. */
   promptText: string;
+  /**
+   * When true, the gallery renders a live React animated component (AnimatedPreview) instead of a
+   * static screenshot or video. Set on the 8 motionsites-tier canvas animations (2026-06-14 batch).
+   */
+  animatedReact?: boolean;
 };
 
 export const DIRECTIONS: readonly Direction[] = [

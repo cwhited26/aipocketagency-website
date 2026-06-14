@@ -7,8 +7,14 @@
 // prospect sees which plan opens which direction before they buy.
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
+
+const AnimatedPreview = dynamic(
+  () => import("@/components/template-gallery/AnimatedPreview"),
+  { ssr: false },
+);
 
 export type PublicDirection = {
   slug: string;
@@ -20,6 +26,8 @@ export type PublicDirection = {
   tierBadge: string;
   previewStatic: string | null;
   previewAnimated: string | null;
+  /** When true, the card renders a live React animated component instead of a screenshot/video. */
+  animatedReact: boolean;
   palette: string[];
   previewBackground: string;
   previewInk: string;
@@ -55,9 +63,19 @@ function previewFontFamily(d: PublicDirection): string {
   return /serif/i.test(d.displayFont) && !/sans/i.test(d.displayFont) ? "Georgia, serif" : "inherit";
 }
 
-/** A direction's preview: the captured still, the 4s demo clip on hover / in the modal, or the styled placeholder. */
+/** A direction's preview: live React animation, captured still, 4s demo clip, or styled placeholder. */
 function DirectionPreview({ d, large }: { d: PublicDirection; large?: boolean }) {
   const [hovered, setHovered] = useState(false);
+  if (d.animatedReact) {
+    return (
+      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 9" }}>
+        <AnimatedPreview slug={d.slug} />
+        <span className="absolute right-2 top-2 rounded bg-black/50 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-white/90">
+          Live
+        </span>
+      </div>
+    );
+  }
   if (!d.previewStatic) return <PlaceholderPreview d={d} large={large} />;
   const playVideo = d.previewAnimated !== null && (large || hovered);
   return (

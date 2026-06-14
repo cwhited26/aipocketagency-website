@@ -55,6 +55,7 @@ export default function PublicTemplatesPage() {
           : `Included in ${directionTierLabel(d.tierRequired)}`,
       previewStatic: d.visualPreview.static,
       previewAnimated: d.visualPreview.animated,
+      animatedReact: d.animatedReact ?? false,
       palette: d.colorPalette.slice(0, 4),
       previewBackground: roles.background,
       previewInk: roles.ink,

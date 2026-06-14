@@ -6,6 +6,7 @@
 // orchestrator use for both template kinds. Pure data + synthesis, no I/O.
 
 import { DIRECTIONS, type Direction, type DirectionTier } from "@/data/landing-page-templates/directions";
+import { ANIMATED_DIRECTIONS } from "@/data/landing-page-templates/animated-directions";
 import { tierRank, type Tier } from "@/lib/personas/tier-caps";
 import { getTemplate } from "./templates";
 import type { LandingTemplate } from "./types";
@@ -21,11 +22,12 @@ export function directionRef(slug: string): string {
   return `${DIRECTION_REF_PREFIX}${slug}`;
 }
 
-const BY_SLUG = new Map<string, Direction>(DIRECTIONS.map((d) => [d.slug, d]));
+const ALL_DIRECTIONS: readonly Direction[] = [...DIRECTIONS, ...ANIMATED_DIRECTIONS];
+const BY_SLUG = new Map<string, Direction>(ALL_DIRECTIONS.map((d) => [d.slug, d]));
 
 /** All directions in unlock-ladder order (the gallery's display order). */
 export function listDirections(): readonly Direction[] {
-  return DIRECTIONS;
+  return ALL_DIRECTIONS;
 }
 
 export function getDirection(slug: string): Direction | null {

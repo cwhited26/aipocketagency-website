@@ -7,8 +7,14 @@
 // starter templates ride at the bottom as the quick-start fallback.
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
+
+const AnimatedPreview = dynamic(
+  () => import("@/components/template-gallery/AnimatedPreview"),
+  { ssr: false },
+);
 import type { LandingPageView } from "@/lib/landing-pages/types";
 import WizardScopeStep, { type ScopeSelection } from "@/components/landing-pages/wizard/WizardScopeStep";
 import WizardDsStep, { type DsSelection } from "@/components/landing-pages/wizard/WizardDsStep";
@@ -25,6 +31,8 @@ export type GalleryDirection = {
   previewStatic: string | null;
   /** 4s muted demo clip — non-null only when the owner's tier unlocks animated previews. */
   previewAnimated: string | null;
+  /** When true, the card renders a live React animated component instead of a screenshot/video. */
+  animatedReact: boolean;
   palette: string[];
   previewBackground: string;
   previewInk: string;
@@ -80,13 +88,21 @@ function previewFontFamily(d: GalleryDirection): string {
 }
 
 /**
- * A direction's visual preview (PA-TG-3). With a captured still it renders the real screenshot;
- * with an animated clip it plays it in the detail modal and on card hover (Studio+ only — the
- * server nulls previewAnimated below that tier). Without a capture it falls back to the styled
- * placeholder so the other directions keep their "Real preview coming" chip.
+ * A direction's visual preview (PA-TG-3). Live React animation when animatedReact is true;
+ * captured still + animated clip otherwise; styled placeholder as fallback.
  */
 function DirectionPreview({ d, large }: { d: GalleryDirection; large?: boolean }) {
   const [hovered, setHovered] = useState(false);
+  if (d.animatedReact) {
+    return (
+      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 9" }}>
+        <AnimatedPreview slug={d.slug} />
+        <span className="absolute right-2 top-2 rounded bg-black/50 px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-white/90">
+          Live
+        </span>
+      </div>
+    );
+  }
   if (!d.previewStatic) return <PlaceholderPreview d={d} large={large} />;
   const playVideo = d.previewAnimated !== null && (large || hovered);
   return (

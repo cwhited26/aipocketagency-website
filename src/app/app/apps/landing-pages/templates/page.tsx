@@ -64,6 +64,7 @@ export default async function TemplateGalleryPage() {
       tierLabel: directionTierLabel(d.tierRequired),
       previewStatic: d.visualPreview.static,
       previewAnimated: animatedUnlocked ? d.visualPreview.animated : null,
+      animatedReact: d.animatedReact ?? false,
       palette: d.colorPalette.slice(0, 4),
       previewBackground: roles.background,
       previewInk: roles.ink,
