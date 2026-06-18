@@ -132,7 +132,7 @@ export default function SkillsClient({ hasBrain }: { hasBrain: boolean }) {
   }, [hasBrain, load]);
 
   return (
-    <div className="min-h-screen bg-[#070c11] text-slate-200">
+    <div className="min-h-full bg-[#070c11] text-slate-200">
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-10 lg:py-14 flex flex-col gap-8">
         <header className="flex flex-col gap-3">
           <h1 className="text-2xl font-semibold text-slate-100">{SKILLS.header.headline}</h1>

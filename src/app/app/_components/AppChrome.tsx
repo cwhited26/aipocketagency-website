@@ -21,10 +21,11 @@ export default function AppChrome({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-[#05070a] text-slate-100 overflow-hidden">
       <AppNav />
       <CommandPalette />
-      {/* Mobile top bar spacer */}
-      {/* mob-top-spacer matches mob-top-bar height and self-resets to 0 on lg+.
-           safe-pb clears the iPhone home indicator at the bottom. */}
-      <main className="flex-1 min-w-0 overflow-hidden mob-top-spacer safe-pb">{children}</main>
+      {/* mob-top-spacer clears the fixed mobile top bar. safe-pb clears the iPhone
+          home indicator via env(safe-area-inset-bottom). overflow-x-hidden prevents
+          horizontal bleed; overflow-y-auto lets every page scroll — pages that own
+          their own inner scroll (e.g. brain-map) use min-h-full and let this scroll. */}
+      <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto mob-top-spacer safe-pb">{children}</main>
     </div>
   );
 }
