@@ -353,8 +353,8 @@ export default function AppNav() {
 
   return (
     <>
-      {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 inset-x-0 z-40 h-12 flex items-center px-4 bg-[#070c11] border-b border-slate-800/60">
+      {/* Mobile top bar — mob-top-bar extends behind the iPhone notch/Dynamic Island */}
+      <div className="lg:hidden fixed top-0 inset-x-0 z-40 mob-top-bar flex items-center px-4 bg-[#070c11] border-b border-slate-800/60">
         <button
           onClick={() => setMobileOpen(true)}
           className="text-slate-500 hover:text-slate-200 transition-colors p-2.5 -ml-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center"

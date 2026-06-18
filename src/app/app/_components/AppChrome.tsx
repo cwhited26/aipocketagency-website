@@ -22,7 +22,9 @@ export default function AppChrome({ children }: { children: React.ReactNode }) {
       <AppNav />
       <CommandPalette />
       {/* Mobile top bar spacer */}
-      <main className="flex-1 min-w-0 overflow-hidden lg:pt-0 pt-12">{children}</main>
+      {/* mob-top-spacer matches mob-top-bar height and self-resets to 0 on lg+.
+           safe-pb clears the iPhone home indicator at the bottom. */}
+      <main className="flex-1 min-w-0 overflow-hidden mob-top-spacer safe-pb">{children}</main>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -15,11 +15,26 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#22d3ee",
+};
+
 export const metadata: Metadata = {
   title: "Pocket Agent — by AI Pocket Agency",
   description:
     "AI Pocket Agency — home of Pocket Agent. We give your business a memory. $37/mo, 14-day free trial.",
   metadataBase: new URL("https://aipocketagent.com"),
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Pocket Agent",
+    statusBarStyle: "black-translucent",
+  },
   openGraph: {
     title: "Pocket Agent — by AI Pocket Agency",
     description:
@@ -47,8 +62,9 @@ export const metadata: Metadata = {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon.png", type: "image/png" },
+      { url: "/icons/icon-32.png", sizes: "32x32", type: "image/png" },
     ],
-    apple: "/apple-touch-icon.png",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
 };
 

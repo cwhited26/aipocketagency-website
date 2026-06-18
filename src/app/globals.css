@@ -306,7 +306,35 @@ body {
   border-bottom: 1px solid rgba(30, 41, 59, 0.8);
 }
 
-/* radial glow */
+/* ─── PWA safe-area insets ─────────────────────────────────────────────────── */
+/* viewport-fit=cover is set on the <head> viewport export; that makes
+   env(safe-area-inset-*) non-zero on iPhone. These classes wire it into
+   the app shell so content never hides behind the Dynamic Island or the
+   home indicator when Pocket Agent runs as a standalone PWA. */
+
+/* Mobile top bar: grows behind the status bar area */
+.mob-top-bar {
+  height: calc(3rem + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Matching spacer pushed down the scroll container — resets to 0 on desktop
+   because the sidebar is on the left and there is no fixed top bar. */
+.mob-top-spacer {
+  padding-top: calc(3rem + env(safe-area-inset-top, 0px));
+}
+@media (min-width: 1024px) {
+  .mob-top-spacer {
+    padding-top: 0;
+  }
+}
+
+/* Bottom inset for the home indicator — applied to the last fixed/scroll element */
+.safe-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ─── radial glow */
 .bg-hero-glow {
   background: radial-gradient(
       80% 50% at 50% 0%,
