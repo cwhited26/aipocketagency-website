@@ -21,3 +21,24 @@ names the lane that filed it and what unblocks it. Delete entries as they're cle
 
 No new required env vars. Optional: `PA_CHROMIUM_EXECUTABLE` to point local dev at a specific
 Chrome/Chromium binary.
+
+## PWA iOS splash screens (PWA lane, 2026-06-17)
+
+The manifest + icons + safe-area insets are live. The one remaining polish item is Apple-specific
+startup images — the white flash you see for ~200ms before the app shell paints when launched
+from the home screen. Each iPhone screen size needs its own `apple-touch-startup-image` link.
+
+**If you want to complete this:**
+1. Generate splash PNGs at the common sizes (background `#05070a`, centered brand mark):
+   - 430×932 (iPhone 15 Pro Max)
+   - 393×852 (iPhone 15 Pro)  
+   - 390×844 (iPhone 14 / 13)
+   - 375×812 (iPhone 13 mini / X)
+   - 375×667 (iPhone SE)
+   Scale by 3× for actual image dimensions; use `public/icons/` as the output dir.
+2. Add `<link rel="apple-touch-startup-image">` entries to `src/app/layout.tsx` using
+   Next.js's metadata `icons` array or a custom `<head>` block.
+3. Spec: https://developer.apple.com/design/human-interface-guidelines/launching#iOS-iPadOS
+
+`background_color: #05070a` in the manifest already suppresses the white flash on Android.
+iOS truly needs the startup images for the equivalent treatment.
