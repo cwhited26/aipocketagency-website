@@ -81,11 +81,20 @@ export type Gap = {
   message: string;
 };
 
+export type OpenQuestion = {
+  filePath: string;
+  anchor: string;
+  name: string;
+  description: string | null;
+  bodyExcerpt: string | null;
+};
+
 export type BrainGraph = {
   nodes: BrainNode[];
   edges: BrainEdge[];
   areas: AreaCount[];
   gaps: Gap[];
+  openQuestions: OpenQuestion[];
   fileCount: number;
 };
 
@@ -632,11 +641,19 @@ export function buildGraphFromFiles(
   const clipLabel = (text: string): string =>
     text.length > 48 ? `${text.slice(0, 47).trimEnd()}…` : text;
 
-  let openQuestionCount = 0;
+  const openQuestions: OpenQuestion[] = [];
   for (const f of files) {
     const deepKind = classifyDeepPath(f.path);
     if (deepKind === "open_question") {
-      openQuestionCount += extractOpenQuestionEntries(f.path, f.content).length;
+      for (const e of extractOpenQuestionEntries(f.path, f.content)) {
+        openQuestions.push({
+          filePath: e.filePath,
+          anchor: e.path.includes("#") ? e.path.split("#")[1] : "",
+          name: e.name,
+          description: e.description,
+          bodyExcerpt: e.bodyExcerpt,
+        });
+      }
       continue;
     }
     if (deepKind === "spec") {
@@ -701,7 +718,8 @@ export function buildGraphFromFiles(
     nodes,
     edges,
     areas: computeAreaCounts(nodes),
-    gaps: computeGaps(nodes, files, { openQuestions: openQuestionCount }),
+    gaps: computeGaps(nodes, files, { openQuestions: openQuestions.length }),
+    openQuestions,
     fileCount: files.length,
   };
 }

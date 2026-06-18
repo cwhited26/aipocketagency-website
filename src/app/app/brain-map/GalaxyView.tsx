@@ -9,6 +9,7 @@ import type {
   BrainGraph,
   BrainNode,
   KnowledgeArea,
+  OpenQuestion,
 } from "@/lib/brain/graph";
 
 // ── Area colors / labels ─────────────────────────────────────────────────────
@@ -323,7 +324,7 @@ export default function GalaxyView({ brainRepo }: { brainRepo: string | null }) 
       <KnowledgeStrip areas={graph.areas} nodeCount={graph.nodes.length} />
 
       {/* Gaps */}
-      <GapsPanel gaps={graph.gaps} />
+      <GapsPanel gaps={graph.gaps} openQuestions={graph.openQuestions} />
 
       {/* Graph canvas */}
       <div
@@ -529,9 +530,53 @@ function KnowledgeStrip({
   );
 }
 
-function GapsPanel({ gaps }: { gaps: BrainGraph["gaps"] }) {
+function GapsPanel({
+  gaps,
+  openQuestions: initialOQ,
+}: {
+  gaps: BrainGraph["gaps"];
+  openQuestions: OpenQuestion[];
+}) {
   const [open, setOpen] = useState(true);
-  if (gaps.length === 0) {
+  const [oqExpanded, setOqExpanded] = useState(false);
+  const [questions, setQuestions] = useState<OpenQuestion[]>(initialOQ);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<Record<string, boolean>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const oqKey = (q: OpenQuestion): string => `${q.filePath}#${q.anchor}`;
+
+  const handleSave = async (q: OpenQuestion): Promise<void> => {
+    const key = oqKey(q);
+    const answer = (answers[key] ?? "").trim();
+    if (!answer) return;
+    setSaving((s) => ({ ...s, [key]: true }));
+    setErrors((e) => ({ ...e, [key]: "" }));
+    try {
+      const res = await fetch("/api/app/brain/open-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filePath: q.filePath,
+          questionName: q.name,
+          answer,
+        }),
+      });
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        throw new Error(data.error ?? `HTTP ${res.status}`);
+      }
+      // Remove the answered question from local state — counter decrements naturally.
+      setQuestions((qs) => qs.filter((x) => oqKey(x) !== key));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      setErrors((e) => ({ ...e, [key]: msg }));
+    } finally {
+      setSaving((s) => ({ ...s, [key]: false }));
+    }
+  };
+
+  if (gaps.length === 0 && questions.length === 0) {
     return (
       <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
         <p className="text-sm text-emerald-300/90">
@@ -541,6 +586,7 @@ function GapsPanel({ gaps }: { gaps: BrainGraph["gaps"] }) {
       </div>
     );
   }
+
   return (
     <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 overflow-hidden">
       <button
@@ -555,18 +601,106 @@ function GapsPanel({ gaps }: { gaps: BrainGraph["gaps"] }) {
           {open ? "hide" : "show"}
         </span>
       </button>
+
       {open && (
         <div className="px-4 pb-3 flex flex-col gap-2">
-          {gaps.map((g) => (
-            <div key={g.area} className="flex items-start gap-2.5">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300/70 mt-0.5 shrink-0 w-24">
-                {g.area}
-              </span>
-              <p className="text-sm text-slate-300 leading-snug flex-1">{g.message}</p>
-            </div>
-          ))}
+          {gaps.map((g) => {
+            const isOQ = g.area === "Open questions" && questions.length > 0;
+            return (
+              <div key={g.area} className="flex flex-col gap-1.5">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-amber-300/70 mt-0.5 shrink-0 w-24">
+                    {g.area}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-slate-300 leading-snug">{g.message}</p>
+                    {isOQ && (
+                      <button
+                        onClick={() => setOqExpanded((x) => !x)}
+                        className="mt-1 text-[11px] font-mono text-amber-300/80 hover:text-amber-200 transition-colors"
+                      >
+                        {oqExpanded
+                          ? "▲ hide questions"
+                          : `▼ see ${questions.length} question${questions.length === 1 ? "" : "s"}`}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {isOQ && oqExpanded && (
+                  <OpenQuestionsInline
+                    questions={questions}
+                    answers={answers}
+                    saving={saving}
+                    errors={errors}
+                    onAnswer={(key, val) => setAnswers((a) => ({ ...a, [key]: val }))}
+                    onSave={handleSave}
+                    oqKey={oqKey}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
+    </div>
+  );
+}
+
+function OpenQuestionsInline({
+  questions,
+  answers,
+  saving,
+  errors,
+  onAnswer,
+  onSave,
+  oqKey,
+}: {
+  questions: OpenQuestion[];
+  answers: Record<string, string>;
+  saving: Record<string, boolean>;
+  errors: Record<string, string>;
+  onAnswer: (key: string, val: string) => void;
+  onSave: (q: OpenQuestion) => Promise<void>;
+  oqKey: (q: OpenQuestion) => string;
+}) {
+  return (
+    <div className="ml-[calc(1rem+6rem)] flex flex-col gap-3 pb-1">
+      {questions.map((q) => {
+        const key = oqKey(q);
+        const isSaving = saving[key] ?? false;
+        const err = errors[key] ?? "";
+        const val = answers[key] ?? "";
+        return (
+          <div
+            key={key}
+            className="rounded-xl border border-amber-500/15 bg-[#0b0f14] px-3 py-3 flex flex-col gap-2"
+          >
+            <p className="text-xs font-medium text-amber-100 leading-snug">{q.name}</p>
+            {q.description && (
+              <p className="text-[11px] text-slate-400 leading-snug">{q.description}</p>
+            )}
+            <textarea
+              value={val}
+              onChange={(e) => onAnswer(key, e.target.value)}
+              placeholder="Write your answer here…"
+              rows={3}
+              disabled={isSaving}
+              className="w-full rounded-lg border border-slate-700/60 bg-slate-800/50 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 resize-none focus:outline-none focus:border-amber-500/40 disabled:opacity-50 transition-colors"
+            />
+            {err && <p className="text-[11px] text-red-400">{err}</p>}
+            <div className="flex justify-end">
+              <button
+                onClick={() => void onSave(q)}
+                disabled={isSaving || val.trim().length === 0}
+                className="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-xs font-medium text-amber-200 hover:bg-amber-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isSaving ? "Saving…" : "Save answer"}
+              </button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

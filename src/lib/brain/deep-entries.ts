@@ -271,6 +271,13 @@ export function extractOpenQuestionEntries(filePath: string, content: string): D
   let current: { heading: string; body: string[] } | null = null;
   const flush = (): void => {
     if (!current) return;
+    // A heading whose body contains **Answered: has been resolved — skip it so
+    // the counter and list only reflect genuinely open questions.
+    const isAnswered = current.body.some((l) => /^\*\*Answered/i.test(l.trim()));
+    if (isAnswered) {
+      current = null;
+      return;
+    }
     const headText = stripMarkdown(current.heading);
     const firstToken = headText.split(/\s+/)[0];
     const ref = CODED_ID.test(firstToken) ? firstToken : null;
