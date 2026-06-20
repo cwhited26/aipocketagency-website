@@ -30,8 +30,11 @@ const createSchema = z.object({
   /** A starter template id or a gallery direction ref ("direction:<slug>") — resolved below. */
   template: z.string().min(1).max(120),
   projectId: z.string().uuid().optional(),
-  /** Repo-relative scope path from the wizard picker (PA-LPB-7). Sanitized server-side. */
-  brainScope: z.string().max(200).optional(),
+  /** Repo-relative scope path from the wizard picker (PA-LPB-7). Sanitized server-side.
+   * Nullable: the gallery client sends `null` when the scope picker is set to
+   * "me / my business" (no project scope). Accept that explicitly so the wizard
+   * doesn't bounce with a Zod `invalid_type` on a legitimate empty selection. */
+  brainScope: z.string().max(200).nullable().optional(),
 });
 
 export async function GET(): Promise<NextResponse> {
