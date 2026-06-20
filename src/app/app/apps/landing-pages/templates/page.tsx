@@ -20,6 +20,10 @@ import {
 import { listTemplates } from "@/lib/landing-pages/templates";
 import { getMoonchildConfig } from "@/lib/connectors/moonchild/client";
 import { fetchMoonchildConnectionPublic } from "@/lib/pa-moonchild-connections";
+import { fetchGithubBuildConnectionPublic } from "@/lib/pa-github-build-connections";
+import { fetchVercelConnectionPublic } from "@/lib/pa-vercel-connections";
+import { isGithubBuildOAuthConfigured } from "@/lib/connectors/github-build/oauth";
+import { buildConnectorHref } from "@/lib/build-tools/onboarding";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import TemplateGalleryClient, { type GalleryDirection } from "./TemplateGalleryClient";
@@ -37,11 +41,22 @@ export default async function TemplateGalleryPage() {
   if (!paResult.ok || !paResult.data) redirect("/app/onboarding");
   const paUser = paResult.data;
 
-  const [tier, moonchildConn] = await Promise.all([
+  const [tier, moonchildConn, githubBuildConn, vercelConn] = await Promise.all([
     getCurrentTier(user.id),
     fetchMoonchildConnectionPublic(user.id),
+    fetchGithubBuildConnectionPublic(user.id),
+    fetchVercelConnectionPublic(user.id),
   ]);
   const canBuild = tierAllowsLandingPageBuilder(tier);
+  // Build Tools pre-flight (PA-BUILDONBOARD-1): the Build button intercepts when GitHub or Vercel
+  // isn't connected, so a page commits to the owner's own repo and deploys to their own URL.
+  const githubOAuthConfigured = isGithubBuildOAuthConfigured();
+  const buildTools = {
+    githubConnected: (githubBuildConn.ok ? githubBuildConn.data?.status : null) === "active",
+    vercelConnected: (vercelConn.ok ? vercelConn.data?.status : null) === "active",
+    githubHref: buildConnectorHref("github_build", { githubOAuthConfigured }),
+    vercelHref: buildConnectorHref("vercel", { githubOAuthConfigured }),
+  };
   // Animated previews are the Studio+ unlock (SPEC Phase 2); below that the card shows the still.
   const animatedUnlocked = tierRank(tier) >= tierRank("studio_plus");
   const moonchildOwnerConnected =
@@ -130,6 +145,7 @@ export default async function TemplateGalleryPage() {
           hasApiKey={Boolean(paUser.anthropic_api_key)}
           brainConnected={Boolean(paUser.brain_repo)}
           moonchildOwnerConnected={moonchildOwnerConnected}
+          buildTools={buildTools}
         />
       </div>
     </div>

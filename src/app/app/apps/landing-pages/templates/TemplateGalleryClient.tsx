@@ -18,6 +18,15 @@ const AnimatedPreview = dynamic(
 import type { LandingPageView } from "@/lib/landing-pages/types";
 import WizardScopeStep, { type ScopeSelection } from "@/components/landing-pages/wizard/WizardScopeStep";
 import WizardDsStep, { type DsSelection } from "@/components/landing-pages/wizard/WizardDsStep";
+import { BuildToolsValueStack } from "@/components/build-tools/BuildToolsValueStack";
+import { PAGE_VALUE_STACK, type PreflightConnector } from "@/lib/build-tools/onboarding";
+
+export type GalleryBuildTools = {
+  githubConnected: boolean;
+  vercelConnected: boolean;
+  githubHref: string;
+  vercelHref: string;
+};
 
 export type GalleryDirection = {
   slug: string;
@@ -62,6 +71,7 @@ type Props = {
   hasApiKey: boolean;
   brainConnected: boolean;
   moonchildOwnerConnected: boolean;
+  buildTools: GalleryBuildTools;
 };
 
 const USE_CASE_LABEL: Record<string, string> = {
@@ -222,6 +232,7 @@ export default function TemplateGalleryClient({
   hasApiKey,
   brainConnected,
   moonchildOwnerConnected,
+  buildTools,
 }: Props) {
   const [vibeFilters, setVibeFilters] = useState<string[]>([]);
   const [industryFilters, setIndustryFilters] = useState<string[]>([]);
@@ -640,6 +651,7 @@ export default function TemplateGalleryClient({
           hasApiKey={hasApiKey}
           brainConnected={brainConnected}
           moonchildOwnerConnected={moonchildOwnerConnected}
+          buildTools={buildTools}
           onClose={() => setUseTarget(null)}
         />
       )}
@@ -679,6 +691,7 @@ function UseTemplateModal({
   hasApiKey,
   brainConnected,
   moonchildOwnerConnected,
+  buildTools,
   onClose,
 }: {
   target: UseTarget;
@@ -686,12 +699,22 @@ function UseTemplateModal({
   hasApiKey: boolean;
   brainConnected: boolean;
   moonchildOwnerConnected: boolean;
+  buildTools: GalleryBuildTools;
   onClose: () => void;
 }) {
   const templateName = target.kind === "direction" ? target.d.name : target.t.label;
   const templateRef = target.kind === "direction" ? `direction:${target.d.slug}` : target.t.id;
 
-  const [step, setStep] = useState<"form" | "confirm" | "done">("form");
+  // Build Tools pre-flight — the connectors a page needs to ship that aren't on yet (PA-BUILDONBOARD-1).
+  const missingConnectors: PreflightConnector[] = [];
+  if (!buildTools.githubConnected) {
+    missingConnectors.push({ id: "github_build", name: "GitHub", buttonLabel: "Connect GitHub →", href: buildTools.githubHref });
+  }
+  if (!buildTools.vercelConnected) {
+    missingConnectors.push({ id: "vercel", name: "Vercel", buttonLabel: "Connect Vercel →", href: buildTools.vercelHref });
+  }
+
+  const [step, setStep] = useState<"form" | "confirm" | "connect" | "done">("form");
   const [title, setTitle] = useState(templateName.split("—")[0]?.trim() ?? templateName);
   const [headline, setHeadline] = useState("");
   const [paPicksColor, setPaPicksColor] = useState(true);
@@ -959,7 +982,15 @@ function UseTemplateModal({
             <div className="mt-4 flex items-center gap-3">
               <button
                 type="button"
-                onClick={fireBuild}
+                onClick={() => {
+                  // Intercept before the POST: a page commits to the owner's GitHub and deploys to
+                  // their Vercel, so both have to be connected first (PA-BUILDONBOARD-1).
+                  if (missingConnectors.length > 0) {
+                    setStep("connect");
+                    return;
+                  }
+                  void fireBuild();
+                }}
                 disabled={submitting || !hasApiKey}
                 className="rounded-lg bg-[#22d3ee] px-4 py-2.5 text-sm font-semibold text-[#06121a] hover:bg-[#22d3ee]/90 disabled:opacity-50"
               >
@@ -974,6 +1005,27 @@ function UseTemplateModal({
                 ← Back
               </button>
             </div>
+          </div>
+        ) : step === "connect" ? (
+          <div className="mt-5">
+            <BuildToolsValueStack
+              eyebrow="One step before your first page"
+              title="You're 30 seconds away from your first page."
+              valueStack={PAGE_VALUE_STACK}
+              connectors={missingConnectors}
+              footer={
+                missingConnectors.length > 1
+                  ? "Once both are connected, hit Build again."
+                  : "Once it's connected, hit Build again."
+              }
+            />
+            <button
+              type="button"
+              onClick={() => setStep("confirm")}
+              className="mt-4 text-[13px] text-slate-400 hover:text-slate-200"
+            >
+              ← Back
+            </button>
           </div>
         ) : (
           <div className="mt-4">

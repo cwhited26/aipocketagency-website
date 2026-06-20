@@ -5,7 +5,12 @@ import {
   tierAllowsLandingPageBuilder,
   tierCanSeeLandingPageBuilder,
   tierAllowsIdeaEngine,
+  tierAllowsIdeaEngineAutoBuild,
 } from "@/lib/personas/tier-caps";
+import { fetchGithubBuildConnectionPublic } from "@/lib/pa-github-build-connections";
+import { fetchVercelConnectionPublic } from "@/lib/pa-vercel-connections";
+import { fetchSupabaseConnectionPublic } from "@/lib/pa-supabase-connections";
+import { CONNECTIONS_HREF, connectPillLabel } from "@/lib/build-tools/onboarding";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { GlowCard } from "../_components/GlowCard";
@@ -52,10 +57,33 @@ export default async function AppsPage() {
   // vanishing on lower tiers is what made a paying customer think it wasn't shipped). The Idea Engine
   // app page enforces the real gate and shows the same upgrade state for anyone who follows the card.
   const canUseIdeaEngine = tierAllowsIdeaEngine(tier);
+  const ideaEngineAutoBuild = tierAllowsIdeaEngineAutoBuild(tier);
   const visibleApps = apps.filter((app) => {
     if (app.id === "landing-page-builder") return tierCanSeeLandingPageBuilder(tier);
     return true;
   });
+
+  // Build Tools pre-flight (PA-BUILDONBOARD-1): a build-grade App the tier unlocks but can't run
+  // without its connectors shows a pill instead of letting the owner hit a "Connect Vercel first"
+  // error mid-build. Connected state is read from the connection rows — no new tables.
+  const [githubBuildResult, vercelResult, supabaseResult] = await Promise.all([
+    fetchGithubBuildConnectionPublic(user.id),
+    fetchVercelConnectionPublic(user.id),
+    fetchSupabaseConnectionPublic(user.id),
+  ]);
+  const githubConnected = (githubBuildResult.ok ? githubBuildResult.data?.status : null) === "active";
+  const vercelConnected = (vercelResult.ok ? vercelResult.data?.status : null) === "active";
+  const supabaseConnected = (supabaseResult.ok ? supabaseResult.data?.status : null) === "active";
+
+  function missingConnectionsFor(appId: string): number {
+    if (appId === "landing-page-builder" && canBuildLandingPages) {
+      return [githubConnected, vercelConnected].filter((c) => !c).length;
+    }
+    if (appId === "idea-engine" && canUseIdeaEngine && ideaEngineAutoBuild) {
+      return [githubConnected, vercelConnected, supabaseConnected].filter((c) => !c).length;
+    }
+    return 0;
+  }
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">
@@ -133,8 +161,13 @@ export default async function AppsPage() {
             // tier each App unlocks at — Studio for the builder, Pro+ for the Idea Engine.
             const locked = lockedLandingPages || lockedIdeaEngine;
             const unlockTier = lockedLandingPages ? "Studio" : "Pro+";
+            // Tier allows the App but a required Build Tool isn't connected: send the card to
+            // Connections so the click pre-flights instead of erroring mid-build.
+            const missingConnections = locked ? 0 : missingConnectionsFor(app.id);
+            const needsConnections = missingConnections > 0;
+            const cardHref = needsConnections ? CONNECTIONS_HREF : app.href;
             return (
-              <GlowCard key={app.href} href={app.href} className="px-5 py-5 group">
+              <GlowCard key={app.href} href={cardHref} className="px-5 py-5 group">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <h2 className="text-sm font-semibold text-slate-100">{app.label}</h2>
                   <span
@@ -151,8 +184,17 @@ export default async function AppsPage() {
                     Powered by {DIRECTION_COUNTS.total} distinct templates
                   </p>
                 )}
+                {needsConnections && (
+                  <span className="mt-2 inline-flex items-center rounded-full border border-[#22d3ee]/40 bg-[#22d3ee]/10 px-2.5 py-0.5 text-[11px] font-medium text-[#22d3ee]">
+                    {connectPillLabel(missingConnections)}
+                  </span>
+                )}
                 <div className="mt-3 text-[11px] text-[#22d3ee]/50 group-hover:text-[#22d3ee] transition-colors font-mono">
-                  {locked ? `Upgrade to ${unlockTier} →` : "Open →"}
+                  {locked
+                    ? `Upgrade to ${unlockTier} →`
+                    : needsConnections
+                      ? connectPillLabel(missingConnections)
+                      : "Open →"}
                 </div>
               </GlowCard>
             );

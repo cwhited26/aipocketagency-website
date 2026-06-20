@@ -2,6 +2,16 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { getCurrentTier, tierAllowsIdeaEngine, tierAllowsIdeaEngineAutoBuild } from "@/lib/personas/tier-caps";
 import { listIdeas } from "@/lib/idea-engine/store";
+import { fetchGithubBuildConnectionPublic } from "@/lib/pa-github-build-connections";
+import { fetchVercelConnectionPublic } from "@/lib/pa-vercel-connections";
+import { fetchSupabaseConnectionPublic } from "@/lib/pa-supabase-connections";
+import { isGithubBuildOAuthConfigured } from "@/lib/connectors/github-build/oauth";
+import {
+  MVP_VALUE_STACK,
+  missingBuildConnectors,
+  requiredBuildConnectors,
+} from "@/lib/build-tools/onboarding";
+import { BuildToolsValueStack } from "@/components/build-tools/BuildToolsValueStack";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { IdeaEngineClient, type IdeaListItem } from "./IdeaEngineClient";
@@ -42,6 +52,28 @@ export default async function IdeaEnginePage() {
   }
 
   const autoBuild = tierAllowsIdeaEngineAutoBuild(tier);
+
+  // Build Tools pre-flight (PA-BUILDONBOARD-1): auto-build ships the MVP to the owner's own GitHub,
+  // Vercel, and Supabase. Surface what's missing up front so the chain doesn't stall at a build gate.
+  const [githubBuildConn, vercelConn, supabaseConn] = autoBuild
+    ? await Promise.all([
+        fetchGithubBuildConnectionPublic(user.id),
+        fetchVercelConnectionPublic(user.id),
+        fetchSupabaseConnectionPublic(user.id),
+      ])
+    : [null, null, null];
+  const missingConnectors = autoBuild
+    ? missingBuildConnectors({
+        ids: requiredBuildConnectors(tier),
+        connected: {
+          github_build: (githubBuildConn?.ok ? githubBuildConn.data?.status : null) === "active",
+          vercel: (vercelConn?.ok ? vercelConn.data?.status : null) === "active",
+          supabase: (supabaseConn?.ok ? supabaseConn.data?.status : null) === "active",
+        },
+        githubOAuthConfigured: isGithubBuildOAuthConfigured(),
+      })
+    : [];
+
   const ideasRes = await listIdeas(user.id);
   const ideas: IdeaListItem[] = ideasRes.ok
     ? ideasRes.data.map((i) => ({
@@ -86,6 +118,18 @@ export default async function IdeaEnginePage() {
             </div>
           )}
         </div>
+
+        {missingConnectors.length > 0 && (
+          <div className="mb-7 rounded-2xl border border-[#22d3ee]/25 bg-[#22d3ee]/[0.04] px-5 py-5">
+            <BuildToolsValueStack
+              eyebrow="Before your first build"
+              title="Connect your accounts and the MVP ships to you."
+              valueStack={MVP_VALUE_STACK}
+              connectors={missingConnectors}
+              footer="Connect what your MVP needs. Skip Supabase if your idea is static — the build runs gate by approved gate either way."
+            />
+          </div>
+        )}
 
         <IdeaEngineClient ideas={ideas} hasApiKey={Boolean(pa.data.anthropic_api_key)} />
       </div>
