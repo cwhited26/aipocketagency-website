@@ -41,6 +41,11 @@ import {
   RECALL_AI_CONNECTOR,
   type RecallAiExecuteResult,
 } from "./recall-ai/actions";
+import {
+  executeDeepgramAction,
+  DEEPGRAM_CONNECTOR,
+  type DeepgramExecuteResult,
+} from "./deepgram/actions";
 
 // All in-process executors share the same terminal result shape ({ok,summary,data} |
 // {ok,status,error}); the union keeps that explicit as more connectors register.
@@ -54,7 +59,8 @@ export type ConnectorExecuteResult =
   | VercelExecuteResult
   | SupabaseExecuteResult
   | BrainExecuteResult
-  | RecallAiExecuteResult;
+  | RecallAiExecuteResult
+  | DeepgramExecuteResult;
 
 export type ExecuteConnectorActionInput = {
   connector: string;
@@ -156,6 +162,17 @@ export async function executeConnectorAction(
       userId: input.userId,
       action: input.action,
       payload: input.payload,
+    });
+  }
+  if (input.connector === DEEPGRAM_CONNECTOR) {
+    // Meeting Persona (MP-CORE-2): approving transcribe_meeting_live starts the Deepgram live
+    // transcription stream for a session (idempotent). always_gated — never auto-approve eligible.
+    return executeDeepgramAction({
+      userId: input.userId,
+      action: input.action,
+      payload: input.payload,
+      subAgentRunId: input.subAgentRunId ?? null,
+      ownerEmail: input.ownerEmail ?? null,
     });
   }
   if (input.connector === RECALL_AI_CONNECTOR) {

@@ -146,6 +146,41 @@ export type MeetingSessionRow = {
   transcript_available: boolean;
 };
 
+// Fuller session shape needed by the transcript brain-write (MP-CORE-2): meeting metadata for the
+// markdown frontmatter + path.
+export type MeetingSessionDetail = {
+  id: string;
+  owner_id: string;
+  recall_bot_id: string;
+  meeting_url: string;
+  meeting_provider: string | null;
+  meeting_start_at: string | null;
+  meeting_end_at: string | null;
+  created_at: string;
+};
+
+/** Resolve a session by its primary id (used by the transcription orchestrator + brain-write). */
+export async function fetchMeetingSessionById(
+  sessionId: string,
+): Promise<DbResult<MeetingSessionDetail | null>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  let res: Response;
+  try {
+    res = await fetch(
+      `${env.url}/rest/v1/${SESSIONS}?id=eq.${encodeURIComponent(sessionId)}` +
+        `&select=id,owner_id,recall_bot_id,meeting_url,meeting_provider,meeting_start_at,meeting_end_at,created_at`,
+      { headers: { ...authHeaders(env.key), Accept: "application/json" }, cache: "no-store" },
+    );
+  } catch (e) {
+    return { ok: false, status: 502, error: e instanceof Error ? e.message : "network error" };
+  }
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as MeetingSessionDetail[];
+  return { ok: true, data: rows[0] ?? null };
+}
+
 /** Insert a session row the moment a bot is spawned. Returns the new row id. */
 export async function insertMeetingSession(input: {
   ownerId: string;

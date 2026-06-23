@@ -184,6 +184,32 @@ export async function getRecordingUrl(
   return { ok: true, data: url };
 }
 
+/**
+ * Resolve the bot's live audio-stream URL (MP-CORE-2). Reads `realtime_endpoints` off the bot and
+ * returns the first endpoint URL with a websocket scheme.
+ *
+ * GAP (documented for MP-CORE-3): a bot only exposes a real-time audio endpoint when it was SPAWNED
+ * with a real-time config. MP-CORE-1's spawn_meeting_bot does NOT yet send that config (foundation),
+ * so for a current bot this returns { ok: true, data: null } — i.e. "no audio source exposed". The
+ * transcription orchestrator treats a null source as the stubbed case (Deepgram socket opens, audio
+ * pipe stays unconnected) and logs it. MP-CORE-3 must add the real-time config to spawn so Recall
+ * pushes audio, OR switch to Recall's native Deepgram passthrough.
+ */
+export async function getBotAudioStreamUrl(
+  input: BotIdInput & { apiKey: string },
+): Promise<RecallResult<string | null>> {
+  const bot = await getBot(input);
+  if (!bot.ok) return bot;
+  const endpoints = bot.data.realtime_endpoints ?? [];
+  for (const ep of endpoints) {
+    const url = typeof ep.url === "string" ? ep.url : null;
+    if (url && (url.startsWith("ws://") || url.startsWith("wss://"))) {
+      return { ok: true, data: url };
+    }
+  }
+  return { ok: true, data: null };
+}
+
 /** Infer the meeting provider from the meeting URL host (best-effort; falls back to 'other'). */
 export function inferMeetingProvider(meetingUrl: string): MeetingProvider {
   let host: string;

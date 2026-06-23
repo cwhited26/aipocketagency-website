@@ -71,6 +71,11 @@ export const RecallBotSchema = z
     meeting_url: z.unknown().optional(),
     recordings: z.array(z.object({}).passthrough()).optional(),
     video_url: z.string().url().nullable().optional(),
+    // Real-time audio/transcription endpoints Recall exposes on the bot, present only when the bot
+    // was spawned with a real-time config. Shape varies across Recall API versions; parsed
+    // tolerantly. MP-CORE-2 reads it best-effort to locate the live audio stream
+    // (getBotAudioStreamUrl); MP-CORE-3 reconciles the exact shape against live bots.
+    realtime_endpoints: z.array(z.object({ type: z.string().optional(), url: z.string().optional() }).passthrough()).nullable().optional(),
   })
   .passthrough();
 export type RecallBot = z.infer<typeof RecallBotSchema>;
