@@ -52,6 +52,11 @@ import { ensureLaunchKitSeeded, seedStarterSkillsForSubscription } from "@/lib/l
 import { createSprintFromCheckout } from "@/lib/setup-sprint/sprints";
 import { inviteEmailBody } from "@/lib/setup-sprint/calendar-invite-template";
 import { signDiyKitDownload } from "@/lib/diy-kit/download";
+import {
+  POCKET_CAPTURE_ADDON_KIND,
+  POCKET_CAPTURE_CHECKOUT_SOURCE,
+  POCKET_CAPTURE_PRICE_CENTS,
+} from "@/lib/pocket-capture/product";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -1282,6 +1287,101 @@ async function handlePocketAgentAddonCompleted(
   });
 }
 
+// ─── Pocket Capture standalone $47 one-time (PC-MARK-2, PA-CAPTURE-1) ────────────────────────
+
+function pocketCaptureWelcomeHtml(): string {
+  return `<!doctype html>
+<html><body style="margin:0;padding:24px 16px;background:#0b0b0b;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;">
+<div style="max-width:560px;margin:0 auto;">
+<p>You're in. Pocket Capture is yours.</p>
+<p>This is the lowest-friction way to get something out of your head and into a private feed only you can see. Four ways to capture — pick whichever's closest to your hand:</p>
+<p><strong>Share</strong> — tap Share in any app, send it to Pocket Capture.<br>
+<strong>Speak</strong> — one iOS Shortcut, then "Hey Siri, save this," eyes up, hands free.<br>
+<strong>Forward</strong> — forward any email to your personal capture address.<br>
+<strong>Text</strong> — text your personal number from anywhere.</p>
+<p>Setup takes about a minute. Finish it here and we'll hand you your capture address, your number, and the Shortcut link:</p>
+<p><a href="${SITE_ORIGIN}/app/captures" style="color:#6ee7b7;">Open Pocket Capture →</a></p>
+<p>Changed your mind? It's 30 days money-back, no questions asked — just reply to this email.</p>
+<p style="margin-top:32px;">&mdash; Chase</p>
+</div>
+</body></html>`;
+}
+
+function pocketCaptureWelcomeText(): string {
+  return `You're in. Pocket Capture is yours.
+
+This is the lowest-friction way to get something out of your head and into a private feed only you can see. Four ways to capture — pick whichever's closest to your hand:
+
+Share — tap Share in any app, send it to Pocket Capture.
+Speak — one iOS Shortcut, then "Hey Siri, save this," eyes up, hands free.
+Forward — forward any email to your personal capture address.
+Text — text your personal number from anywhere.
+
+Setup takes about a minute. Finish it here and we'll hand you your capture address, your number, and the Shortcut link:
+
+${SITE_ORIGIN}/app/captures
+
+Changed your mind? It's 30 days money-back, no questions asked — just reply to this email.
+
+— Chase`;
+}
+
+async function handlePocketCaptureStandaloneCompleted(
+  session: CheckoutSession,
+): Promise<void> {
+  const email = session.metadata?.email ?? session.customer_email ?? null;
+  const userId = session.client_reference_id ?? session.metadata?.user_id ?? null;
+
+  // The ledger row IS the Pocket Capture account/entitlement record (no separate pocket_capture_user
+  // column this lane — that would need a migration, which PC-MARK-2 explicitly avoids). Keyed by
+  // stripe_session_id (UNIQUE), so a duplicate webhook delivery merges to a no-op instead of a second
+  // row — the idempotency guarantee. The row is claimed by email on first login like the other
+  // one-time purchases; user_id is set immediately when the buyer was already signed in.
+  const ledger = await insertPocketAgentAddonPurchase({
+    userId,
+    email,
+    kind: POCKET_CAPTURE_ADDON_KIND,
+    stripeSessionId: session.id,
+    stripeCustomerId: session.customer,
+    stripePaymentIntentId: session.payment_intent,
+    amountCents: session.amount_total ?? POCKET_CAPTURE_PRICE_CENTS,
+  });
+  if (!ledger.ok) {
+    console.error("[stripe/webhook] pocket_capture_standalone: ledger insert failed", {
+      session_id: session.id,
+      status: ledger.status,
+      error: ledger.error,
+    });
+  }
+
+  if (!email) {
+    console.warn("[stripe/webhook] pocket_capture_standalone: no email, skipping welcome", {
+      session_id: session.id,
+    });
+    return;
+  }
+
+  const send = await sendEmail({
+    from: FROM,
+    to: email,
+    subject: "Welcome to Pocket Capture — you're in.",
+    html: pocketCaptureWelcomeHtml(),
+    text: pocketCaptureWelcomeText(),
+  });
+  if (!send.ok) {
+    console.error("[stripe/webhook] pocket_capture_standalone: welcome email failed", {
+      session_id: session.id,
+      status: send.status,
+      error: send.error,
+    });
+    return;
+  }
+  console.info("[stripe/webhook] pocket_capture_standalone purchase ledgered + welcomed", {
+    session_id: session.id,
+    email,
+  });
+}
+
 async function handleCheckoutCompleted(session: CheckoutSession): Promise<void> {
   const leadId = session.client_reference_id;
   const email = session.customer_email;
@@ -1346,7 +1446,9 @@ export async function POST(req: Request): Promise<NextResponse> {
       event.type === "checkout.session.async_payment_succeeded"
     ) {
       const session = event.data.object as unknown as CheckoutSession;
-      if (session.metadata?.source === "pocket_agent_addon") {
+      if (session.metadata?.source === POCKET_CAPTURE_CHECKOUT_SOURCE) {
+        await handlePocketCaptureStandaloneCompleted(session);
+      } else if (session.metadata?.source === "pocket_agent_addon") {
         await handlePocketAgentAddonCompleted(session);
       } else if (session.metadata?.source === "pocket_agent") {
         await handlePocketAgentCheckoutCompleted(session);

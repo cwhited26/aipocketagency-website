@@ -305,7 +305,12 @@ export type PocketAgentAddonKind =
   | "setup_premium"
   | "pilot"
   | "workflow_vault"
-  | "diy_setup_kit";
+  | "diy_setup_kit"
+  // Pocket Capture standalone $47 one-time (PC-MARK-2). Rides the same ledger table; the `kind`
+  // column is free-text (no CHECK), so this needs no migration. The row IS the entitlement record:
+  // a buyer with a kind='pocket_capture_standalone' row is a Pocket Capture user (claimed by email
+  // on first login, like the other one-time purchases).
+  | "pocket_capture_standalone";
 
 export async function insertPocketAgentAddonPurchase(args: {
   userId: string | null;
