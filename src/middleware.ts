@@ -1,5 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
+import {
+  isPocketCaptureHost,
+  pocketCaptureTargetPath,
+} from "@/lib/pocket-capture/marketing-routing";
 
 const PUBLIC_APP_PREFIXES = ["/app/login", "/app/auth", "/api/app/auth"];
 
@@ -103,6 +107,20 @@ async function frameAncestorsForToken(token: string): Promise<string> {
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname: earlyPath } = request.nextUrl;
 
+  // Pocket Capture standalone marketing subdomain (PC-MARK-1). On capture.aipocketagent.com,
+  // rewrite the marketing page paths onto the isolated `(pocket-capture-marketing)` route
+  // group; the API (checkout), the share-target route, and static files pass through. This
+  // runs before the auth pipeline so the public landing never triggers the subscription gate.
+  if (isPocketCaptureHost(request.headers.get("host"))) {
+    const target = pocketCaptureTargetPath(earlyPath);
+    if (target) {
+      const url = request.nextUrl.clone();
+      url.pathname = target;
+      return NextResponse.rewrite(url);
+    }
+    return NextResponse.next({ request });
+  }
+
   // Public persona surfaces (Wave 2 Modes B/C) carry no auth and set a per-token
   // frame-ancestors CSP for embed loads. Handled before the auth pipeline and returned
   // early so the anonymous chat surface never triggers the subscription gate.
@@ -159,5 +177,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/api/app/:path*", "/public-persona/:path*"],
+  matcher: [
+    "/app/:path*",
+    "/api/app/:path*",
+    "/public-persona/:path*",
+    // Pocket Capture marketing host: run middleware on its page paths so they can be
+    // rewritten into the route group. Scoped by host so the main site is untouched; API
+    // and static-asset paths are excluded here and re-checked in pocketCaptureTargetPath.
+    {
+      source: "/((?!api|_next|.*\\.).*)",
+      has: [{ type: "host", value: "capture.aipocketagent.com" }],
+    },
+  ],
 };
