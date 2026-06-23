@@ -36,6 +36,11 @@ import {
   BRAIN_CONNECTOR,
   type BrainExecuteResult,
 } from "@/lib/competitor-inspector/execute";
+import {
+  executeRecallAiAction,
+  RECALL_AI_CONNECTOR,
+  type RecallAiExecuteResult,
+} from "./recall-ai/actions";
 
 // All in-process executors share the same terminal result shape ({ok,summary,data} |
 // {ok,status,error}); the union keeps that explicit as more connectors register.
@@ -48,7 +53,8 @@ export type ConnectorExecuteResult =
   | GithubBuildExecuteResult
   | VercelExecuteResult
   | SupabaseExecuteResult
-  | BrainExecuteResult;
+  | BrainExecuteResult
+  | RecallAiExecuteResult;
 
 export type ExecuteConnectorActionInput = {
   connector: string;
@@ -150,6 +156,19 @@ export async function executeConnectorAction(
       userId: input.userId,
       action: input.action,
       payload: input.payload,
+    });
+  }
+  if (input.connector === RECALL_AI_CONNECTOR) {
+    // Meeting Persona (MP-CORE-1): spawn/leave a meeting bot + fetch a transcript via Recall.ai.
+    // The executor resolves the owner's connection, decrypts the API key per call, and (on spawn)
+    // opens the session ledger row the webhook resolves meetings by. All three actions are
+    // always_gated — never auto-approve eligible.
+    return executeRecallAiAction({
+      userId: input.userId,
+      action: input.action,
+      payload: input.payload,
+      subAgentRunId: input.subAgentRunId ?? null,
+      ownerEmail: input.ownerEmail ?? null,
     });
   }
   if (input.connector === SUPABASE_CONNECTOR) {

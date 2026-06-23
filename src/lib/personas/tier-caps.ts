@@ -132,6 +132,24 @@ export function tierAllowsIdeaEngineAutoBuild(tier: Tier): boolean {
 }
 
 /**
+ * Can this tier actually connect Recall.ai + run the Meeting Persona App (MP-1)? Meeting Persona
+ * bundles into Studio+ ($497) per the Builder Tier pricing pattern (BT-7) — it carries real
+ * per-minute COGS (Recall bot runtime + transcription), so it sits with the build-grade tooling:
+ * Studio / Studio+ / Enterprise. Pro / Pro+ see the card + upgrade path but can't connect.
+ */
+export function tierAllowsMeetingPersona(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio");
+}
+
+/**
+ * Should this tier even SEE the Meeting Persona / Recall.ai card (MP-1)? Pro and above see it (with
+ * an upgrade CTA below Studio); Free / Starter don't — the card stays off their Connections surface.
+ */
+export function tierCanSeeMeetingPersona(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("pro");
+}
+
+/**
  * How many of the 25 AI Workflow Vault recipes this tier unlocks for free (PA-VAULT-3). The Vault is
  * visible to every tier — Starter sees 3 unlocked and 22 locked behind an upgrade, Pro 5, Pro+ 10,
  * Studio 18, Studio+/Enterprise all 25. The $47 Workflow Vault order-bump unlocks all 25 regardless of
