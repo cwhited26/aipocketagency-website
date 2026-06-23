@@ -662,13 +662,20 @@ async function handlePocketAgentSubscriptionCreated(
       text: welcomeEmailText(name),
     });
     if (!send.ok) {
-      console.error("[stripe/webhook] failed to send pocket_agent welcome email", {
+      // Both the queue enqueue AND the inline legacy welcome failed. welcome_email_sent_at
+      // is still unset, so the only way this buyer gets a welcome is a webhook retry. Throw
+      // so POST returns 500 and Stripe redelivers customer.subscription.created — the upsert
+      // and the welcome_email_sent_at guard above make the retry idempotent. Returning here
+      // (the old behavior) yielded a 200, suppressing retries and silently dropping the email.
+      console.error("[stripe/webhook] failed to send pocket_agent welcome email; throwing for Stripe retry", {
         subscription_id: sub.id,
         email,
         status: send.status,
         error: send.error,
       });
-      return;
+      throw new Error(
+        `pocket_agent welcome email unrecoverable for subscription ${sub.id} (enqueue + inline send both failed)`,
+      );
     }
   } else {
     console.info("[stripe/webhook] pocket_agent onboarding sequence enqueued", {
