@@ -9,6 +9,11 @@ export type InboxEntry = {
   title?: string;
   sourceUrl?: string;
   content: string;
+  // The capture surface this entry came in through (e.g. "share_sheet" for the PWA
+  // Web Share Target, "ios_share" for the Working Copy shortcut). Optional and purely
+  // descriptive — the Capture Inbox / dashboard reads it to show a per-surface icon.
+  // Absent on older entries, which render with the default icon.
+  source?: string;
   // Set when the entry is its own file in the repo (the iOS Working Copy share
   // path: sessions/inbox/share-*.md) rather than a block inside memory/inbox.md.
   // Removal of these entries deletes the file at `path` instead of rewriting a block.
@@ -62,6 +67,7 @@ function parseRaw(raw: string): InboxEntry[] {
       kind: meta.kind as InboxKind,
       ...(meta.title ? { title: meta.title } : {}),
       ...(meta.sourceUrl ? { sourceUrl: meta.sourceUrl } : {}),
+      ...(meta.source ? { source: meta.source } : {}),
       content: contentLines.join("\n").trim(),
     });
   }
@@ -77,6 +83,7 @@ function entryToBlock(entry: InboxEntry): string {
   };
   if (entry.title) meta.title = entry.title;
   if (entry.sourceUrl) meta.sourceUrl = entry.sourceUrl;
+  if (entry.source) meta.source = entry.source;
   return `<!-- PA-INBOX ${JSON.stringify(meta)} -->\n${entry.content}\n<!-- /PA-INBOX -->`;
 }
 
@@ -95,7 +102,13 @@ function serializeInboxFile(entries: InboxEntry[]): string {
 // Appends a new entry to the raw file content.
 export function appendEntryToRaw(
   existingRaw: string,
-  payload: { kind: InboxKind; content: string; title?: string; sourceUrl?: string },
+  payload: {
+    kind: InboxKind;
+    content: string;
+    title?: string;
+    sourceUrl?: string;
+    source?: string;
+  },
 ): { content: string; entry: InboxEntry } {
   const existing = parseRaw(existingRaw);
   const entry: InboxEntry = {
@@ -105,6 +118,7 @@ export function appendEntryToRaw(
     content: payload.content.slice(0, 50_000),
     ...(payload.title ? { title: payload.title.slice(0, 500) } : {}),
     ...(payload.sourceUrl ? { sourceUrl: payload.sourceUrl } : {}),
+    ...(payload.source ? { source: payload.source } : {}),
   };
   return { content: serializeInboxFile([...existing, entry]), entry };
 }
