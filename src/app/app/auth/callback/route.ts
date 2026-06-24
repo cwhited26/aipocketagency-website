@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { linkSubscriptionByEmail } from "@/lib/pocket-agent-supabase";
 import { patchGithubToken } from "@/lib/pa-supabase";
+import { crossSubdomainCookieDomain } from "@/lib/app-subdomain/cookies";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const cookieStore = cookies();
+  // Scope the session cookies to `.aipocketagent.com` in production so the login completed
+  // on the apex callback is also valid on the app subdomain; host-scoped in dev / preview.
+  const cookieDomain = crossSubdomainCookieDomain(
+    request.headers.get("host"),
+    process.env.NODE_ENV,
+  );
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -29,7 +36,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
+            cookieStore.set(
+              name,
+              value,
+              cookieDomain ? { ...options, domain: cookieDomain } : options,
+            ),
           );
         },
       },
