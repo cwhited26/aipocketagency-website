@@ -14,6 +14,12 @@ export type InboxEntry = {
   // descriptive — the Capture Inbox / dashboard reads it to show a per-surface icon.
   // Absent on older entries, which render with the default icon.
   source?: string;
+  // Owner-applied labels, edited from the Captures dashboard (PC-CORE-6). Absent on
+  // entries that have never been tagged; an empty array is normalized away on write.
+  tags?: string[];
+  // Soft-delete tombstone (PC-CORE-6). When set, the block stays in memory/inbox.md
+  // (brain history is preserved) but the dashboard hides it. Absent on live entries.
+  deletedAt?: string;
   // Set when the entry is its own file in the repo (the iOS Working Copy share
   // path: sessions/inbox/share-*.md) rather than a block inside memory/inbox.md.
   // Removal of these entries deletes the file at `path` instead of rewriting a block.
@@ -28,6 +34,38 @@ const ENTRY_END = "<!-- /PA-INBOX -->";
 const FILE_HEADER =
   "# Brain Inbox\n\nShared items from your iOS Shortcut — triage when ready.\n";
 
+// Narrow an unknown JSON value to a non-empty string (meta values arrive untyped from JSON.parse).
+function asString(v: unknown): string | undefined {
+  return typeof v === "string" && v.length > 0 ? v : undefined;
+}
+
+// Narrow an unknown JSON value to an array of non-empty strings (the meta `tags` field).
+function asStringArray(v: unknown): string[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out = v.filter((t): t is string => typeof t === "string" && t.length > 0);
+  return out.length > 0 ? out : undefined;
+}
+
+/**
+ * Normalize owner-supplied tags: trim, clamp each to 40 chars, drop blanks, dedupe
+ * case-insensitively (keeping first spelling), cap at 20. Pure → unit-tested. Used by the
+ * dashboard's tag-edit route so the brain file never accumulates junk or unbounded tags.
+ */
+export function normalizeTags(tags: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of tags) {
+    const t = raw.trim().slice(0, 40);
+    if (!t) continue;
+    const key = t.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+    if (out.length >= 20) break;
+  }
+  return out;
+}
+
 function parseRaw(raw: string): InboxEntry[] {
   const lines = raw.split("\n");
   const entries: InboxEntry[] = [];
@@ -40,15 +78,23 @@ function parseRaw(raw: string): InboxEntry[] {
       continue;
     }
 
-    let meta: Partial<InboxEntry> & Record<string, string>;
+    let meta: Record<string, unknown>;
     try {
-      meta = JSON.parse(startMatch[1]) as Partial<InboxEntry> & Record<string, string>;
+      const parsed: unknown = JSON.parse(startMatch[1]);
+      if (typeof parsed !== "object" || parsed === null) {
+        i++;
+        continue;
+      }
+      meta = parsed as Record<string, unknown>;
     } catch {
       i++;
       continue;
     }
 
-    if (!meta.id || !meta.ts || !meta.kind) {
+    const id = asString(meta.id);
+    const ts = asString(meta.ts);
+    const kind = asString(meta.kind);
+    if (!id || !ts || !kind) {
       i++;
       continue;
     }
@@ -61,13 +107,21 @@ function parseRaw(raw: string): InboxEntry[] {
     }
     i++; // skip /PA-INBOX line
 
+    const title = asString(meta.title);
+    const sourceUrl = asString(meta.sourceUrl);
+    const source = asString(meta.source);
+    const tags = asStringArray(meta.tags);
+    const deletedAt = asString(meta.deletedAt);
+
     entries.push({
-      id: meta.id,
-      ts: meta.ts,
-      kind: meta.kind as InboxKind,
-      ...(meta.title ? { title: meta.title } : {}),
-      ...(meta.sourceUrl ? { sourceUrl: meta.sourceUrl } : {}),
-      ...(meta.source ? { source: meta.source } : {}),
+      id,
+      ts,
+      kind: kind as InboxKind,
+      ...(title ? { title } : {}),
+      ...(sourceUrl ? { sourceUrl } : {}),
+      ...(source ? { source } : {}),
+      ...(tags && tags.length ? { tags } : {}),
+      ...(deletedAt ? { deletedAt } : {}),
       content: contentLines.join("\n").trim(),
     });
   }
@@ -76,7 +130,7 @@ function parseRaw(raw: string): InboxEntry[] {
 }
 
 function entryToBlock(entry: InboxEntry): string {
-  const meta: Record<string, string> = {
+  const meta: Record<string, unknown> = {
     id: entry.id,
     ts: entry.ts,
     kind: entry.kind,
@@ -84,6 +138,8 @@ function entryToBlock(entry: InboxEntry): string {
   if (entry.title) meta.title = entry.title;
   if (entry.sourceUrl) meta.sourceUrl = entry.sourceUrl;
   if (entry.source) meta.source = entry.source;
+  if (entry.tags && entry.tags.length) meta.tags = entry.tags;
+  if (entry.deletedAt) meta.deletedAt = entry.deletedAt;
   return `<!-- PA-INBOX ${JSON.stringify(meta)} -->\n${entry.content}\n<!-- /PA-INBOX -->`;
 }
 
@@ -128,6 +184,42 @@ export function removeEntryFromRaw(existingRaw: string, id: string): string {
   const existing = parseRaw(existingRaw);
   const filtered = existing.filter((e) => e.id !== id);
   return serializeInboxFile(filtered);
+}
+
+/**
+ * Soft-deletes one entry by id: stamps `deletedAt` so the dashboard hides it, but leaves the block
+ * in the file (brain history is preserved — PC-CORE-6's chosen delete semantics). Idempotent: a
+ * re-delete keeps the original tombstone time. A missing id is a no-op (returns the file unchanged
+ * in content, normalized through the serializer). Pure → unit-tested.
+ */
+export function softDeleteEntryInRaw(
+  existingRaw: string,
+  id: string,
+  nowIso = new Date().toISOString(),
+): string {
+  const existing = parseRaw(existingRaw);
+  const updated = existing.map((e) =>
+    e.id === id && !e.deletedAt ? { ...e, deletedAt: nowIso } : e,
+  );
+  return serializeInboxFile(updated);
+}
+
+/**
+ * Replaces the tags on one entry by id (normalized; an empty result clears the field). A missing id
+ * is a no-op. Pure → unit-tested. The dashboard's tag editor commits the result back to the file.
+ */
+export function setEntryTagsInRaw(existingRaw: string, id: string, tags: string[]): string {
+  const cleaned = normalizeTags(tags);
+  const existing = parseRaw(existingRaw);
+  const updated = existing.map((e) =>
+    e.id === id ? { ...e, tags: cleaned.length ? cleaned : undefined } : e,
+  );
+  return serializeInboxFile(updated);
+}
+
+/** True when the entry has been soft-deleted (tombstoned). */
+export function isDeleted(entry: InboxEntry): boolean {
+  return Boolean(entry.deletedAt);
 }
 
 // ─── iOS Working Copy share files (sessions/inbox/share-*.md) ──────────────────

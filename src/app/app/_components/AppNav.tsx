@@ -87,6 +87,17 @@ function CaptureIcon() {
   );
 }
 
+// An inbox-with-a-spark glyph — the captures feed where everything you forward/text/share lands.
+function CapturesIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M1.5 9h3l1.5 2h3L11 9h3" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M1.5 9V5a1 1 0 011-1h5" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M11.5 1.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function TasksIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
@@ -284,7 +295,10 @@ export default function AppNav() {
   const isBrainMap = pathname.startsWith("/app/brain-map");
   const isCommunity = pathname.startsWith("/app/skool");
   const isSettings = pathname.startsWith("/app/settings") && !isConnections;
-  const isCapture = pathname.startsWith("/app/capture");
+  // The plural Captures dashboard (/app/captures) must not also light up the singular Capture
+  // (/app/capture) voice-recorder entry, since the former is a prefix of the latter check.
+  const isCaptures = pathname.startsWith("/app/captures");
+  const isCapture = pathname.startsWith("/app/capture") && !isCaptures;
   const isTasks = pathname.startsWith("/app/tasks");
   const isRoutines = pathname.startsWith("/app/routines");
   const isPersonas = pathname.startsWith("/app/personas");
@@ -322,6 +336,7 @@ export default function AppNav() {
         <NavItem href="/app/calendar" active={isCalendar} icon={<CalendarIcon />} label="Calendar" onClick={close} />
         <NavItem href="/app/email" active={isEmail} icon={<EmailIcon />} label="Email" onClick={close} />
         <NavItem href="/app/brain" active={isBrain} icon={<BrainIcon />} label="Brain" title="What your agent knows" onClick={close} />
+        <NavItem href="/app/captures" active={isCaptures} icon={<CapturesIcon />} label="Captures" title="Everything you've forwarded, texted, shared, or spoken" onClick={close} />
         <NavItem href="/app/documents" active={isDocs} icon={<DocsIcon />} label="Documents" title="Files in your brain" onClick={close} />
         <NavItem href="/app/brain-map" active={isBrainMap} icon={<BrainMapIcon />} label="Brain Map" title="Map of what your agent knows" onClick={close} />
         <NavItem href="/app/apps" active={isApps} icon={<WorkIcon />} label="Apps" onClick={close} />
