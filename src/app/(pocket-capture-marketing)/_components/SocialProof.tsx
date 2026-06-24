@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { TESTIMONIALS_PLACEHOLDER } from "@/data/pocket-capture/marketing";
+import { PurchaseToast } from "./PurchaseToast";
 
 // Below-the-fold social proof (PC-MARK-1). Client component so it can rotate; placed last
 // before pricing so it never competes with the hero for LCP.
 //
-// Two slots PC-MARK-4 fills in:
-//   1. Real testimonials replace TESTIMONIALS_PLACEHOLDER (data file).
-//   2. The live purchase-notification toast mounts into #pocket-capture-purchase-toast.
+// PC-MARK-4 fills the live purchase-notification slot below with <PurchaseToast />. Real
+// testimonials still replace TESTIMONIALS_PLACEHOLDER (data file) when they land.
 
 const ROTATE_MS = 6000;
 
@@ -56,8 +56,10 @@ export function SocialProof() {
         </div>
       </div>
 
-      {/* Live purchase-notification mount point (PC-MARK-4). Empty until that lane renders. */}
-      <div id="pocket-capture-purchase-toast" aria-live="polite" />
+      {/* Live purchase-notification mount point (PC-MARK-4). The toast itself is fixed-position. */}
+      <div id="pocket-capture-purchase-toast" aria-live="polite">
+        <PurchaseToast />
+      </div>
     </section>
   );
 }
