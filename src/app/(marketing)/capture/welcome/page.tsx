@@ -94,7 +94,7 @@ export default function CaptureWelcomePage({
             </div>
 
             <div className="mt-9 flex flex-col items-center gap-4">
-              <PrimaryCTA href="/app/captures" label="Continue to dashboard" />
+              <PrimaryCTA href="/app/captures/onboarding" label="Finish setup — 60 seconds" />
               <Link
                 href="/capture/terms"
                 className="text-sm font-semibold text-cyan-300 transition hover:underline"
