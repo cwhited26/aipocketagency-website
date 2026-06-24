@@ -1,0 +1,19 @@
+PLACEHOLDER — not the real Shortcut binary.
+
+A published iOS Shortcut is a SIGNED Apple property-list (.plist/aea) bundle. It cannot be
+authored, signed, or generated from this repository — it must be exported from the Shortcuts
+app on Apple hardware (iPhone, iPad, or Mac) by an account that has signed in to iCloud.
+
+To replace this placeholder with the real file (one-time, by Chase):
+
+  1. Build the "Pocket Capture" Shortcut per docs/pocket-capture/ios-shortcut/README.md
+     ("Authoring the Shortcut").
+  2. Publish it: Share → Copy iCloud Link → paste that URL into INSTALL.md + README.md +
+     onboarding (replace ICLOUD_GALLERY_URL_PLACEHOLDER).
+  3. Export the binary: Shortcuts → File → Export → save as pocket-capture.shortcut, and
+     commit it over this placeholder so the repo carries a reference copy.
+
+The Shortcut's behavior is fully specified in README.md ("What the Shortcut does"):
+dictate text → POST https://aipocketagent.com/api/capture/shortcut with
+Authorization: Bearer <pca_ token> and JSON body { "text": "...", "source_hint": "siri" }
+→ show a "Saved to your brain" notification.
