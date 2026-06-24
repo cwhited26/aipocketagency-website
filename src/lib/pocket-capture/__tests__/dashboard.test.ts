@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import type { InboxEntry } from "@/lib/pa-inbox";
 import {
   toDashboardCapture,
+  toCaptureItem,
   filterCaptures,
   topTags,
   paginate,
@@ -9,7 +10,14 @@ import {
   formatRelativeTime,
   debounce,
   decideCapturesView,
+  classifyCaptureSource,
+  captureMatchesChip,
+  encodeCaptureId,
+  decodeFileCaptureId,
+  iconForCaptureSource,
+  labelForCaptureSource,
   type DashboardCapture,
+  type CaptureSource,
 } from "@/lib/pocket-capture/dashboard";
 
 function cap(over: Partial<DashboardCapture>): DashboardCapture {
@@ -17,6 +25,7 @@ function cap(over: Partial<DashboardCapture>): DashboardCapture {
     id: over.id ?? "id",
     ts: over.ts ?? "2026-06-23T12:00:00.000Z",
     source: over.source ?? null,
+    sourceType: over.sourceType ?? "typed",
     icon: over.icon ?? "📝",
     title: over.title ?? null,
     content: over.content ?? "",
@@ -38,7 +47,7 @@ describe("toDashboardCapture", () => {
       tags: ["work"],
     } as unknown as InboxEntry;
     const d = toDashboardCapture(entry);
-    expect(d.icon).toBe("📱");
+    expect(d.icon).toBe("📲");
     expect(d.title).toBe("Idea");
     expect(d.preview).toContain("Idea — Build the thing");
     expect(d.tags).toEqual(["work"]);
@@ -54,6 +63,125 @@ describe("toDashboardCapture", () => {
       deletedAt: "2026-06-23T13:00:00.000Z",
     } as unknown as InboxEntry;
     expect(toDashboardCapture(entry).deleted).toBe(true);
+  });
+
+  it("classifies the normalized source + badge for a mapped surface", () => {
+    const entry = {
+      id: "u1",
+      ts: "2026-06-23T12:00:00.000Z",
+      kind: "note",
+      source: "email_forward",
+      content: "hi",
+    } as unknown as InboxEntry;
+    const d = toDashboardCapture(entry);
+    expect(d.sourceType).toBe("email-forward");
+    expect(d.icon).toBe("📧");
+  });
+
+  it("encodes a file-backed entry's path into its public id", () => {
+    const entry = {
+      id: "inbox/voice-memos/2026-06-23/120000-note.md",
+      ts: "2026-06-23T12:00:00.000Z",
+      kind: "voice",
+      content: "spoken note",
+      path: "inbox/voice-memos/2026-06-23/120000-note.md",
+    } as unknown as InboxEntry;
+    const d = toDashboardCapture(entry);
+    expect(d.id.startsWith("file:")).toBe(true);
+    expect(d.id.includes("/")).toBe(false);
+    expect(d.sourceType).toBe("voice-memo");
+    expect(decodeFileCaptureId(d.id)).toBe(entry.path);
+  });
+});
+
+describe("classifyCaptureSource", () => {
+  const cases: Array<[Partial<InboxEntry>, CaptureSource]> = [
+    [{ kind: "voice" }, "voice-memo"],
+    [{ kind: "note", source: "voice_shortcut" }, "voice-memo"],
+    [{ kind: "note", source: "email_forward" }, "email-forward"],
+    [{ kind: "text", source: "sms" }, "sms"],
+    [{ kind: "url", source: "share_sheet" }, "shared"],
+    [{ kind: "text", source: "typed" }, "typed"],
+    [{ kind: "note" }, "inbox-md"],
+    [{ kind: "note", source: "mystery" }, "other"],
+  ];
+  it.each(cases)("maps %o → %s", (entry, expected) => {
+    expect(classifyCaptureSource(entry as InboxEntry)).toBe(expected);
+    // Every normalized source has an icon + label.
+    expect(iconForCaptureSource(expected)).toBeTruthy();
+    expect(labelForCaptureSource(expected)).toBeTruthy();
+  });
+});
+
+describe("captureMatchesChip", () => {
+  it("'all' matches everything; inbox-md folds under the Typed chip", () => {
+    expect(captureMatchesChip("voice-memo", "all")).toBe(true);
+    expect(captureMatchesChip("inbox-md", "typed")).toBe(true);
+    expect(captureMatchesChip("typed", "typed")).toBe(true);
+    expect(captureMatchesChip("voice-memo", "voice")).toBe(true);
+    expect(captureMatchesChip("voice-memo", "email")).toBe(false);
+    // "other" lives only under "all" — no chip claims it.
+    expect(captureMatchesChip("other", "typed")).toBe(false);
+  });
+});
+
+describe("encode/decode capture ids", () => {
+  it("block ids pass through unchanged and decode to null", () => {
+    const entry = { id: "uuid-123", path: undefined } as unknown as InboxEntry;
+    expect(encodeCaptureId(entry)).toBe("uuid-123");
+    expect(decodeFileCaptureId("uuid-123")).toBeNull();
+  });
+
+  it("round-trips a file path through base64url", () => {
+    const path = "inbox/voice-memos/2026-06-23/120000-a slug.md";
+    const id = encodeCaptureId({ path } as unknown as InboxEntry);
+    expect(id.includes("/")).toBe(false);
+    expect(decodeFileCaptureId(id)).toBe(path);
+  });
+});
+
+describe("filterCaptures source dimension", () => {
+  const list = [
+    cap({ id: "v", sourceType: "voice-memo", content: "spoken" }),
+    cap({ id: "e", sourceType: "email-forward", content: "fwd" }),
+    cap({ id: "t", sourceType: "typed", content: "typed" }),
+    cap({ id: "m", sourceType: "inbox-md", content: "legacy" }),
+  ];
+
+  it("filters to one chip, AND-combined with query", () => {
+    expect(filterCaptures(list, { query: "", tags: [], source: "voice" }).map((c) => c.id)).toEqual(["v"]);
+    // The Typed chip includes legacy inbox-md captures.
+    expect(filterCaptures(list, { query: "", tags: [], source: "typed" }).map((c) => c.id)).toEqual(["t", "m"]);
+    expect(filterCaptures(list, { query: "fwd", tags: [], source: "email" }).map((c) => c.id)).toEqual(["e"]);
+    expect(filterCaptures(list, { query: "", tags: [], source: "all" }).map((c) => c.id)).toEqual(["v", "e", "t", "m"]);
+  });
+});
+
+describe("toCaptureItem", () => {
+  it("produces a validated CaptureItem at the boundary", () => {
+    const entry = {
+      id: "u1",
+      ts: "2026-06-23T12:00:00.000Z",
+      kind: "note",
+      source: "sms",
+      content: "ping",
+      tags: ["a"],
+    } as unknown as InboxEntry;
+    const item = toCaptureItem(entry);
+    expect(item.source).toBe("sms");
+    expect(item.capturedAt instanceof Date).toBe(true);
+    expect(item.raw.path).toBe("memory/inbox.md");
+    expect(item.tags).toEqual(["a"]);
+  });
+
+  it("throws on an unparseable timestamp (the Zod boundary rejecting bad data)", () => {
+    const bad = {
+      id: "u1",
+      ts: "not-a-date",
+      kind: "note",
+      content: "x",
+    } as unknown as InboxEntry;
+    expect(() => toCaptureItem(bad)).toThrow();
   });
 });
 

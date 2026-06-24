@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { z } from "zod";
 
 export type InboxKind = "text" | "url" | "note" | "voice";
 
@@ -281,10 +282,48 @@ function parseFrontmatter(raw: string): { fm: Record<string, string>; body: stri
   return { fm, body: lines.slice(i).join("\n") };
 }
 
+// The frontmatter the file-backed capture surfaces (iOS share + voice recorder) can carry. Every
+// field is an optional string — frontmatter is plain `key: value` text — and unknown keys are kept
+// (`catchall`) so a parse never drops fields the owner or a future surface adds. This is the Zod
+// boundary the dashboard relies on: a malformed block falls back to {} rather than throwing.
+const FileFrontmatterSchema = z
+  .object({
+    captured_at: z.string().optional(),
+    created_at: z.string().optional(),
+    date: z.string().optional(),
+    source: z.string().optional(),
+    kind: z.string().optional(),
+    tag: z.string().optional(),
+    topic: z.string().optional(),
+    duration_seconds: z.string().optional(),
+    // Soft-delete tombstone stamped by the Captures dashboard onto a file-backed capture.
+    deleted_at: z.string().optional(),
+    // Owner-applied labels, comma-separated (frontmatter has no native list type here).
+    tags: z.string().optional(),
+  })
+  .catchall(z.string());
+
+type FileFrontmatter = z.infer<typeof FileFrontmatterSchema>;
+
+// Validate a parsed frontmatter record at the boundary; an invalid shape degrades to {} (no throw).
+function validateFrontmatter(fm: Record<string, string>): FileFrontmatter {
+  const parsed = FileFrontmatterSchema.safeParse(fm);
+  return parsed.success ? parsed.data : {};
+}
+
+// Split a comma-separated frontmatter `tags` value (optionally `[a, b]`-bracketed, quoted) into
+// normalized tags. Pure → unit-tested.
+function parseFrontmatterTags(raw: string | undefined): string[] {
+  if (!raw) return [];
+  const inner = raw.trim().replace(/^\[/, "").replace(/\]$/, "");
+  return normalizeTags(inner.split(",").map((t) => t.replace(/^["']|["']$/g, "")));
+}
+
 export function parseShareSheetFile(path: string, raw: string): InboxEntry | null {
   if (!raw.trim()) return null;
-  const { fm, body } = parseFrontmatter(raw);
-  if (isRepoPlumbingFile(path, fm)) return null;
+  const { fm: rawFm, body } = parseFrontmatter(raw);
+  if (isRepoPlumbingFile(path, rawFm)) return null;
+  const fm = validateFrontmatter(rawFm);
 
   // Pull a URL out of the body (the shortcut writes "URL: https://...").
   let sourceUrl: string | undefined;
@@ -311,12 +350,17 @@ export function parseShareSheetFile(path: string, raw: string): InboxEntry | nul
     capturedAtToIso(fm.captured_at ?? "") ??
     capturedAtToIso(path.split("/").pop()?.replace(/^share-/, "") ?? "");
 
+  const tags = parseFrontmatterTags(fm.tags);
+  const deletedAt = fm.deleted_at?.trim() || undefined;
+
   return {
     id: path, // file path is the stable, unique id for file-backed entries
     ts: iso ?? new Date(0).toISOString(),
     kind: sourceUrl ? "url" : "note",
     ...(tag ? { title: tag } : {}),
     ...(sourceUrl ? { sourceUrl } : {}),
+    ...(tags.length ? { tags } : {}),
+    ...(deletedAt ? { deletedAt } : {}),
     content,
     path,
   };
@@ -329,8 +373,9 @@ export function parseShareSheetFile(path: string, raw: string): InboxEntry | nul
 // so voice memos render in the Capture Inbox alongside every other capture source.
 export function parseVoiceMemoFile(path: string, raw: string): InboxEntry | null {
   if (!raw.trim()) return null;
-  const { fm, body } = parseFrontmatter(raw);
-  if (isRepoPlumbingFile(path, fm)) return null;
+  const { fm: rawFm, body } = parseFrontmatter(raw);
+  if (isRepoPlumbingFile(path, rawFm)) return null;
+  const fm = validateFrontmatter(rawFm);
 
   const transcript = body.trim();
   const topic = fm.topic?.trim() || undefined;
@@ -342,11 +387,16 @@ export function parseVoiceMemoFile(path: string, raw: string): InboxEntry | null
     capturedAtToIso(fm.captured_at ?? "") ??
     capturedAtToIso(path.split("/").slice(-2, -1)[0] ?? "");
 
+  const tags = parseFrontmatterTags(fm.tags);
+  const deletedAt = fm.deleted_at?.trim() || undefined;
+
   return {
     id: path, // file path is the stable, unique id for file-backed entries
     ts: iso ?? new Date(0).toISOString(),
     kind: "voice",
     ...(topic ? { title: topic } : {}),
+    ...(tags.length ? { tags } : {}),
+    ...(deletedAt ? { deletedAt } : {}),
     content,
     path,
   };
@@ -357,4 +407,72 @@ export function mergeInboxEntries(...groups: InboxEntry[][]): InboxEntry[] {
   return groups
     .flat()
     .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+}
+
+// ─── File-backed capture mutation (voice memos, share files) ───────────────────
+// Unlike memory/inbox.md blocks, file-backed captures are their own .md file. The Captures dashboard
+// soft-deletes and re-tags them by stamping the file's YAML frontmatter (it never deletes the file —
+// brain history is preserved, the same contract as the inbox.md tombstone). upsertFrontmatter is the
+// pure rewrite primitive; setFileDeletedAt / setFileTags are the two operations the route commits.
+
+/**
+ * Set or remove frontmatter keys on a markdown file, preserving the body, existing key order, and any
+ * keys not in `patch`. A null/empty patch value removes that key. When the file has no frontmatter, a
+ * block is created above the body. Pure → unit-tested.
+ */
+export function upsertFrontmatter(
+  raw: string,
+  patch: Record<string, string | null>,
+): string {
+  // Split existing frontmatter (if any) from the body, keeping key order.
+  let order: string[] = [];
+  const values = new Map<string, string>();
+  let body = raw;
+
+  if (raw.startsWith("---")) {
+    const lines = raw.split("\n");
+    let i = 1;
+    for (; i < lines.length; i++) {
+      if (lines[i].trim() === "---") {
+        i++;
+        break;
+      }
+      const m = /^([^:]+):\s*(.*)$/.exec(lines[i]);
+      if (m) {
+        const key = m[1].trim();
+        if (!values.has(key)) order.push(key);
+        values.set(key, m[2].trim());
+      }
+    }
+    // A leading blank line conventionally separates frontmatter from the body.
+    body = lines.slice(i).join("\n").replace(/^\n/, "");
+  }
+
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === null || value === "") {
+      values.delete(key);
+      order = order.filter((k) => k !== key);
+    } else {
+      if (!values.has(key)) order.push(key);
+      values.set(key, value);
+    }
+  }
+
+  const fmLines = order.map((k) => `${k}: ${values.get(k) ?? ""}`);
+  if (fmLines.length === 0) return body;
+  return `---\n${fmLines.join("\n")}\n---\n\n${body}`;
+}
+
+/** Stamp a soft-delete tombstone (deleted_at) onto a file-backed capture. Idempotent re-stamp keeps
+ *  the original time. Pure → unit-tested. */
+export function setFileDeletedAt(raw: string, nowIso = new Date().toISOString()): string {
+  const { fm } = parseFrontmatter(raw);
+  const existing = fm.deleted_at?.trim();
+  return upsertFrontmatter(raw, { deleted_at: existing || nowIso });
+}
+
+/** Replace the tags on a file-backed capture (normalized; an empty result clears the key). Pure. */
+export function setFileTags(raw: string, tags: string[]): string {
+  const cleaned = normalizeTags(tags);
+  return upsertFrontmatter(raw, { tags: cleaned.length ? cleaned.join(", ") : null });
 }

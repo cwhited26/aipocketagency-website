@@ -294,7 +294,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Your right hand for the daily admin — what's on today, who's waiting on you, and the quick emails that keep things moving.",
     sampleQuestion: "What's on my plate today and who am I behind on?",
     defaultTone: "conversational",
-    defaultApps: ["daily-brief", "upcoming", "email-drafter", "followups", "follow-up-sweeps", "capture-inbox", "workflow-vault", "ritual-scheduler"],
+    defaultApps: ["daily-brief", "upcoming", "email-drafter", "followups", "follow-up-sweeps", "workflow-vault", "ritual-scheduler"],
     starterPrompt: "Give me my morning rundown — what's pending and who I'm behind on.",
     fields: {
       problem:
@@ -378,7 +378,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Turns what you already know into on-brand posts, emails, and descriptions — sounding like your business, not a template.",
     sampleQuestion: "Draft a promo post for this week's offer in our voice.",
     defaultTone: "conversational",
-    defaultApps: ["email-drafter", "youtube", "podcasts", "landing-page-builder", "idea-engine", "capture-inbox", "workflow-vault"],
+    defaultApps: ["email-drafter", "youtube", "podcasts", "landing-page-builder", "idea-engine", "workflow-vault"],
     starterPrompt: "Draft three social posts for this week's offer in our voice.",
     fields: {
       problem:
@@ -434,7 +434,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Finds businesses that fit your best customers, sorts them by fit, and tees up who's worth reaching out to.",
     sampleQuestion: "Find roofers near Knoxville without a website and sort them by fit.",
     defaultTone: "direct",
-    defaultApps: ["lead-scout", "idea-engine", "brain-map", "capture-inbox", "competitor-inspector"],
+    defaultApps: ["lead-scout", "idea-engine", "brain-map", "competitor-inspector"],
     starterPrompt: "Find businesses in our area that look like our best customers and rank them by fit.",
     fields: {
       problem:
@@ -462,7 +462,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "The wide-angle view — pulls together what's happening across the business and surfaces the one thing to handle next.",
     sampleQuestion: "What across the business needs my attention this week?",
     defaultTone: "direct",
-    defaultApps: ["daily-brief", "upcoming", "followups", "follow-up-sweeps", "email-drafter", "brain-map", "landing-page-builder", "idea-engine", "capture-inbox", "workflow-vault", "ritual-scheduler"],
+    defaultApps: ["daily-brief", "upcoming", "followups", "follow-up-sweeps", "email-drafter", "brain-map", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler"],
     starterPrompt: "Pull together what's happening across the business and tell me what to handle first.",
     fields: {
       problem:

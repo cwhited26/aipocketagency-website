@@ -32,7 +32,6 @@ describe("apps catalog", () => {
       "follow-up-sweeps",
       "landing-page-builder",
       "idea-engine",
-      "capture-inbox",
       "brain-map",
       "workflow-vault",
       "ritual-scheduler",

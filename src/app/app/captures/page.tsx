@@ -10,10 +10,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
-import { fetchFileContent } from "@/lib/pa-brain";
-import { parseInboxForDisplay } from "@/lib/pa-inbox";
-import { CAPTURE_INBOX_PATH } from "@/lib/pocket-capture/feed";
-import { decideCapturesView, toDashboardCapture } from "@/lib/pocket-capture/dashboard";
+import { decideCapturesView } from "@/lib/pocket-capture/dashboard";
+import { loadDashboardCaptures } from "@/lib/pocket-capture/captures-source";
 import { isPocketCaptureUser } from "@/lib/pocket-capture/entitlement";
 import { readOnboardingCompletedAt } from "@/lib/pocket-capture/onboarding";
 import { redirect } from "next/navigation";
@@ -81,8 +79,8 @@ export default async function CapturesPage() {
   if (view === "onboarding") redirect("/app/captures/onboarding");
   if (view === "no-brain" || !paUser?.brain_repo || !ghToken) return <CapturesEmptyState />;
 
-  const raw = await fetchFileContent(paUser.brain_repo, CAPTURE_INBOX_PATH, ghToken);
-  const captures = parseInboxForDisplay(raw).map(toDashboardCapture);
+  // The unified feed: every capture from memory/inbox.md AND every inbox/** file, merged newest-first.
+  const captures = await loadDashboardCaptures(paUser.brain_repo, ghToken);
 
   // The PC-MARK-5 upgrade pitch self-gates server-side (renders null for everyone but an eligible
   // standalone-only buyer) — mount it at the top of the feed as that lane intended.

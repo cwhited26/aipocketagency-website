@@ -25,12 +25,20 @@ export type RitualTarget = {
 
 // Product surfaces a ritual can target that aren't Apps-catalog entries (they have a page, but no AppId).
 // Decision Roundtable lives in chat + /app/decisions, not the Apps grid — the seed pack points here.
+// capture-inbox is the retired Capture Inbox App: its captures live in the unified Captures Dashboard
+// now, so the Daily Inbox Digest seed deep-links there instead of a catalog card.
 const RITUAL_SURFACES: Record<string, RitualTarget> = {
   "decision-roundtable": {
     slug: "decision-roundtable",
     label: "Decision Roundtable",
     href: "/app/decisions",
     blurb: "Three of your agents argue a flagged decision and bring you a verdict.",
+  },
+  "capture-inbox": {
+    slug: "capture-inbox",
+    label: "Captures Dashboard",
+    href: "/app/captures",
+    blurb: "Sorts what you captured overnight so the morning's filing is waiting.",
   },
 };
 

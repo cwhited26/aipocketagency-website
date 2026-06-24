@@ -336,7 +336,7 @@ export default function AppNav() {
         <NavItem href="/app/calendar" active={isCalendar} icon={<CalendarIcon />} label="Calendar" onClick={close} />
         <NavItem href="/app/email" active={isEmail} icon={<EmailIcon />} label="Email" onClick={close} />
         <NavItem href="/app/brain" active={isBrain} icon={<BrainIcon />} label="Brain" title="What your agent knows" onClick={close} />
-        <NavItem href="/app/captures" active={isCaptures} icon={<CapturesIcon />} label="Captures" title="Everything you've forwarded, texted, shared, or spoken" onClick={close} />
+        <NavItem href="/app/captures" active={isCaptures} icon={<CapturesIcon />} label="Captures Dashboard" title="Everything you've forwarded, texted, shared, or spoken — in one place" onClick={close} />
         <NavItem href="/app/documents" active={isDocs} icon={<DocsIcon />} label="Documents" title="Files in your brain" onClick={close} />
         <NavItem href="/app/brain-map" active={isBrainMap} icon={<BrainMapIcon />} label="Brain Map" title="Map of what your agent knows" onClick={close} />
         <NavItem href="/app/apps" active={isApps} icon={<WorkIcon />} label="Apps" onClick={close} />
@@ -357,7 +357,7 @@ export default function AppNav() {
 
         <div className="my-2 border-t border-slate-800/50" />
 
-        <NavItem href="/app/capture" active={isCapture} icon={<CaptureIcon />} label="Capture" onClick={close} />
+        <NavItem href="/app/capture" active={isCapture} icon={<CaptureIcon />} label="Quick Capture" title="Record a quick voice memo or note" onClick={close} />
       </nav>
 
       <div className="border-t border-slate-800/50 px-3 py-4 shrink-0">

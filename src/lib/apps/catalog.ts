@@ -17,7 +17,6 @@ export const APP_IDS = [
   "follow-up-sweeps",
   "landing-page-builder",
   "idea-engine",
-  "capture-inbox",
   "brain-map",
   "workflow-vault",
   "ritual-scheduler",
@@ -171,17 +170,6 @@ export const APP_CATALOG: AppDef[] = [
       "You have brilliant ideas. They keep dying in a notes app. Drop one — typed, a voice memo, or a link you were watching — and PA runs the chain: scans the market, writes the MVP plan for you to approve, then ships the MVP on your own GitHub and Vercel. It ends with a working link and your first 25 outreach drafts, not one more prompt box.",
     blurb: "Drop an idea. Approve the plan. PA ships the MVP on your accounts.",
     tag: "Builds",
-    tagColor: "cyan",
-  },
-  {
-    id: "capture-inbox",
-    href: "/app/settings/capture-routing",
-    label: "Capture Inbox",
-    shortLabel: "Capture Inbox",
-    description:
-      "Everything you tap, talk, or share into your brain lands here first. Set rules so the obvious stuff files itself — a competitor's link goes straight to your competitor notes. Each Monday, PA reads what's left, suggests where each one belongs, and you approve with a tap. Once something's filed in your brain, it clears out of the inbox so the list stays short.",
-    blurb: "File what you capture: rules that route it, a weekly sweep that sorts the rest.",
-    tag: "Reads Brain",
     tagColor: "cyan",
   },
   {

@@ -7,13 +7,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import type { DashboardCapture } from "@/lib/pocket-capture/dashboard";
+import type { DashboardCapture, SourceChip } from "@/lib/pocket-capture/dashboard";
 import {
   debounce,
   filterCaptures,
   formatRelativeTime,
   hasMore,
+  labelForCaptureSource,
   paginate,
+  SOURCE_CHIPS,
   topTags,
 } from "@/lib/pocket-capture/dashboard";
 
@@ -326,9 +328,6 @@ function CaptureRow({
         onClick={onToggle}
         className="flex w-full items-start gap-3 px-4 py-3.5 text-left"
       >
-        <span aria-hidden className="mt-0.5 text-lg">
-          {capture.icon}
-        </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {capture.title && (
@@ -336,8 +335,12 @@ function CaptureRow({
                 {capture.title}
               </p>
             )}
-            <span className="shrink-0 text-[11px] text-slate-500">
-              {formatRelativeTime(capture.ts, now)}
+            <span className="ml-auto inline-flex shrink-0 items-center gap-1.5 text-[11px] text-slate-500">
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-800/70 px-1.5 py-0.5 font-medium text-slate-400">
+                <span aria-hidden>{capture.icon}</span>
+                {labelForCaptureSource(capture.sourceType)}
+              </span>
+              <span>{formatRelativeTime(capture.ts, now)}</span>
             </span>
           </div>
           <p className={`text-sm text-slate-400 ${expanded ? "" : "line-clamp-2"}`}>
@@ -406,6 +409,7 @@ export default function CapturesClient({
   const [rawQuery, setRawQuery] = useState("");
   const [query, setQuery] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [source, setSource] = useState<SourceChip>("all");
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<DashboardCapture | null>(null);
@@ -430,14 +434,23 @@ export default function CapturesClient({
   // Any filter change resets pagination to the first window.
   useEffect(() => {
     setPage(1);
-  }, [query, selectedTags]);
+  }, [query, selectedTags, source]);
 
   const allTags = useMemo(() => topTags(captures, 10), [captures]);
   const allTagNames = useMemo(() => topTags(captures, 1000).map((t) => t.tag), [captures]);
 
+  // How many live captures fall under each source chip — drives the count shown on each chip.
+  const sourceCounts = useMemo(() => {
+    const counts = {} as Record<SourceChip, number>;
+    for (const chip of SOURCE_CHIPS) {
+      counts[chip.key] = filterCaptures(captures, { query: "", tags: [], source: chip.key }).length;
+    }
+    return counts;
+  }, [captures]);
+
   const filtered = useMemo(
-    () => filterCaptures(captures, { query, tags: selectedTags }),
-    [captures, query, selectedTags],
+    () => filterCaptures(captures, { query, tags: selectedTags, source }),
+    [captures, query, selectedTags, source],
   );
   const visible = useMemo(() => paginate(filtered, page, PER_PAGE), [filtered, page]);
   const more = hasMore(filtered.length, page, PER_PAGE);
@@ -486,7 +499,9 @@ export default function CapturesClient({
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-50">Captures</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-50">
+              Captures Dashboard
+            </h1>
             <p className="mt-0.5 text-sm text-slate-500">
               {liveCount} {liveCount === 1 ? "capture" : "captures"} in your brain
             </p>
@@ -523,6 +538,30 @@ export default function CapturesClient({
               </button>
             )}
           </div>
+        </div>
+
+        {/* Source filter chips — one place for every capture surface */}
+        <div className="mt-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
+          {SOURCE_CHIPS.map((chip) => {
+            const count = sourceCounts[chip.key];
+            const active = source === chip.key;
+            return (
+              <button
+                key={chip.key}
+                type="button"
+                onClick={() => setSource(chip.key)}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition active:scale-95 ${
+                  active
+                    ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-200"
+                    : "border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                }`}
+              >
+                <span aria-hidden>{chip.icon}</span>
+                {chip.label}
+                <span className="text-[10px] opacity-60">{count}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Tag filter pills */}

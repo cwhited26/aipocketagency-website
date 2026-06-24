@@ -251,7 +251,7 @@ export function day6Capture(pr: BaseEmailProps): RenderedEmail {
         text: "Then use your Content Creator Persona to turn one of them into a usable asset. A post. An email. A landing page section. A hook. A video script. A newsletter idea.",
       },
       { kind: "p", text: "Do not trust your memory. Capture it. Process it. Review it." },
-      { kind: "button", label: "Open Capture Inbox", href: LINKS.captureInbox },
+      { kind: "button", label: "Open Captures Dashboard", href: LINKS.captureInbox },
     ],
   });
 }

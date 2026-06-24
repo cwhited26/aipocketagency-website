@@ -1,13 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import CaptureRoutingClient from "./CaptureRoutingClient";
+import { permanentRedirect } from "next/navigation";
 
-export default async function CaptureRoutingPage() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/app/login");
-
-  return <CaptureRoutingClient />;
+// Capture routing moved into the unified Captures Dashboard settings when the Capture Inbox App was
+// retired. This route stays only as a permanent redirect (308 — Next's permanent-redirect status) so
+// existing links and bookmarks land on the relocated section; the hash scrolls to it in-page.
+export default function CaptureRoutingRedirectPage() {
+  permanentRedirect("/app/captures/settings#routing-rules");
 }

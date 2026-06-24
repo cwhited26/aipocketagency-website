@@ -18,7 +18,7 @@ export const LINKS = {
   personas: `${APP_ORIGIN}/app/personas`,
   apps: `${APP_ORIGIN}/app/apps`,
   missionControl: `${APP_ORIGIN}/app`,
-  captureInbox: `${APP_ORIGIN}/app/apps/capture-inbox`,
+  captureInbox: `${APP_ORIGIN}/app/captures`,
   followUpSweeps: `${APP_ORIGIN}/app/apps/follow-up-sweeps`,
   leadScout: `${APP_ORIGIN}/app/apps/lead-scout`,
   ideaEngine: `${APP_ORIGIN}/app/apps/ideas`,

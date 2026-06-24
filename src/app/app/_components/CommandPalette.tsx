@@ -227,7 +227,8 @@ const PALETTE_ITEMS: PaletteItem[] = [
   { id: "projects",   label: "Projects",             keywords: "projects scaffolds plans milestones scaffolding",         href: "/app/projects",         section: "NAVIGATE", Icon: IcProjects    },
   { id: "community",  label: "Community",            keywords: "community skool members network",                         href: "/app/skool",            section: "NAVIGATE", Icon: IcPeople      },
   { id: "connections",label: "Connections",          keywords: "connections integrations oauth gmail slack calendar quickbooks stripe", href: "/app/settings/connections", section: "NAVIGATE", Icon: IcConnections },
-  { id: "capture",    label: "Capture",              keywords: "capture upload feed brain note",                          href: "/app/capture",          section: "NAVIGATE", Icon: IcCapture     },
+  { id: "captures",   label: "Captures Dashboard",   keywords: "captures dashboard feed inbox voice email sms shared forwarded", href: "/app/captures",      section: "NAVIGATE", Icon: IcCapture     },
+  { id: "capture",    label: "Quick Capture",        keywords: "quick capture upload feed brain note voice memo record",  href: "/app/capture",          section: "NAVIGATE", Icon: IcCapture     },
   { id: "settings",   label: "Settings",             keywords: "settings account api key config",                         href: "/app/settings",         section: "NAVIGATE", Icon: IcSettings    },
   // Actions
   { id: "new-conv",   label: "New conversation",     keywords: "new conversation chat start ask",                         href: "/app/ask",              section: "ACTIONS",  Icon: IcPlus        },
