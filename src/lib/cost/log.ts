@@ -30,6 +30,8 @@ export type CostFeatureSlug =
   | "idea_engine"
   | "rag"
   | "capture_triage"
+  // One Haiku call per inbound SMS that looks like a reminder (PC-CORE-5 reminder parse).
+  | "pocket_capture_reminders"
   // One row per inbound Channels Gateway roundtrip (PA-CHAN spec §8.4); Slack adapter, Sonnet 4.6.
   | "channels:slack"
   // One row per headless URL extraction run (recon Lane C, PA-CINS); backend 'vercel', priced by run time.

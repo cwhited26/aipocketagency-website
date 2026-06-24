@@ -56,6 +56,10 @@
     {
       "path": "/api/cron/email-activation",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/pocket-capture-reminders",
+      "schedule": "* * * * *"
     }
   ],
   "rewrites": [

@@ -15,14 +15,20 @@
 import { NextResponse } from "next/server";
 import { verifyCaptureSmsSignature } from "@/lib/connectors/twilio/signature";
 import { parseInboundSms } from "@/lib/connectors/sms/inbound";
+import { twilioConfig } from "@/lib/connectors/sms/config";
+import { sendSms } from "@/lib/connectors/sms/send";
 import { lookupCaptureOwnerByTwilioNumber } from "@/lib/pocket-capture/sms-numbers";
 import {
   claimSmsDelivery,
   markProcessed,
+  markProcessedWithNote,
   markError,
   releaseSmsClaim,
 } from "@/lib/pocket-capture/sms-log";
 import { writeSmsCapture, isCarrierKeyword } from "@/lib/pocket-capture/sms-capture";
+import { parseReminderRequest, matchesReminderPattern, isUserFixable } from "@/lib/pocket-capture/reminders/parse";
+import { insertReminder, fetchOwnerAnthropicKey } from "@/lib/pocket-capture/reminders/db";
+import { confirmationMessage, reminderErrorMessage } from "@/lib/pocket-capture/reminders/format";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -96,14 +102,9 @@ export async function POST(req: Request): Promise<NextResponse> {
     return twiml();
   }
 
-  // ── PC-CORE-5 (Reminders) seam ──────────────────────────────────────────────────────────────
-  // A reminder-pattern message ("remind me to X in 39 min") is intercepted HERE — after owner
-  // resolution + carrier-keyword filter, before the normal capture write below. Reminders should
-  // claim the delivery (message_sid idempotency), schedule the outbound, mark the row processed
-  // with a reminder note, and return twiml() WITHOUT calling writeSmsCapture. The parsed text is
-  // sms.body; the reply path is connectors/sms/send.sendSms(config, { from: sms.to, to: sms.from }).
-
-  // Claim the delivery. A duplicate redelivery collides on message_sid → acknowledge, don't recapture.
+  // Claim the delivery. A duplicate redelivery collides on message_sid → acknowledge, don't reprocess.
+  // The claim happens once here (after owner resolution + carrier-keyword filter) and guards BOTH the
+  // reminder and the capture paths below, so a Twilio retry can never double-schedule or double-capture.
   const claim = await claimSmsDelivery({
     ownerId: owner.id,
     fromNumber: sms.from,
@@ -114,8 +115,70 @@ export async function POST(req: Request): Promise<NextResponse> {
   });
   if (!claim.ok) return NextResponse.json({ error: claim.error }, { status: claim.status });
   if (claim.duplicate) return twiml();
-
   const auditId = claim.id;
+
+  // ── PC-CORE-5 (Reminders) ─────────────────────────────────────────────────────────────────────
+  // A reminder-shaped text ("remind me to X in 39 min") is scheduled here instead of captured as a
+  // note. The regex gate keeps the Haiku spend off ordinary captures. A confident reminder schedules
+  // + confirms and returns. A reminder with an unusable time nudges the owner to rephrase, then falls
+  // through to capture (so the thought is never lost). Anything else (not a reminder, or an infra
+  // failure like no API key) just captures. The note on the audit row records which path was taken.
+  let captureNote: string | null = null;
+  if (matchesReminderPattern(sms.body)) {
+    const apiKey = await fetchOwnerAnthropicKey(owner.id);
+    const now = new Date();
+    const parsed = await parseReminderRequest({
+      text: sms.body,
+      now,
+      apiKey,
+      cost: {
+        ownerId: owner.id,
+        featureSlug: "pocket_capture_reminders",
+        idempotencyKey: `reminder-parse:${sms.messageSid}`,
+      },
+    });
+
+    if (parsed.isReminder && parsed.ok) {
+      const inserted = await insertReminder({
+        ownerId: owner.id,
+        originalCaptureId: auditId,
+        taskText: parsed.taskText,
+        remindAt: parsed.remindAt,
+        sourceText: sms.body,
+        deliverTo: sms.from,
+        deliverFrom: sms.to,
+      });
+      if (!inserted.ok) {
+        // Couldn't persist the schedule — release the claim so a Twilio retry can reschedule.
+        await releaseSmsClaim(auditId);
+        return NextResponse.json({ error: inserted.error }, { status: 502 });
+      }
+      const config = twilioConfig();
+      if (config) {
+        await sendSms(config, {
+          from: sms.to,
+          to: sms.from,
+          body: confirmationMessage(parsed.taskText, parsed.remindAt, now),
+        });
+      }
+      await markProcessedWithNote(auditId, `reminder_set:${inserted.data.id}`);
+      return twiml();
+    }
+
+    if (parsed.isReminder && !parsed.ok && isUserFixable(parsed.reason)) {
+      // Reminder intent, unusable time — tell the owner how to fix it, then save the text as a note.
+      const config = twilioConfig();
+      if (config) {
+        await sendSms(config, { from: sms.to, to: sms.from, body: reminderErrorMessage(parsed.reason) });
+      }
+      captureNote = `reminder_failed:${parsed.reason}`;
+    } else if (parsed.isReminder && !parsed.ok) {
+      // Infra failure (no key / API error) — capture silently, but record why on the audit row.
+      captureNote = `reminder_skipped:${parsed.reason}`;
+    }
+  }
+
+  // Normal capture (also the reminder fall-through path).
   const result = await writeSmsCapture({ owner, sms, captureId: auditId });
 
   if (!result.ok) {
@@ -129,6 +192,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: result.error }, { status: 502 });
   }
 
-  await markProcessed(auditId);
+  if (captureNote) await markProcessedWithNote(auditId, captureNote);
+  else await markProcessed(auditId);
   return twiml();
 }

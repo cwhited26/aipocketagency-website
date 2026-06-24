@@ -70,6 +70,15 @@ export async function markProcessed(id: string): Promise<PaResult<void>> {
   return patchRow(id, { processed: true, error_text: null });
 }
 
+/**
+ * Mark a delivery processed but record an informational note in error_text (e.g. "reminder_set:<id>"
+ * when PC-CORE-5 handled it instead of capturing). The note isn't an error — it's the audit trail of
+ * which path the webhook took, so a glance at the log row tells you a reminder was scheduled.
+ */
+export async function markProcessedWithNote(id: string, note: string): Promise<PaResult<void>> {
+  return patchRow(id, { processed: true, error_text: note.slice(0, 2000) });
+}
+
 /** Record why a matched delivery could not be processed (leaves processed=false). */
 export async function markError(id: string, errorText: string): Promise<PaResult<void>> {
   return patchRow(id, { processed: false, error_text: errorText.slice(0, 2000) });
