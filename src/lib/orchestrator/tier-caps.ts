@@ -94,6 +94,19 @@ export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> 
   // so NO number of prior approvals ever unlocks auto-approve — every migration is one human tap on
   // the full SQL, forever. create_project / seed_data clear at the default window (10).
   "supabase:apply_migration": Number.POSITIVE_INFINITY,
+  // Browser Automation (Phase 1): the generic per-(connector, action) auto-approve toggle must NEVER
+  // unlock for browser_* tools — browser auto-approve is governed PER-DOMAIN by the Trust Ladder
+  // (lib/browser/trust-ladder.ts + the /app/settings/browser/permissions surface), not by this
+  // connector-action ladder. Pinning every browser tool to Infinity here keeps the two systems from
+  // colliding: stageConnectorAction never generic-auto-fires a browser call, and the approval route
+  // never shows the "turn on auto-approve in Settings → Auto-approve" note for one.
+  "browser:browser_navigate": Number.POSITIVE_INFINITY,
+  "browser:browser_screenshot": Number.POSITIVE_INFINITY,
+  "browser:browser_read_page": Number.POSITIVE_INFINITY,
+  "browser:browser_click": Number.POSITIVE_INFINITY,
+  "browser:browser_type": Number.POSITIVE_INFINITY,
+  "browser:browser_extract_table": Number.POSITIVE_INFINITY,
+  "browser:browser_wait_for": Number.POSITIVE_INFINITY,
 };
 
 /** The trust window for a specific (connector, action), honoring the money/build overrides. */

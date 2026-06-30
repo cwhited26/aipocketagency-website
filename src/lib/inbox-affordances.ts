@@ -25,7 +25,8 @@ export type InboxItemKind =
   | "skill_evolution_proposal"
   | "gate_findings"
   | "persona_memory_proposal"
-  | "soul_attribute_proposal";
+  | "soul_attribute_proposal"
+  | "browser_action_approval";
 
 export type AffordanceRole = "primary" | "secondary" | "destructive";
 
@@ -154,6 +155,18 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
         affordances: [
           { key: "approve", label: "Approve", role: "primary" },
           { key: "edit", label: "Edit", role: "secondary" },
+          { key: "reject", label: "Reject", role: "destructive" },
+        ],
+      };
+
+    // One browser_* tool call against the hidden headless browser (Browser Automation Phase 1).
+    // The tool fires ONLY on Approve — a commit-on-approve primitive — so it carries Approve / Reject.
+    // (No Edit: a browser call's target + selector are what the agent chose; the owner approves or not.)
+    case "browser_action_approval":
+      return {
+        hasApproval: true,
+        affordances: [
+          { key: "approve", label: "Approve", role: "primary" },
           { key: "reject", label: "Reject", role: "destructive" },
         ],
       };

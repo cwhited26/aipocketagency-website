@@ -32,7 +32,8 @@ export type InboxCardKind =
   | "ritual_result"
   | "ritual_paused"
   | "persona_memory_proposal"
-  | "soul_attribute_proposal";
+  | "soul_attribute_proposal"
+  | "browser_action_approval";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -304,10 +305,13 @@ function gateOf(item: InboxItem): GateFindingsDetail {
 function normalizeInboxItem(item: InboxItem): InboxCard {
   const isEmail = item.kind === "draft" && item.source === "email-drafter";
   const isTriage = item.kind === "email_triage";
-  // Both the productivity (action_approval) and build (build_action_approval) connector kinds carry
-  // a connector/action detail and render via the same ActionApprovalCard.
+  // The productivity (action_approval), build (build_action_approval), and browser
+  // (browser_action_approval) connector kinds all carry a connector/action detail and render via the
+  // same ActionApprovalCard.
   const isAction =
-    item.kind === "action_approval" || item.kind === "build_action_approval";
+    item.kind === "action_approval" ||
+    item.kind === "build_action_approval" ||
+    item.kind === "browser_action_approval";
   const body = item.body_md ?? "";
   const triage = isTriage ? triageOf(item) : null;
   const action = isAction ? actionOf(item) : null;

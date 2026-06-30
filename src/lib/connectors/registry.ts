@@ -46,6 +46,7 @@ import {
   DEEPGRAM_CONNECTOR,
   type DeepgramExecuteResult,
 } from "./deepgram/actions";
+import { executeBrowserAction, BROWSER_CONNECTOR, type BrowserExecuteResult } from "@/lib/browser";
 
 // All in-process executors share the same terminal result shape ({ok,summary,data} |
 // {ok,status,error}); the union keeps that explicit as more connectors register.
@@ -60,7 +61,8 @@ export type ConnectorExecuteResult =
   | SupabaseExecuteResult
   | BrainExecuteResult
   | RecallAiExecuteResult
-  | DeepgramExecuteResult;
+  | DeepgramExecuteResult
+  | BrowserExecuteResult;
 
 export type ExecuteConnectorActionInput = {
   connector: string;
@@ -186,6 +188,18 @@ export async function executeConnectorAction(
       payload: input.payload,
       subAgentRunId: input.subAgentRunId ?? null,
       ownerEmail: input.ownerEmail ?? null,
+    });
+  }
+  if (input.connector === BROWSER_CONNECTOR) {
+    // Browser Automation (Phase 1): an approved browser_action_approval runs the staged browser_* tool
+    // in-process against the hidden headless browser. Only the MANUAL-approve path reaches here (the
+    // auto-approve path runs inline in lib/browser/stage.ts), so approvedManually is true — that's what
+    // the per-domain Trust Ladder counts.
+    return executeBrowserAction({
+      userId: input.userId,
+      action: input.action,
+      payload: input.payload,
+      approvedManually: true,
     });
   }
   if (input.connector === SUPABASE_CONNECTOR) {

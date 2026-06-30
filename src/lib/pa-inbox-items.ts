@@ -37,6 +37,10 @@
 // observation: the proposed {kind, summary, body, confidence} for how one Persona's owner likes to be
 // worked with. Approve writes it to pa_persona_souls (supersession-merged, cap-enforced); reject
 // suppresses re-proposal. Same pattern as persona_memory_proposal.
+// 'browser_action_approval' (migration 093, Browser Automation Phase 1) stages one browser_* tool call
+// against the hidden headless browser. Same commit-on-approve primitive as action_approval — it resolves
+// through the same /api/orchestrator/approvals route + ActionApprovalCard; approve runs the tool, reject
+// drops it. Auto-approved (Trust-Ladder) and refused calls never reach the inbox.
 export type InboxKind =
   | "draft"
   | "decision"
@@ -55,7 +59,8 @@ export type InboxKind =
   | "ritual_result"
   | "ritual_paused"
   | "persona_memory_proposal"
-  | "soul_attribute_proposal";
+  | "soul_attribute_proposal"
+  | "browser_action_approval";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

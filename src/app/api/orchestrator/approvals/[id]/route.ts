@@ -63,10 +63,13 @@ export async function POST(
   const inboxRes = await fetchInboxItemById(params.id);
   if (!inboxRes.ok) return NextResponse.json({ error: inboxRes.error }, { status: inboxRes.status });
   const item = inboxRes.data;
-  // Both productivity (action_approval) and build (build_action_approval) connector actions resolve
-  // here — same pa_action_approvals detail row, same executeConnectorAction dispatch.
+  // Productivity (action_approval), build (build_action_approval), and browser (browser_action_approval)
+  // connector actions all resolve here — same pa_action_approvals detail row, same executeConnectorAction
+  // dispatch.
   const isConnectorApproval =
-    item?.kind === "action_approval" || item?.kind === "build_action_approval";
+    item?.kind === "action_approval" ||
+    item?.kind === "build_action_approval" ||
+    item?.kind === "browser_action_approval";
   if (!item || item.user_id !== user.id || !isConnectorApproval) {
     return NextResponse.json({ error: "Approval not found" }, { status: 404 });
   }

@@ -79,9 +79,10 @@ export type StageActionInput = {
   // A longer preview of the action's effect (e.g. the email subject + body).
   preview: string;
   // The Inbox card kind. Defaults to 'action_approval' (the productivity connectors). Build
-  // connectors stage 'build_action_approval' so the Inbox can theme them as build actions; both
-  // kinds resolve through the same approval route + ActionApprovalCard.
-  kind?: Extract<InboxKind, "action_approval" | "build_action_approval">;
+  // connectors stage 'build_action_approval' so the Inbox can theme them as build actions; Browser
+  // Automation stages 'browser_action_approval'. All resolve through the same approval route +
+  // ActionApprovalCard.
+  kind?: Extract<InboxKind, "action_approval" | "build_action_approval" | "browser_action_approval">;
 };
 
 export type StageActionResult = {

@@ -42,7 +42,10 @@ export type CostFeatureSlug =
   | "competitor_inspector"
   // One Haiku call per Soul extraction (Pocket_Agent_Soul_System_SPEC_v1) — post-approval or the
   // owner's "Suggest improvements" note. backend 'anthropic', model claude-haiku-4-5-….
-  | "soul_extraction";
+  | "soul_extraction"
+  // One row per executed browser_* tool call against the hidden headless browser (Browser Automation
+  // Phase 1); backend 'vercel', priced by run time like url_extraction.
+  | "browser_action";
 
 /**
  * The per-call-site context a metered backend carries: who's paying, which feature area, and a
