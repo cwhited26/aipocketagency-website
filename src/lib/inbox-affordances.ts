@@ -24,7 +24,8 @@ export type InboxItemKind =
   | "cost_budget_gate"
   | "skill_evolution_proposal"
   | "gate_findings"
-  | "persona_memory_proposal";
+  | "persona_memory_proposal"
+  | "soul_attribute_proposal";
 
 export type AffordanceRole = "primary" | "secondary" | "destructive";
 
@@ -134,6 +135,20 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
     // pa_persona_memory — a commit-on-approve primitive — so it carries Approve / Edit / Reject. Edit
     // lets the owner tweak the memory before it's saved; Reject feeds back so it isn't re-proposed.
     case "persona_memory_proposal":
+      return {
+        hasApproval: true,
+        affordances: [
+          { key: "approve", label: "Approve", role: "primary" },
+          { key: "edit", label: "Edit", role: "secondary" },
+          { key: "reject", label: "Reject", role: "destructive" },
+        ],
+      };
+
+    // A Soul attribute the extractor proposes (Soul System SPEC): mid-confidence learning about HOW
+    // the owner likes to be worked with. Approving WRITES a row to pa_persona_souls — a commit-on-
+    // approve primitive — so it carries Approve / Edit / Reject. Edit lets the owner tweak the wording
+    // before it's saved (on the Soul page); Reject feeds back so it isn't re-proposed.
+    case "soul_attribute_proposal":
       return {
         hasApproval: true,
         affordances: [

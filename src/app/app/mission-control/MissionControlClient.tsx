@@ -99,6 +99,25 @@ type MemoryProposalDetail = {
   untrustedOrigin: boolean;
 };
 
+type SoulProposalDetail = {
+  personaId: string;
+  personaName: string;
+  kind: string;
+  summary: string;
+  body: string | null;
+};
+
+// Owner-friendly heading per Soul attribute kind (mirrors lib/personas/soul-types SOUL_KIND_LABELS).
+const SOUL_KIND_LABELS: Record<string, string> = {
+  communication_style: "Communication style",
+  response_preference: "Response preferences",
+  conversational_rhythm: "Check-in rhythm",
+  boundary: "Boundary",
+  surface_preference: "Formatting & surfaces",
+  working_dynamic: "Working dynamic",
+  affective_signal: "Reading your state",
+};
+
 type InboxCard = {
   id: string;
   system: "inbox" | "legacy";
@@ -117,6 +136,7 @@ type InboxCard = {
   skillProposal: SkillProposalDetail | null;
   gate: GateFindingsDetail | null;
   memoryProposal: MemoryProposalDetail | null;
+  soulProposal: SoulProposalDetail | null;
   sourceSurface: string | null;
   threadId: string | null;
 };
@@ -181,6 +201,7 @@ type AwaitingSection =
   | "budget"
   | "skills"
   | "memory"
+  | "soul"
   | "hidden";
 
 function sectionFor(kind: InboxItemKind): AwaitingSection {
@@ -208,6 +229,8 @@ function sectionFor(kind: InboxItemKind): AwaitingSection {
       return "skills";
     case "persona_memory_proposal":
       return "memory";
+    case "soul_attribute_proposal":
+      return "soul";
     case "persona_lead":
       return "hidden";
     default: {
@@ -815,6 +838,7 @@ function TriageCard({
         skillProposal: null,
         gate: null,
         memoryProposal: null,
+        soulProposal: null,
         sourceSurface: "inbox",
         threadId: triage!.threadId,
       });
@@ -1426,6 +1450,74 @@ function MemoryProposalCard({
             className="min-h-[44px] flex items-center rounded-xl border border-slate-700/60 px-4 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors"
           >
             Review what it remembers →
+          </Link>
+        )}
+        <button
+          onClick={() => void decide("reject")}
+          disabled={busy !== null}
+          className="min-h-[44px] rounded-xl border border-slate-700/60 px-4 text-sm text-slate-400 hover:border-red-500/50 hover:text-red-300 disabled:opacity-50 transition-colors ml-auto"
+        >
+          {busy === "reject" ? "…" : "Reject"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SoulProposalCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState<"approve" | "reject" | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  const p = card.soulProposal;
+  const kindLabel = p ? (SOUL_KIND_LABELS[p.kind] ?? "How you work") : "How you work";
+  const summary = (p?.summary ?? card.bodyMd).trim();
+
+  async function decide(kind: "approve" | "reject") {
+    setBusy(kind);
+    setErr(null);
+    try {
+      await postDecision(kind === "approve" ? approveEndpoint(card) : rejectEndpoint(card));
+      onResolved(card.id, kind === "approve" ? "approved" : "rejected");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-cyan-500/20 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-cyan-300/80 uppercase tracking-[0.18em]">
+          {p?.personaName ? `${p.personaName} · ${kindLabel}` : "How you like to work"}
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
+      </div>
+
+      <p className="text-[15px] text-slate-100 leading-relaxed">{summary}</p>
+      {p?.body && <p className="mt-1 text-[13px] text-slate-400 leading-relaxed">{p.body}</p>}
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => void decide("approve")}
+          disabled={busy !== null}
+          className="min-h-[44px] rounded-xl bg-[#22d3ee]/15 border border-[#22d3ee]/40 px-4 text-sm font-medium text-[#22d3ee] hover:bg-[#22d3ee]/25 disabled:opacity-50 transition-colors"
+        >
+          {busy === "approve" ? "Saving…" : "Approve & keep"}
+        </button>
+        {p?.personaId && (
+          <Link
+            href={`/app/personas/${p.personaId}/soul`}
+            className="min-h-[44px] flex items-center rounded-xl border border-slate-700/60 px-4 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors"
+          >
+            Edit on its Soul page →
           </Link>
         )}
         <button
@@ -2087,6 +2179,7 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
   const activity = inSection("activity");
   const skillProposals = inSection("skills");
   const memoryProposals = inSection("memory");
+  const soulProposals = inSection("soul");
 
   const pendingTriageThreadIds = new Set(
     triage.map((c) => c.triage?.threadId).filter((t): t is string => Boolean(t)),
@@ -2485,6 +2578,17 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
                 <div className="flex flex-col gap-3">
                   {memoryProposals.map((card) => (
                     <MemoryProposalCard key={card.id} card={card} onResolved={onResolved} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {soulProposals.length > 0 && (
+              <section className="mb-8">
+                <SectionHeader label="Soul updates to review" count={soulProposals.length} tone="text-[#22d3ee]/70" />
+                <div className="flex flex-col gap-3">
+                  {soulProposals.map((card) => (
+                    <SoulProposalCard key={card.id} card={card} onResolved={onResolved} />
                   ))}
                 </div>
               </section>

@@ -190,6 +190,103 @@ export function personaMemoryCap(tier: Tier): number | null {
   return PERSONA_MEMORY_CAPS[tier];
 }
 
+// ── Persona Soul System gating (Pocket_Agent_Soul_System_SPEC_v1 §Tier gating) ───────────────
+//
+// The Soul learns HOW to work with this owner (style, preferences, boundaries). Behaviour by tier:
+//   • Personal Brain ($37, `starter`)  — reads only. Continuous extraction is OFF. The owner may
+//                                          still add Soul attributes by hand.
+//   • Business Agent ($97, `pro`/`pro_plus`) — opt-in extraction PER Persona (a Persona is "enabled"
+//                                          once it holds at least one Soul attribute the owner seeded
+//                                          or kept). Up to 25 active attributes per Persona.
+//   • AI Agent Workspace ($497, `studio_plus`) — full extraction across all Personas, unlimited
+//                                          attributes, Soul export.
+//   • Studio / Studio+ / Enterprise    — cross-Persona Soul sharing (one owner-model across agents).
+// The dollar anchors come straight from the SPEC; the in-between PA rungs (`pro_plus`, `studio`) are
+// mapped monotonically so a higher price never grants less.
+export type SoulExtractionMode = "off" | "opt_in" | "full";
+
+const SOUL_EXTRACTION_MODES: Record<Tier, SoulExtractionMode> = {
+  starter: "off",
+  pro: "opt_in",
+  pro_plus: "opt_in",
+  studio: "full",
+  studio_plus: "full",
+  enterprise: "full",
+};
+
+/** This tier's continuous-extraction mode (SPEC §Tier gating). */
+export function soulExtractionMode(tier: Tier): SoulExtractionMode {
+  return SOUL_EXTRACTION_MODES[tier];
+}
+
+// Per-Persona cap on LIVE Soul attributes (null = unlimited). Business is 25 per the SPEC; the rest
+// scale monotonically with the price ladder, Workspace ($497, studio_plus) and up being unlimited.
+export const SOUL_ACTIVE_CAPS: Record<Tier, number | null> = {
+  starter: 25,
+  pro: 25,
+  pro_plus: 25,
+  studio: 100,
+  studio_plus: null,
+  enterprise: null,
+};
+
+/** This tier's per-Persona live Soul-attribute cap (null = unlimited). */
+export function soulActiveCap(tier: Tier): number | null {
+  return SOUL_ACTIVE_CAPS[tier];
+}
+
+/** Can this tier run the Haiku extractor at all (continuous OR the "Suggest improvements" box)? The
+ *  read-only Personal tier never spends a model call on Soul extraction — it can only add by hand. */
+export function tierAllowsSoulExtraction(tier: Tier): boolean {
+  return soulExtractionMode(tier) !== "off";
+}
+
+/** Cross-Persona Soul sharing — Studio and up (SPEC §Tier gating). */
+export function tierAllowsCrossPersonaSoul(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio");
+}
+
+/** Soul export for backup — the AI Agent Workspace ($497) feature and up (SPEC §Tier gating). */
+export function tierAllowsSoulExport(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio_plus");
+}
+
+export type SoulExtractionDecision =
+  | { allowed: true }
+  | { allowed: false; reason: "read_only" | "opt_in_pending" };
+
+/**
+ * Pure: may CONTINUOUS (post-approval) extraction run for this Persona right now?
+ *   • off    → never (read-only Personal tier).
+ *   • opt_in → only when the Persona is enabled (it already holds ≥1 Soul attribute).
+ *   • full   → always.
+ * The explicit "Suggest improvements" box is a separate, deliberate owner action — it is gated only by
+ * tierAllowsSoulExtraction, not by this opt-in (the owner is directly asking).
+ */
+export function resolveSoulExtraction(
+  tier: Tier,
+  ctx: { personaHasSoul: boolean },
+): SoulExtractionDecision {
+  const mode = soulExtractionMode(tier);
+  if (mode === "off") return { allowed: false, reason: "read_only" };
+  if (mode === "full") return { allowed: true };
+  return ctx.personaHasSoul ? { allowed: true } : { allowed: false, reason: "opt_in_pending" };
+}
+
+/** Pure: may the owner add another live Soul attribute to this Persona, given the live count? Manual
+ *  add is allowed on every tier (even read-only Personal); it's the cap that bites. */
+export function evaluateCanAddSoulAttribute(tier: Tier, liveCount: number): CapDecision {
+  const cap = soulActiveCap(tier);
+  if (cap === null) return { ok: true, reason: "" };
+  if (liveCount >= cap) {
+    return {
+      ok: false,
+      reason: `This assistant's Soul is full at ${cap} attributes on your plan. Retire one, or upgrade for more.`,
+    };
+  }
+  return { ok: true, reason: "" };
+}
+
 /**
  * Can this tier run a Decision Roundtable (PA-DR-1)? Three (or four) sub-agent runs per question is
  * 3-4× a normal chat's model spend, so the feature is Studio+/Enterprise only. Free/Pro tiers see a

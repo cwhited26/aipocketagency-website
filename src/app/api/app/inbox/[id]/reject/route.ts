@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchInboxItemById, resolveInboxItem } from "@/lib/pa-inbox-items";
+import { extractSoulFromInboxResolution } from "@/lib/personas/soul-extract";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -34,6 +35,15 @@ export async function POST(
   const resolved = await resolveInboxItem(id, "rejected", user.id);
   if (!resolved.ok) {
     return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+  }
+
+  // Continuous Soul extraction (Soul System SPEC): a rejection is a verdict too — the owner pushing
+  // back can reveal a boundary or a preference. Best-effort; persona-tied cards only (the helper
+  // returns early otherwise). Never affects the rejection that already succeeded.
+  try {
+    await extractSoulFromInboxResolution({ item, outcome: "rejected" });
+  } catch {
+    // swallowed by design.
   }
 
   return NextResponse.json({ status: "rejected" });

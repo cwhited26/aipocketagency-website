@@ -155,6 +155,12 @@ function OverviewTab({ personaId, bundle }: { personaId: string; bundle: Bundle 
         >
           What it remembers about you →
         </Link>
+        <Link
+          href={`/app/personas/${personaId}/soul`}
+          className="rounded-lg border border-slate-700 text-slate-300 text-sm font-medium px-4 py-2.5 hover:border-slate-500 hover:text-slate-100 transition-colors"
+        >
+          How it works with you →
+        </Link>
       </div>
     </div>
   );

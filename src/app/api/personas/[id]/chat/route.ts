@@ -22,6 +22,7 @@ import { getDailyLogsForContext } from "@/lib/personas/daily-logs";
 import { isPublicMode } from "@/lib/personas/types";
 import { loadPersonaMemory } from "@/lib/persona-memory/read";
 import { runMemoryLearnPhase, defaultMemoryLearnLlm } from "@/lib/persona-memory/write";
+import { loadPersonaSoul } from "@/lib/personas/soul-load";
 import type { PersonaRow } from "@/lib/personas/types";
 import { loadZoneConfig } from "@/lib/brain/containment-guard";
 import { ContainmentBlockedError } from "@/lib/brain/containment-guard";
@@ -134,6 +135,11 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
     // the brain RAG above; never reads in public mode (loadPersonaMemory hard-guards on persona.mode).
     const memory = await loadPersonaMemory({ personaId: persona.id, mode: persona.mode });
 
+    // Persona Soul (Soul System SPEC): the `## How [Owner] prefers to be worked with` block — HOW to
+    // work with this owner (style, preferences, boundaries). Additive to memory; never reads in public
+    // mode (loadPersonaSoul hard-guards on persona.mode).
+    const soul = await loadPersonaSoul({ personaId: persona.id, mode: persona.mode });
+
     // Resolved once for the LEARN-phase cap check after the turn completes.
     const tier = await getCurrentTier(persona.business_id);
 
@@ -171,6 +177,7 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
       hasKnowledge: knowledge.fileCount > 0,
       memoryBlock: memory.block,
       recentActivityBlock: smart.promptBlock,
+      soulBlock: soul.block,
     });
 
     await insertMessage({ conversation_id: convoId, role: "user", content: message, tokens_used: 0 });

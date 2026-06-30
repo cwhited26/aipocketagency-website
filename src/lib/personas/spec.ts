@@ -74,12 +74,26 @@ export function buildPersonaSystemPrompt(params: {
   // smart-context block (which already embeds it). Stitched in just below memory so all owner context
   // sits together, above the docs. Omitted in public mode (owner activity is never shown to the public).
   recentActivityBlock?: string;
+  // The `## How [Owner] prefers to be worked with` block from the Soul loader (Soul System SPEC). The
+  // third Persona layer — HOW to work with this owner (style, preferences, boundaries), on top of
+  // Identity (spec) and accumulated memory. Empty when the persona has no Soul yet, or in public mode.
+  soulBlock?: string;
 }): string {
-  const { personaName, tone, spec, knowledgeMarkup, hasKnowledge, memoryBlock, recentActivityBlock } = params;
+  const {
+    personaName,
+    tone,
+    spec,
+    knowledgeMarkup,
+    hasKnowledge,
+    memoryBlock,
+    recentActivityBlock,
+    soulBlock,
+  } = params;
   const s = normalizePersonaSpecFields(spec);
   const memorySection = memoryBlock && memoryBlock.trim() ? `${memoryBlock.trim()}\n\n` : "";
   const activitySection =
     recentActivityBlock && recentActivityBlock.trim() ? `${recentActivityBlock.trim()}\n\n` : "";
+  const soulSection = soulBlock && soulBlock.trim() ? `${soulBlock.trim()}\n\n` : "";
 
   const knowledgeSection = hasKnowledge
     ? `KNOWLEDGE (the documents the business owner has taught you — you re-read these every time someone asks; you are NOT "trained" on them):\n${knowledgeMarkup}\n`
@@ -96,7 +110,7 @@ ${section("Problem (what you exist to solve)", s.problem)}${section("Vision (wha
 # Tone
 ${TONE_GUIDANCE[tone]}
 
-${memorySection}${activitySection}# ${knowledgeSection}
+${soulSection}${memorySection}${activitySection}# ${knowledgeSection}
 # Hard rules
 - Answer using the KNOWLEDGE above and your Spec. Do not invent facts, numbers, prices, or policies. If the knowledge does not cover the question, say so plainly and tell the person who to ask.
 - Stay in role. If a request is in your Out of Scope list, decline briefly and point the person in the right direction.

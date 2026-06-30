@@ -31,7 +31,8 @@ export type InboxCardKind =
   | "capture_triage_proposal"
   | "ritual_result"
   | "ritual_paused"
-  | "persona_memory_proposal";
+  | "persona_memory_proposal"
+  | "soul_attribute_proposal";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -125,6 +126,14 @@ export type MemoryProposalDetail = {
   untrustedOrigin: boolean;
 };
 
+export type SoulProposalDetail = {
+  personaId: string;
+  personaName: string;
+  kind: string;
+  summary: string;
+  body: string | null;
+};
+
 export type InboxCard = {
   id: string;
   system: InboxCardSystem;
@@ -143,6 +152,7 @@ export type InboxCard = {
   skillProposal: SkillProposalDetail | null;
   gate: GateFindingsDetail | null;
   memoryProposal: MemoryProposalDetail | null;
+  soulProposal: SoulProposalDetail | null;
   // The surface the draft was initiated from. 'inbox' means it was drafted from
   // within the Inbox (a reply to a triaged thread) and is rendered inline on its
   // originating thread instead of in the generic drafts list. threadId links it back.
@@ -242,6 +252,16 @@ function memoryProposalOf(item: InboxItem): MemoryProposalDetail {
   };
 }
 
+function soulProposalOf(item: InboxItem): SoulProposalDetail {
+  return {
+    personaId: str(item.payload.personaId),
+    personaName: str(item.payload.personaName) || "Your assistant",
+    kind: str(item.payload.kind),
+    summary: str(item.payload.summary),
+    body: str(item.payload.body) || null,
+  };
+}
+
 type GateSeverity = "low" | "medium" | "high" | "critical";
 function severityOf(v: unknown): GateSeverity {
   return v === "low" || v === "high" || v === "critical" ? v : "medium";
@@ -295,6 +315,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
   const skillProposal = item.kind === "skill_evolution_proposal" ? skillProposalOf(item) : null;
   const gate = item.kind === "gate_findings" ? gateOf(item) : null;
   const memoryProposal = item.kind === "persona_memory_proposal" ? memoryProposalOf(item) : null;
+  const soulProposal = item.kind === "soul_attribute_proposal" ? soulProposalOf(item) : null;
   return {
     id: item.id,
     system: "inbox",
@@ -319,6 +340,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
     skillProposal,
     gate,
     memoryProposal,
+    soulProposal,
     sourceSurface: str(item.payload.sourceSurface) || null,
     threadId: str(item.payload.threadId) || null,
   };
@@ -359,6 +381,7 @@ function normalizeLegacyAction(action: PendingAction): InboxCard {
     skillProposal: null,
     gate: null,
     memoryProposal: null,
+    soulProposal: null,
     sourceSurface: null,
     threadId: null,
   };

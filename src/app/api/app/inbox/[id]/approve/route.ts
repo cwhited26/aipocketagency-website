@@ -21,6 +21,11 @@ import { isBlueprintDecision, advanceAfterBlueprintApproval } from "@/lib/idea-e
 import { acceptMemoryProposal } from "@/lib/persona-memory/write";
 import { getCurrentTier } from "@/lib/personas/tier-caps";
 import { isMemoryPartition, isMemoryTier } from "@/lib/persona-memory/types";
+import {
+  acceptSoulProposal,
+  extractSoulFromInboxResolution,
+  SOUL_ATTRIBUTE_PROPOSAL_KIND,
+} from "@/lib/personas/soul-extract";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -43,6 +48,10 @@ const OverrideSchema = z.object({
   importance: z.number().int().min(1).max(10).optional(),
   partition: z.string().max(20).optional(),
   memoryTier: z.string().max(20).optional(),
+  // Soul attribute proposals (Soul System SPEC): the owner may edit the one-line summary and the
+  // longer body on the card before approving.
+  soulSummary: z.string().max(240).optional(),
+  soulBody: z.string().max(4_000).optional(),
 });
 
 function str(v: unknown): string {
@@ -162,7 +171,37 @@ export async function POST(
     if (!resolved.ok) {
       return NextResponse.json({ error: resolved.error }, { status: resolved.status });
     }
+    // Continuous Soul extraction (Soul System SPEC): this persona conversation just landed an approval,
+    // so look for anything about HOW the owner likes to be worked with. Best-effort — never undoes the
+    // approval. Tier gating + public-mode guards live inside the extractor.
+    try {
+      await extractSoulFromInboxResolution({ item, outcome: "approved" });
+    } catch {
+      // swallowed by design — the memory write already succeeded.
+    }
     return NextResponse.json({ status: "approved", saved: true, memoryId: written.data.id });
+  }
+
+  // Soul attribute proposal (Soul System SPEC): write the (possibly owner-edited) attribute to
+  // pa_persona_souls — supersession-merged + cap-enforced. Nothing is sent. Reject (the other route)
+  // just resolves — re-proposal suppression reads the rejected status.
+  if (item.kind === SOUL_ATTRIBUTE_PROPOSAL_KIND) {
+    const tier = await getCurrentTier(user.id);
+    const written = await acceptSoulProposal({
+      ownerId: user.id,
+      tier,
+      payload: item.payload,
+      override: {
+        summary: override.soulSummary,
+        ...(override.soulBody !== undefined ? { body: override.soulBody } : {}),
+      },
+    });
+    if (!written.ok) return NextResponse.json({ error: written.error }, { status: written.status });
+    const resolved = await resolveInboxItem(id, "approved", user.id);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+    }
+    return NextResponse.json({ status: "approved", saved: true, soulId: written.data.id });
   }
 
   // Idea Engine blueprint (PA-IDEA-5): an approved MVP-plan `decision` card advances the idea from

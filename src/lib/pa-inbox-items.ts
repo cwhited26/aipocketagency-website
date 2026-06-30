@@ -33,6 +33,10 @@
 // 'persona_memory_proposal' (migration 073, PA-MEM-3) is a sub-threshold persona-memory write the
 // LEARN phase staged: the proposed {partition, tier, body, importance} for one Persona. Approve writes
 // it to pa_persona_memory (cap-enforced); reject suppresses re-proposal. Same pattern as Skill evolution.
+// 'soul_attribute_proposal' (migration 092, Soul System) is a mid-confidence (0.5..0.8) Soul
+// observation: the proposed {kind, summary, body, confidence} for how one Persona's owner likes to be
+// worked with. Approve writes it to pa_persona_souls (supersession-merged, cap-enforced); reject
+// suppresses re-proposal. Same pattern as persona_memory_proposal.
 export type InboxKind =
   | "draft"
   | "decision"
@@ -50,7 +54,8 @@ export type InboxKind =
   | "capture_triage_proposal"
   | "ritual_result"
   | "ritual_paused"
-  | "persona_memory_proposal";
+  | "persona_memory_proposal"
+  | "soul_attribute_proposal";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {
