@@ -37,6 +37,7 @@ import {
   type RagBuildDoc,
 } from "./client";
 import { logRagEmbedCost, logRagModalCost } from "./cost";
+import { blendHybridScores } from "./hybrid";
 
 /**
  * A query targeted a zone that doesn't match the loaded index — a structural containment violation.
@@ -128,7 +129,12 @@ export async function queryRag(input: QueryRagInput): Promise<RagQueryOutcome> {
   ]);
 
   // Belt: drop any hit whose path escaped the zone (the runtime should never return one).
-  return { source: "turbovec", hits: filterHitsToZone(result.hits, zonePath) };
+  const scoped = filterHitsToZone(result.hits, zonePath);
+  // Hybrid re-rank (PA-CTX-2): blend the runtime's vector score with local keyword overlap (70/30)
+  // and re-order. Each hit's `score`/`snippet` contract is unchanged — only the ordering improves —
+  // so every caller stays the same.
+  const ranked = blendHybridScores(query, scoped).map(({ docPath, score, snippet }) => ({ docPath, score, snippet }));
+  return { source: "turbovec", hits: ranked };
 }
 
 export type BuildOutcome =

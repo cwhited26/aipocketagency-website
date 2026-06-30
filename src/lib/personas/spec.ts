@@ -70,10 +70,16 @@ export function buildPersonaSystemPrompt(params: {
   // the persona has no memories yet, or in public mode (which never reads memory). Stitched between
   // Tone and Knowledge so voice calibration and accumulated context sit together, above the docs.
   memoryBlock?: string;
+  // Owner-activity context (PA-CTX-1/3): the `## Recent activity` daily-log block, or the composed
+  // smart-context block (which already embeds it). Stitched in just below memory so all owner context
+  // sits together, above the docs. Omitted in public mode (owner activity is never shown to the public).
+  recentActivityBlock?: string;
 }): string {
-  const { personaName, tone, spec, knowledgeMarkup, hasKnowledge, memoryBlock } = params;
+  const { personaName, tone, spec, knowledgeMarkup, hasKnowledge, memoryBlock, recentActivityBlock } = params;
   const s = normalizePersonaSpecFields(spec);
   const memorySection = memoryBlock && memoryBlock.trim() ? `${memoryBlock.trim()}\n\n` : "";
+  const activitySection =
+    recentActivityBlock && recentActivityBlock.trim() ? `${recentActivityBlock.trim()}\n\n` : "";
 
   const knowledgeSection = hasKnowledge
     ? `KNOWLEDGE (the documents the business owner has taught you — you re-read these every time someone asks; you are NOT "trained" on them):\n${knowledgeMarkup}\n`
@@ -90,7 +96,7 @@ ${section("Problem (what you exist to solve)", s.problem)}${section("Vision (wha
 # Tone
 ${TONE_GUIDANCE[tone]}
 
-${memorySection}# ${knowledgeSection}
+${memorySection}${activitySection}# ${knowledgeSection}
 # Hard rules
 - Answer using the KNOWLEDGE above and your Spec. Do not invent facts, numbers, prices, or policies. If the knowledge does not cover the question, say so plainly and tell the person who to ask.
 - Stay in role. If a request is in your Out of Scope list, decline briefly and point the person in the right direction.

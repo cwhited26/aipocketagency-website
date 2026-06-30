@@ -13,6 +13,7 @@
 import { fetchFileContent, listRepoTree } from "@/lib/pa-brain";
 import { fetchMemoryIndex } from "@/lib/pa-brain-index";
 import { queryRag } from "@/lib/rag/query";
+import { appendDailyLog } from "@/lib/personas/daily-logs";
 import {
   gmailListRecent,
   gmailSearch,
@@ -87,6 +88,20 @@ const BRAIN_TOOLS: ToolSpec[] = [
     kind: "read",
     signature: "brain.search(query)",
     description: "Search the brain's indexed memory files (on GitHub) by keyword; returns matching files.",
+  },
+];
+
+// Always-on activity tools (no connector, no brain repo required). daily_log writes only the owner's
+// own activity log, so it runs immediately like create_draft — there's nothing to approve.
+const ACTIVITY_TOOLS: ToolSpec[] = [
+  {
+    id: "activity.daily_log",
+    kind: "action",
+    signature: "activity.daily_log(entry)",
+    description:
+      "Append a short line to the owner's daily activity log (auto-timestamped). Use this to record " +
+      "what happened or what the owner decided, so future conversations have recent context. Runs " +
+      "immediately; no approval needed.",
   },
 ];
 
@@ -250,6 +265,9 @@ function annotateGmail(spec: ToolSpec, conn: LiveConnector): ToolSpec {
 /** The tools available to a user, given what they've actually connected. */
 export function buildToolset(inventory: ChatInventory): ToolSpec[] {
   const tools: ToolSpec[] = [];
+  // Activity tools are surfaced for any active account (a brain repo or a live connector) but not a
+  // truly bare one — a bare account is nudged to connect something first.
+  if (inventory.brainRepo || inventory.connectors.length > 0) tools.push(...ACTIVITY_TOOLS);
   if (inventory.brainRepo) tools.push(...BRAIN_TOOLS);
   for (const provider of ["gmail", "calendar", "slack", "zoom", "calendly"] as const) {
     const conn = inventory.connectors.find((c) => c.provider === provider);
@@ -375,6 +393,33 @@ async function runInline(
   input: Record<string, unknown>,
 ): Promise<ToolRunResult> {
   switch (spec.id) {
+    case "activity.daily_log": {
+      const entry = asString(input.entry).trim();
+      if (!entry) {
+        return {
+          status: "error",
+          label: "Logged activity",
+          summary: "No entry given.",
+          forModel: "ERROR: activity.daily_log needs an `entry` string.",
+        };
+      }
+      const res = await appendDailyLog({ ownerId: userId, entry });
+      if (!res.ok) {
+        return {
+          status: "error",
+          label: "Logged activity",
+          summary: res.error,
+          forModel: `ERROR: activity.daily_log failed — ${res.error}`,
+        };
+      }
+      return {
+        status: "ok",
+        label: "Logged activity",
+        summary: `Added to today's log (${res.data.log_date}).`,
+        detail: res.data.content,
+        forModel: clampForModel(`Logged to ${res.data.log_date}: "${entry}"`),
+      };
+    }
     case "brain.list": {
       const repo = inventory.brainRepo;
       if (!repo) return unavailable(spec.id);

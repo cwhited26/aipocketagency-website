@@ -17,6 +17,9 @@ import { canSendMessage, getCurrentTier, monthKey, type Tier } from "@/lib/perso
 import { isTokenLive } from "@/lib/personas/tokens";
 import { loadKnowledgeForChat } from "@/lib/personas/knowledge";
 import { buildPersonaSystemPrompt, parsePersonaSpecMarkdown } from "@/lib/personas/spec";
+import { buildSmartContext, type ContextMessage } from "@/lib/personas/build-smart-context";
+import { getDailyLogsForContext } from "@/lib/personas/daily-logs";
+import { isPublicMode } from "@/lib/personas/types";
 import { loadPersonaMemory } from "@/lib/persona-memory/read";
 import { runMemoryLearnPhase, defaultMemoryLearnLlm } from "@/lib/persona-memory/write";
 import type { PersonaRow } from "@/lib/personas/types";
@@ -36,6 +39,9 @@ const bodySchema = z.object({
 });
 
 const MAX_HISTORY = 20;
+// How far back the smart-context blender looks. Turns older than the recent MAX_HISTORY get rolled
+// into summaries / relevance instead of being dropped entirely (PA-CTX-3).
+const SMART_CONTEXT_WINDOW = 60;
 
 export async function POST(req: Request, { params }: Params): Promise<Response> {
   let raw: unknown;
@@ -128,6 +134,35 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
     // the brain RAG above; never reads in public mode (loadPersonaMemory hard-guards on persona.mode).
     const memory = await loadPersonaMemory({ personaId: persona.id, mode: persona.mode });
 
+    // Resolved once for the LEARN-phase cap check after the turn completes.
+    const tier = await getCurrentTier(persona.business_id);
+
+    // 5. Conversation + history. Load prior turns BEFORE the prompt so the smart-context blender can
+    // summarize older ranges + pull in relevant earlier turns (PA-CTX-3).
+    const convoId =
+      conversationId && (await ownsConversation(conversationId, persona.id))
+        ? conversationId
+        : (await insertConversation({ persona_id: persona.id, seat_id: tokenRow.seat_id })).id;
+
+    const prior = await listMessages(convoId);
+    const priorTurns: ContextMessage[] = prior
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .slice(-SMART_CONTEXT_WINDOW)
+      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+
+    // Owner activity (PA-CTX-1) + smart context (PA-CTX-3). Both are owner-private, so they never load
+    // in public mode — same guard the memory cascade uses. The composed promptBlock already embeds the
+    // daily-log `## Recent activity` block, so it's the single context block stitched into the prompt.
+    const dailyLogsBlock = isPublicMode(persona.mode)
+      ? ""
+      : await getDailyLogsForContext(persona.business_id, 3);
+    const smart = await buildSmartContext(priorTurns, message, {
+      recentN: MAX_HISTORY,
+      dailyLogsBlock,
+      summarize: makeRangeSummarizer(anthropic_api_key),
+      maxRanges: 2,
+    });
+
     const systemPrompt = buildPersonaSystemPrompt({
       personaName: persona.name,
       tone: persona.tone,
@@ -135,27 +170,14 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
       knowledgeMarkup: knowledge.markup,
       hasKnowledge: knowledge.fileCount > 0,
       memoryBlock: memory.block,
+      recentActivityBlock: smart.promptBlock,
     });
-
-    // Resolved once for the LEARN-phase cap check after the turn completes.
-    const tier = await getCurrentTier(persona.business_id);
-
-    // 5. Conversation + history.
-    const convoId =
-      conversationId && (await ownsConversation(conversationId, persona.id))
-        ? conversationId
-        : (await insertConversation({ persona_id: persona.id, seat_id: tokenRow.seat_id })).id;
-
-    const prior = await listMessages(convoId);
-    const history = prior
-      .filter((m) => m.role === "user" || m.role === "assistant")
-      .slice(-MAX_HISTORY)
-      .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
     await insertMessage({ conversation_id: convoId, role: "user", content: message, tokens_used: 0 });
 
-    // 6. Open the model stream (default model, fallback on hard failure).
-    const messages = [...history, { role: "user" as const, content: message }];
+    // 6. Open the model stream (default model, fallback on hard failure). Recent turns flow verbatim;
+    // older context rides in the system prompt via smart.promptBlock above.
+    const messages = [...smart.recentMessages, { role: "user" as const, content: message }];
     const upstream = await openStream(anthropic_api_key, systemPrompt, messages);
     if (!upstream.ok) {
       return NextResponse.json({ error: upstream.error }, { status: 502 });
@@ -179,6 +201,52 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
 async function ownsConversation(conversationId: string, personaId: string): Promise<boolean> {
   const convo = await fetchConversation(conversationId);
   return Boolean(convo && convo.persona_id === personaId);
+}
+
+// ── Rolling-summary helper for the smart-context blender ────────────────────────────────
+//
+// One non-streaming Anthropic call that condenses an older message range into 1–2 sentences. Best
+// effort: any failure throws so buildSmartContext falls back to its deterministic extractive digest.
+// Only fires when a conversation has older ranges (long threads), so most turns never call it.
+function makeRangeSummarizer(apiKey: string) {
+  return async (messages: ContextMessage[]): Promise<string> => {
+    const model = process.env.PA_PERSONAS_SUMMARY_MODEL ?? "claude-haiku-4-5-20251001";
+    const transcript = messages
+      .map((m) => `${m.role === "user" ? "Them" : "Agent"}: ${m.content}`)
+      .join("\n");
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 160,
+        system:
+          "Summarize this slice of an ongoing conversation in 1–2 sentences. Capture decisions, " +
+          "facts, and open threads. No preamble — just the summary.",
+        messages: [{ role: "user", content: transcript }],
+      }),
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      throw new Error(`summary model error ${res.status}`);
+    }
+    const data: unknown = await res.json();
+    const blocks =
+      data && typeof data === "object" && Array.isArray((data as { content?: unknown }).content)
+        ? ((data as { content: Array<{ type?: string; text?: string }> }).content)
+        : [];
+    const text = blocks
+      .filter((b) => b.type === "text" && typeof b.text === "string")
+      .map((b) => b.text as string)
+      .join(" ")
+      .trim();
+    if (!text) throw new Error("summary model returned no text");
+    return text;
+  };
 }
 
 // ── Anthropic streaming ───────────────────────────────────────────────────────────────

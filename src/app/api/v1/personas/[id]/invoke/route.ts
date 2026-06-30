@@ -24,6 +24,7 @@ import {
 import { canSendMessage, monthKey } from "@/lib/personas/tier-caps";
 import { loadKnowledgeForChat } from "@/lib/personas/knowledge";
 import { buildPersonaSystemPrompt, parsePersonaSpecMarkdown } from "@/lib/personas/spec";
+import { getDailyLogsForContext } from "@/lib/personas/daily-logs";
 import {
   loadZoneConfig,
   ContainmentBlockedError,
@@ -112,12 +113,18 @@ async function invokeHandler(
     throw e;
   }
 
+  // Owner activity context (PA-CTX-1): inject the owner's last-3-days `## Recent activity` block. The
+  // invoke API is authenticated as the owner, so this is the owner's own log — best-effort ("" on any
+  // failure or before migration 090).
+  const recentActivityBlock = await getDailyLogsForContext(persona.business_id, 3);
+
   const systemPrompt = buildPersonaSystemPrompt({
     personaName: persona.name,
     tone: persona.tone,
     spec: specFields,
     knowledgeMarkup: knowledge.markup,
     hasKnowledge: knowledge.fileCount > 0,
+    recentActivityBlock,
   });
 
   const convoId =
