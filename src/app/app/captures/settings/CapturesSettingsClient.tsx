@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { iosShortcutInstallUrl, isShortcutPublished, IOS_SHORTCUT_NAME } from "@/lib/pocket-capture/ios-shortcut";
 import RoutingRulesSection from "./RoutingRulesSection";
+import CaptureTagsSection from "./CaptureTagsSection";
 
 type TokenRow = {
   id: string;
@@ -343,6 +344,7 @@ export default function CapturesSettingsClient() {
         </p>
 
         <div className="mt-6 flex flex-col gap-3">
+          <CaptureTagsSection />
           <SmsSection />
           <EmailSection />
           <ShortcutSection />

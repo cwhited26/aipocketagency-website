@@ -28,6 +28,10 @@ export type InboxEntry = {
   // Set once a share-extension file has been promoted into assets/ (the canonical
   // capture location that Documents reflects). Drives the "View in Documents →" link.
   assetPath?: string;
+  // Optional http(s) URL to a playable audio file for a voice capture (from the memo's
+  // `audio_url` / `audio` frontmatter). Absent on transcript-only memos — the dashboard
+  // renders an <audio> player only when this is present, else the transcript alone.
+  audioUrl?: string;
 };
 
 const ENTRY_START_RE = /^<!-- PA-INBOX (.+) -->$/;
@@ -296,6 +300,9 @@ const FileFrontmatterSchema = z
     tag: z.string().optional(),
     topic: z.string().optional(),
     duration_seconds: z.string().optional(),
+    // Optional URL to a playable audio file for a voice memo (the in-app recorder can attach one).
+    audio_url: z.string().optional(),
+    audio: z.string().optional(),
     // Soft-delete tombstone stamped by the Captures dashboard onto a file-backed capture.
     deleted_at: z.string().optional(),
     // Owner-applied labels, comma-separated (frontmatter has no native list type here).
@@ -389,6 +396,9 @@ export function parseVoiceMemoFile(path: string, raw: string): InboxEntry | null
 
   const tags = parseFrontmatterTags(fm.tags);
   const deletedAt = fm.deleted_at?.trim() || undefined;
+  // Only trust an http(s) audio URL — never a javascript:/data: scheme — before it reaches an <audio src>.
+  const audioRaw = (fm.audio_url ?? fm.audio)?.trim();
+  const audioUrl = audioRaw && /^https?:\/\//i.test(audioRaw) ? audioRaw : undefined;
 
   return {
     id: path, // file path is the stable, unique id for file-backed entries
@@ -397,6 +407,7 @@ export function parseVoiceMemoFile(path: string, raw: string): InboxEntry | null
     ...(topic ? { title: topic } : {}),
     ...(tags.length ? { tags } : {}),
     ...(deletedAt ? { deletedAt } : {}),
+    ...(audioUrl ? { audioUrl } : {}),
     content,
     path,
   };

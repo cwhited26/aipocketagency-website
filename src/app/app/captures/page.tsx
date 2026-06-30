@@ -12,6 +12,8 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { decideCapturesView } from "@/lib/pocket-capture/dashboard";
 import { loadDashboardCaptures } from "@/lib/pocket-capture/captures-source";
+import { listTagsWithSeed } from "@/lib/pocket-capture/tags-db";
+import type { CaptureTag } from "@/lib/pocket-capture/tags";
 import { isPocketCaptureUser } from "@/lib/pocket-capture/entitlement";
 import { readOnboardingCompletedAt } from "@/lib/pocket-capture/onboarding";
 import { redirect } from "next/navigation";
@@ -80,11 +82,22 @@ export default async function CapturesPage() {
   if (view === "no-brain" || !paUser?.brain_repo || !ghToken) return <CapturesEmptyState />;
 
   // The unified feed: every capture from memory/inbox.md AND every inbox/** file, merged newest-first.
-  const captures = await loadDashboardCaptures(paUser.brain_repo, ghToken);
+  // The owner's tab/tag definitions ride alongside (seeded with the four defaults on first use). A
+  // tag-store infra error degrades to an empty tab strip — the feed still renders ("All" is virtual).
+  const [captures, tagsResult] = await Promise.all([
+    loadDashboardCaptures(paUser.brain_repo, ghToken),
+    listTagsWithSeed(user.id),
+  ]);
+  const tags: CaptureTag[] = tagsResult.ok ? tagsResult.data : [];
 
   // The PC-MARK-5 upgrade pitch self-gates server-side (renders null for everyone but an eligible
   // standalone-only buyer) — mount it at the top of the feed as that lane intended.
   return (
-    <CapturesClient initialCaptures={captures} nowMs={Date.now()} topSlot={<UpgradeToPaCardSlot />} />
+    <CapturesClient
+      initialCaptures={captures}
+      tags={tags}
+      nowMs={Date.now()}
+      topSlot={<UpgradeToPaCardSlot />}
+    />
   );
 }

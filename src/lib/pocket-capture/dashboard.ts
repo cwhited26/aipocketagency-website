@@ -187,6 +187,8 @@ export type DashboardCapture = {
   /** One-line preview for the collapsed row. */
   preview: string;
   tags: string[];
+  /** Optional http(s) audio URL for a voice capture; drives the card's <audio> player when present. */
+  audioUrl?: string;
   /** Soft-deleted entries are kept in the brain file but hidden from the feed. */
   deleted: boolean;
 };
@@ -204,6 +206,7 @@ export function toDashboardCapture(entry: InboxEntry): DashboardCapture {
     content: entry.content,
     preview: previewOf(entry.title ? `${entry.title} — ${entry.content}` : entry.content),
     tags: entry.tags ?? [],
+    ...(entry.audioUrl ? { audioUrl: entry.audioUrl } : {}),
     deleted: Boolean(entry.deletedAt),
   };
 }
