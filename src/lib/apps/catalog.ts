@@ -28,6 +28,10 @@ export type AppId = (typeof APP_IDS)[number];
 export type AppDef = {
   id: AppId;
   href: string;
+  // The `/`-command token that opens this App from the chat surface (PA-SLASH-1). Matches the
+  // App's slug so the two never drift; the slash dispatcher (lib/apps/slash-commands.ts) resolves
+  // `/<slashCommand>` (plus a few forgiving aliases) to this App and opens it pre-filled.
+  slashCommand: string;
   label: string;
   // Short label used in compact chips on the persona surface.
   shortLabel: string;
@@ -42,6 +46,7 @@ export type AppDef = {
 export const APP_CATALOG: AppDef[] = [
   {
     id: "quote",
+    slashCommand: "quote",
     href: "/app/apps/quote",
     label: "Quote / Proposal Writer",
     shortLabel: "Quotes",
@@ -53,6 +58,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "email-drafter",
+    slashCommand: "email-drafter",
     href: "/app/apps/email",
     label: "Email Drafter",
     shortLabel: "Email",
@@ -64,6 +70,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "followups",
+    slashCommand: "followups",
     href: "/app/apps/followups",
     label: "Follow-up Radar",
     shortLabel: "Follow-ups",
@@ -75,6 +82,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "daily-brief",
+    slashCommand: "daily-brief",
     href: "/app/apps/daily-brief",
     label: "Daily Brief",
     shortLabel: "Daily Brief",
@@ -86,6 +94,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "upcoming",
+    slashCommand: "upcoming",
     href: "/app/apps/calendar",
     label: "Upcoming (from brain)",
     shortLabel: "Upcoming",
@@ -97,6 +106,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "youtube",
+    slashCommand: "youtube",
     href: "/app/apps/youtube",
     label: "YouTube",
     shortLabel: "YouTube",
@@ -108,6 +118,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "podcasts",
+    slashCommand: "podcasts",
     href: "/app/apps/podcasts",
     label: "Podcast Ingester",
     shortLabel: "Podcasts",
@@ -119,6 +130,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "lead-scout",
+    slashCommand: "lead-scout",
     href: "/app/apps/lead-scout",
     label: "Lead Scout",
     shortLabel: "Lead Scout",
@@ -130,6 +142,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "competitor-inspector",
+    slashCommand: "competitor-inspector",
     href: "/app/apps/competitor-inspector",
     label: "Competitor Inspector",
     shortLabel: "Competitor Inspector",
@@ -141,6 +154,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "follow-up-sweeps",
+    slashCommand: "follow-up-sweeps",
     href: "/app/apps/follow-up-sweeps",
     label: "Follow-Up Sweeps",
     shortLabel: "Follow-Up Sweeps",
@@ -152,6 +166,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "landing-page-builder",
+    slashCommand: "landing-page-builder",
     href: "/app/apps/landing-pages",
     label: "Landing Page Builder",
     shortLabel: "Landing Pages",
@@ -163,6 +178,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "idea-engine",
+    slashCommand: "idea-engine",
     href: "/app/apps/idea-engine",
     label: "Idea Engine",
     shortLabel: "Idea Engine",
@@ -174,6 +190,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "brain-map",
+    slashCommand: "brain-map",
     href: "/app/brain-map",
     label: "Brain Map",
     shortLabel: "Brain Map",
@@ -185,6 +202,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "ritual-scheduler",
+    slashCommand: "ritual-scheduler",
     href: "/app/apps/rituals",
     label: "Ritual Scheduler",
     shortLabel: "Rituals",
@@ -196,6 +214,7 @@ export const APP_CATALOG: AppDef[] = [
   },
   {
     id: "workflow-vault",
+    slashCommand: "workflow-vault",
     href: "/app/apps/workflow-vault",
     label: "AI Workflow Vault",
     shortLabel: "Workflow Vault",

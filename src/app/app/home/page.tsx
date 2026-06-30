@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { chatAsHomeEnabled, TABBED_HOME_PATH } from "@/lib/chat/feature-flag";
 import { getFilterState, listMessages } from "@/lib/chat/db";
 import type { ChatMessage, FilterTag } from "@/lib/chat/types";
+import { getCurrentTier, type Tier } from "@/lib/personas/tier-caps";
 import ChatHome from "@/components/chat/ChatHome";
 
 export const dynamic = "force-dynamic";
@@ -36,5 +37,15 @@ export default async function ChatHomePage() {
     messages = [];
   }
 
-  return <ChatHome userId={user.id} initialMessages={messages} initialFilter={filter} />;
+  // Tier gates which Apps the `/`-dispatcher shows and will open (PA-SLASH-1).
+  let tier: Tier = "starter";
+  try {
+    tier = await getCurrentTier(user.id);
+  } catch {
+    tier = "starter";
+  }
+
+  return (
+    <ChatHome userId={user.id} tier={tier} initialMessages={messages} initialFilter={filter} />
+  );
 }

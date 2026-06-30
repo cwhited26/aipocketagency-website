@@ -15,9 +15,9 @@ import {
 const DATA_DIR = join(process.cwd(), "src", "data", "starter-skills");
 
 describe("starter skills manifest invariants", () => {
-  it("ships exactly 30 skills with unique slugs", () => {
-    expect(STARTER_SKILLS).toHaveLength(30);
-    expect(STARTER_SKILL_SLUGS.size).toBe(30);
+  it("ships exactly 36 skills with unique slugs", () => {
+    expect(STARTER_SKILLS).toHaveLength(36);
+    expect(STARTER_SKILL_SLUGS.size).toBe(36);
   });
 
   it("has the documented per-category counts", () => {
@@ -31,16 +31,41 @@ describe("starter skills manifest invariants", () => {
       research: 5,
       operations: 5,
       decision_shape: 5,
+      // Plug & Play expansion (PA-STARTERSKILL-7).
+      marketing: 3,
+      tool: 2,
+      viz: 1,
     });
   });
 
   it("uses only the documented tier ladder, with the right bucket per category", () => {
+    // free voice pack; Pro+ unlocks the working-output categories; Studio+ the judgment + viz ones.
+    const TIER_BY_CATEGORY: Record<string, string> = {
+      voice_style: "free",
+      email_drafting: "pro_plus",
+      sales: "pro_plus",
+      research: "pro_plus",
+      marketing: "pro_plus",
+      tool: "pro_plus",
+      operations: "studio_plus",
+      decision_shape: "studio_plus",
+      viz: "studio_plus",
+    };
     for (const s of STARTER_SKILLS) {
-      if (s.category === "voice_style") expect(s.tierRequired).toBe("free");
-      else if (["email_drafting", "sales", "research"].includes(s.category))
-        expect(s.tierRequired).toBe("pro_plus");
-      else expect(s.tierRequired).toBe("studio_plus");
+      expect(s.tierRequired).toBe(TIER_BY_CATEGORY[s.category]);
     }
+  });
+
+  it("covers the Plug & Play expansion slugs (PA-STARTERSKILL-7)", () => {
+    const EXPANSION = [
+      "mkt-icp",
+      "mkt-positioning",
+      "mkt-ugc-scripts",
+      "tool-firecrawl-scraper",
+      "tool-humanizer",
+      "viz-excalidraw-diagram",
+    ];
+    for (const slug of EXPANSION) expect(STARTER_SKILL_SLUGS.has(slug)).toBe(true);
   });
 
   it("every skill has a body, a description, and a when_to_use", () => {
@@ -54,16 +79,16 @@ describe("starter skills manifest invariants", () => {
 });
 
 describe("tier gating (PA-STARTERSKILL-3)", () => {
-  it("seeds 5 / 20 / 30 at the named thresholds", () => {
+  it("seeds 5 / 25 / 36 at the named thresholds", () => {
     expect(starterSkillsForTier("starter")).toHaveLength(5); // free voice pack
-    expect(starterSkillsForTier("pro_plus")).toHaveLength(20);
-    expect(starterSkillsForTier("studio_plus")).toHaveLength(30);
-    expect(starterSkillsForTier("enterprise")).toHaveLength(30);
+    expect(starterSkillsForTier("pro_plus")).toHaveLength(25); // + email/sales/research/marketing/tools
+    expect(starterSkillsForTier("studio_plus")).toHaveLength(36); // + operations/decisions/viz
+    expect(starterSkillsForTier("enterprise")).toHaveLength(36);
   });
 
   it("inherits lower tiers for in-between plans", () => {
     expect(starterSkillsForTier("pro")).toHaveLength(5); // below pro_plus → free only
-    expect(starterSkillsForTier("studio")).toHaveLength(20); // ≥ pro_plus, < studio_plus
+    expect(starterSkillsForTier("studio")).toHaveLength(25); // ≥ pro_plus, < studio_plus
   });
 
   it("tierUnlocksStarterSkill respects the ladder", () => {
@@ -86,10 +111,12 @@ describe("tier gating (PA-STARTERSKILL-3)", () => {
 });
 
 describe("grouping", () => {
-  it("returns six categories in display order, each non-empty", () => {
+  it("returns nine categories in display order, each non-empty", () => {
     const grouped = starterSkillsByCategory();
     expect(grouped.map((g) => g.category)).toEqual(STARTER_CATEGORY_ORDER as unknown as string[]);
-    for (const g of grouped) expect(g.skills.length).toBe(5);
+    for (const g of grouped) expect(g.skills.length).toBeGreaterThan(0);
+    // The grouped counts sum back to the full pack.
+    expect(grouped.reduce((n, g) => n + g.skills.length, 0)).toBe(36);
   });
 });
 

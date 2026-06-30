@@ -46,10 +46,10 @@ describe("seedStarterSkills", () => {
     expect(recordStarterSkillSeed).toHaveBeenCalledTimes(5);
   });
 
-  it("seeds 20 at pro_plus", async () => {
+  it("seeds 25 at pro_plus (incl. Plug & Play marketing + tools)", async () => {
     const summary = await seedStarterSkills({ ...base, tier: "pro_plus" });
-    expect(summary.seeded).toHaveLength(20);
-    expect(createSkill).toHaveBeenCalledTimes(20);
+    expect(summary.seeded).toHaveLength(25);
+    expect(createSkill).toHaveBeenCalledTimes(25);
   });
 
   it("skips already-stamped slugs (idempotent re-run)", async () => {

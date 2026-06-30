@@ -731,6 +731,158 @@ const SKILLS = [
     why:
       "Confidence makes you blind to a plan's weak points right when you most need to see them. A pre-mortem gets around that by giving everyone permission to imagine failure — it's easier to spot what could go wrong when you start from \"it did\" instead of defending \"it will work.\" The failures you name in advance are the ones you can still prevent cheaply; the ones you don't name, you pay for later at full price.",
   },
+
+  // ══ Plug & Play expansion (PA-STARTERSKILL-7) ════════════════════════════════════════════
+  // Six more skills sourced from the open "Plug & Play Skills" operator catalog (kept generic,
+  // not branded). Marketing skills unlock at Pro+; the two tool wrappers at Pro+; the diagram
+  // generator at Studio+.
+
+  // ── Marketing (3 · pro_plus) ───────────────────────────────────────────────────────────
+  {
+    category: "marketing",
+    tier: "pro_plus",
+    slug: "mkt-icp",
+    title: "Define the Ideal Customer Profile",
+    description: "Build a sharp ICP from the owner's real best customers — who they are, what they're worth, and the signals that spot the next one.",
+    whenToUse: "Before any outreach, ad, or page that targets a market. Use when the owner says \"everyone\" is their customer, or when a campaign is missing and you don't know who it's for.",
+    overview:
+      "An ICP is a description specific enough to recognize a good-fit customer on sight. Build it from the owner's real winners in the brain — the customers who paid well, stayed, and were easy to serve — not from a fantasy of who they wish they sold to.",
+    technique: [
+      "Start from real customers in the brain. Pull the 5–10 best ones — high pay, low drama, stuck around — and look for what they share.",
+      "Name the firmographics and the human: industry, size, role, and the actual person who signs — \"the owner of a 3–8 truck HVAC shop,\" not \"SMBs.\"",
+      "Capture the trigger: what was happening in their world the week they bought. The event that turns a someday into a now.",
+      "Write the disqualifiers too — who looks like a fit but isn't. A tight ICP says no as clearly as it says yes.",
+      "Pull their pain in their own words from the brain's voice data, so the profile carries language you can reuse in copy.",
+    ],
+    doThis:
+      "\"ICP: owner-operator of a 3–8 truck home-services business (HVAC, roofing, plumbing) doing $1–3M, losing jobs to slow quotes. Trigger: just missed a big bid because the estimate took three days. Not a fit: pre-revenue, or 50+ employees with an ops manager already.\"",
+    dontThat:
+      "\"Our ideal customer is any small business owner who wants to grow and values quality\" — true of everyone, useful for no one, and impossible to target.",
+    why:
+      "Targeting everyone is targeting no one — the message goes generic and lands nowhere. A specific ICP built from real winners tells you who to chase, what to say, and who to skip, so the owner's outreach and ad spend goes at the people most likely to buy and stay. The disqualifiers matter as much as the fit: they stop the owner from pouring effort into leads that look good and never close.",
+  },
+  {
+    category: "marketing",
+    tier: "pro_plus",
+    slug: "mkt-positioning",
+    title: "Write a One-Paragraph Positioning Statement",
+    description: "Compress what the owner sells into one paragraph — the problem, the promise, the proof, and the price — that anchors every other piece of copy.",
+    whenToUse: "Before writing a landing page, an ad, or a pitch — anything that has to say what the business is in a sentence. Use when the messaging feels scattered or every page describes the offer differently.",
+    overview:
+      "Positioning is the one paragraph everything else hangs off. Four parts: the problem you solve, the promise you make, the proof it's real, and the price it costs. Get those straight and the page, the ad, and the pitch all write themselves from it.",
+    technique: [
+      "State the problem first, in the customer's words — the specific pain, not a category. \"Quotes take three days and you lose the job\" beats \"inefficient workflows.\"",
+      "Make one promise — the outcome, not the feature. What's true for them after, that wasn't before.",
+      "Back it with proof: a number, a result, a named customer, a guarantee. The promise is a claim until proof makes it believable.",
+      "Name the price band and what it's anchored against, so the number reads as a deal, not a surprise.",
+      "Compress to one paragraph. If it takes a page to position, it isn't positioned — keep cutting until a stranger gets it in one read.",
+    ],
+    doThis:
+      "\"Home-services owners lose jobs because quotes take days. We turn your field notes into a sent, branded quote in under an hour — our customers close 30% more bids in their first month. It's $297/mo, less than one lost job.\"",
+    dontThat:
+      "\"We're a cutting-edge, AI-powered platform that empowers businesses to streamline their operations and unlock growth through innovative solutions\" — four buzzwords, zero problem, no proof, no price.",
+    why:
+      "Without a fixed position, every piece of copy drifts and the market never forms a clear idea of what the business is. The four-part paragraph forces the decisions that matter — what problem, what promise, what proof, what price — into one place, so the landing page, the ad, and the sales call all tell the same story. Proof and price are what separate it from a slogan: they make the promise something a buyer can actually weigh.",
+  },
+  {
+    category: "marketing",
+    tier: "pro_plus",
+    slug: "mkt-ugc-scripts",
+    title: "Write a UGC-Style Short-Form Script",
+    description: "Turn an angle and an offer into a 30–45 second creator-style script — hook, problem, demo, proof, one CTA — that sounds like a real person, not an ad.",
+    whenToUse: "Producing short-form video for TikTok, Reels, or Shorts from a marketing angle. Use when the owner has an offer and a hook in mind but needs the spoken script that holds attention.",
+    overview:
+      "A UGC script wins or dies in the first two seconds. Open on a hook that stops the scroll, name the problem fast, show the thing working, drop one piece of proof, and end on a single ask. It has to sound like someone talking to a friend, not a brand reading a brochure.",
+    technique: [
+      "Open with a hook in the first line — a bold claim, a callout, a result. \"I booked 3 jobs this week from one video\" earns the next two seconds.",
+      "Name the problem in one breath, in plain speech, so the right viewer thinks \"that's me.\"",
+      "Show, don't describe: a beat that demonstrates the thing working — over the shoulder, on the screen, in the field.",
+      "Drop one proof point — a number, a before/after, a real customer. One, not a list.",
+      "End on a single CTA — \"comment QUOTE and I'll send the link.\" One ask; a script with three asks gets zero.",
+      "Write it for the ear: short lines, contractions, the way the owner actually talks. Read it out loud; if you stumble, rewrite it.",
+    ],
+    doThis:
+      "\"Hook: 'Roofers — stop losing bids because your quote takes three days.' Problem: 'By the time you write it up, they hired the other guy.' Demo: [phone screen] 'I take a photo, talk for 30 seconds, and the quote's done.' Proof: 'Closed 4 of my last 5 this way.' CTA: 'Comment QUOTE, I'll send you the tool.'\"",
+    dontThat:
+      "Write a 90-second monologue that opens with \"Hey guys, so today I wanted to talk about\" — no hook, no demo, buried offer, and a generic \"link in bio\" nobody acts on.",
+    why:
+      "Short-form is a two-second audition for the next twenty-eight. A script that opens with throat-clearing loses the viewer before the offer ever lands, and a polished ad voice gets scrolled past because the feed is full of real people. Leading with a hook, showing the thing work, and ending on one clear ask is what turns a scroll into a watch and a watch into a comment — which is the whole point of the post.",
+  },
+
+  // ── Tool wrappers (2 · pro_plus) ─────────────────────────────────────────────────────────
+  {
+    category: "tool",
+    tier: "pro_plus",
+    slug: "tool-firecrawl-scraper",
+    title: "Scrape a URL to Clean Markdown (Firecrawl)",
+    description: "Pull a web page into clean markdown via the Firecrawl API so it can be filed in the brain — with a graceful fallback when the key isn't set.",
+    whenToUse: "When the owner drops a URL they want captured into the brain as readable text — a competitor page, an article, a doc. Use when you need the page's content, not a live screenshot.",
+    overview:
+      "Firecrawl turns a messy web page into clean markdown the brain can ingest. Call it with the URL, get back the main content stripped of nav and ads, and file that. If the FIRECRAWL_API_KEY isn't set, don't fail loudly — tell the owner the scraper isn't configured and offer the manual paste path.",
+    technique: [
+      "Check for FIRECRAWL_API_KEY before anything. No key → return a graceful 503-style notice (\"web scraping isn't set up yet\") and offer to ingest a pasted copy instead. Never throw a stack trace at the owner.",
+      "POST the target URL to the Firecrawl scrape endpoint with the API key in the Authorization header — a direct REST call, no SDK.",
+      "Ask for markdown output and the main content only, so the result is readable, not a dump of menus and footers.",
+      "Verify before filing: if the response is empty or an error, say so and stop — don't write a blank or an error page into the brain.",
+      "File the cleaned markdown into the brain with the source URL and the date pulled, so the capture is traceable later.",
+    ],
+    doThis:
+      "Owner drops a competitor's pricing page → confirm the key is set, scrape to markdown, check it actually has the pricing text, then file it under research with the URL and today's date.",
+    dontThat:
+      "Call the API with no key and let it throw a 401 the owner sees as a crash — or scrape a page that returned an empty body and file the blank into the brain as if it were content.",
+    why:
+      "A clean-markdown capture is worth far more to the brain than a raw HTML dump full of navigation and tracking junk — it's readable, searchable, and quotable. Checking the key first and degrading gracefully is what keeps a missing setup from looking like a broken product: the owner gets a clear \"not configured yet\" and a way forward, not a stack trace. Verifying the body before filing stops the brain from quietly filling with empty pages that look like real captures.",
+  },
+  {
+    category: "tool",
+    tier: "pro_plus",
+    slug: "tool-humanizer",
+    title: "Strip the AI Tells From a Draft",
+    description: "Rewrite a passage in the owner's (or a persona's) voice, cutting the AI slop — inflated phrasing, rule-of-three, em-dash overuse, hedge stacks, and filler — per the voice spec.",
+    whenToUse: "Any draft that reads like a machine wrote it, or any text pasted in from another AI tool. Use as the last pass before something goes out under the owner's name.",
+    overview:
+      "AI writing has a fingerprint: inflated words, lists of three, em-dashes everywhere, hedge stacks, and tidy little summaries. Humanizing means hunting those tells and rewriting them in the owner's actual voice — pulled from their real writing in the brain — until a reader can't tell a machine touched it.",
+    technique: [
+      "Pull the target voice from the brain first — the owner's real writing, or the named persona's. You're matching a specific human, not \"sounding casual.\"",
+      "Cut the AI vocabulary: \"leverage,\" \"delve,\" \"robust,\" \"seamless,\" \"unlock,\" \"in today's fast-paced world.\" Replace with the plain word the owner would use.",
+      "Break the rule of three. AI loves \"fast, simple, and powerful.\" Real people don't list everything in threes — vary it or cut to one.",
+      "Kill the hedge stacks and filler — \"it's important to note that,\" \"in order to,\" \"that being said\" — and the chipper sign-off summary at the end.",
+      "Fix the em-dash habit: AI scatters them everywhere. Keep the few that earn their place; turn the rest into periods or commas.",
+      "Read it back against a real sample. If a sentence still sounds like a press release and not like the owner, rewrite that sentence.",
+    ],
+    doThis:
+      "Turn \"In today's fast-paced world, our robust solution empowers you to seamlessly leverage cutting-edge tools — efficiently, effectively, and effortlessly\" into \"This does the boring part of your day for you, so you can get back to the work that pays.\"",
+    dontThat:
+      "Run a find-and-replace on a few buzzwords and call it done, leaving the rule-of-three lists, the em-dash spray, and the \"Hopefully this helps!\" sign-off that still scream machine-made.",
+    why:
+      "Readers can feel AI writing even when they can't name why, and the moment they do, they trust the message less — it reads as mass-produced, not personal. The tells are specific and findable: inflated vocabulary, lists of three, em-dash overuse, hedge stacks, filler transitions. Hunting them down and rewriting in the owner's real voice is the difference between a draft that sounds like the person the customer hired and one that sounds like every other bot in the inbox.",
+  },
+
+  // ── Visualization (1 · studio_plus) ──────────────────────────────────────────────────────
+  {
+    category: "viz",
+    tier: "studio_plus",
+    slug: "viz-excalidraw-diagram",
+    title: "Generate an Excalidraw Diagram",
+    description: "Turn a description into a valid .excalidraw JSON file the owner can open at excalidraw.com — boxes, arrows, and labels laid out so it reads at a glance.",
+    whenToUse: "When the owner wants a quick diagram — a flow, an org chart, a system sketch, a funnel — as an editable file rather than a static image. Use when they'll want to tweak it themselves after.",
+    overview:
+      "Excalidraw files are plain JSON: a list of elements (rectangles, arrows, text) with positions and a few style fields. To draw from a description, lay the nodes out on a grid, connect them with bound arrows, and emit a valid file the owner opens and edits at excalidraw.com. The skill is in the layout — spaced so it reads — not in the JSON syntax.",
+    technique: [
+      "Parse the description into nodes and edges first: what are the boxes, and what connects to what. Get the structure before you place anything.",
+      "Lay nodes on a grid with real spacing — left-to-right for a flow, top-down for a hierarchy. Crowded boxes make an unreadable diagram no matter how correct the JSON.",
+      "Emit valid Excalidraw JSON: type \"excalidraw\", a version, and an elements array of rectangles, text, and arrows, each with id, x, y, width, height. Don't invent fields the format doesn't have.",
+      "Bind arrows to their endpoints (startBinding / endBinding by element id) so the diagram stays connected when the owner drags a box.",
+      "Label every node and key arrow. An unlabeled diagram is a puzzle; the text is what makes it a map.",
+      "Hand back a downloadable .excalidraw file and tell the owner to open it at excalidraw.com — confirm it loads rather than assuming the JSON is right.",
+    ],
+    doThis:
+      "\"Lead flow\" → five labeled boxes left to right (Captured → Qualified → Quoted → Won → Onboarded), each ~160×60 spaced 80px apart, joined by bound arrows, emitted as a valid .excalidraw file that opens clean.",
+    dontThat:
+      "Stack every box at the same coordinates with no spacing, leave arrows unbound and nodes unlabeled, or emit JSON with made-up fields that Excalidraw refuses to open — a file the owner can't use is worse than a sentence.",
+    why:
+      "A picture settles an argument a paragraph can't — a flow or an org chart shows the shape of a thing instantly. Handing back an editable .excalidraw file instead of a flat image means the owner can move a box, fix a label, and make it theirs, which is what they'll want to do the moment they see it. The layout discipline is the whole job: correct JSON with crowded, unlabeled nodes is technically valid and practically useless.",
+  },
 ];
 
 // ── Render + emit ──────────────────────────────────────────────────────────────────────────
@@ -742,6 +894,9 @@ const CATEGORY_DIRS = [
   "research",
   "operations",
   "decision_shape",
+  "marketing",
+  "tool",
+  "viz",
 ];
 
 const TIERS = new Set(["free", "pro_plus", "studio_plus", "enterprise"]);
@@ -800,7 +955,7 @@ function validate() {
     if (s.technique.length < 3 || s.technique.length > 8)
       throw new Error(`${s.slug}: technique must be 3–8 bullets`);
   }
-  if (SKILLS.length !== 30) throw new Error(`expected 30 skills, got ${SKILLS.length}`);
+  if (SKILLS.length !== 36) throw new Error(`expected 36 skills, got ${SKILLS.length}`);
 }
 
 function emit() {
@@ -830,9 +985,10 @@ function emit() {
   const manifest = `// manifest.ts — GENERATED by scripts/gen-starter-skills.mjs. Do not edit by hand.
 // Edit the SKILLS array in the generator and re-run \`node scripts/gen-starter-skills.mjs\`.
 //
-// The 30 starter Skills shipped in the AI Office Launch Kit (PA-STARTERSKILL-1..6). The \`body\` is the
-// SKILL.md technique copied verbatim into the owner's brain at seed time; the metadata drives
-// tier-gating (lib/skills/resolve.ts) and the Starter Pack surface.
+// The 36 starter Skills shipped in the AI Office Launch Kit (PA-STARTERSKILL-1..6, plus the
+// Plug & Play expansion PA-STARTERSKILL-7). The \`body\` is the SKILL.md technique copied verbatim
+// into the owner's brain at seed time; the metadata drives tier-gating (lib/skills/resolve.ts) and
+// the Starter Pack surface.
 
 export type StarterSkillTier = "free" | "pro_plus" | "studio_plus" | "enterprise";
 export type StarterSkillCategory =
@@ -841,7 +997,10 @@ export type StarterSkillCategory =
   | "sales"
   | "research"
   | "operations"
-  | "decision_shape";
+  | "decision_shape"
+  | "marketing"
+  | "tool"
+  | "viz";
 
 export type StarterSkillRecord = {
   slug: string;

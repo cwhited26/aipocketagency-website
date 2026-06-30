@@ -5,9 +5,11 @@
 //
 // The starter pack's tier ladder maps onto the SMB Tier ladder (lib/personas/tier-caps):
 //   free        → everyone (the 5 Voice + Style skills)
-//   pro_plus    → + Email / Sales / Research (20 total)
-//   studio_plus → + Operations / Decision-shape (all 30)
-// A tier between thresholds inherits everything at or below its rank (studio gets the pro_plus 20).
+//   pro_plus    → + Email / Sales / Research + Marketing / Tools (25 total)
+//   studio_plus → + Operations / Decision-shape / Visualization (all 36)
+// A tier between thresholds inherits everything at or below its rank (studio gets the pro_plus 25).
+// The Plug & Play expansion (PA-STARTERSKILL-7) added Marketing (3 · pro_plus), Tools (2 · pro_plus),
+// and Visualization (1 · studio_plus).
 
 import { tierRank, type Tier } from "@/lib/personas/tier-caps";
 import {
@@ -26,7 +28,7 @@ export const STARTER_SKILL_SLUGS: ReadonlySet<string> = new Set(
   STARTER_SKILLS.map((s) => s.slug),
 );
 
-/** Display order + labels for the Starter Pack surface (matches the SPEC's six-category structure). */
+/** Display order + labels for the Starter Pack surface (the nine-category structure). */
 export const STARTER_CATEGORY_ORDER: readonly StarterSkillCategory[] = [
   "voice_style",
   "email_drafting",
@@ -34,6 +36,9 @@ export const STARTER_CATEGORY_ORDER: readonly StarterSkillCategory[] = [
   "research",
   "operations",
   "decision_shape",
+  "marketing",
+  "tool",
+  "viz",
 ];
 
 export const STARTER_CATEGORY_LABELS: Record<StarterSkillCategory, string> = {
@@ -43,6 +48,9 @@ export const STARTER_CATEGORY_LABELS: Record<StarterSkillCategory, string> = {
   research: "Research",
   operations: "Operations",
   decision_shape: "Decisions",
+  marketing: "Marketing",
+  tool: "Tools",
+  viz: "Visualization",
 };
 
 /** Reader-friendly label for a starter skill's tier_required (the upgrade-CTA copy). */

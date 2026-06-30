@@ -8,6 +8,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage, FilterTag } from "@/lib/chat/types";
 import type { SlashAction } from "@/lib/chat/filters";
+import { formatAppSlashList, type AppSlashResolution } from "@/lib/apps/slash-commands";
+import type { Tier } from "@/lib/personas/tier-caps";
 import { searchMessages, exportToJson, exportToMarkdown, type SearchQuery } from "@/lib/chat/search";
 import SideRail from "./SideRail";
 import ChatInput from "./ChatInput";
@@ -28,10 +30,12 @@ function asc(messages: ChatMessage[]): ChatMessage[] {
 
 export default function ChatHome({
   userId,
+  tier,
   initialMessages,
   initialFilter,
 }: {
   userId: string;
+  tier: Tier;
   initialMessages: ChatMessage[];
   initialFilter: FilterTag;
 }) {
@@ -206,6 +210,54 @@ export default function ChatHome({
     [changeFilter],
   );
 
+  // Append a local-only system message (not persisted) — used for slash-dispatcher feedback.
+  const pushSystem = useCallback(
+    (content: string) => {
+      setMessages((cur) => [
+        ...cur,
+        {
+          id: `local-sys-${cur.length}-${content.length}`,
+          user_id: userId,
+          role: "system",
+          content,
+          card_kind: null,
+          card_payload: null,
+          parent_message_id: null,
+          filter_tags: ["general"],
+          created_at: new Date().toISOString(),
+          archived_at: null,
+        },
+      ]);
+    },
+    [userId],
+  );
+
+  // ── App slash commands (PA-SLASH-1): `/<app-slug>` opens that App pre-filled. ──────────
+  const onAppCommand = useCallback(
+    (resolution: AppSlashResolution) => {
+      switch (resolution.kind) {
+        case "open":
+          // The App reads brain context on load; inline args ride along as a prefill param.
+          window.location.href = resolution.href;
+          break;
+        case "locked":
+          pushSystem(resolution.reason);
+          break;
+        case "unknown":
+          pushSystem(
+            `I don't have an App called /${resolution.attempted}. Try /apps for the list.\n\n${formatAppSlashList(
+              resolution.commands,
+            )}`,
+          );
+          break;
+        case "help":
+          pushSystem(`Apps you can open from here:\n\n${formatAppSlashList(resolution.commands)}`);
+          break;
+      }
+    },
+    [pushSystem],
+  );
+
   // ── File upload → persist bytes to the brain + doc_preview card. ──────────────────────
   // The file rides as multipart form-data so the server can run the canonical absorb pipeline
   // (assets/ + memory). The returned card already points at Documents where the asset landed.
@@ -313,8 +365,10 @@ export default function ChatHome({
 
         <ChatInput
           inputRef={inputRef}
+          tier={tier}
           onSend={send}
           onSlash={onAction}
+          onAppCommand={onAppCommand}
           onMicClick={() => setVoiceOpen(true)}
           disabled={sending}
         />

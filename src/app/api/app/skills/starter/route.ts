@@ -1,5 +1,5 @@
 // GET /api/app/skills/starter — the AI Office Launch Kit starter pack for the Skills tab
-// (PA-STARTERSKILL-5). Returns the 30 skills grouped by category with the owner's tier, per-skill
+// (PA-STARTERSKILL-5). Returns the 36 skills grouped by category with the owner's tier, per-skill
 // unlocked / seeded / disabled flags, and the full SKILL.md body for the View panel.
 //
 // The catalog renders for every signed-in owner (so they can see what the pack contains and what an
