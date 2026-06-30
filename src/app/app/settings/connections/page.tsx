@@ -21,7 +21,9 @@ import {
 } from "@/lib/pa-lead-scout-connections";
 import { fetchVercelConnectionPublic } from "@/lib/pa-vercel-connections";
 import { fetchSupabaseConnectionPublic } from "@/lib/pa-supabase-connections";
-import { getCurrentTier } from "@/lib/personas/tier-caps";
+import { getCurrentTier, tierAllowsChannel, TIER_LABELS } from "@/lib/personas/tier-caps";
+import { fetchChannelConnectionForOwner } from "@/lib/channels/store";
+import { listPersonasForBusiness } from "@/lib/personas/db";
 import { fetchActiveSmsNumber } from "@/lib/pa-sms-numbers";
 import { fetchRecentSmsActivity } from "@/lib/pa-conversations";
 import { ensureInboundAddresses } from "@/lib/inbound-email/addresses";
@@ -37,6 +39,7 @@ import GithubBuildConnectionCard from "./GithubBuildConnectionCard";
 import ZoomConnectionCard from "./ZoomConnectionCard";
 import CalendlyConnectionCard from "./CalendlyConnectionCard";
 import SmsConnectionCard from "./SmsConnectionCard";
+import TelegramConnectionCard from "./TelegramConnectionCard";
 import InboundEmailCard from "./InboundEmailCard";
 import LeadScoutConnectionCard from "./LeadScoutConnectionCard";
 import VercelConnectionCard from "./VercelConnectionCard";
@@ -285,6 +288,17 @@ export default async function ConnectionsPage({
   const vercel = vercelResult.ok ? vercelResult.data : null;
   const supabaseConn = supabaseResult.ok ? supabaseResult.data : null;
   const leadScoutSharedEligible = tierAllowsSharedBrightData(tier);
+
+  // Telegram channel (Channels Gateway Phase 2): the connection + the owner's Personas for the
+  // default-Persona picker (PA-CHAN-8). Tier-gated at Business Agent and up (PA-CHAN-7).
+  const [telegramResult, personas] = await Promise.all([
+    fetchChannelConnectionForOwner(user.id, "telegram"),
+    listPersonasForBusiness(user.id),
+  ]);
+  const telegram = telegramResult.ok ? telegramResult.data : null;
+  const telegramPersonaOptions = personas.map((p) => ({ id: p.id, name: p.name }));
+  const telegramBotUsername =
+    typeof telegram?.config.botUsername === "string" ? telegram.config.botUsername : null;
   const slackOAuthConfigured = isSlackOAuthConfigured();
   const quickBooksOAuthConfigured = isQuickBooksOAuthConfigured();
   const stripeConfigured = isStripeConnectConfigured();
@@ -482,6 +496,16 @@ export default async function ConnectionsPage({
         <CalendarConnectionCard connection={calendar} />
 
         <SlackConnectionCard connection={slack} oauthConfigured={slackOAuthConfigured} />
+
+        <TelegramConnectionCard
+          connected={Boolean(telegram)}
+          enabled={telegram?.enabled ?? false}
+          botUsername={telegramBotUsername}
+          currentPersonaId={telegram?.personaId ?? null}
+          personas={telegramPersonaOptions}
+          tierCanConnect={tierAllowsChannel(tier, "telegram")}
+          tierLabel={TIER_LABELS[tier]}
+        />
 
         <QuickBooksConnectionCard
           connection={quickbooks}

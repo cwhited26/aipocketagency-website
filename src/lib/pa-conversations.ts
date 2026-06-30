@@ -283,6 +283,7 @@ export async function getOrCreateSlackConversation(
 // both surfaces doesn't get one merged thread.
 const CHANNEL_CONVERSATION_TITLES: Record<string, string> = {
   slack: "Slack messages",
+  telegram: "Telegram messages",
 };
 
 /**

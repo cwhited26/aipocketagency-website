@@ -51,3 +51,26 @@ export function asSmsOrigin(metadata: unknown): SmsOrigin | null {
   const parsed = SmsOriginSchema.safeParse(metadata);
   return parsed.success ? parsed.data : null;
 }
+
+// ── Telegram origin (Channels Gateway Phase 2) ─────────────────────────────────
+// An inbound Telegram DM to the owner's bot lands in their PA chat thread; the user turn renders with
+// a "Telegram" chip so the thread shows it arrived from Telegram. Same metadata channel as the Slack
+// + SMS origins above — a message carries one origin blob (or the upload card), never two.
+
+export const TELEGRAM_ORIGIN_KIND = "telegram_origin" as const;
+
+export const TelegramOriginSchema = z.object({
+  kind: z.literal(TELEGRAM_ORIGIN_KIND),
+});
+export type TelegramOrigin = z.infer<typeof TelegramOriginSchema>;
+
+/** Build the metadata blob stamped on an inbound Telegram user message. */
+export function telegramOrigin(): TelegramOrigin {
+  return { kind: TELEGRAM_ORIGIN_KIND };
+}
+
+/** Safe-parses message.metadata into a Telegram origin, or null if it isn't one. */
+export function asTelegramOrigin(metadata: unknown): TelegramOrigin | null {
+  const parsed = TelegramOriginSchema.safeParse(metadata);
+  return parsed.success ? parsed.data : null;
+}

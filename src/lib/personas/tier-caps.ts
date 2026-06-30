@@ -60,11 +60,12 @@ export function tierAllowsPodcastPacks(tier: Tier): boolean {
  * Can this tier use a given channel of the Channels Gateway (PA-CHAN-7)? The "your agent is wherever
  * you work" pitch is the Business-Agent-and-up value tier in the v5 funnel:
  *   • Personal Brain ($37, `starter`) — channels OFF.
- *   • Business Agent ($97, `pro`)     — Slack only.
+ *   • Business Agent ($97, `pro`)     — Slack + Telegram (the shipped text channels).
  *   • Pro+ ($149, `pro_plus`) and up  — every shipped channel.
  */
 export function tierAllowsChannel(tier: Tier, channelSlug: string): boolean {
-  if (channelSlug === "slack") return tierRank(tier) >= tierRank("pro");
+  // The shipped text channels (Slack, Telegram) unlock at Business Agent and up.
+  if (channelSlug === "slack" || channelSlug === "telegram") return tierRank(tier) >= tierRank("pro");
   // Every other (queued) channel is Pro+ and up.
   return tierRank(tier) >= tierRank("pro_plus");
 }

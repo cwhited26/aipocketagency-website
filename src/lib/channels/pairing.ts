@@ -15,6 +15,9 @@ export type PairingDescriptor = {
 
 const PAIRING: Partial<Record<ChannelSlug, PairingDescriptor>> = {
   slack: { slug: "slack", flow: "oauth", installPath: "/api/channels/slack/install" },
+  // Telegram pairs by bot-token paste (no redirect): the owner mints a bot in BotFather, then posts
+  // the token + webhook secret to the connect route. No install redirect, so installPath is null.
+  telegram: { slug: "telegram", flow: "bot_token", installPath: null },
 };
 
 export function pairingDescriptor(slug: ChannelSlug): PairingDescriptor | null {

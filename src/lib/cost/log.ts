@@ -34,6 +34,8 @@ export type CostFeatureSlug =
   | "pocket_capture_reminders"
   // One row per inbound Channels Gateway roundtrip (PA-CHAN spec §8.4); Slack adapter, Sonnet 4.6.
   | "channels:slack"
+  // One row per inbound Channels Gateway roundtrip (Phase 2 Telegram adapter); same meter as Slack.
+  | "channels:telegram"
   // One row per headless URL extraction run (recon Lane C, PA-CINS); backend 'vercel', priced by run time.
   | "url_extraction"
   // The Competitor Inspector's metered offer-summary call (DNA + role hierarchy only, never copy).

@@ -67,6 +67,11 @@ export type ChannelMessage = {
   // Always true for channel traffic; the dispatcher flags the sub-agent run so the Gate Phase
   // applies hardened gates and the LEARN phase never proposes a Skill from it.
   untrustedOrigin: boolean;
+  // A provider-stable id for the inbound, when the channel has one (Telegram: "<botId>:<update_id>").
+  // Anchors the inbound roundtrip's cost idempotency so a provider redelivery of the same message
+  // collapses to one ledger row. Optional: a channel without a stable id (Slack relies on its
+  // retry-num header instead) omits it and the gateway falls back to the persisted-row id.
+  providerMessageId?: string;
   // Channel-specific routing metadata the adapter needs to send the reply back (Slack: channel id,
   // thread_ts, the inbound surface im|channel). Opaque to the gateway.
   channelMeta: Record<string, unknown>;
@@ -97,9 +102,10 @@ export type ChannelResponse = {
 
 // ── The adapter contract (PA-CHAN-1, SPEC §4.2) ───────────────────────────────────────────────
 
-// How an owner pairs the channel. 'oauth' = an install redirect + callback (Slack). 'phone_link'
-// and 'qr' are reserved for the phone/widget adapters.
-export type PairingFlow = "oauth" | "phone_link" | "qr";
+// How an owner pairs the channel. 'oauth' = an install redirect + callback (Slack). 'bot_token' = the
+// owner pastes a bot token + webhook secret they minted (Telegram, via BotFather). 'phone_link' and
+// 'qr' are reserved for the phone/widget adapters.
+export type PairingFlow = "oauth" | "bot_token" | "phone_link" | "qr";
 
 export type ChannelAdapter = {
   slug: ChannelSlug;

@@ -23,7 +23,8 @@ import { fetchPaUser, type PaUser } from "@/lib/pa-supabase";
 import { fetchPersona } from "@/lib/personas/db";
 import { getOrCreateChannelConversation } from "@/lib/pa-conversations";
 import { runConversationTurn, type ConversationTurnResult } from "@/lib/chat/conversation-agent";
-import { slackOrigin } from "@/lib/chat/message-origin";
+import { slackOrigin, telegramOrigin } from "@/lib/chat/message-origin";
+import type { CostFeatureSlug } from "@/lib/cost/log";
 import {
   dispatchUserGoal,
   DEFAULT_RUN_ZONE,
@@ -49,6 +50,26 @@ const DEFAULT_OAUTH_REDIRECT_BASE = "https://aipocketagent.com";
 // The chat tools whose use means PA staged something the owner reviews in Mission Control.
 const STAGING_TOOLS = new Set(["draft_email", "draft_quote", "propose_brain_update"]);
 
+// Human label per wired channel — drives the tier-blocked nudge copy without hard-coding "Slack".
+const CHANNEL_LABELS: Partial<Record<ChannelSlug, string>> = {
+  slack: "Slack",
+  telegram: "Telegram",
+};
+
+// The cost featureSlug for an inbound roundtrip on this channel (PA-CHAN §8.4). Only the wired
+// adapters (Slack, Telegram) meter through the gateway; an unmapped channel falls back to plain chat.
+function channelCostSlug(slug: ChannelSlug): CostFeatureSlug {
+  if (slug === "slack") return "channels:slack";
+  if (slug === "telegram") return "channels:telegram";
+  return "chat";
+}
+
+// The conversation-origin metadata stamped on the inbound user turn so the Hub thread shows which
+// channel it came from. Defaults to the Slack chip for the (already-wired) Slack surface.
+function channelOriginMetadata(slug: ChannelSlug, surface: "im" | "channel"): unknown {
+  return slug === "telegram" ? telegramOrigin() : slackOrigin(surface);
+}
+
 // ── Dependency surface (mocked in tests) ──────────────────────────────────────────────────────
 
 export type GatewayDeps = {
@@ -66,7 +87,7 @@ export type GatewayDeps = {
     conversationId: string;
     content: string;
     userMetadata: unknown;
-    cost: { featureSlug: "channels:slack"; idempotencyKey: string };
+    cost: { featureSlug: CostFeatureSlug; idempotencyKey: string };
   }) => Promise<ConversationTurnResult>;
   recordMessage: (params: {
     ownerId: string;
@@ -152,8 +173,9 @@ export async function routeChannelMessage(
   // upgrade nudge, and we dispatch nothing (no LLM cost).
   const tier = await deps.getTier(connection.ownerId);
   if (!tierAllowsChannel(tier, message.channelSlug)) {
+    const label = CHANNEL_LABELS[message.channelSlug] ?? "this channel";
     await deps.send(connection, {
-      text: "Texting your agent from Slack is part of the Business Agent plan and up. Upgrade in Settings and I'll start answering here.",
+      text: `Texting your agent from ${label} is part of the Business Agent plan and up. Upgrade in Settings and I'll start answering here.`,
       threadId: message.threadId,
       channelMeta: message.channelMeta,
     });
@@ -264,16 +286,19 @@ async function answerInline(
   }
 
   const surface = message.channelMeta.surface === "channel" ? "channel" : "im";
+  const costSlug = channelCostSlug(message.channelSlug);
+  // Anchor cost idempotency on the provider-stable id when the channel has one (Telegram redelivers
+  // the same update_id on a slow ack), else the persisted inbound row (PA-CHAN §8.4).
+  const costAnchor = message.providerMessageId ?? inboundId ?? `${connection.id}:${conversationId}`;
   const turn = await deps.chatTurn({
     paUser,
     userId: connection.ownerId,
     conversationId,
     content: message.body,
-    userMetadata: slackOrigin(surface),
+    userMetadata: channelOriginMetadata(message.channelSlug, surface),
     cost: {
-      featureSlug: "channels:slack",
-      // One row per inbound roundtrip, anchored to the persisted inbound message (PA-CHAN §8.4).
-      idempotencyKey: `channels:slack:${inboundId ?? `${connection.id}:${conversationId}`}`,
+      featureSlug: costSlug,
+      idempotencyKey: `${costSlug}:${costAnchor}`,
     },
   });
 
