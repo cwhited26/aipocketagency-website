@@ -322,7 +322,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Keeps deals moving — finds the next prospect, drafts the outreach, and chases the quotes that have gone quiet.",
     sampleQuestion: "Draft a first outreach to a prospect who fits our best customers.",
     defaultTone: "direct",
-    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler"],
+    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote", "proposal-generator", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler", "website-monitor"],
     starterPrompt: "Draft a first outreach email to a regional homebuilder who'd be a good fit.",
     fields: {
       problem:
@@ -462,7 +462,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "The wide-angle view — pulls together what's happening across the business and surfaces the one thing to handle next.",
     sampleQuestion: "What across the business needs my attention this week?",
     defaultTone: "direct",
-    defaultApps: ["daily-brief", "upcoming", "followups", "follow-up-sweeps", "email-drafter", "brain-map", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler"],
+    defaultApps: ["daily-brief", "upcoming", "followups", "follow-up-sweeps", "email-drafter", "proposal-generator", "brain-map", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler", "website-monitor"],
     starterPrompt: "Pull together what's happening across the business and tell me what to handle first.",
     fields: {
       problem:

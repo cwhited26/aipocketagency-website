@@ -232,6 +232,8 @@ function sectionFor(kind: InboxItemKind): AwaitingSection {
       return "memory";
     case "soul_attribute_proposal":
       return "soul";
+    case "website_alert":
+      return "briefs";
     case "persona_lead":
       return "hidden";
     default: {

@@ -47,7 +47,12 @@ export type CostFeatureSlug =
   | "soul_extraction"
   // One row per executed browser_* tool call against the hidden headless browser (Browser Automation
   // Phase 1); backend 'vercel', priced by run time like url_extraction.
-  | "browser_action";
+  | "browser_action"
+  // One row per Website Monitoring check tick (cron poll). backend 'vercel'; cost recorded as 0 —
+  // the event exists for usage accounting, not billing (a HEAD/GET poll is negligible).
+  | "website_monitor"
+  // One row per Proposal Generator draft. backend 'anthropic', model claude-sonnet-4-6.
+  | "proposal_generator";
 
 /**
  * The per-call-site context a metered backend carries: who's paying, which feature area, and a

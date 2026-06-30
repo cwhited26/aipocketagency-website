@@ -33,7 +33,8 @@ export type InboxCardKind =
   | "ritual_paused"
   | "persona_memory_proposal"
   | "soul_attribute_proposal"
-  | "browser_action_approval";
+  | "browser_action_approval"
+  | "website_alert";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {

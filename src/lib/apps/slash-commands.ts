@@ -18,6 +18,7 @@ import {
   tierAllowsCompetitorInspector,
   tierAllowsIdeaEngine,
   tierAllowsLandingPageBuilder,
+  tierAllowsProposalGenerator,
   tierRank,
   type Tier,
 } from "@/lib/personas/tier-caps";
@@ -93,6 +94,8 @@ function appMinTier(appId: AppId): Tier {
       return "pro_plus"; // tierAllowsCompetitorInspector
     case "idea-engine":
       return "pro_plus"; // tierAllowsIdeaEngine
+    case "proposal-generator":
+      return "pro"; // tierAllowsProposalGenerator (Business Agent+)
     default:
       return "starter";
   }
@@ -111,6 +114,8 @@ export function tierAllowsApp(tier: Tier, appId: AppId): boolean {
       return tierAllowsCompetitorInspector(tier);
     case "idea-engine":
       return tierAllowsIdeaEngine(tier);
+    case "proposal-generator":
+      return tierAllowsProposalGenerator(tier);
     default:
       return tierRank(tier) >= tierRank("starter"); // every tier
   }

@@ -26,7 +26,8 @@ export type InboxItemKind =
   | "gate_findings"
   | "persona_memory_proposal"
   | "soul_attribute_proposal"
-  | "browser_action_approval";
+  | "browser_action_approval"
+  | "website_alert";
 
 export type AffordanceRole = "primary" | "secondary" | "destructive";
 
@@ -228,6 +229,18 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
           { key: "revise", label: "Revise plan", role: "primary" },
           { key: "approve_anyway", label: "Approve anyway", role: "secondary" },
           { key: "reject_plan", label: "Reject plan", role: "destructive" },
+        ],
+      };
+
+    // A Website Monitoring alert (status drift / slow response / content change / SSL expiry). The
+    // check already ran — this card is the readout, so it's informational: Mark as read / Dismiss.
+    // NO Approve; nothing fires on tap.
+    case "website_alert":
+      return {
+        hasApproval: false,
+        affordances: [
+          { key: "mark_read", label: "Mark as read", role: "primary" },
+          { key: "dismiss", label: "Dismiss", role: "destructive" },
         ],
       };
 

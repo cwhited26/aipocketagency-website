@@ -21,6 +21,8 @@ export const APP_IDS = [
   "workflow-vault",
   "ritual-scheduler",
   "competitor-inspector",
+  "website-monitor",
+  "proposal-generator",
 ] as const;
 
 export type AppId = (typeof APP_IDS)[number];
@@ -222,6 +224,30 @@ export const APP_CATALOG: AppDef[] = [
       "25 ready-to-run workflows you install with one tap — quote follow-ups, dormant-lead sweeps, a morning brief, content repurposing, lead research, and more. Pick one, choose which Persona runs it, and it's working. Your plan unlocks a set of them; the Workflow Vault add-on opens all 25.",
     blurb: "Install ready-made workflows with one tap and put a Persona on each.",
     tag: "Runs Workflows",
+    tagColor: "cyan",
+  },
+  {
+    id: "website-monitor",
+    slashCommand: "website-monitor",
+    href: "/app/apps/website-monitor",
+    label: "Website Monitoring",
+    shortLabel: "Monitoring",
+    description:
+      "Add the URLs that matter — your site, your checkout, a client's landing page — and PA checks them on a schedule. When one goes down, slows to a crawl, changes, or its SSL certificate is about to lapse, the alert is waiting in Mission Control. Set the frequency and which changes you care about per URL.",
+    blurb: "Watch your sites; get an alert the moment one goes down or slows.",
+    tag: "Always Watching",
+    tagColor: "cyan",
+  },
+  {
+    id: "proposal-generator",
+    slashCommand: "proposal-generator",
+    href: "/app/apps/proposals",
+    label: "Proposal Generator",
+    shortLabel: "Proposals",
+    description:
+      "Pick a Persona, drop in the client and the scope, and PA drafts a full proposal in their voice — cover summary, the problems you're solving, deliverables, timeline, investment, success criteria, next steps, signatures. Edit it, then send it as a Gmail draft with the PDF attached or file it to your brain.",
+    blurb: "Turn a brief into a full, on-voice client proposal — markdown + PDF.",
+    tag: "Output",
     tagColor: "cyan",
   },
 ];

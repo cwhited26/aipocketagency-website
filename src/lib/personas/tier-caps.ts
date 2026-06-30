@@ -374,6 +374,51 @@ export function evaluateCanActivateRitual(tier: Tier, activeCount: number): CapD
   return { ok: true, reason: "" };
 }
 
+// ── Website Monitoring active-URL caps (Skool Wave-2: Website Monitoring Agent) ──────────
+//
+// The */5 cron polls every active URL, so the number of ACTIVE (watching) URLs an owner can hold is
+// bounded by tier. Paused URLs don't count. The task's four named breakpoints — Personal Brain 1 /
+// Business Agent 5 / AI Agent Workspace 20 / Studio+ unlimited — map monotonically across the six
+// internal rungs (the in-between Pro+/Studio rungs get the 20 of the mid tier; a higher price never
+// grants less). Infinity = unlimited.
+export const WEBSITE_MONITOR_CAPS: Record<Tier, number> = {
+  starter: 1,
+  pro: 5,
+  pro_plus: 20,
+  studio: 20,
+  studio_plus: Infinity,
+  enterprise: Infinity,
+}
+
+/** This tier's cap on active watched URLs (Infinity = unlimited). */
+export function websiteMonitorCap(tier: Tier): number {
+  return WEBSITE_MONITOR_CAPS[tier]
+}
+
+/** Pure: may this tier add another watched URL, given how many it already has active? */
+export function evaluateCanAddMonitoredWebsite(tier: Tier, activeCount: number): CapDecision {
+  const cap = WEBSITE_MONITOR_CAPS[tier]
+  if (activeCount >= cap) {
+    return {
+      ok: false,
+      reason:
+        cap === 1
+          ? "Your plan watches 1 website at a time. Pause or delete it to watch another, or upgrade to watch more."
+          : `You're watching all ${cap} websites on your plan. Pause or delete one, or upgrade to watch more.`,
+    }
+  }
+  return { ok: true, reason: "" }
+}
+
+// ── Proposal Generator gating (Skool Wave-2: Proposal & Document Agent) ───────────────────
+//
+// The Proposal Generator drafts a structured proposal (markdown + a Puppeteer PDF) from a Persona +
+// brief — it leans on the Persona layer, so it's a Business Agent ($97, `pro`) and up feature. The
+// free Personal Brain tier sees the App card with an upgrade CTA instead of the form.
+export function tierAllowsProposalGenerator(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("pro")
+}
+
 // ── Stripe LIVE-mode price → tier mapping (PA-ORCH-10 unified SMB ladder) ────────────
 //
 // Source of truth for the SMB subscription tier a paid Stripe price grants. The

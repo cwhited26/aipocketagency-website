@@ -18,6 +18,7 @@ const ALL_KINDS: InboxItemKind[] = [
   "routine_output",
   "cost_budget_gate",
   "skill_evolution_proposal",
+  "website_alert",
 ];
 
 // Kinds that commit a real-world / irreversible write ONLY because the user approved
@@ -37,6 +38,7 @@ const INFORMATIONAL_KINDS: InboxItemKind[] = [
   "sub_agent_activity",
   "routine_output",
   "cost_budget_gate",
+  "website_alert",
 ];
 
 describe("affordancesFor", () => {
