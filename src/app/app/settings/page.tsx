@@ -203,6 +203,7 @@ export default async function SettingsPage({
           <SettingsRow label="API keys" value="REST API for any agent" href="/app/settings/api-keys" />
           <SettingsRow label="Privacy zones" value="Control what your agent can read" href="/app/settings/privacy-zones" />
           <SettingsRow label="Capture routing" value="File what you share into your brain" href="/app/captures/settings#routing-rules" />
+          <SettingsRow label="Mac Capture App" value="Auto-capture clipboard & screenshots" href="/app/settings/mac-app" />
           <SettingsRow label="Auto-approve" value="Let trusted actions run on their own" href="/app/settings/auto-approve" />
           <SettingsRow label="Browser permissions" value="Which sites your agent can drive" href="/app/settings/browser/permissions" />
           <SettingsRow label="Browser action log" value="Every browser action your agent took" href="/app/settings/browser/log" />

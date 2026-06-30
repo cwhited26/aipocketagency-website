@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; script-src 'self';" />
+    <title>Pocket Agent Capture</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="title">Pocket Agent Capture</div>
+      <div id="status" class="status">—</div>
+    </header>
+
+    <!-- API token -->
+    <section class="card">
+      <div class="card-title">API token</div>
+      <div id="token-disconnected" class="hidden">
+        <p class="muted">Paste your Pocket Agent API token (Captures → Settings → API tokens).</p>
+        <div class="row">
+          <input id="token-input" type="password" placeholder="pca_…" autocomplete="off" />
+          <button id="token-save" class="btn primary">Save</button>
+        </div>
+      </div>
+      <div id="token-connected" class="hidden">
+        <div class="row spaced">
+          <span class="ok">Connected ✓ — stored in Keychain</span>
+          <button id="token-clear" class="btn">Disconnect</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Watchers -->
+    <section class="card">
+      <div class="card-title">What to capture</div>
+      <label class="toggle">
+        <span>Clipboard</span>
+        <input id="toggle-clipboard" type="checkbox" />
+      </label>
+      <label class="toggle">
+        <span>Screenshots</span>
+        <input id="toggle-screenshot" type="checkbox" />
+      </label>
+      <label class="toggle">
+        <span>Launch at login</span>
+        <input id="toggle-login" type="checkbox" />
+      </label>
+    </section>
+
+    <!-- Pause -->
+    <section class="card">
+      <div class="card-title">Pause</div>
+      <div class="row">
+        <button id="pause-1h" class="btn">1 hour</button>
+        <button id="pause-tomorrow" class="btn">Until tomorrow</button>
+        <button id="pause-resume" class="btn">Resume</button>
+      </div>
+    </section>
+
+    <!-- Allow / deny lists -->
+    <section class="card">
+      <div class="card-title">Only capture from (allow list)</div>
+      <div class="row">
+        <input id="allow-input" type="text" placeholder="App name, e.g. Notes" />
+        <button id="allow-add" class="btn">Add</button>
+      </div>
+      <div id="allow-chips" class="chips"></div>
+      <p class="muted small">Leave empty to capture from every app (except the deny list).</p>
+    </section>
+
+    <section class="card">
+      <div class="card-title">Never capture from (deny list)</div>
+      <div class="row">
+        <input id="deny-input" type="text" placeholder="App name, e.g. 1Password" />
+        <button id="deny-add" class="btn">Add</button>
+      </div>
+      <div id="deny-chips" class="chips"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span id="queue-stats" class="muted">—</span>
+      <div class="row">
+        <button id="sync-now" class="btn">Sync now</button>
+        <button id="quit" class="btn danger">Quit</button>
+      </div>
+    </footer>
+
+    <script type="module" src="renderer.js"></script>
+  </body>
+</html>
