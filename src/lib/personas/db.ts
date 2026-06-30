@@ -140,6 +140,8 @@ export async function updatePersona(
     mode: PersonaMode;
     accessible_apps: string[];
     current_spec_version: string;
+    // The Voice Call profile jsonb (migration 091) — set from /app/settings/voice.
+    voice_profile_json: Record<string, unknown>;
     updated_at: string;
   }>,
 ): Promise<PersonaRow | null> {

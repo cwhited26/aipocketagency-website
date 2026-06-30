@@ -16,7 +16,21 @@
 // be fractional (e.g. one Haiku input token = 0.8 micro-cents); the ledger writer rounds to the integer
 // BIGINT column on write — rounding to whole micro-cents, never to whole cents, is the whole point.
 
-export type CostBackend = "anthropic" | "openai" | "bright_data" | "modal" | "twilio" | "resend" | "vercel";
+export type CostBackend =
+  | "anthropic"
+  | "openai"
+  | "bright_data"
+  | "modal"
+  | "twilio"
+  | "resend"
+  | "vercel"
+  // ElevenLabs streaming TTS (voice channel outbound leg).
+  | "elevenlabs"
+  // The composite backend of the per-call Voice summary row (Phase 6): one row spanning all three
+  // providers, with the per-segment split in metadata.cost_breakdown. The per-turn LLM rows use the
+  // plain "anthropic" backend; the Twilio/Whisper/ElevenLabs segment costs are computed in
+  // lib/channels/voice/cost.ts and written with an explicit costMicroCents (not via getCostMicroCents).
+  | "twilio+elevenlabs+openai";
 
 /** The usage payload a metered call returns. Every field optional — each backend reads what it needs. */
 export type CostUsage = {

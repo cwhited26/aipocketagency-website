@@ -52,6 +52,9 @@ export type PersonaRow = {
   // applied report `undefined`, so always read through `personaApps()`.
   accessible_apps: string[];
   current_spec_version: string | null;
+  // The per-Persona Voice Call profile (migration 091). Raw jsonb — parse through
+  // lib/channels/voice/profile.ts parseVoiceProfile(). {} / undefined on rows predating the column.
+  voice_profile_json?: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 };

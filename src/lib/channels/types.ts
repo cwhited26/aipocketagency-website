@@ -24,6 +24,10 @@ export const CHANNEL_SLUGS = [
   "whatsapp",
   "telegram",
   "web_widget",
+  // Phase 6 — Voice Call (Twilio + ElevenLabs + Whisper). No ChannelAdapter (the WS streaming model
+  // doesn't fit parseInbound/sendOutbound); a voice connection rides pa_channel_connections for
+  // storage + the settings surface, and the voice routes own the answer/stream/status flow.
+  "voice",
 ] as const;
 export type ChannelSlug = (typeof CHANNEL_SLUGS)[number];
 

@@ -18,6 +18,9 @@ const PAIRING: Partial<Record<ChannelSlug, PairingDescriptor>> = {
   // Telegram pairs by bot-token paste (no redirect): the owner mints a bot in BotFather, then posts
   // the token + webhook secret to the connect route. No install redirect, so installPath is null.
   telegram: { slug: "telegram", flow: "bot_token", installPath: null },
+  // Voice (Phase 6): the owner provisions a number via the setup surface (API-driven), so there's no
+  // install redirect — the flow is phone_link and the CTA lives on /app/settings/voice.
+  voice: { slug: "voice", flow: "phone_link", installPath: null },
 };
 
 export function pairingDescriptor(slug: ChannelSlug): PairingDescriptor | null {

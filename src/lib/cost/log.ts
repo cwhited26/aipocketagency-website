@@ -36,6 +36,8 @@ export type CostFeatureSlug =
   | "channels:slack"
   // One row per inbound Channels Gateway roundtrip (Phase 2 Telegram adapter); same meter as Slack.
   | "channels:telegram"
+  // One summary row per Voice Call (Phase 6) + per-turn dispatcher rows; Twilio+ElevenLabs+Whisper+LLM.
+  | "voice_call"
   // One row per headless URL extraction run (recon Lane C, PA-CINS); backend 'vercel', priced by run time.
   | "url_extraction"
   // The Competitor Inspector's metered offer-summary call (DNA + role hierarchy only, never copy).
