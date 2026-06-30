@@ -4,6 +4,10 @@ import {
   isPocketCaptureHost,
   pocketCaptureTargetPath,
 } from "@/lib/pocket-capture/marketing-routing";
+import {
+  isLaunchFunnelHost,
+  launchFunnelTargetPath,
+} from "@/lib/launch-funnel/routing";
 import { crossSubdomainCookieDomain } from "@/lib/app-subdomain/cookies";
 import {
   APEX_HOST,
@@ -119,6 +123,19 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   // runs before the auth pipeline so the public landing never triggers the subscription gate.
   if (isPocketCaptureHost(request.headers.get("host"))) {
     const target = pocketCaptureTargetPath(earlyPath);
+    if (target) {
+      const url = request.nextUrl.clone();
+      url.pathname = target;
+      return NextResponse.rewrite(url);
+    }
+    return NextResponse.next({ request });
+  }
+
+  // Launch funnel subdomain (start.aipocketagent.com). Rewrite the funnel page paths onto the
+  // isolated `(launch-funnel)` route group; the checkout API and static files pass through. Runs
+  // before the auth pipeline so the public funnel never triggers the subscription gate.
+  if (isLaunchFunnelHost(request.headers.get("host"))) {
+    const target = launchFunnelTargetPath(earlyPath);
     if (target) {
       const url = request.nextUrl.clone();
       url.pathname = target;
@@ -255,6 +272,14 @@ export const config = {
     {
       source: "/((?!api|_next|.*\\.).*)",
       has: [{ type: "host", value: "capture.aipocketagent.com" }],
+    },
+    // Launch funnel host (start.aipocketagent.com): run middleware on its page paths so they can
+    // be rewritten into the `(launch-funnel)` route group. Scoped by host so the main site is
+    // untouched; API and static-asset paths are excluded here and re-checked in
+    // launchFunnelTargetPath.
+    {
+      source: "/((?!api|_next|.*\\.).*)",
+      has: [{ type: "host", value: "start.aipocketagent.com" }],
     },
     // App subdomain (app.aipocketagent.com): run middleware on ALL its paths so bare app
     // paths (`/captures`) can be rewritten to `/app/captures`. Scoped by host so the apex is

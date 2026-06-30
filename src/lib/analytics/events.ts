@@ -82,11 +82,23 @@ export const RETENTION_EVENTS = [
   "support_request_submitted",
 ] as const;
 
+/** Launch funnel — the start.aipocketagent.com qualifier quiz → license-matched offer flow. */
+export const FUNNEL_EVENTS = [
+  "funnel_landing_viewed",
+  "funnel_quiz_started",
+  "funnel_step_completed",
+  "funnel_offer_viewed",
+  "funnel_tier_selected",
+  "funnel_checkout_started",
+  "funnel_checkout_completed",
+] as const;
+
 export const ANALYTICS_EVENTS = [
   ...ACTIVATION_EVENTS,
   ...APP_USAGE_EVENTS,
   ...MONETIZATION_EVENTS,
   ...RETENTION_EVENTS,
+  ...FUNNEL_EVENTS,
 ] as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];

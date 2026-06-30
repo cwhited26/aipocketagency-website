@@ -47,6 +47,11 @@ export function buildPocketAgentCheckoutParams(args: {
   userId: string | null;
   bump?: boolean;
   vault?: boolean;
+  // Launch-funnel mode (start.aipocketagent.com): route success/cancel back onto the funnel's own
+  // pages and stamp the quiz answers for attribution. Cold funnel traffic isn't signed in, so the
+  // encoded answers stand in for client_reference_id when there's no user_id.
+  funnel?: boolean;
+  funnelAnswers?: string;
 }): URLSearchParams {
   const params = new URLSearchParams();
   params.set("mode", "subscription");
@@ -65,12 +70,26 @@ export function buildPocketAgentCheckoutParams(args: {
   if (args.userId) {
     params.set("client_reference_id", args.userId);
     params.set("subscription_data[metadata][user_id]", args.userId);
+  } else if (args.funnel) {
+    // No account yet (cold funnel) — carry the encoded quiz answers as the attribution handle.
+    params.set("client_reference_id", `funnel:${args.funnelAnswers ?? ""}`);
   }
   params.set("metadata[email]", args.email);
   params.set("metadata[source]", "pocket_agent");
   params.set("metadata[tier]", args.tier);
   if (args.name) {
     params.set("metadata[name]", args.name);
+  }
+  if (args.funnel) {
+    params.set("metadata[funnel_source]", "launch_funnel");
+    params.set("subscription_data[metadata][funnel_source]", "launch_funnel");
+    if (args.funnelAnswers) {
+      params.set("metadata[funnel_answers]", args.funnelAnswers);
+      params.set(
+        "subscription_data[metadata][funnel_answers]",
+        args.funnelAnswers,
+      );
+    }
   }
   // One-time bumps ride add_invoice_items on the first invoice. The index walks forward so the two
   // bumps can stack without colliding (Fast-Start at [0], Vault at [0] or [1]).
@@ -112,10 +131,20 @@ export function buildPocketAgentCheckoutParams(args: {
     params.set("metadata[bump_workflow_vault]", "true");
     params.set("subscription_data[metadata][bump_workflow_vault]", "true");
   }
-  params.set(
-    "success_url",
-    `${args.origin}/upsell?session_id={CHECKOUT_SESSION_ID}`,
-  );
-  params.set("cancel_url", `${args.origin}/pricing`);
+  if (args.funnel) {
+    // The funnel runs on start.aipocketagent.com, where /upsell and /pricing don't exist —
+    // land on the funnel's own /success and bounce a cancel back to the offer page.
+    params.set(
+      "success_url",
+      `${args.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+    );
+    params.set("cancel_url", `${args.origin}/start`);
+  } else {
+    params.set(
+      "success_url",
+      `${args.origin}/upsell?session_id={CHECKOUT_SESSION_ID}`,
+    );
+    params.set("cancel_url", `${args.origin}/pricing`);
+  }
   return params;
 }

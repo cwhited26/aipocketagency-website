@@ -26,6 +26,11 @@ const BodySchema = z.object({
   bump: z.boolean().optional(),
   // The /start order-form bump (AI Workflow Vault +$47). Optional checkbox.
   vault: z.boolean().optional(),
+  // Launch-funnel mode (start.aipocketagent.com). When true, success/cancel route back onto the
+  // funnel and the encoded quiz answers ride along as Stripe attribution metadata.
+  funnel: z.boolean().optional(),
+  // Encoded quiz answers ("0.2.1"). Bounded so a crafted body can't bloat the Stripe call.
+  answers: z.string().max(64).optional(),
 });
 
 type CheckoutResult =
@@ -44,6 +49,8 @@ async function createPocketAgentCheckout(args: {
   userId: string | null;
   bump: boolean;
   vault: boolean;
+  funnel: boolean;
+  funnelAnswers: string;
 }): Promise<CheckoutResult> {
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) {
@@ -67,6 +74,8 @@ async function createPocketAgentCheckout(args: {
     userId: args.userId,
     bump: args.bump,
     vault: args.vault,
+    funnel: args.funnel,
+    funnelAnswers: args.funnelAnswers,
   });
 
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -110,6 +119,8 @@ export async function POST(req: Request): Promise<NextResponse> {
   const tier = resolveCheckoutTier(parsed.data.tier);
   const bump = parsed.data.bump === true;
   const vault = parsed.data.vault === true;
+  const funnel = parsed.data.funnel === true;
+  const funnelAnswers = parsed.data.answers ?? "";
 
   // Read auth from session cookie — null when not logged in (still allowed).
   const supabase = createClient();
@@ -126,6 +137,8 @@ export async function POST(req: Request): Promise<NextResponse> {
     userId: user?.id ?? null,
     bump,
     vault,
+    funnel,
+    funnelAnswers,
   });
 
   if (!checkout.ok) {
