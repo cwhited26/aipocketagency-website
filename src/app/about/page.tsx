@@ -4,17 +4,17 @@ import { PrimaryCTA } from "@/components/marketing/cta";
 
 const PAGE_URL = "https://aipocketagent.com/about";
 const DESCRIPTION =
-  "AI Pocket Agency is the studio behind Pocket Agent — the one chat that runs your business with you. Built by an operator who runs his own businesses on it.";
+  "Pocket Agent is the one chat that runs your business with you. Built by an operator who runs his own businesses on it before charging anyone else.";
 
 export const metadata: Metadata = {
-  title: "About — AI Pocket Agency",
+  title: "About — Pocket Agent",
   description: DESCRIPTION,
   alternates: { canonical: PAGE_URL },
   openGraph: {
-    title: "About — AI Pocket Agency",
+    title: "About — Pocket Agent",
     description: DESCRIPTION,
     url: PAGE_URL,
-    siteName: "AI Pocket Agency",
+    siteName: "Pocket Agent",
     type: "website",
   },
 };
@@ -29,12 +29,11 @@ export default function AboutPage() {
         <div className="absolute inset-0 bg-hero-glow" aria-hidden />
         <div className="relative mx-auto max-w-3xl px-6 pb-20 pt-24 sm:pt-28">
           <h1 className="text-balance text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
-            AI Pocket Agency
+            Pocket Agent
           </h1>
           <p className="mt-6 text-balance text-xl leading-relaxed text-slate-200 sm:text-2xl">
-            The studio behind Pocket Agent — the one chat that runs your business
-            with you. Built by an operator who runs his own businesses on it
-            before charging anyone else.
+            The one chat that runs your business with you. Built by an operator
+            who runs his own businesses on it before charging anyone else.
           </p>
         </div>
       </section>

@@ -24,7 +24,7 @@ const UUID_V4_RE =
 
 export function generateMetadata(): Metadata {
   return {
-    title: "Last call — APA kit bundle | AI Pocket Agency",
+    title: "Last call — APA kit bundle | Pocket Agent",
     description:
       "All five APA kits, packaged once. $47 — anchor $97. This price isn't shown anywhere else on the site.",
     robots: { index: false, follow: false },
@@ -107,7 +107,7 @@ export default async function UpgradeBundlePage({
           <div className="mt-10 overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
             <Image
               src="/funnel-images/bundle-hero.png"
-              alt="All 5 AI Pocket Agency kits — Dispatch Playbook, Dev-Team Document Set, CLAUDE.md Template Library, Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack"
+              alt="All 5 Pocket Agent kits — Dispatch Playbook, Dev-Team Document Set, CLAUDE.md Template Library, Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack"
               width={1672}
               height={941}
               priority

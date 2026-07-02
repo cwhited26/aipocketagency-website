@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: "The AI Office Launch Kit — from empty workspace to working agents in your first week.",
     description: DESCRIPTION,
     url: PAGE_URL,
-    siteName: "AI Pocket Agency",
+    siteName: "Pocket Agent",
     type: "website",
   },
 };

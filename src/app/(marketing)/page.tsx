@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     title: "Build your AI team without becoming an AI expert.",
     description: DESCRIPTION,
     url: "https://aipocketagent.com",
-    siteName: "AI Pocket Agency",
+    siteName: "Pocket Agent",
     type: "website",
     images: [
       {

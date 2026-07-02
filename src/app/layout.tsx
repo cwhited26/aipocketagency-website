@@ -25,9 +25,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Pocket Agent — by AI Pocket Agency",
+  title: "Pocket Agent — the AI Agent Workspace for owner-led businesses",
   description:
-    "AI Pocket Agency — home of Pocket Agent. We give your business a memory. $37/mo, 14-day free trial.",
+    "Pocket Agent gives your business a memory — the AI Agent Workspace that starts from your business, not a blank box. $37/mo, 14-day free trial.",
   metadataBase: new URL("https://aipocketagent.com"),
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -36,26 +36,26 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   openGraph: {
-    title: "Pocket Agent — by AI Pocket Agency",
+    title: "Pocket Agent — the AI Agent Workspace for owner-led businesses",
     description:
-      "AI Pocket Agency — home of Pocket Agent. We give your business a memory. $37/mo, 14-day free trial.",
+      "Pocket Agent gives your business a memory — the AI Agent Workspace that starts from your business, not a blank box. $37/mo, 14-day free trial.",
     url: "https://aipocketagent.com",
-    siteName: "AI Pocket Agency",
+    siteName: "Pocket Agent",
     type: "website",
     images: [
       {
         url: "https://aipocketagent.com/og-share.png",
         width: 1200,
         height: 630,
-        alt: "Pocket Agent — AI Pocket Agency",
+        alt: "Pocket Agent — the AI Agent Workspace",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pocket Agent — by AI Pocket Agency",
+    title: "Pocket Agent — the AI Agent Workspace for owner-led businesses",
     description:
-      "AI Pocket Agency — home of Pocket Agent. We give your business a memory. $37/mo, 14-day free trial.",
+      "Pocket Agent gives your business a memory — the AI Agent Workspace that starts from your business, not a blank box. $37/mo, 14-day free trial.",
     images: ["https://aipocketagent.com/og-share.png"],
   },
   icons: {

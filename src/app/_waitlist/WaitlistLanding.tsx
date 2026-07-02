@@ -197,7 +197,7 @@ function Footer() {
     <footer className="bg-black/40">
       <div className="mx-auto max-w-3xl px-6 py-12 text-center">
         <p className="text-sm leading-relaxed text-slate-400">
-          AI Pocket Agency · Built by a builder. Run in the field.{" "}
+          Pocket Agent · Built by a builder. Run in the field.{" "}
           <Link href="/" className="text-accent transition hover:underline">
             Back to the homepage
           </Link>

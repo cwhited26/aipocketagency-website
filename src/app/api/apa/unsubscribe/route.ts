@@ -20,7 +20,7 @@ function htmlPage(body: string, ok: boolean): string {
 </head>
 <body style="margin:0;padding:64px 16px;background:#0b0b0b;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;">
 <div style="max-width:520px;margin:0 auto;">
-<p style="font-size:13px;letter-spacing:0.18em;text-transform:uppercase;color:${accent};margin:0 0 16px;">AI Pocket Agency</p>
+<p style="font-size:13px;letter-spacing:0.18em;text-transform:uppercase;color:${accent};margin:0 0 16px;">Pocket Agent</p>
 ${body}
 <p style="margin-top:48px;font-size:13px;color:#888;"><a href="https://aipocketagent.com" style="color:#888;text-decoration:underline;">aipocketagent.com</a></p>
 </div></body></html>`;

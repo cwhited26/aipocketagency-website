@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     title: "You're registered.",
     description: DESCRIPTION,
     url: PAGE_URL,
-    siteName: "AI Pocket Agency",
+    siteName: "Pocket Agent",
     type: "website",
   },
 };

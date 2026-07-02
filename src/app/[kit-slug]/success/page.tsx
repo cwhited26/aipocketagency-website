@@ -18,7 +18,7 @@ export function generateMetadata({
   const kit = getKitConfig(slug);
   if (!kit) return {};
   const pageUrl = `https://aipocketagent.com/${kit.slug}/success`;
-  const title = `You're in — ${kit.fullName} | AI Pocket Agency`;
+  const title = `You're in — ${kit.fullName} | Pocket Agent`;
   const description = `Payment confirmed. Your ${kit.shortName} is being delivered to your inbox.`;
   return {
     title,

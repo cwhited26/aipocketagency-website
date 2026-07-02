@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     title: "Done-With-You Setup — we build your workspace, you go straight to working agents.",
     description: DESCRIPTION,
     url: PAGE_URL,
-    siteName: "AI Pocket Agency",
+    siteName: "Pocket Agent",
     type: "website",
   },
 };

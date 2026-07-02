@@ -13,23 +13,23 @@ const MONO_FONT =
 const PAGE_URL = "https://aipocketagent.com/bundle";
 
 export const metadata: Metadata = {
-  title: "The APA Bundle — All 5 kits, $60 | AI Pocket Agency",
+  title: "The APA Bundle — All 5 kits, $60 | Pocket Agent",
   description:
-    "All 5 AI Pocket Agency kits bundled — Dispatch, Dev-Team Document Set, CLAUDE.md Template Library, Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack. $60 instead of $75 buying them one at a time.",
+    "All 5 Pocket Agent kits bundled — Dispatch, Dev-Team Document Set, CLAUDE.md Template Library, Discovery → MVP Prompt Pack, Wire-the-Brain-to-Stack. $60 instead of $75 buying them one at a time.",
   alternates: { canonical: PAGE_URL },
   openGraph: {
     title: "The APA Bundle — All 5 kits, $60",
     description:
-      "All 5 AI Pocket Agency kits bundled — $60 instead of $75 buying them one at a time.",
+      "All 5 Pocket Agent kits bundled — $60 instead of $75 buying them one at a time.",
     url: PAGE_URL,
-    siteName: "AI Pocket Agency",
+    siteName: "Pocket Agent",
     type: "website",
     images: [
       {
         url: "https://aipocketagent.com/og-share.png",
         width: 1200,
         height: 630,
-        alt: "AI Pocket Agency — the bundle of 5 kits",
+        alt: "Pocket Agent — the bundle of 5 kits",
       },
     ],
   },
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "The APA Bundle — All 5 kits, $60",
     description:
-      "All 5 AI Pocket Agency kits bundled — $60 instead of $75 buying them one at a time.",
+      "All 5 Pocket Agent kits bundled — $60 instead of $75 buying them one at a time.",
     images: ["https://aipocketagent.com/og-share.png"],
   },
 };

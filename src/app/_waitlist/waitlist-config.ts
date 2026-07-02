@@ -21,7 +21,7 @@ export type WaitlistBundle = {
 
 export const CAPTURE_PACK: WaitlistBundle = {
   slug: "capture_pack",
-  pageTitle: "Capture Pack — AI Pocket Agency",
+  pageTitle: "Capture Pack — Pocket Agent",
   heroPill: "[ capture · what your ai remembers ]",
   heroHeadline: "Tap once. Your AI captures the rest.",
   heroSubhead:
@@ -72,7 +72,7 @@ export const CAPTURE_PACK: WaitlistBundle = {
 
 export const OUTPUT_PACK: WaitlistBundle = {
   slug: "output_pack",
-  pageTitle: "Output Pack — AI Pocket Agency",
+  pageTitle: "Output Pack — Pocket Agent",
   heroPill: "[ output · what your ai gives back ]",
   heroHeadline: "Your AI works while you sleep.",
   heroSubhead:

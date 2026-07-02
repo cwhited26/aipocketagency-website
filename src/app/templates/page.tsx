@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     title: OG_TITLE,
     description: DESCRIPTION,
     url: PAGE_URL,
-    siteName: "AI Pocket Agency",
+    siteName: "Pocket Agent",
     type: "website",
   },
   twitter: {

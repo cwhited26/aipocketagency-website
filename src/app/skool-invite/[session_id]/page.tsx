@@ -13,7 +13,7 @@ const MONO_FONT =
 
 export function generateMetadata(): Metadata {
   return {
-    title: "One last thing — Pocket Agent | AI Pocket Agency",
+    title: "One last thing — Pocket Agent",
     description:
       "The software that runs all of this. $37/mo, 14-day free trial, Skool community included.",
     robots: { index: false, follow: false },
@@ -89,7 +89,7 @@ export default async function SkoolInvitePage({
           <div className="mt-10 overflow-hidden rounded-xl border border-white/10 bg-slate-900/40">
             <Image
               src="/funnel-images/skool-community-card.png"
-              alt="AI Pocket Agency Skool community — founding-50 cohort, three live calls per week"
+              alt="Pocket Agent Skool community — founding-50 cohort, three live calls per week"
               width={1200}
               height={675}
               priority

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     title: "Need Pocket Agent built around how your business actually runs?",
     description: DESCRIPTION,
     url: PAGE_URL,
-    siteName: "AI Pocket Agency",
+    siteName: "Pocket Agent",
     type: "website",
   },
   twitter: {

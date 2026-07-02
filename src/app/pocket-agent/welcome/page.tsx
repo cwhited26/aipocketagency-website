@@ -12,7 +12,7 @@ const MONO_FONT =
 
 export function generateMetadata(): Metadata {
   return {
-    title: "Your trial is live — Pocket Agent | AI Pocket Agency",
+    title: "Your trial is live — Pocket Agent",
     description: "Get your first useful answer from Pocket Agent in the next 10 minutes.",
     robots: { index: false, follow: false },
   };

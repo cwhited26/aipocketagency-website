@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   resolveCheckoutTier,
@@ -20,7 +19,7 @@ export const metadata: Metadata = {
     title: "You’re one step from your workspace.",
     description: DESCRIPTION,
     url: PAGE_URL,
-    siteName: "AI Pocket Agency",
+    siteName: "Pocket Agent",
     type: "website",
   },
   twitter: {
@@ -49,21 +48,18 @@ export default async function StartPage({
   // unknown/missing/enterprise falls back to ’starter’.
   const tier = resolveCheckoutTier(searchParams.tier);
 
+  // Pay-first, log in after (PA lower-friction signup). Anonymous visitors go straight to Stripe
+  // Checkout — no login gate between "picked a plan" and "card entered". If the buyer happens to be
+  // signed in we pre-fill their email and thread their user id through checkout; if not, the webhook
+  // creates the account from the checkout email after payment and emails them a login link.
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Require login before checkout so the subscription is always tied to a real account.
-  // Preserve the chosen tier across the login round-trip.
-  if (!user) {
-    const next = tier === "starter" ? "/start" : `/start?tier=${tier}`;
-    redirect(`/app/login?next=${encodeURIComponent(next)}`);
-  }
-
   return (
     <StartForm
-      defaultEmail={user.email ?? ""}
+      defaultEmail={user?.email ?? ""}
       tier={tier}
       tierLabel={FUNNEL_TIER_LABEL[tier]}
       priceUsd={TIER_PRICE_USD_MONTHLY[tier]}

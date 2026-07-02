@@ -419,28 +419,65 @@ export function tierAllowsProposalGenerator(tier: Tier): boolean {
   return tierRank(tier) >= tierRank("pro")
 }
 
-// ── Stripe LIVE-mode price → tier mapping (PA-ORCH-10 unified SMB ladder) ────────────
+// ── Stripe price ID resolution — env-first, hardcoded fallback (launch prep 2026-07-02) ──
 //
-// Source of truth for the SMB subscription tier a paid Stripe price grants. The
-// Stripe webhook (src/app/api/stripe/webhook/route.ts) extracts the active price ID
-// from a customer.subscription.* event and runs it through getTierFromStripePriceId to
-// decide what tier to write to the customer's pocket_agent_subscriptions row.
+// The live Stripe price IDs moved out of code and into Sensitive Vercel env vars so a Stripe
+// key/price rotation is a config change, not a code deploy. The hardcoded IDs below stay ONLY
+// as local-dev / test fallbacks so a checkout with no env set still resolves. In production the
+// env vars are set to these same values, so this is a zero-breakage transition.
 //
-// Kept as an exported, typed Record so the mapping is grep-able and unit-tested. Enterprise
-// has no Stripe price (it's a "talk to sales" mailto), so it never appears here. The dev
-// GTM add-ons (PA Sync / PA Publish, SPEC v4 Wave 3) are orthogonal yearly products — they
-// are NOT SMB tiers, so they live in ADDON_PRICE_IDS below, not here.
+// Why the warn matters: if a production price rotates in Stripe and the env var isn't updated,
+// getTierFromStripePriceId falls through to 'starter' (see below) — a silent downgrade that
+// bills a Studio+ customer at Starter caps. The console.warn (repo convention, mirrors
+// pocket-agent-webhook-tier.ts) surfaces the fallback in Sentry so we catch it before a customer does.
+const PRICE_ENV_FALLBACKS = {
+  STRIPE_PRICE_PA_STARTER: "price_1TdyfmJ6S5nx9HK5EeAZQEPj", // Starter $37/mo
+  STRIPE_PRICE_PA_PRO: "price_1TfRbIJ6S5nx9HK5sucoD8sB", // Pro $97/mo
+  STRIPE_PRICE_PA_PRO_PLUS: "price_1TfRbJJ6S5nx9HK5ldFrZv5o", // Pro+ $149/mo
+  STRIPE_PRICE_PA_STUDIO: "price_1TfRbKJ6S5nx9HK5g3U1yYOK", // Studio $297/mo
+  STRIPE_PRICE_PA_STUDIO_PLUS: "price_1TfRbLJ6S5nx9HK54VQ2nc0m", // Studio+ $497/mo
+  STRIPE_PRICE_PA_SYNC: "price_1TfRmxJ6S5nx9HK5SoqFHdOY", // PA Sync $96/yr add-on
+  STRIPE_PRICE_PA_PUBLISH: "price_1TfRmyJ6S5nx9HK5R9uxFpgd", // PA Publish $200/yr add-on
+} as const;
+
+type PriceEnvVar = keyof typeof PRICE_ENV_FALLBACKS;
+
+const warnedPriceEnvs = new Set<string>();
+
+/**
+ * Read a Stripe price ID from its env var, or fall back to the hardcoded value. A missing env in
+ * a non-test runtime is warned once per var so a production fallback shows up in Sentry. Pure enough
+ * for tests — under Vitest (VITEST/NODE_ENV=test) the warn is suppressed, and with no env set the
+ * fallback keeps the existing literal IDs the tests assert against.
+ */
+function resolvePriceId(envVar: PriceEnvVar): string {
+  const fromEnv = process.env[envVar];
+  if (fromEnv && fromEnv.length > 0) return fromEnv;
+  const isTest = process.env.NODE_ENV === "test" || process.env.VITEST === "true";
+  if (!isTest && !warnedPriceEnvs.has(envVar)) {
+    warnedPriceEnvs.add(envVar);
+    console.warn(
+      `[tier-caps] ${envVar} is not set; using the hardcoded Stripe price fallback. Set it in Vercel to avoid a silent tier mis-map.`,
+    );
+  }
+  return PRICE_ENV_FALLBACKS[envVar];
+}
+
+// Source of truth for the SMB subscription tier a paid Stripe price grants. The Stripe webhook
+// (src/app/api/stripe/webhook/route.ts) extracts the active price ID from a customer.subscription.*
+// event and runs it through getTierFromStripePriceId to decide what tier to write to the customer's
+// pocket_agent_subscriptions row.
+//
+// Kept as an exported, typed Record so the mapping is grep-able and unit-tested. Enterprise has no
+// Stripe price (it's a "talk to sales" mailto), so it never appears here. The dev GTM add-ons
+// (PA Sync / PA Publish, SPEC v4 Wave 3) are orthogonal yearly products — they are NOT SMB tiers, so
+// they live in ADDON_PRICE_IDS below, not here.
 export const PRICE_TO_TIER: Record<string, Tier> = {
-  // Starter $37/mo — pre-existing, also referenced via STRIPE_POCKET_AGENT_PRICE_ID.
-  price_1TdyfmJ6S5nx9HK5EeAZQEPj: "starter",
-  // Pro $97/mo
-  price_1TfRbIJ6S5nx9HK5sucoD8sB: "pro",
-  // Pro+ $149/mo
-  price_1TfRbJJ6S5nx9HK5ldFrZv5o: "pro_plus",
-  // Studio $297/mo
-  price_1TfRbKJ6S5nx9HK5g3U1yYOK: "studio",
-  // Studio+ $497/mo
-  price_1TfRbLJ6S5nx9HK54VQ2nc0m: "studio_plus",
+  [resolvePriceId("STRIPE_PRICE_PA_STARTER")]: "starter",
+  [resolvePriceId("STRIPE_PRICE_PA_PRO")]: "pro",
+  [resolvePriceId("STRIPE_PRICE_PA_PRO_PLUS")]: "pro_plus",
+  [resolvePriceId("STRIPE_PRICE_PA_STUDIO")]: "studio",
+  [resolvePriceId("STRIPE_PRICE_PA_STUDIO_PLUS")]: "studio_plus",
 };
 
 /** Map a Stripe price ID to its SMB tier. Unknown prices default to 'starter'. */
@@ -522,8 +559,8 @@ export function highestTierFromPriceIds(priceIds: readonly string[]): Tier | nul
 // A customer can hold one of these alongside any SMB tier; the webhook treats them as
 // boolean add-on flags on the subscription row and never lets them overwrite the SMB tier.
 export const ADDON_PRICE_IDS = {
-  sync: "price_1TfRmxJ6S5nx9HK5SoqFHdOY",
-  publish: "price_1TfRmyJ6S5nx9HK5R9uxFpgd",
+  sync: resolvePriceId("STRIPE_PRICE_PA_SYNC"),
+  publish: resolvePriceId("STRIPE_PRICE_PA_PUBLISH"),
 } as const;
 export type AddonProduct = keyof typeof ADDON_PRICE_IDS;
 

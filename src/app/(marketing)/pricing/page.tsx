@@ -3,6 +3,9 @@ import Link from "next/link";
 import { SiteHeader, SiteFooter } from "@/components/marketing/site-nav";
 import { MONO_FONT } from "@/components/marketing/cta";
 import PricingPlans from "./PricingPlans";
+import ComparisonMatrix from "./ComparisonMatrix";
+import MoneyMath from "./MoneyMath";
+import PartsVsProduct from "./PartsVsProduct";
 
 const PAGE_URL = "https://aipocketagent.com/pricing";
 const DESCRIPTION =
@@ -16,7 +19,7 @@ export const metadata: Metadata = {
     title: "Three ways into your AI Agent Workspace.",
     description: DESCRIPTION,
     url: PAGE_URL,
-    siteName: "AI Pocket Agency",
+    siteName: "Pocket Agent",
     type: "website",
   },
   twitter: {
@@ -55,6 +58,27 @@ export default function PricingPage() {
         <section className="border-b border-white/5">
           <div className="mx-auto max-w-5xl px-6 py-16">
             <PricingPlans />
+          </div>
+        </section>
+
+        {/* FULL FEATURE COMPARISON — every shipped feature per tier, mirrors tier-caps. */}
+        <section className="border-b border-white/5">
+          <div className="mx-auto max-w-6xl px-6 py-16">
+            <ComparisonMatrix />
+          </div>
+        </section>
+
+        {/* MONEY MATH — the monthly cost of the busywork, anchored against $37/mo. */}
+        <section className="border-b border-white/5 bg-black/20">
+          <div className="mx-auto max-w-5xl px-6 py-16">
+            <MoneyMath />
+          </div>
+        </section>
+
+        {/* PARTS VS PRODUCT — the concrete wedge: string the tools together, or use the Apps. */}
+        <section className="border-b border-white/5">
+          <div className="mx-auto max-w-5xl px-6 py-16">
+            <PartsVsProduct />
           </div>
         </section>
 

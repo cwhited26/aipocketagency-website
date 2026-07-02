@@ -79,7 +79,7 @@ const PAIR_PITCH: Record<
 
 export function generateMetadata(): Metadata {
   return {
-    title: "Quick add-on — APA kit pairing | AI Pocket Agency",
+    title: "Quick add-on — APA kit pairing | Pocket Agent",
     description:
       "Pair the kit you just claimed with the natural complement at $10 — this price isn't shown anywhere else on the site.",
     robots: { index: false, follow: false },
