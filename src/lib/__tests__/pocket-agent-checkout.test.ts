@@ -65,7 +65,17 @@ describe("buildPocketAgentCheckoutParams", () => {
     expect(p.get("subscription_data[metadata][user_id]")).toBe("user-123");
   });
 
-  it("omits user_id fields for anonymous checkout", () => {
+  it("marks a signed-in checkout anonymous_signup=false on both session and subscription", () => {
+    const p = buildPocketAgentCheckoutParams({
+      ...base,
+      tier: "pro",
+      priceId: TIER_TO_PRICE.pro,
+    });
+    expect(p.get("metadata[anonymous_signup]")).toBe("false");
+    expect(p.get("subscription_data[metadata][anonymous_signup]")).toBe("false");
+  });
+
+  it("omits user_id fields for anonymous checkout and marks anonymous_signup=true", () => {
     const p = buildPocketAgentCheckoutParams({
       ...base,
       userId: null,
@@ -74,6 +84,10 @@ describe("buildPocketAgentCheckoutParams", () => {
     });
     expect(p.get("client_reference_id")).toBeNull();
     expect(p.get("subscription_data[metadata][user_id]")).toBeNull();
+    expect(p.get("metadata[anonymous_signup]")).toBe("true");
+    expect(p.get("subscription_data[metadata][anonymous_signup]")).toBe("true");
+    // customer_email is always set so Stripe collects (and the webhook links) the buyer's address.
+    expect(p.get("customer_email")).toBe("owner@example.com");
   });
 
   it("regression: the Starter trial flow is unchanged (starter price + tier=starter + 14d trial)", () => {

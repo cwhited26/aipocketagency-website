@@ -55,6 +55,10 @@ export function buildPocketAgentCheckoutParams(args: {
 }): URLSearchParams {
   const params = new URLSearchParams();
   params.set("mode", "subscription");
+  // customer_email is always populated from the /start order form (a required field), so Stripe
+  // Checkout shows the buyer's address pre-filled. It's the address the webhook links the
+  // subscription to — and, for a pay-first anonymous buyer, the address the new Supabase account
+  // is created under.
   params.set("customer_email", args.email);
   params.set("line_items[0][price]", args.priceId);
   params.set("line_items[0][quantity]", "1");
@@ -74,6 +78,13 @@ export function buildPocketAgentCheckoutParams(args: {
     // No account yet (cold funnel) — carry the encoded quiz answers as the attribution handle.
     params.set("client_reference_id", `funnel:${args.funnelAnswers ?? ""}`);
   }
+  // anonymous_signup marks the pay-first path (no account at checkout). The webhook still decides
+  // for itself whether it actually creates an account — this flag is analytics + lets /thanks show
+  // the "log in to your workspace" section from the session alone. Stamped on both the session and
+  // the subscription so whichever event the webhook reads first carries it.
+  const anonymousSignup = args.userId ? "false" : "true";
+  params.set("metadata[anonymous_signup]", anonymousSignup);
+  params.set("subscription_data[metadata][anonymous_signup]", anonymousSignup);
   params.set("metadata[email]", args.email);
   params.set("metadata[source]", "pocket_agent");
   params.set("metadata[tier]", args.tier);

@@ -8,6 +8,7 @@ import {
   markApaLeadPaid,
 } from "@/lib/wc-admin-supabase";
 import {
+  checkSubscriptionByEmail,
   fetchPocketAgentByCustomerId,
   fetchPocketAgentBySubscriptionId,
   insertPocketAgentAddonPurchase,
@@ -19,6 +20,9 @@ import {
   setPocketAgentAddonByCustomer,
   upsertPocketAgentTrial,
 } from "@/lib/pocket-agent-supabase";
+import { resolveOrCreatePocketAgentUser } from "@/lib/auth-admin";
+import { sendPocketAgentLoginLink } from "@/lib/pocket-agent-login-link";
+import { decideSignupSideEffects } from "@/lib/pocket-agent-signup";
 import {
   getAddonMeta,
   isAddonCheckoutKind,
@@ -590,7 +594,9 @@ async function handlePocketAgentSubscriptionCreated(
 ): Promise<void> {
   const email = sub.metadata?.email ?? null;
   const name = sub.metadata?.name ?? null;
-  const userId = sub.metadata?.user_id ?? null;
+  // user_id in metadata is set only when the buyer was signed in at checkout. On the pay-first path
+  // it's absent, and we resolve-or-create the Supabase account from the checkout email below.
+  const metaUserId = sub.metadata?.user_id ?? null;
   if (!email) {
     console.error("[stripe/webhook] pocket_agent subscription.created missing email metadata", {
       subscription_id: sub.id,
@@ -605,6 +611,33 @@ async function handlePocketAgentSubscriptionCreated(
     return;
   }
 
+  // Resolve the owner account. Signed-in buyers already carry their id; pay-first buyers get their
+  // account created here (or matched to an existing one for free-then-pay / repeat purchases). A
+  // resolve failure is non-fatal — we fall back to the pre-existing user-less behavior (the auth
+  // callback still links the row by email on their first login) so billing is never blocked.
+  let ownerId = metaUserId;
+  let wasCreated = false;
+  let hadPriorActiveSub = false;
+  if (!metaUserId) {
+    const prior = await checkSubscriptionByEmail(email);
+    hadPriorActiveSub = prior.ok ? prior.hasActive : false;
+    const resolved = await resolveOrCreatePocketAgentUser(email);
+    if (resolved.ok) {
+      ownerId = resolved.user.userId;
+      wasCreated = resolved.user.wasCreated;
+      console.info("[stripe/webhook] pay-first account resolved", {
+        subscription_id: sub.id,
+        was_created: wasCreated,
+      });
+    } else {
+      console.error("[stripe/webhook] pay-first account resolve failed; deferring link to login", {
+        subscription_id: sub.id,
+        status: resolved.status,
+        error: resolved.error,
+      });
+    }
+  }
+
   const trialStartedAt = sub.trial_start
     ? new Date(sub.trial_start * 1000).toISOString()
     : new Date().toISOString();
@@ -615,7 +648,7 @@ async function handlePocketAgentSubscriptionCreated(
   const upsert = await upsertPocketAgentTrial({
     email,
     name,
-    userId,
+    userId: ownerId,
     stripeCustomerId: sub.customer,
     stripeSubscriptionId: sub.id,
     stripeSessionId: null,
@@ -653,7 +686,7 @@ async function handlePocketAgentSubscriptionCreated(
   const tier =
     resolveProvisionTier({ priceIds: extractPriceIds(sub), metadataTier: sub.metadata?.tier }) ??
     "starter";
-  const enqueued = await enqueueOnboarding({ ownerId: userId, email, firstName: name }, tier);
+  const enqueued = await enqueueOnboarding({ ownerId, email, firstName: name }, tier);
   if (!enqueued.ok) {
     console.error("[stripe/webhook] pocket_agent onboarding enqueue failed; sending legacy welcome", {
       subscription_id: sub.id,
@@ -697,6 +730,74 @@ async function handlePocketAgentSubscriptionCreated(
       subscription_id: sub.id,
       status: mark.status,
       error: mark.error,
+    });
+  }
+
+  // Pay-first post-subscribe hooks (PA lower-friction signup). Guarded once by welcome_email_sent_at
+  // above, so a webhook retry doesn't reseed, re-email, or re-alert. A signed-in buyer resolves to no
+  // extra work (they already have a session and were seeded on checkout.session.completed).
+  if (ownerId) {
+    const fx = decideSignupSideEffects({ metaUserId, wasCreated, hadPriorActiveSub });
+
+    if (fx.seedLaunchKit) {
+      const seeded = await ensureLaunchKitSeeded(ownerId);
+      if (!seeded.ok) {
+        console.error("[stripe/webhook] pay-first launch kit seed failed", {
+          subscription_id: sub.id,
+          error: seeded.error,
+        });
+      }
+    }
+
+    if (fx.sendLoginLink) {
+      const link = await sendPocketAgentLoginLink(email);
+      if (!link.ok) {
+        console.error("[stripe/webhook] pay-first login link send failed", {
+          subscription_id: sub.id,
+          error: link.error,
+        });
+      } else {
+        console.info("[stripe/webhook] pay-first login link sent", {
+          subscription_id: sub.id,
+          email,
+        });
+      }
+    }
+
+    if (fx.notifyOperator === "double_buy") {
+      await notifyOperatorOfDoubleBuy({ email, subscriptionId: sub.id, customerId: sub.customer });
+    }
+  }
+}
+
+// A second paid subscription on an email that already had an active/trial one. We link it to the
+// existing account (no duplicate) and flag it for Chase to eyeball — an honest upgrade looks the same
+// as an accidental double-charge or card testing, so a human decides. Email is the operator channel.
+async function notifyOperatorOfDoubleBuy(args: {
+  email: string;
+  subscriptionId: string;
+  customerId: string | null;
+}): Promise<void> {
+  const text = `Heads up — a second Pocket Agent subscription was created on an email that already had an active or trialing one.
+
+Email: ${args.email}
+New subscription: ${args.subscriptionId}
+Stripe customer: ${args.customerId ?? "unknown"}
+
+The new subscription was linked to the existing account (no duplicate was made). If this is a real upgrade, nothing to do. If it looks like a double-charge or card testing, refund the extra subscription in Stripe.`;
+
+  const send = await sendEmail({
+    from: FROM,
+    to: "chase@aipocketagent.com",
+    subject: `Possible double subscription — ${args.email}`,
+    html: `<pre style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;font-size:14px;line-height:1.5;">${text}</pre>`,
+    text,
+  });
+  if (!send.ok) {
+    console.error("[stripe/webhook] double-buy operator alert failed", {
+      subscription_id: args.subscriptionId,
+      status: send.status,
+      error: send.error,
     });
   }
 }

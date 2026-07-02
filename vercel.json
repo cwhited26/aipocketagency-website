@@ -64,6 +64,10 @@
     {
       "path": "/api/cron/website-monitor",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/orphaned-signups",
+      "schedule": "0 * * * *"
     }
   ],
   "rewrites": [

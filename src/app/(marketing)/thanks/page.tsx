@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteFooter } from "@/components/marketing/site-nav";
 import { PrimaryCTA } from "@/components/marketing/cta";
+import { createClient } from "@/lib/supabase/server";
+import { retrieveCheckoutSession } from "@/lib/stripe-session";
+import ThanksLogin from "./ThanksLogin";
 
 const PAGE_URL = "https://aipocketagent.com/thanks";
 
@@ -88,15 +91,45 @@ const COPY: Record<
   },
 };
 
-export default function ThanksPage({
+// Subscription branches are the ones that provision a workspace to log into (a pay-first buyer only
+// reaches these). The add-on branches — workflow_vault (existing account) and diy_setup_kit (no
+// account) — keep their original terminal copy with no login panel.
+function isSubscriptionBranch(branch: Branch): boolean {
+  return (
+    branch === "subscription_only" ||
+    branch === "subscription_plus_setup" ||
+    branch === "pilot"
+  );
+}
+
+export default async function ThanksPage({
   searchParams,
 }: {
-  searchParams: { bought?: string };
+  searchParams: { bought?: string; session_id?: string };
 }) {
   const branch: Branch = isBranch(searchParams.bought)
     ? searchParams.bought
     : "subscription_only";
   const c = COPY[branch];
+
+  // Pay-first, log in after: an unauthenticated buyer on a subscription branch gets the prominent
+  // login panel. The webhook already created their account and emailed a login link; the panel points
+  // them at their inbox and offers a resend, pre-filled with the checkout email when we can read it
+  // back from Stripe. A buyer who was already signed in before checkout sees the normal welcome.
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const authenticated = Boolean(user);
+
+  const showLogin = isSubscriptionBranch(branch) && !authenticated;
+  let loginEmail = "";
+  if (showLogin && searchParams.session_id) {
+    const summary = await retrieveCheckoutSession(searchParams.session_id);
+    if (summary.ok && summary.session.email) {
+      loginEmail = summary.session.email;
+    }
+  }
 
   return (
     <>
@@ -105,6 +138,7 @@ export default function ThanksPage({
           <div className="absolute inset-0 bg-grid opacity-20" aria-hidden />
           <div className="absolute inset-0 bg-hero-glow" aria-hidden />
           <div className="relative mx-auto max-w-2xl px-6 pb-20 pt-24 text-center sm:pt-32">
+            {showLogin ? <ThanksLogin email={loginEmail} /> : null}
             <h1 className="text-balance text-3xl font-extrabold tracking-tight sm:text-5xl">
               {c.heading}
             </h1>
@@ -129,7 +163,7 @@ export default function ThanksPage({
             </div>
 
             <div className="mt-9 flex flex-col items-center gap-4">
-              <PrimaryCTA href="/app" label="Open your workspace" />
+              <PrimaryCTA href="/app/home" label="Open your workspace" />
               <Link
                 href={c.cta.href}
                 className="text-sm font-semibold text-cyan-300 transition hover:underline"

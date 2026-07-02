@@ -138,7 +138,11 @@ export default function UpsellOffer({ sessionId }: { sessionId: string | null })
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <Link
-          href="/thanks?bought=subscription_only"
+          href={
+            sessionId
+              ? `/thanks?bought=subscription_only&session_id=${encodeURIComponent(sessionId)}`
+              : "/thanks?bought=subscription_only"
+          }
           className="text-sm text-slate-400 transition hover:text-slate-200"
         >
           No thanks — I’ll use the Launch Kit

@@ -440,6 +440,73 @@ export async function linkSubscriptionByEmail(
   return { ok: true };
 }
 
+// ── Orphaned pay-first signups (24h/72h "your workspace is waiting" follow-ups) ──────────────
+//
+// A pay-first buyer whose login email bounced (or who never clicked it) has a live subscription but
+// has never signed in. The orphaned-signup cron reads recent trials, checks last_sign_in_at via the
+// auth admin API, and resends the login link at 24h and 72h. The send stamps ride email_sequence_state
+// (an existing JSON column) so no migration is needed and retries never double-send.
+
+export type RecentTrialRow = {
+  stripe_subscription_id: string | null;
+  user_id: string | null;
+  email: string;
+  name: string | null;
+  status: PocketAgentStatus;
+  created_at: string;
+  email_sequence_state: Record<string, unknown>;
+};
+
+type ListRecentResult =
+  | { ok: true; rows: RecentTrialRow[] }
+  | { ok: false; status: number; error: string };
+
+/** Trials created since `sinceIso` that are still trial/active — the orphaned-signup cron's candidate set. */
+export async function listRecentPocketAgentTrials(sinceIso: string): Promise<ListRecentResult> {
+  const env = supabaseEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const res = await fetch(
+    endpoint(
+      env,
+      `?created_at=gte.${encodeURIComponent(sinceIso)}&status=in.(trial,active)` +
+        `&select=stripe_subscription_id,user_id,email,name,status,created_at,email_sequence_state` +
+        `&order=created_at.asc&limit=500`,
+    ),
+    { headers: { apikey: env.key, Authorization: `Bearer ${env.key}` }, cache: "no-store" },
+  );
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  const rows = (await res.json()) as RecentTrialRow[];
+  return { ok: true, rows: Array.isArray(rows) ? rows : [] };
+}
+
+/** Overwrite a subscription row's email_sequence_state JSON (keyed by stripe_subscription_id). The
+ *  caller passes the full next state (existing spread + new stamps) since it already holds the row. */
+export async function patchPocketAgentSequenceState(
+  stripeSubscriptionId: string,
+  nextState: Record<string, unknown>,
+): Promise<InsertResult> {
+  const env = supabaseEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const res = await fetch(
+    endpoint(env, `?stripe_subscription_id=eq.${encodeURIComponent(stripeSubscriptionId)}`),
+    {
+      method: "PATCH",
+      headers: {
+        apikey: env.key,
+        Authorization: `Bearer ${env.key}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({ email_sequence_state: nextState, updated_at: new Date().toISOString() }),
+      cache: "no-store",
+    },
+  );
+  if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
+  return { ok: true };
+}
+
 type CheckByEmailResult =
   | { ok: true; hasActive: boolean }
   | { ok: false; status: number; error: string };
