@@ -23,10 +23,10 @@ const VISIBLE_TIERS: VisibleTier[] = [
     name: "Personal Brain",
     price: "$37",
     tier: "starter",
-    pitch: "Your first AI agent + the workspace they live in.",
+    pitch: "Your first Persona with the Apps and Skills to do real work.",
     rows: [
       "Single Business Brain + basic capture",
-      "1 Persona",
+      "1 Persona (your first AI Agent)",
       "5 prebuilt Skills",
       "Mission Control + budgets",
       "AI Office Launch Kit + Launchpad access — free",
@@ -40,10 +40,10 @@ const VISIBLE_TIERS: VisibleTier[] = [
     featured: true,
     badge: "Most Popular",
     pitch:
-      "Your whole AI team — sales, content, research, follow-up — all in one workspace.",
+      "Clone-and-customize Personas + connected tools + the Apps you actually need.",
     rows: [
       "Everything in Personal Brain",
-      "A team of AI agents you clone and make your own",
+      "Clone-and-customize Personas (your AI Agents)",
       "Connected tools — Gmail, Calendar, Slack, QuickBooks",
       "Capture Inbox, Follow-Up Sweeps, Ingesters, Email Drafter",
       "5 prebuilt Skills — 20 at Pro+",
@@ -56,7 +56,7 @@ const VISIBLE_TIERS: VisibleTier[] = [
     tier: "studio_plus",
     badge: "Full Cockpit",
     pitch:
-      "Every AI agent you’d hire separately. Idea Engine + Lead Scout + Decision Roundtable + Voice Calls + 30 skills, all yours.",
+      "Every Persona, every App, every Skill — 30 total. Idea Engine, Lead Scout vertical packs, Decision Roundtable, Voice Calls, the full stack.",
     rows: [
       "Everything in Business Agent",
       "Idea Engine — ship a working MVP from one idea",

@@ -25,9 +25,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Pocket Agent — AI Agents in a Box for Business Owners",
+  title: "Pocket Agent — Every AI Agent Your Business Needs. Packaged.",
   description:
-    "Every AI agent everyone else is selling you, all in one workspace. Sign up, connect a free GitHub, deploy to your own Vercel + Supabase. $37 a month. Yours to keep.",
+    "Sales, marketing, content, customer support, research — every AI Agent everyone else is selling you separately. Pocket Agent packages all of them into one workspace. No coding. No scary tech. $37 a month.",
   metadataBase: new URL("https://aipocketagent.com"),
   manifest: "/manifest.webmanifest",
   appleWebApp: {
@@ -36,9 +36,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   openGraph: {
-    title: "Pocket Agent — AI Agents in a Box for Business Owners",
+    title: "Pocket Agent — Every AI Agent Your Business Needs. Packaged.",
     description:
-      "Every AI agent everyone else is selling you, all in one workspace. Sign up, connect a free GitHub, deploy to your own Vercel + Supabase. $37 a month. Yours to keep.",
+      "Sales, marketing, content, customer support, research — every AI Agent everyone else is selling you separately. Pocket Agent packages all of them into one workspace. No coding. No scary tech. $37 a month.",
     url: "https://aipocketagent.com",
     siteName: "Pocket Agent",
     type: "website",
@@ -47,15 +47,15 @@ export const metadata: Metadata = {
         url: "https://aipocketagent.com/og-share.png",
         width: 1200,
         height: 630,
-        alt: "Pocket Agent — AI agents in a box for business owners",
+        alt: "Pocket Agent — every AI Agent your business needs, packaged",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pocket Agent — AI Agents in a Box for Business Owners",
+    title: "Pocket Agent — Every AI Agent Your Business Needs. Packaged.",
     description:
-      "Every AI agent everyone else is selling you, all in one workspace. Sign up, connect a free GitHub, deploy to your own Vercel + Supabase. $37 a month. Yours to keep.",
+      "Sales, marketing, content, customer support, research — every AI Agent everyone else is selling you separately. Pocket Agent packages all of them into one workspace. No coding. No scary tech. $37 a month.",
     images: ["https://aipocketagent.com/og-share.png"],
   },
   icons: {

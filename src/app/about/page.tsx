@@ -85,7 +85,7 @@ export default function AboutPage() {
           </div>
 
           <div className="mt-16">
-            <PrimaryCTA label="Get My AI Team" href="/start?tier=pro" />
+            <PrimaryCTA label="Start for $37" href="/start?tier=pro" />
           </div>
         </div>
       </section>
@@ -106,9 +106,10 @@ export default function AboutPage() {
                 15 seconds
               </div>
               <p className="mt-3 text-lg leading-relaxed text-slate-200">
-                Everyone’s selling AI agents one at a time. Pocket Agent is the
-                whole team in a box. $37 a month, deployed to your own GitHub,
-                yours to keep.
+                Every business owner’s being told they need AI agents. Everyone’s
+                selling them one at a time. Pocket Agent is all of them, packaged
+                and ready to deploy — $37 a month, on accounts you own, yours to
+                keep.
               </p>
             </div>
 
@@ -117,12 +118,13 @@ export default function AboutPage() {
                 30 seconds
               </div>
               <p className="mt-3 text-[15px] leading-relaxed text-slate-300">
-                Everyone’s selling business owners one-off AI agents — an SDR
-                agent, a content agent, a research agent — for a hundred bucks a
-                month each. Pocket Agent is the whole team, in one box, for $37 a
-                month. Sign up, connect a free GitHub, and every agent everyone
-                else sells you separately is running on your own business context.
-                Your code, your data. You keep it even if you cancel.
+                Business owners are getting sold one-off AI agents — a sales agent,
+                a content agent, a research agent — for a hundred bucks a month
+                each. Pocket Agent packages all of them into one workspace for $37 a
+                month, even if you know nothing about AI. We did the connecting. You
+                just tell it about your business and it becomes your second brain.
+                Everything runs on accounts you own — you keep it even if you
+                cancel.
               </p>
             </div>
           </div>

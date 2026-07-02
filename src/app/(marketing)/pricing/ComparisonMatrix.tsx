@@ -27,7 +27,7 @@ const GROUPS: Group[] = [
   {
     title: "Business Brain",
     rows: [
-      { label: "Business Brain in your own Git repo", cells: [Y, Y, Y, Y, Y, Y] },
+      { label: "Business Brain in your own GitHub (a free account you own)", cells: [Y, Y, Y, Y, Y, Y] },
       {
         label: "Capture + ingestion — photo, PDF, voice, email, YouTube, podcast",
         cells: ["Basic", Y, Y, Y, Y, Y],
@@ -98,7 +98,7 @@ const GROUPS: Group[] = [
     title: "Limits",
     rows: [
       { label: "Active rituals (scheduled recurring jobs)", cells: ["1", "5", "10", "25", "100", "100"] },
-      { label: "Workflow Vault recipes unlocked", cells: ["3", "5", "10", "18", "25", "25"] },
+      { label: "Workflow Vault recipes included", cells: ["3", "5", "10", "18", "25", "25"] },
     ],
   },
   {

@@ -5,13 +5,12 @@ import { PrimaryCTA, SecondaryCTA, MONO_FONT } from "@/components/marketing/cta"
 import { DIRECTION_COUNTS } from "@/data/landing-page-templates/directions-meta";
 
 const DESCRIPTION =
-  "Every AI agent everyone else is selling you, all in one workspace. Sign up, connect a free GitHub, deploy to your own Vercel + Supabase. $37 a month. Yours to keep.";
+  "Sales, marketing, content, customer support, research — every AI Agent everyone else is selling you separately. Pocket Agent packages all of them into one workspace. No coding. No scary tech. $37 a month.";
 
-const OG_TITLE =
-  "Everyone's selling AI agents one at a time. Pocket Agent is the whole team, in one box.";
+const OG_TITLE = "Every AI Agent your business needs. Packaged.";
 
 export const metadata: Metadata = {
-  title: "Pocket Agent — AI Agents in a Box for Business Owners",
+  title: "Pocket Agent — Every AI Agent Your Business Needs. Packaged.",
   description: DESCRIPTION,
   metadataBase: new URL("https://aipocketagent.com"),
   alternates: { canonical: "https://aipocketagent.com" },
@@ -26,7 +25,7 @@ export const metadata: Metadata = {
         url: "https://aipocketagent.com/og-share.png",
         width: 1200,
         height: 630,
-        alt: "Pocket Agent — AI agents in a box for business owners",
+        alt: "Pocket Agent — every AI Agent your business needs, packaged",
       },
     ],
   },
@@ -37,18 +36,91 @@ export const metadata: Metadata = {
   },
 };
 
-const PERSONAS: { name: string; body: string }[] = [
+// The ten Packaged AI Agents. Locked naming: every agent is "[Role] AI Agent" — the full
+// phrase every time, to defuse the "AI Agent" jargon by repeating it in a plain business
+// context. `madeOf` is the "want the detail?" reveal: the Persona + Apps + Skills that make
+// up each agent (the architecture, revealed — not hidden).
+const PACKAGED_AGENTS: { name: string; body: string; madeOf: string }[] = [
   {
-    name: "Admin Assistant",
-    body: "Triages your inbox, drafts replies in your voice, logs invoices, schedules follow-ups, keeps your customer notes current. The hat most owners want off their head first.",
+    name: "Sales AI Agent",
+    body: "Prospects your ideal customers, drafts outreach in your voice, follows up on every lead until they answer, books calls straight to your calendar.",
+    madeOf:
+      "Sales Persona · Apps: Lead Scout, Email Drafter, Follow-Up Sweeps · Skills: cold-email sequence in your voice, objection handling, book-the-call close.",
   },
   {
-    name: "Sales Assistant",
-    body: "Prepares sales notes, organizes opportunities, drafts the outreach in your voice, and keeps the pipeline moving. The growth work that never gets the time it needs.",
+    name: "Sales Manager AI Agent",
+    body: "Reviews your pipeline daily, tells you which deals need attention, drafts coaching notes for your reps, forecasts the month.",
+    madeOf:
+      "Sales Manager Persona · Apps: Pipeline Review, Decision Roundtable · Skills: deal-risk read, rep coaching notes, month-end forecast.",
   },
   {
-    name: "Content Creator",
-    body: "Turns what you already know into content — pulls the tactics out of a podcast or a YouTube video you drop in, drafts the post or the page in your voice, builds the landing page on your own account.",
+    name: "Marketing AI Agent",
+    body: "Builds landing pages, drafts email campaigns, writes ads, monitors what’s working.",
+    madeOf:
+      "Marketing Persona · Apps: Landing Page Builder, Email Drafter · Skills: landing-page copy in your voice, ad angles, campaign sequencing.",
+  },
+  {
+    name: "Content AI Agent",
+    body: "Writes blog posts, newsletters, social captions, and video scripts. Ingests podcasts and YouTube for ideas. Publishes in your voice.",
+    madeOf:
+      "Content Persona · Apps: Podcast Ingester, YouTube Ingester, Landing Page Builder · Skills: blog draft in your voice, newsletter, case study from a call transcript.",
+  },
+  {
+    name: "Customer Support AI Agent",
+    body: "Answers inbound customer emails, remembers every past conversation, escalates the ones that need you.",
+    madeOf:
+      "Support Persona · Apps: Email Drafter, Capture Inbox · Skills: tone-matched reply, remember-the-thread, escalation triage.",
+  },
+  {
+    name: "Research AI Agent",
+    body: "Pulls intel on prospects before your calls, monitors what competitors are doing, writes market briefs.",
+    madeOf:
+      "Research Persona · Apps: Lead Scout, Competitor Watch · Skills: pre-call prospect brief, competitor scan, market brief.",
+  },
+  {
+    name: "Admin AI Agent",
+    body: "Captures every idea, voice memo, screenshot, and forwarded email. Files them where you’ll find them. Runs your daily brief.",
+    madeOf:
+      "Admin Persona · Apps: Capture Inbox, Daily Brief · Skills: inbox triage, idea filing, end-of-day brief.",
+  },
+  {
+    name: "Operations AI Agent",
+    body: "Runs your Decision Roundtable on big calls, approves what needs approval, oversees what the other agents are doing, tracks every dollar of AI spend.",
+    madeOf:
+      "Operations Persona · Apps: Decision Roundtable, Mission Control · Skills: three-option framing, approval routing, spend tracking.",
+  },
+  {
+    name: "Idea AI Agent",
+    body: "You bring an idea. It builds you a working website, a signup form, a database, and puts it live.",
+    madeOf:
+      "Builder Persona · Apps: Idea Engine, Landing Page Builder, Build Tools · Skills: validate the idea, ship the first version, line up the first prospects.",
+  },
+  {
+    name: "Voice AI Agent",
+    body: "Answers your phone. Handles inbound sales calls, qualifies leads, schedules meetings.",
+    madeOf:
+      "Voice Persona · Apps: Voice Calls · Skills: inbound qualify, book the meeting, log the call.",
+  },
+];
+
+// The tier-gated setup ask. Never scare a $37 buyer with three accounts they don't need —
+// each tier sees only its own setup unless it expands. Personal Brain is open by default.
+const SETUP_TIERS: { name: string; price: string; body: string; open?: boolean }[] = [
+  {
+    name: "Personal Brain",
+    price: "$37",
+    open: true,
+    body: "To start, you set up one free account: GitHub. That’s where your business context lives — the notes, the memory, your voice, your customers. Signing up takes about a minute, about as easy as making a Facebook account, and Pocket Agent walks you through every step.",
+  },
+  {
+    name: "Business Agent",
+    price: "$97",
+    body: "You also set up Vercel and Supabase — both free, both about a minute each. Vercel is where your Marketing AI Agent puts landing pages up so people can see them. Supabase is where your Customer Support AI Agent remembers every conversation. Pocket Agent walks you through both, no technical knowledge required.",
+  },
+  {
+    name: "AI Agent Workspace",
+    price: "$497",
+    body: "No new accounts on top of the three at $97. Just more agents doing more work. Your Idea AI Agent uses all three to build full working websites from an idea. Your Voice AI Agent uses your existing Vercel and Supabase to run your phone.",
   },
 ];
 
@@ -59,19 +131,19 @@ const APPS: { name: string; body: string; badge?: { label: string; href: string 
   },
   {
     name: "Lead Scout",
-    body: "Sweeps Google Maps (including the “no website” filter), classifies every prospect, and drafts personalized outreach per lead. Seven vertical packs: roofing, HVAC, painting, general contracting, med spa, law firm, dentist.",
+    body: "Sweeps Google Maps (including the “no website” filter), sorts every prospect, and drafts personalized outreach per lead. Seven vertical packs: roofing, HVAC, painting, general contracting, med spa, law firm, dentist.",
   },
   {
     name: "Capture Inbox",
-    body: "Catch an idea, a note, a screenshot, a voice memo, a saved link — anywhere, any time. Your agent files it into your brain so it’s there when you need it instead of lost in a notes app.",
+    body: "Catch an idea, a note, a screenshot, a voice memo, a saved link — anywhere, any time. Your agent files it into your Business Brain so it’s there when you need it instead of lost in a notes app.",
   },
   {
     name: "Podcast Ingester",
-    body: "Drop a podcast link; your agent listens to the episode, pulls what matters, and files it in your brain. Watch a show and it ingests every new episode on its own.",
+    body: "Drop a podcast link; your agent listens to the episode, pulls what matters, and files it in your Business Brain. Watch a show and it ingests every new episode on its own.",
   },
   {
     name: "YouTube Ingester",
-    body: "Drop a video link on any door; your agent reads the transcript, classifies it, and routes the signal to your brain. Watch a channel and it does it for every upload.",
+    body: "Drop a video link on any door; your agent reads the transcript, sorts it, and routes the signal to your Business Brain. Watch a channel and it does it for every upload.",
   },
   {
     name: "Decision Roundtable",
@@ -95,19 +167,19 @@ const APPS: { name: string; body: string; badge?: { label: string; href: string 
 const DAY: { time: string; body: string }[] = [
   {
     time: "6:45am",
-    body: "Dana opens her phone over coffee. Her Admin Assistant has triaged 23 overnight emails. Three replies are drafted in her voice — a follow-up to a hot lead, a scope clarification for a client, a quote for a new prospect. She reviews them in four minutes and taps Approve on each.",
+    body: "Dana opens her phone over coffee. Her Admin AI Agent has triaged 23 overnight emails. Three replies are drafted in her voice — a follow-up to a hot lead, a scope clarification for a client, a quote for a new prospect. She reviews them in four minutes and taps Approve on each.",
   },
   {
     time: "10:00am",
-    body: "A competitor’s new pricing page goes live. Dana forwards the link to her agent. By her 11am call, the competitor’s positioning is in her brain — pricing, packaging, the three things they push. Next sales call, that intel is already in the brain her agent reads from.",
+    body: "A competitor’s new pricing page goes live. Dana forwards the link to her agent. By her 11am call, the competitor’s positioning is in her Business Brain — pricing, packaging, the three things they push. Next sales call, that intel is already in the brain her agent reads from.",
   },
   {
     time: "12:00pm",
-    body: "A lead came in through her website over lunch. Her Sales Assistant already drafted the proposal using her pricing rules and her voice. She changes one sentence and taps Send.",
+    body: "A lead came in through her website over lunch. Her Sales AI Agent already drafted the proposal using her pricing rules and her voice. She changes one sentence and taps Send.",
   },
   {
     time: "3:00pm",
-    body: "Dana drops a voice memo: “idea for a coaches’ onboarding tool.” By dinner her market scan is done, the MVP plan is staged, and she’s approved the deploy. By 9pm she has a working page at a real URL she’s sharing with her test audience.",
+    body: "Dana drops a voice memo: “idea for a coaches’ onboarding tool.” By dinner her market scan is done, the first version is staged, and she’s approved it going live. By 9pm she has a working page at a real URL she’s sharing with her test audience.",
   },
   {
     time: "6:00pm",
@@ -155,23 +227,23 @@ const SKILL_GROUPS: { group: string; skills: string }[] = [
 const FAQ: { q: string; a: string }[] = [
   {
     q: "Is this just another chatbot?",
-    a: "No. A chatbot waits for a prompt. Pocket Agent gives your business memory (the Business Brain), roles (Personas), tools (Apps), and an approval screen (Mission Control). The agents do the prep using your context. You review and approve.",
+    a: "No. A chatbot waits for a prompt. Pocket Agent gives your business memory (your Business Brain), workers (your AI Agents, called Personas), the tools they use (Apps), and an approval screen (Mission Control). The agents do the work using your context. You review and approve.",
   },
   {
     q: "Is Pocket Agent replacing ChatGPT?",
-    a: "Not exactly. ChatGPT is a blank box. Pocket Agent is a workspace trained on your business. You can still use other AI tools — but this is the place your business memory, AI roles, workflows, and approvals live.",
+    a: "Not exactly. ChatGPT is a blank box. Pocket Agent is a workspace that already knows your business. You can still use other AI tools — but this is the place your business memory, your AI Agents, their workflows, and your approvals all live.",
   },
   {
     q: "Where does my data live?",
-    a: "Your Business Brain is a folder of plain markdown files in your own git repo. You can download the whole thing any time. Cancel and you keep everything — there’s no proprietary database holding your business hostage.",
+    a: "In your own GitHub — a free account you set up in under a minute, walked through step by step. Your Business Brain is a folder of plain text files you can download any time. Cancel and you keep everything. There’s no hidden database holding your business hostage.",
   },
   {
     q: "Do I have to be technical?",
-    a: "No. The AI Office Launch Kit walks you through setup — no markdown, no terminal. The Pocket Agent Launchpad on Skool gives you the 7-Day Setup Plan and walkthroughs. The Implementation Guarantee means if you’re not set up by day 7, we help you finish.",
+    a: "No. The AI Office Launch Kit walks you through setup — nothing to code, nothing to plug in. The Pocket Agent Launchpad on Skool gives you the 7-Day Setup Plan and walkthroughs. The Implementation Guarantee means if you’re not set up by day 7, we help you finish.",
   },
   {
-    q: "What’s the difference between a Persona and an App?",
-    a: "A Persona is the WHO — your Sales Assistant. An App is the WHAT it uses — Lead Scout. You pick the worker; the worker uses the tools.",
+    q: "What is an AI Agent, exactly?",
+    a: "Inside Pocket Agent, an AI Agent is a worker called a Persona — your Sales AI Agent, your Content AI Agent. Each one uses Apps (like Email Drafter or Lead Scout) the way an employee uses software, and has Skills — specific moves it’s learned. You hand it work and approve what it brings back.",
   },
   {
     q: "Will AI send things without me?",
@@ -179,19 +251,15 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Will I get a surprise bill?",
-    a: "No. Your plan comes with usage allowances — leads, Whisper hours, sub-agent runs. Hit a cap and your agent prompts you to upgrade to the next tier. You don’t pay API tokens directly, and you can set a monthly budget your agent won’t cross without asking.",
+    a: "No. Your plan comes with usage allowances — leads, transcription hours, agent runs. Hit a cap and your agent prompts you to move up a tier. You don’t pay for AI usage by the token, and you can set a monthly budget your agent won’t cross without asking.",
   },
   {
     q: "Can I bring my own Anthropic key?",
-    a: "Yes — on Studio+. When you bring your own key, you see real dollar usage, because then it’s your money.",
-  },
-  {
-    q: "Is the Layoutbook + Field Book catalog included?",
-    a: "The premium templates are, from Pro+ up. Pro+ includes the Field Book premium conversion templates; the AI Agent Workspace includes the full gallery — Layoutbook and Field Book, every premium direction. The public catalogs stay separate products; the premium sets ride along with your workspace.",
+    a: "Yes — on the AI Agent Workspace tier. When you bring your own key, you see real dollar usage, because then it’s your own AI spend.",
   },
   {
     q: "Can I cancel?",
-    a: "Any time. You keep your brain. There’s no lock-in.",
+    a: "Any time. You keep your Business Brain, your accounts, and everything your agents built. There’s no lock-in.",
   },
 ];
 
@@ -207,9 +275,9 @@ const PRICING_TIERS: {
     name: "Personal Brain",
     price: "$37",
     tier: "starter",
-    best: "Your first AI agent + the workspace they live in.",
+    best: "Your first Persona with the Apps and Skills to do real work.",
     rows: [
-      { label: "Personas", value: "1" },
+      { label: "AI Agents (Personas)", value: "1" },
       { label: "Prebuilt Skills", value: "5" },
       { label: "Lead Scout packs", value: "—" },
       { label: "Idea Engine", value: "—" },
@@ -220,9 +288,9 @@ const PRICING_TIERS: {
     price: "$97",
     tier: "pro",
     featured: true,
-    best: "Your whole AI team — sales, content, research, follow-up — all in one workspace.",
+    best: "Clone-and-customize Personas + connected tools + the Apps you actually need.",
     rows: [
-      { label: "Personas", value: "Multiple" },
+      { label: "AI Agents (Personas)", value: "Multiple" },
       { label: "Prebuilt Skills", value: "20" },
       { label: "Connected tools", value: "Gmail, Calendar, Slack, QuickBooks" },
       { label: "Idea Engine", value: "—" },
@@ -232,9 +300,9 @@ const PRICING_TIERS: {
     name: "AI Agent Workspace",
     price: "$497",
     tier: "studio_plus",
-    best: "Every AI agent you’d hire separately. Idea Engine + Lead Scout + Decision Roundtable + Voice Calls + 30 skills, all yours.",
+    best: "Every Persona, every App, every Skill — 30 total. Idea Engine, Lead Scout vertical packs, Decision Roundtable, Voice Calls, the full stack.",
     rows: [
-      { label: "Personas", value: "Unlimited" },
+      { label: "AI Agents (Personas)", value: "Unlimited" },
       { label: "Prebuilt Skills", value: "30" },
       { label: "Lead Scout packs", value: "✓" },
       { label: "Idea Engine", value: "✓" },
@@ -266,16 +334,18 @@ export default function HomePage() {
           <div className="relative mx-auto max-w-3xl px-6 pb-20 pt-24 text-center sm:pt-32">
             <Pill>[ AI Agent Workspace · for owner-led businesses ]</Pill>
             <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
-              Everyone’s selling AI agents one at a time. Pocket Agent is the whole
-              team, in one box.
+              All the AI agents your business will ever need. Packaged. Ready to
+              deploy.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-300">
-              Sign up, connect a free GitHub, and every agent everyone else sells
-              you separately is running on your own business context. $37 a month.
-              Yours to keep.
+              Every business owner is hearing they need AI agents. Everyone’s
+              selling them one at a time. Pocket Agent is all of them, packaged and
+              ready to go — even if you know nothing about AI or computers. We did
+              all the connecting. You just tell it about your business. It becomes
+              your second brain. Your Packaged AI Agents do the rest.
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <PrimaryCTA href="/start?tier=pro" label="Get My AI Team" />
+              <PrimaryCTA href="/start?tier=pro" label="Start for $37" />
               <SecondaryCTA href="/pricing" label="See how it works" />
             </div>
             <p className="mt-6 text-sm text-slate-400">
@@ -284,25 +354,23 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* OWNERSHIP MOAT — above the fold, right below the hero CTA (PA-POS-16 §2.2). */}
+        {/* SOFTENING — strip the scariness before the list (Chase correction 4). */}
         <section className="border-b border-white/5 bg-black/20">
-          <div className="mx-auto max-w-3xl px-6 py-14">
-            <div className="rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.04] p-8 sm:p-10">
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                You own the code.
-              </h2>
-              <p className="mt-4 text-[15px] leading-relaxed text-slate-300">
-                Every agent, every persona, every memory file is in your own
-                GitHub, deployed to your Vercel, backed by your Supabase. All free
-                tools you sign up for once and connect.
+          <div className="mx-auto max-w-3xl px-6 py-16">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              AI Agents aren’t a technology. They’re workers.
+            </h2>
+            <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
+              <p>
+                Every AI Agent inside Pocket Agent does what a hire would do — the
+                sales calls, the follow-ups, the writing, the research, the
+                customer replies. You already know how to work with people. Same
+                rules apply here.
               </p>
-              <p className="mt-4 text-[15px] leading-relaxed text-slate-300">
-                Cancel Pocket Agent tomorrow and your whole workspace stays running.
-                No walled garden. No hostage data.
-              </p>
-              <p className="mt-4 text-[15px] font-semibold leading-relaxed text-slate-100">
-                That’s the difference from every other AI agent product on the
-                market.
+              <p className="text-slate-100">
+                Nothing to plug in. Nothing to code. Nothing scary. We did the
+                connecting for you. You just link a few free accounts and Pocket
+                Agent walks you through every step.
               </p>
             </div>
           </div>
@@ -316,71 +384,126 @@ export default function HomePage() {
             contracting company) ·{" "}
             <span className="text-slate-200">Whited Consulting</span> (a software
             agency) · <span className="text-slate-200">AthleteOS</span> (a sports
-            SaaS). Same workspace. Same brain pattern. Same cockpit.
+            SaaS). Same workspace. Same brain. Same cockpit.
           </div>
         </section>
 
-        {/* PROBLEM */}
+        {/* THE TEN PACKAGED AI AGENTS */}
         <section className="border-b border-white/5">
-          <div className="mx-auto max-w-3xl px-6 py-20">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Generic AI still makes you do all the work.
+          <div className="mx-auto max-w-5xl px-6 py-20">
+            <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
+              Your Packaged AI Agents.
             </h2>
-            <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
-              <p>
-                ChatGPT, Claude, and Gemini are powerful. But most of the time,
-                they still start from a blank box.
-              </p>
-              <p>
-                You still have to explain your business. Your offer. Your customer.
-                Your tone. Your workflow. Your last conversation. Your follow-up
-                process. Your next step. Then you copy the output somewhere else.
-              </p>
-              <p>
-                You save an idea in another place. You forget a follow-up. You lose
-                a screenshot. You never turn the podcast idea into content. You
-                never ship the page. You never email the prospects. And tomorrow,
-                you start over again.
-              </p>
-              <p className="text-xl font-semibold text-slate-100">
-                That’s not an AI system. That’s generic AI chaos. Generic AI starts
-                from zero. Pocket Agent starts from your business.
-              </p>
+            <p className="mx-auto mt-4 max-w-2xl text-center text-slate-400">
+              The workers everyone else sells you one at a time — packaged
+              together, already knowing your business. Each one is a Persona with
+              its Apps and Skills built in.
+            </p>
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {PACKAGED_AGENTS.map((a) => (
+                <div
+                  key={a.name}
+                  className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-6"
+                >
+                  <h3 className="text-base font-semibold text-slate-100">
+                    {a.name}
+                  </h3>
+                  <p className="mt-2 flex-1 text-[15px] leading-relaxed text-slate-400">
+                    {a.body}
+                  </p>
+                  <details className="mt-4">
+                    <summary
+                      className="cursor-pointer list-none text-xs text-cyan-300/70 transition hover:text-cyan-300"
+                      style={{ fontFamily: MONO_FONT }}
+                    >
+                      What it’s made of →
+                    </summary>
+                    <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
+                      {a.madeOf}
+                    </p>
+                  </details>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* FOUR PARTS / MECHANISM */}
+        {/* OWNERSHIP — demystify the free tools, tie them to what the agents build. */}
         <section className="border-b border-white/5 bg-black/20">
+          <div className="mx-auto max-w-3xl px-6 py-20">
+            <div className="rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.04] p-8 sm:p-10">
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                You own everything your Packaged AI Agents build.
+              </h2>
+              <div className="mt-5 space-y-4 text-[15px] leading-relaxed text-slate-300">
+                <p>
+                  Pocket Agent uses three free tools to build things for you —{" "}
+                  <span className="text-slate-100">GitHub</span>,{" "}
+                  <span className="text-slate-100">Vercel</span>, and{" "}
+                  <span className="text-slate-100">Supabase</span>. Each takes about
+                  a minute to sign up for, about as easy as making a Facebook
+                  account, and Pocket Agent walks you through every step. Every
+                  website your Personas launch, every workflow your Apps run, every
+                  memory your Skills save — it all lives inside accounts you own.
+                </p>
+                <p>
+                  Cancel Pocket Agent tomorrow. Your work keeps running. Your agents
+                  keep running. Your website stays live. Your memory stays yours.
+                </p>
+                <p className="font-semibold text-slate-100">
+                  No walled garden. No hostage data. That’s the difference between
+                  Pocket Agent and every other AI product out there.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* WHAT AN AI AGENT IS — the architecture, revealed as the answer. */}
+        <section className="border-b border-white/5">
           <div className="mx-auto max-w-5xl px-6 py-20">
             <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
-              The Pocket Agent System.
+              Here’s what an AI Agent looks like inside Pocket Agent.
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-center text-slate-400">
-              Four parts: Business Brain, Personas, Apps, Mission Control. Once you
-              see them, you understand the whole product.
+              Your Packaged AI Agents live inside Pocket Agent — they’re called
+              Personas, and each one comes with Apps and Skills built in.
             </p>
+            <div className="mx-auto mt-8 max-w-3xl space-y-5 text-lg leading-relaxed text-slate-300">
+              <p>
+                In Pocket Agent, an AI agent is called a{" "}
+                <span className="text-slate-100">Persona</span>. Your Sales AI
+                Agent. Your Content AI Agent. Your Ops AI Agent. Each Persona uses{" "}
+                <span className="text-slate-100">Apps</span> — Email Drafter, Lead
+                Scout, Follow-Up Sweeps, Podcast Ingester, Landing Page Builder —
+                the same way an employee uses software. And each Persona has{" "}
+                <span className="text-slate-100">Skills</span> — specific moves
+                they’ve learned to do, like “draft a cold-email sequence in your
+                voice” or “write a case study from a call transcript.”
+              </p>
+            </div>
+
             <div className="mt-12 grid gap-5 sm:grid-cols-2">
               {[
                 {
-                  k: "Business Brain",
-                  h: "what your agents know",
-                  b: "Your company memory in markdown, stored in your own git repo: your voice, your customers, your prices, your processes, your decisions. It’s the memory generic AI doesn’t have. Every agent reads from it. Every finished job writes back to it. It gets sharper every week, and it’s yours — you can download the whole thing any time.",
-                },
-                {
                   k: "Personas",
-                  h: "the WHO",
-                  b: "A Persona is a worker you put to a job: an Admin Assistant, a Sales Assistant, a Content Creator. Each one has a role and knows which part of your brain to read. You pick the Persona the way you’d hand something to a person on a team — except you’re not managing anyone.",
+                  h: "the workers",
+                  b: "A Persona is a worker you put to a job: your Sales AI Agent, your Admin AI Agent, your Content AI Agent. Each one has a role and knows which part of your business to read from. You hand it work the way you’d hand something to a person on a team — except you’re not managing anyone.",
                 },
                 {
                   k: "Apps",
-                  h: "the WHAT",
-                  b: "An App is a tool a Persona runs: Email Drafter, Lead Scout, Capture Inbox, Follow-Up Sweeps, Landing Page Builder, Idea Engine. A Persona without Apps is just another character in a chat window. A Persona with Apps can do work. You don’t operate the Apps — the Persona does. You just see the result.",
+                  h: "the tools they use",
+                  b: "An App is a tool a Persona runs: Email Drafter, Lead Scout, Capture Inbox, Follow-Up Sweeps, Landing Page Builder, Idea Engine. A Persona with Apps can do real work. You don’t operate the Apps — the Persona does. You just see the result.",
                 },
                 {
-                  k: "Mission Control",
-                  h: "where you watch it all",
-                  b: "One screen shows every action your agents are taking right now, what’s staged for your approval, and every dollar of spend to the cent. Set a monthly budget; your agent pauses and asks before it crosses the cap. Most AI products are a black box. This is the opposite — you see everything, and nothing goes out without your tap.",
+                  k: "Skills",
+                  h: "the moves they’ve learned",
+                  b: "A Skill is a specific move an agent knows: a cold-email sequence in your voice, an objection-handling pass, a case study from a call transcript. Pocket Agent ships with a library already loaded, and your agents write new ones back as they work.",
+                },
+                {
+                  k: "Business Brain",
+                  h: "what they all know",
+                  b: "The memory every Persona reads from: your voice, your customers, your prices, your processes, your decisions. It’s the part generic AI keeps forgetting. Every finished job writes back to it, so it gets sharper every week — and it’s yours to keep.",
                 },
               ].map((p) => (
                 <div
@@ -399,83 +522,108 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-            <p className="mx-auto mt-10 max-w-3xl text-center text-lg leading-relaxed text-slate-300">
-              A Persona is the role. An App is the tool. A Persona uses Apps. That
-              simple structure is what turns AI from a blank chat box into a
-              workspace your business can actually use.
-            </p>
           </div>
         </section>
 
-        {/* BUSINESS BRAIN */}
-        <section className="border-b border-white/5">
+        {/* SECOND BRAIN */}
+        <section className="border-b border-white/5 bg-black/20">
           <div className="mx-auto max-w-3xl px-6 py-20">
-            <Pill>[ first — the memory ]</Pill>
+            <Pill>[ tell it about your business once ]</Pill>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              First, build your Business Brain.
+              Your Business Brain is the second brain.
             </h2>
-            <p className="mt-4 text-slate-400">
-              Your company memory in markdown, stored in your own git repo.
-            </p>
             <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
               <p>
-                Your Business Brain is where Pocket Agent learns how your company
-                works. Add your offers, services, customers, documents,
-                screenshots, saved links, past prompts, emails, notes, workflows,
-                brand voice, style examples, customer questions, project details,
-                decisions, and your do-not-say list.
+                Every Persona reads from your Business Brain — a folder of plain
+                text files in your own GitHub with your voice, your customers, your
+                prices, your decisions. Tell it about your business once. That’s the
+                second brain.
               </p>
               <p>
-                Most AI tools forget everything. Pocket Agent gives your business
-                memory, so your AI doesn’t start from zero every time.
+                Add your offers, services, customers, documents, screenshots, saved
+                links, emails, notes, workflows, brand voice, style examples,
+                project details, and your do-not-say list. Most AI tools forget all
+                of it. The agents in Pocket Agent don’t feel generic because they
+                already know your business.
               </p>
             </div>
           </div>
         </section>
 
-        {/* PERSONAS */}
-        <section className="border-b border-white/5 bg-black/20">
-          <div className="mx-auto max-w-5xl px-6 py-20">
-            <Pill>[ the WHO ]</Pill>
+        {/* MISSION CONTROL */}
+        <section className="border-b border-white/5">
+          <div className="mx-auto max-w-3xl px-6 py-20">
+            <Pill>[ the cockpit ]</Pill>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Then put your AI agents to work.
+              Every move your agents make, on one screen.
             </h2>
-            <p className="mt-4 max-w-2xl text-slate-400">
-              Pocket Agent ships with 7 ready-made agents you clone and make your
-              own: Admin Assistant, Sales Assistant, Follow-Up Agent, Content
-              Creator, Email Drafter, Lead Researcher, Operations Chief of Staff.
-              Start with the job that’s burying you. (Inside the app, we call these
-              Personas.)
-            </p>
-            <div className="mt-10 grid gap-5 md:grid-cols-3">
-              {PERSONAS.map((p) => (
-                <div
-                  key={p.name}
-                  className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-7"
-                >
-                  <h3 className="text-lg font-semibold text-slate-100">
-                    {p.name}
-                  </h3>
-                  <p className="mt-3 flex-1 text-[15px] leading-relaxed text-slate-400">
-                    {p.body}
-                  </p>
-                </div>
-              ))}
+            <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
+              <p>
+                Business owners don’t want AI running wild. Good — that fear is
+                rational. You shouldn’t have random emails going out, pages going
+                live, or AI making decisions without you seeing the work.
+              </p>
+              <p>
+                So every action — every email drafted, every lead pulled, every
+                dollar of AI spend — flows through Mission Control. One screen.
+                Every move visible. You approve what matters. Set a monthly budget
+                and your agent pauses and asks before it crosses the cap.
+              </p>
             </div>
-            <p className="mt-8 text-sm text-slate-500">
-              Each agent reads your Business Brain, so it sounds like you and knows
-              your business from the first task. You can run more than one. They all
-              report to the same cockpit.
+          </div>
+        </section>
+
+        {/* PAYOFF — close the mechanism. */}
+        <section className="border-b border-white/5 bg-black/20">
+          <div className="mx-auto max-w-3xl px-6 py-16 text-center">
+            <p className="text-balance text-xl font-semibold leading-relaxed text-slate-100 sm:text-2xl">
+              That’s the box. Personas + Apps + Skills + Business Brain + Mission
+              Control. Everything wired together, running on your business, deployed
+              to your own GitHub. $37 a month.
             </p>
           </div>
         </section>
 
-        {/* APPS */}
+        {/* SETUP — tier-gated, expand-to-see. */}
         <section className="border-b border-white/5">
-          <div className="mx-auto max-w-5xl px-6 py-20">
-            <Pill>[ the WHAT ]</Pill>
+          <div className="mx-auto max-w-3xl px-6 py-20">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Your agents come with tools. This is what’s in the box.
+              What you set up — and it’s not much.
+            </h2>
+            <p className="mt-4 text-slate-400">
+              The free accounts your agents use to build and remember things. You
+              only set up what your plan actually needs. Open the plan you’re on.
+            </p>
+            <div className="mt-8 space-y-4">
+              {SETUP_TIERS.map((t) => (
+                <details
+                  key={t.name}
+                  open={t.open}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+                    <span className="text-base font-semibold text-slate-100">
+                      {t.name}
+                    </span>
+                    <span className="text-sm font-semibold text-cyan-300">
+                      {t.price}/mo
+                    </span>
+                  </summary>
+                  <p className="mt-4 text-[15px] leading-relaxed text-slate-300">
+                    {t.body}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* APPS — the toolkit your agents use. */}
+        <section className="border-b border-white/5 bg-black/20">
+          <div className="mx-auto max-w-5xl px-6 py-20">
+            <Pill>[ the Apps your agents use ]</Pill>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              The tools inside every agent.
             </h2>
             <p className="mt-4 max-w-2xl text-slate-400">
               You don’t have to touch any of it. Your agents use these to do the
@@ -509,38 +657,38 @@ export default function HomePage() {
         </section>
 
         {/* IDEA ENGINE */}
-        <section className="border-b border-white/5 bg-black/20">
+        <section className="border-b border-white/5">
           <div className="mx-auto max-w-3xl px-6 py-20">
-            <Pill>[ the heavy hitter · AI Agent Workspace ]</Pill>
+            <Pill>[ the heavy hitter · Idea AI Agent ]</Pill>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Turn an idea into a real thing on the internet.
             </h2>
             <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
               <p className="text-slate-100">
                 Drop an idea — a voice memo, a podcast you just listened to, a
-                thought you had in the shower. Pocket Agent validates whether real
+                thought you had in the shower. Your Idea AI Agent checks whether real
                 people would buy it, plans the version that should actually ship,
                 builds it for you, gets a sales page live, and lines up the first 25
                 prospects to email. By the time you finish your morning coffee, your
                 idea is a real thing on the internet you can show people.
               </p>
               <p>
-                Most owners don’t have an idea problem. They have an execution
+                Most owners don’t have an idea problem. They have a follow-through
                 problem. They hear a podcast idea, save a YouTube tactic, get a
                 thought in the shower. They think, “that could be something.” Then
                 nothing happens.
               </p>
               <p>
-                Other tools hand you a blueprint and a stack of prompts you go
-                execute somewhere else. The Idea Engine ends with a working website
-                you can share.
+                Other tools hand you a blueprint and a stack of prompts you go run
+                somewhere else. The Idea AI Agent ends with a working website you can
+                share.
               </p>
             </div>
             <div className="mt-8 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.04] p-6">
               <p className="text-[15px] leading-relaxed text-slate-300">
                 <span className="text-slate-100">The honest comparison:</span>{" "}
-                PaidCreators charges $497 once for a Gameplan you still have to go
-                execute somewhere else. Pocket Agent includes Idea Engine in your AI
+                PaidCreators charges $497 once for a Gameplan you still have to go run
+                somewhere else. Pocket Agent includes the Idea AI Agent in your AI
                 Agent Workspace at $497/month — and it actually ships the working
                 website for you.
               </p>
@@ -549,7 +697,7 @@ export default function HomePage() {
         </section>
 
         {/* LEAD SCOUT */}
-        <section className="border-b border-white/5">
+        <section className="border-b border-white/5 bg-black/20">
           <div className="mx-auto max-w-3xl px-6 py-20">
             <Pill>[ find the first prospects ]</Pill>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -558,9 +706,9 @@ export default function HomePage() {
             <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
               <p>
                 Lead research gets messy fast when AI is too generic. Lead Scout
-                gives your Lead Researcher structure. Start with a vertical. Choose
-                the market. Review the prospects. Then use your Follow-Up Agent and
-                Email Drafter to prepare the next touch.
+                gives your Research AI Agent structure. Start with a vertical. Choose
+                the market. Review the prospects. Then your Sales AI Agent drafts the
+                next touch in your voice.
               </p>
               <p>
                 Seven vertical packs: roofing, HVAC, painting, general contracting,
@@ -571,34 +719,11 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* MISSION CONTROL */}
-        <section className="border-b border-white/5 bg-black/20">
-          <div className="mx-auto max-w-3xl px-6 py-20">
-            <Pill>[ the cockpit ]</Pill>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              AI does the prep. You stay in control.
-            </h2>
-            <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
-              <p>
-                Business owners don’t want AI running wild. Good — that fear is
-                rational. You shouldn’t have random emails going out, unapproved
-                pages published, or AI making decisions without you seeing the work.
-              </p>
-              <p>
-                That’s why Pocket Agent includes Mission Control. Inside, you review
-                what was captured, what was drafted, what was researched, what was
-                queued, what was built, what needs approval, and what should happen
-                next. AI does the prep. You stay in control.
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* DAY IN THE WORKSPACE */}
         <section className="border-b border-white/5">
           <div className="mx-auto max-w-3xl px-6 py-20">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              A day in the workspace.
+              A day with your Packaged AI Agents.
             </h2>
             <p className="mt-4 text-slate-400">
               The clearest way to see it is one day. This is a composite drawn from
@@ -644,13 +769,13 @@ export default function HomePage() {
                 Most people don’t fail with AI because the tool is bad. They fail
                 because they never set it up. That’s why every paid Pocket Agent
                 subscription includes the Pocket Agent Launchpad on Skool — the
-                guided implementation hub, not a random community.
+                guided setup hub, not a random community.
               </p>
               <p>
                 Inside, you follow the 7-Day Setup Plan, watch the walkthroughs,
-                post your wins, join the implementation labs, and see how other
-                owner-led businesses run Pocket Agent. The goal is simple: get your
-                first 3 Personas and 3 workflows working as fast as possible.
+                post your wins, join the setup labs, and see how other owner-led
+                businesses run Pocket Agent. The goal is simple: get your first 3 AI
+                Agents and 3 workflows working as fast as possible.
               </p>
             </div>
           </div>
@@ -668,17 +793,17 @@ export default function HomePage() {
                 The biggest risk isn’t that AI won’t work. The risk is that you
                 won’t set it up. So every paid subscription includes the AI Office
                 Launch Kit — the fastest path from “I bought AI software” to “I have
-                AI Personas doing real work,” in your first week.
+                AI Agents doing real work,” in your first week.
               </p>
               <ul className="mt-6 grid gap-3 text-[15px] text-slate-300 sm:grid-cols-2">
                 {[
                   "Business Brain Setup Checklist",
-                  "3 starter Personas — Admin, Follow-Up, Content",
+                  "3 starter AI Agents — Admin, Follow-Up, Content",
                   "5 starter workflow templates",
                   "Mission Control Review Checklist",
                   "The 7-Day Setup Plan",
                   "Pocket Agent Launchpad access on Skool",
-                  "30 prebuilt Skills auto-seeded into your brain",
+                  "30 prebuilt Skills auto-loaded into your brain",
                 ].map((line) => (
                   <li key={line} className="flex items-start gap-2">
                     <span className="mt-1 text-cyan-300">✓</span>
@@ -705,12 +830,12 @@ export default function HomePage() {
         {/* 30 SKILLS */}
         <section className="border-b border-white/5 bg-black/20">
           <div className="mx-auto max-w-5xl px-6 py-20">
-            <Pill>[ the HOW ]</Pill>
+            <Pill>[ the Skills already loaded ]</Pill>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Pocket Agent starts with Skills already loaded.
+              Every agent starts with Skills already loaded.
             </h2>
             <p className="mt-4 max-w-2xl text-slate-400">
-              Skills are reusable techniques your agents use to write, draft,
+              Skills are the specific moves your agents use to write, draft,
               research, sell, operate, and decide better. You’re not starting from a
               blank prompt library.
             </p>
@@ -745,13 +870,14 @@ export default function HomePage() {
             </h2>
             <div className="mt-6 space-y-5 text-lg leading-relaxed text-slate-300">
               <p>
-                Each plan comes with usage allowances — leads, Whisper hours, and
-                sub-agent runs. Hit a cap, upgrade to the next tier. You don’t pay
-                API tokens directly, and you don’t get a surprise usage bill.
+                Each plan comes with usage allowances — leads, transcription hours,
+                and agent runs. Hit a cap, move up a tier. You don’t pay for AI
+                usage by the token, and you don’t get a surprise bill.
               </p>
               <p className="text-sm text-slate-500">
-                One exception: Studio+ owners who bring their own Anthropic key see
-                real dollar usage, because that’s their own LLM spend.
+                One exception: AI Agent Workspace owners who bring their own
+                Anthropic key see real dollar usage, because that’s their own AI
+                spend.
               </p>
             </div>
           </div>
@@ -761,12 +887,11 @@ export default function HomePage() {
         <section className="border-b border-white/5 bg-black/20">
           <div className="mx-auto max-w-5xl px-6 py-20">
             <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
-              Choose the workspace your business needs now.
+              Choose the plan your business needs now.
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-center text-slate-400">
-              Start simple. Upgrade when your agents need more usage, more
-              workflows, and more execution. Every plan includes the AI Office
-              Launch Kit, free.
+              Start simple. Move up when your agents need to do more. Every plan
+              includes the AI Office Launch Kit, free.
             </p>
             <div className="mt-12 grid gap-5 md:grid-cols-3">
               {PRICING_TIERS.map((t) => (
@@ -828,7 +953,7 @@ export default function HomePage() {
             </div>
             <p className="mt-8 text-center text-sm text-slate-500">
               Most owners land on Business Agent. The AI Agent Workspace tier is the
-              full cockpit — it’s the value anchor.{" "}
+              full stack — it’s the value anchor.{" "}
               <Link href="/pricing" className="text-cyan-300 hover:underline">
                 See all plans
               </Link>{" "}
@@ -846,12 +971,12 @@ export default function HomePage() {
               </h2>
               <p className="mt-4 text-[15px] leading-relaxed text-slate-300">
                 Complete the Launch Kit’s 7-day setup steps. If you don’t have 3
-                trained Personas and 3 working workflows inside Pocket Agent by day
+                trained AI Agents and 3 working workflows inside Pocket Agent by day
                 7, we help you finish the setup.
               </p>
               <p className="mt-4 text-[15px] leading-relaxed text-slate-400">
                 That’s the only guarantee. We don’t guarantee revenue. We guarantee
-                implementation — because implementation is the real bottleneck.
+                setup — because getting set up is the real bottleneck.
               </p>
             </div>
           </div>
@@ -871,9 +996,9 @@ export default function HomePage() {
                 his evenings back without firing someone.
               </p>
               <p>
-                He runs all three on it. Same workspace, same brain pattern, same
-                cockpit. Nothing on this page promises something that isn’t shipped.
-                If you can do it on the screenshot, you can do it in your account.
+                He runs all three on it. Same workspace, same brain, same cockpit.
+                Nothing on this page promises something that isn’t shipped. If you
+                can do it on the screenshot, you can do it in your account.
               </p>
             </div>
           </div>
@@ -904,15 +1029,14 @@ export default function HomePage() {
         <section>
           <div className="mx-auto max-w-2xl px-6 py-24 text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Stop buying AI agents one at a time.
+              Every AI Agent your business needs. Packaged.
             </h2>
             <p className="mt-5 text-lg text-slate-300">
-              Get the whole team in one box, running on your own business context,
-              deployed to accounts you own. $37 a month. Yours to keep even if you
-              cancel.
+              All of them, connected for you, running on your own business context,
+              in accounts you own. $37 a month. Yours to keep even if you cancel.
             </p>
             <div className="mt-8 flex justify-center">
-              <PrimaryCTA href="/start?tier=pro" label="Get My AI Team" />
+              <PrimaryCTA href="/start?tier=pro" label="Start for $37" />
             </div>
             <p className="mt-5 text-sm text-slate-500">
               Generic AI starts from zero. Pocket Agent starts from your business.
