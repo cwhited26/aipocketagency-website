@@ -21,6 +21,7 @@ import { extractPriceIds, type StripeSubscription } from "@/lib/pocket-agent-web
 import { fetchPocketAgentBySubscriptionId } from "@/lib/pocket-agent-supabase";
 import { starterSkillsForTier } from "@/lib/starter-skills/catalog";
 import { listSeededStarterSlugs, recordStarterSkillSeed } from "@/lib/starter-skills/db";
+import { launchKitLog } from "@/lib/launch-kit/log";
 
 type SeedResult = { ok: true; seeded: number } | { ok: false; error: string };
 
@@ -190,4 +191,55 @@ export async function backfillStarterSkillsForOwner(ownerId: string): Promise<Se
     });
     return null;
   }
+}
+
+/**
+ * Brain-connect trigger (PA-STABILITY-2): the moment an owner connects — or reconnects — a brain, run
+ * the idempotent starter-skill backfill. This closes the race where a first-time buyer signs up through
+ * Stripe Checkout with no brain connected: seedStarterSkillsForSubscription no-ops at
+ * customer.subscription.created (no brain to seed into), and without this trigger the buyer never got
+ * their starter Skills until they happened to open the Starter Pack surface.
+ *
+ * Fires only when the brain is newly present (first connect, or a reconnect / repo change) so the
+ * "fires once per new connect" contract stays clean — a no-op re-POST of the same repo doesn't re-run.
+ * The backfill under it is idempotent regardless (seedForOwner reads pa_starter_skill_seeds and the
+ * brain, seeding only the tier-unlocked delta), so a spurious call would be harmless; the guard is
+ * about intent, not safety. Best-effort and never throws — connecting the brain must succeed regardless.
+ *
+ * The tier resolves inside backfillStarterSkillsForOwner via getCurrentTier, which maps an active
+ * subscription to its paid tier and everyone else to "starter" (the free pack) — so this covers both
+ * "subscribed, then connected the brain" and "connected the brain, then upgraded the tier": the empty
+ * pa_starter_skill_seeds set means the first connect seeds the full unlocked pack, and a later upgrade's
+ * connect (or the Starter Pack surface) seeds only the newly-unlocked delta.
+ */
+export async function backfillStarterSkillsOnBrainConnect(input: {
+  ownerId: string;
+  previousRepo: string | null;
+  newRepo: string;
+}): Promise<SeedSummary | null> {
+  const { ownerId, previousRepo, newRepo } = input;
+  if (!newRepo) return null;
+
+  const isNewConnection = !previousRepo || previousRepo !== newRepo;
+  if (!isNewConnection) {
+    launchKitLog.info("brain reconnected to same repo — starter-skill backfill skipped", { ownerId, repo: newRepo });
+    return null;
+  }
+
+  launchKitLog.info("brain connected — running starter-skill backfill", {
+    ownerId,
+    repo: newRepo,
+    firstConnect: !previousRepo,
+  });
+  const summary = await backfillStarterSkillsForOwner(ownerId);
+  if (summary) {
+    launchKitLog.info("starter-skill backfill on brain connect complete", {
+      ownerId,
+      repo: newRepo,
+      seeded: summary.seeded.length,
+      skipped: summary.skipped,
+      failed: summary.failed.length,
+    });
+  }
+  return summary;
 }

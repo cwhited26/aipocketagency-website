@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "smoke": "playwright test",
     "changelog:check": "node scripts/update-changelog.mjs",
     "pdf:build": "./scripts/build-pdf.sh"
   },
@@ -28,6 +29,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",

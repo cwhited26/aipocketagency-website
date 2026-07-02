@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { upsertPaUser, fetchPaUser } from "@/lib/pa-supabase";
 import { indexBrain } from "@/lib/pa-brain-index";
 import { ensureInboundAddresses } from "@/lib/inbound-email/addresses";
+import { backfillStarterSkillsOnBrainConnect } from "@/lib/launch-kit/seed";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -33,6 +34,12 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Load the existing PA row once: it carries the previously-connected brain (so we can tell a
+  // first-time / reconnect from a no-op re-POST of the same repo) and the stored GitHub token used
+  // as a fallback below.
+  const paResult = await fetchPaUser(user.id);
+  const previousRepo = paResult.ok && paResult.data ? paResult.data.brain_repo : null;
+
   // provider_token is available right after OAuth; after session refresh it's dropped.
   // Fall back to the stored token from a "Connect GitHub" flow.
   const {
@@ -40,7 +47,6 @@ export async function POST(req: Request): Promise<NextResponse> {
   } = await supabase.auth.getSession();
   let providerToken = session?.provider_token ?? null;
   if (!providerToken) {
-    const paResult = await fetchPaUser(user.id);
     providerToken = paResult.ok && paResult.data ? paResult.data.github_token : null;
   }
 
@@ -76,6 +82,11 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
+
+  // Now that the brain is persisted, land any tier-unlocked starter Skills that were deferred because
+  // no brain was connected at subscribe time (the first-time-buyer race). Idempotent and non-fatal —
+  // fires only on a first connect / reconnect, and never blocks connecting the brain.
+  await backfillStarterSkillsOnBrainConnect({ ownerId: user.id, previousRepo, newRepo: repo });
 
   // Provision the owner's two inbound-email addresses (forwarding + BCC). Idempotent and
   // non-fatal — a failure here never blocks connecting the brain; the Connections page
