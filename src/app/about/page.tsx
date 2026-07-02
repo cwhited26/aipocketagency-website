@@ -85,7 +85,46 @@ export default function AboutPage() {
           </div>
 
           <div className="mt-16">
-            <PrimaryCTA label="Start your 14-day trial" />
+            <PrimaryCTA label="Get My AI Team" href="/start?tier=pro" />
+          </div>
+        </div>
+      </section>
+
+      {/* ELEVATOR PITCH — for founders, partners, and press to grab (PA-POS-16 §2.2). */}
+      <section className="border-b border-white/5">
+        <div className="mx-auto max-w-3xl px-6 py-16 sm:py-20">
+          <h2 className="text-xl font-semibold text-slate-100 sm:text-2xl">
+            The pitch, in one breath
+          </h2>
+          <p className="mt-3 text-sm text-slate-400">
+            For anyone who needs to explain Pocket Agent fast.
+          </p>
+
+          <div className="mt-8 space-y-5">
+            <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.04] p-6">
+              <div className="text-xs font-semibold uppercase tracking-wide text-cyan-300/80">
+                15 seconds
+              </div>
+              <p className="mt-3 text-lg leading-relaxed text-slate-200">
+                Everyone’s selling AI agents one at a time. Pocket Agent is the
+                whole team in a box. $37 a month, deployed to your own GitHub,
+                yours to keep.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                30 seconds
+              </div>
+              <p className="mt-3 text-[15px] leading-relaxed text-slate-300">
+                Everyone’s selling business owners one-off AI agents — an SDR
+                agent, a content agent, a research agent — for a hundred bucks a
+                month each. Pocket Agent is the whole team, in one box, for $37 a
+                month. Sign up, connect a free GitHub, and every agent everyone
+                else sells you separately is running on your own business context.
+                Your code, your data. You keep it even if you cancel.
+              </p>
+            </div>
           </div>
         </div>
       </section>

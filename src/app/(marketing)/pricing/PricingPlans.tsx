@@ -23,7 +23,7 @@ const VISIBLE_TIERS: VisibleTier[] = [
     name: "Personal Brain",
     price: "$37",
     tier: "starter",
-    pitch: "For the solo owner who wants a single brain.",
+    pitch: "Your first AI agent + the workspace they live in.",
     rows: [
       "Single Business Brain + basic capture",
       "1 Persona",
@@ -39,15 +39,16 @@ const VISIBLE_TIERS: VisibleTier[] = [
     tier: "pro",
     featured: true,
     badge: "Most Popular",
-    pitch: "For the growing operator with active integrations.",
+    pitch:
+      "Your whole AI team — sales, content, research, follow-up — all in one workspace.",
     rows: [
       "Everything in Personal Brain",
-      "Clone-and-customize Personas",
+      "A team of AI agents you clone and make your own",
       "Connected tools — Gmail, Calendar, Slack, QuickBooks",
       "Capture Inbox, Follow-Up Sweeps, Ingesters, Email Drafter",
       "5 prebuilt Skills — 20 at Pro+",
     ],
-    ctaLabel: "Build My AI Team",
+    ctaLabel: "Get My AI Team",
   },
   {
     name: "AI Agent Workspace",
@@ -55,7 +56,7 @@ const VISIBLE_TIERS: VisibleTier[] = [
     tier: "studio_plus",
     badge: "Full Cockpit",
     pitch:
-      "Unlock the full Pocket Agent workspace for idea execution, vertical lead research, decisions, and advanced review.",
+      "Every AI agent you’d hire separately. Idea Engine + Lead Scout + Decision Roundtable + Voice Calls + 30 skills, all yours.",
     rows: [
       "Everything in Business Agent",
       "Idea Engine — ship a working MVP from one idea",
@@ -64,7 +65,7 @@ const VISIBLE_TIERS: VisibleTier[] = [
       "All 30 prebuilt Skills + advanced Mission Control",
       "The full Layoutbook + Field Book premium template gallery, included",
     ],
-    ctaLabel: "Unlock AI Agent Workspace",
+    ctaLabel: "Get AI Agent Workspace",
     anchor:
       "PaidCreators charges $497 once for a Gameplan you still have to execute. Pocket Agent includes Idea Engine in AI Agent Workspace at $497/month — and it actually ships the working website for you.",
   },
@@ -88,17 +89,17 @@ const QUIZ_OPTIONS: QuizOption[] = [
     tier: "starter",
   },
   {
-    want: "AI Personas and workflow Apps for my business.",
+    want: "A team of AI agents working across my business.",
     plan: "Business Agent",
     price: "$97/mo",
-    ctaLabel: "Build My AI Team",
+    ctaLabel: "Get My AI Team",
     tier: "pro",
   },
   {
     want: "Ideas turned into live assets, with prospects lined up.",
     plan: "AI Agent Workspace",
     price: "$497/mo",
-    ctaLabel: "Unlock AI Agent Workspace",
+    ctaLabel: "Get AI Agent Workspace",
     tier: "studio_plus",
   },
   {

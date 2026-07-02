@@ -5,15 +5,18 @@ import { PrimaryCTA, SecondaryCTA, MONO_FONT } from "@/components/marketing/cta"
 import { DIRECTION_COUNTS } from "@/data/landing-page-templates/directions-meta";
 
 const DESCRIPTION =
-  "An AI Agent Workspace for owner-led businesses. Pocket Agent gives your business a Business Brain, clone-and-customize Personas, workflow Apps, and Mission Control — so your agents draft emails, find leads, capture ideas, build pages, and bring it all back for your approval. Generic AI starts from zero. Pocket Agent starts from your business.";
+  "Every AI agent everyone else is selling you, all in one workspace. Sign up, connect a free GitHub, deploy to your own Vercel + Supabase. $37 a month. Yours to keep.";
+
+const OG_TITLE =
+  "Everyone's selling AI agents one at a time. Pocket Agent is the whole team, in one box.";
 
 export const metadata: Metadata = {
-  title: "Pocket Agent — build your AI team without becoming an AI expert",
+  title: "Pocket Agent — AI Agents in a Box for Business Owners",
   description: DESCRIPTION,
   metadataBase: new URL("https://aipocketagent.com"),
   alternates: { canonical: "https://aipocketagent.com" },
   openGraph: {
-    title: "Build your AI team without becoming an AI expert.",
+    title: OG_TITLE,
     description: DESCRIPTION,
     url: "https://aipocketagent.com",
     siteName: "Pocket Agent",
@@ -23,13 +26,13 @@ export const metadata: Metadata = {
         url: "https://aipocketagent.com/og-share.png",
         width: 1200,
         height: 630,
-        alt: "Pocket Agent",
+        alt: "Pocket Agent — AI agents in a box for business owners",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Build your AI team without becoming an AI expert.",
+    title: OG_TITLE,
     description: DESCRIPTION,
   },
 };
@@ -204,7 +207,7 @@ const PRICING_TIERS: {
     name: "Personal Brain",
     price: "$37",
     tier: "starter",
-    best: "The solo owner who wants a single brain",
+    best: "Your first AI agent + the workspace they live in.",
     rows: [
       { label: "Personas", value: "1" },
       { label: "Prebuilt Skills", value: "5" },
@@ -217,7 +220,7 @@ const PRICING_TIERS: {
     price: "$97",
     tier: "pro",
     featured: true,
-    best: "The growing operator with active integrations",
+    best: "Your whole AI team — sales, content, research, follow-up — all in one workspace.",
     rows: [
       { label: "Personas", value: "Multiple" },
       { label: "Prebuilt Skills", value: "20" },
@@ -229,7 +232,7 @@ const PRICING_TIERS: {
     name: "AI Agent Workspace",
     price: "$497",
     tier: "studio_plus",
-    best: "The full cockpit — Idea Engine, Lead Scout packs, Decision Roundtable",
+    best: "Every AI agent you’d hire separately. Idea Engine + Lead Scout + Decision Roundtable + Voice Calls + 30 skills, all yours.",
     rows: [
       { label: "Personas", value: "Unlimited" },
       { label: "Prebuilt Skills", value: "30" },
@@ -260,33 +263,48 @@ export default function HomePage() {
         <section className="relative overflow-hidden border-b border-white/5">
           <div className="absolute inset-0 bg-grid opacity-30" aria-hidden />
           <div className="absolute inset-0 bg-hero-glow" aria-hidden />
-          <div className="relative mx-auto max-w-3xl px-6 pb-24 pt-24 text-center sm:pt-32">
+          <div className="relative mx-auto max-w-3xl px-6 pb-20 pt-24 text-center sm:pt-32">
             <Pill>[ AI Agent Workspace · for owner-led businesses ]</Pill>
             <h1 className="text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
-              Build your AI team without becoming an AI expert.
+              Everyone’s selling AI agents one at a time. Pocket Agent is the whole
+              team, in one box.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-300">
-              Pocket Agent gives your business a Business Brain, clone-and-customize
-              AI Personas, workflow Apps, and Mission Control — so you can draft
-              emails, follow up with leads, research prospects, capture ideas,
-              process YouTube and podcasts, build landing pages, and approve every
-              bit of it from one place.
+              Sign up, connect a free GitHub, and every agent everyone else sells
+              you separately is running on your own business context. $37 a month.
+              Yours to keep.
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <PrimaryCTA href="/start?tier=pro" label="Build My AI Team" />
+              <PrimaryCTA href="/start?tier=pro" label="Get My AI Team" />
               <SecondaryCTA href="/pricing" label="See how it works" />
             </div>
             <p className="mt-6 text-sm text-slate-400">
-              <Link
-                href="/templates"
-                className="text-slate-300 underline decoration-cyan-300/40 underline-offset-4 transition hover:text-cyan-300"
-              >
-                21 landing-page templates included. Pick one your business actually fits.
-              </Link>
-            </p>
-            <p className="mt-3 text-sm text-slate-400">
               Generic AI starts from zero. Pocket Agent starts from your business.
             </p>
+          </div>
+        </section>
+
+        {/* OWNERSHIP MOAT — above the fold, right below the hero CTA (PA-POS-16 §2.2). */}
+        <section className="border-b border-white/5 bg-black/20">
+          <div className="mx-auto max-w-3xl px-6 py-14">
+            <div className="rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.04] p-8 sm:p-10">
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                You own the code.
+              </h2>
+              <p className="mt-4 text-[15px] leading-relaxed text-slate-300">
+                Every agent, every persona, every memory file is in your own
+                GitHub, deployed to your Vercel, backed by your Supabase. All free
+                tools you sign up for once and connect.
+              </p>
+              <p className="mt-4 text-[15px] leading-relaxed text-slate-300">
+                Cancel Pocket Agent tomorrow and your whole workspace stays running.
+                No walled garden. No hostage data.
+              </p>
+              <p className="mt-4 text-[15px] font-semibold leading-relaxed text-slate-100">
+                That’s the difference from every other AI agent product on the
+                market.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -420,13 +438,14 @@ export default function HomePage() {
           <div className="mx-auto max-w-5xl px-6 py-20">
             <Pill>[ the WHO ]</Pill>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Then clone-and-customize your AI Personas.
+              Then put your AI agents to work.
             </h2>
             <p className="mt-4 max-w-2xl text-slate-400">
-              Pocket Agent ships with 7 templated Personas you clone and customize:
-              Admin Assistant, Sales Assistant, Follow-Up Agent, Content Creator,
-              Email Drafter, Lead Researcher, Operations Chief of Staff. Start with
-              the job that’s burying you.
+              Pocket Agent ships with 7 ready-made agents you clone and make your
+              own: Admin Assistant, Sales Assistant, Follow-Up Agent, Content
+              Creator, Email Drafter, Lead Researcher, Operations Chief of Staff.
+              Start with the job that’s burying you. (Inside the app, we call these
+              Personas.)
             </p>
             <div className="mt-10 grid gap-5 md:grid-cols-3">
               {PERSONAS.map((p) => (
@@ -444,9 +463,9 @@ export default function HomePage() {
               ))}
             </div>
             <p className="mt-8 text-sm text-slate-500">
-              Each Persona reads your Business Brain, so it sounds like you and
-              knows your business from the first task. You can run more than one.
-              They all report to the same cockpit.
+              Each agent reads your Business Brain, so it sounds like you and knows
+              your business from the first task. You can run more than one. They all
+              report to the same cockpit.
             </p>
           </div>
         </section>
@@ -456,10 +475,11 @@ export default function HomePage() {
           <div className="mx-auto max-w-5xl px-6 py-20">
             <Pill>[ the WHAT ]</Pill>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Your Personas need tools. Pocket Agent gives them Apps.
+              Your agents come with tools. This is what’s in the box.
             </h2>
             <p className="mt-4 max-w-2xl text-slate-400">
-              You don’t have to touch them — but this is what’s in the box.
+              You don’t have to touch any of it. Your agents use these to do the
+              work; you review what they bring back.
             </p>
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               {APPS.map((a) => (
@@ -884,15 +904,15 @@ export default function HomePage() {
         <section>
           <div className="mx-auto max-w-2xl px-6 py-24 text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Your business doesn’t need another blank chatbot.
+              Stop buying AI agents one at a time.
             </h2>
             <p className="mt-5 text-lg text-slate-300">
-              It needs an AI Agent Workspace that starts from your business. Build
-              your Business Brain. Clone your first Personas. Install workflow Apps.
-              Review everything in Mission Control.
+              Get the whole team in one box, running on your own business context,
+              deployed to accounts you own. $37 a month. Yours to keep even if you
+              cancel.
             </p>
             <div className="mt-8 flex justify-center">
-              <PrimaryCTA href="/start?tier=pro" label="Build My AI Team" />
+              <PrimaryCTA href="/start?tier=pro" label="Get My AI Team" />
             </div>
             <p className="mt-5 text-sm text-slate-500">
               Generic AI starts from zero. Pocket Agent starts from your business.
