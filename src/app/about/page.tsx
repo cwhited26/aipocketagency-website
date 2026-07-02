@@ -108,8 +108,7 @@ export default function AboutPage() {
               <p className="mt-3 text-lg leading-relaxed text-slate-200">
                 Every business owner’s being told they need AI agents. Everyone’s
                 selling them one at a time. Pocket Agent is all of them, packaged
-                and ready to deploy — $37 a month, on accounts you own, yours to
-                keep.
+                and ready to deploy, running on accounts you own. $37 a month.
               </p>
             </div>
 

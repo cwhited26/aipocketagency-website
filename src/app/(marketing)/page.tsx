@@ -342,7 +342,7 @@ export default function HomePage() {
               selling them one at a time. Pocket Agent is all of them, packaged and
               ready to go — even if you know nothing about AI or computers. We did
               all the connecting. You just tell it about your business. It becomes
-              your second brain. Your Packaged AI Agents do the rest.
+              your second brain. Your Packaged AI Agents do the rest. $37 a month.
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <PrimaryCTA href="/start?tier=pro" label="Start for $37" />
@@ -1033,7 +1033,8 @@ export default function HomePage() {
             </h2>
             <p className="mt-5 text-lg text-slate-300">
               All of them, connected for you, running on your own business context,
-              in accounts you own. $37 a month. Yours to keep even if you cancel.
+              in accounts you own. Cancel anytime and it all keeps running. $37 a
+              month.
             </p>
             <div className="mt-8 flex justify-center">
               <PrimaryCTA href="/start?tier=pro" label="Start for $37" />
