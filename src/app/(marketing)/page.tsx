@@ -428,6 +428,34 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* SHORTCUT — what the subscription actually buys: the 12-month AI learning curve compressed. */}
+        <section className="border-b border-white/5 bg-black/20">
+          <div className="mx-auto max-w-3xl px-6 py-20">
+            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 sm:p-10">
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                You&rsquo;re not buying software. You&rsquo;re skipping a year.
+              </h2>
+              <div className="mt-5 space-y-4 text-[15px] leading-relaxed text-slate-300">
+                <p>
+                  To build what Pocket Agent hands you on day one, you&rsquo;d
+                  spend twelve months learning Claude, GitHub, prompt engineering,
+                  agent orchestration, memory design, and how to wire all of it
+                  together. We already did that work.
+                </p>
+                <p>
+                  Your subscription is the shortcut past a year of AI learning.
+                  Pocket Agent hands you the trained workers on day one — Sales,
+                  Marketing, Content, Customer Support, all ten of them — already
+                  configured, already connected, already reading your business.
+                </p>
+                <p className="font-semibold text-slate-100">
+                  That&rsquo;s what the subscription buys: a working AI team, not a codebase.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* OWNERSHIP — demystify the free tools, tie them to what the agents build. */}
         <section className="border-b border-white/5 bg-black/20">
           <div className="mx-auto max-w-3xl px-6 py-20">
