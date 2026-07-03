@@ -294,7 +294,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Your right hand for the daily admin — what's on today, who's waiting on you, and the quick emails that keep things moving.",
     sampleQuestion: "What's on my plate today and who am I behind on?",
     defaultTone: "conversational",
-    defaultApps: ["daily-brief", "upcoming", "email-drafter", "followups", "follow-up-sweeps", "workflow-vault", "ritual-scheduler", "channels", "sms-channel", "imessage-channel", "whatsapp-channel"],
+    defaultApps: ["daily-brief", "upcoming", "email-drafter", "followups", "follow-up-sweeps", "workflow-vault", "ritual-scheduler", "browser-agent", "channels", "sms-channel", "imessage-channel", "whatsapp-channel"],
     starterPrompt: "Give me my morning rundown — what's pending and who I'm behind on.",
     fields: {
       problem:
@@ -434,7 +434,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Finds businesses that fit your best customers, sorts them by fit, and tees up who's worth reaching out to.",
     sampleQuestion: "Find roofers near Knoxville without a website and sort them by fit.",
     defaultTone: "direct",
-    defaultApps: ["lead-scout", "idea-engine", "brain-map", "competitor-inspector"],
+    defaultApps: ["lead-scout", "idea-engine", "brain-map", "competitor-inspector", "browser-agent"],
     starterPrompt: "Find businesses in our area that look like our best customers and rank them by fit.",
     fields: {
       problem:
@@ -462,7 +462,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "The wide-angle view — pulls together what's happening across the business and surfaces the one thing to handle next.",
     sampleQuestion: "What across the business needs my attention this week?",
     defaultTone: "direct",
-    defaultApps: ["daily-brief", "upcoming", "followups", "follow-up-sweeps", "email-drafter", "proposal-generator", "brain-map", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler", "website-monitor"],
+    defaultApps: ["daily-brief", "upcoming", "followups", "follow-up-sweeps", "email-drafter", "proposal-generator", "brain-map", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler", "website-monitor", "browser-agent"],
     starterPrompt: "Pull together what's happening across the business and tell me what to handle first.",
     fields: {
       problem:

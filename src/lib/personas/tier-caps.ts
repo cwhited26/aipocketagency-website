@@ -430,6 +430,30 @@ export function tierAllowsProposalGenerator(tier: Tier): boolean {
   return tierRank(tier) >= tierRank("pro")
 }
 
+// ── Browser Agent gating (PA-POS-19) ──────────────────────────────────────────────────────
+//
+// The Browser Agent runs a hosted browser session (Browserbase) for up to an hour per job plus
+// a Computer Use planning call per step — the most expensive App on the shelf. Studio+
+// ($497 AI Agent Workspace) and Enterprise only; lower tiers see the card with an upgrade chip.
+export function tierAllowsBrowserAgent(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio_plus")
+}
+
+export type BrowserAgentJobLimits = {
+  maxSteps: number
+  maxWallSeconds: number
+  maxCostCents: number
+}
+
+/** Per-job ceilings for the New Job sliders — the form clamps to these and the create route
+ *  enforces them server-side. */
+export function browserAgentJobLimits(tier: Tier): BrowserAgentJobLimits {
+  if (tier === "enterprise") {
+    return { maxSteps: 150, maxWallSeconds: 3600, maxCostCents: 2000 }
+  }
+  return { maxSteps: 75, maxWallSeconds: 3600, maxCostCents: 1000 }
+}
+
 // ── Stripe price ID resolution — env-first, hardcoded fallback (launch prep 2026-07-02) ──
 //
 // The live Stripe price IDs moved out of code and into Sensitive Vercel env vars so a Stripe

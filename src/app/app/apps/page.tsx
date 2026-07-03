@@ -8,6 +8,7 @@ import {
   tierAllowsIdeaEngineAutoBuild,
   tierCanSeeChannels,
   tierAllowsChannel,
+  tierAllowsBrowserAgent,
 } from "@/lib/personas/tier-caps";
 import { fetchGithubBuildConnectionPublic } from "@/lib/pa-github-build-connections";
 import { fetchVercelConnectionPublic } from "@/lib/pa-vercel-connections";
@@ -68,6 +69,9 @@ export default async function AppsPage() {
   const canUseSmsChannel = tierAllowsChannel(tier, "sms");
   const canUseImessageChannel = tierAllowsChannel(tier, "imessage");
   const canUseWhatsappChannel = tierAllowsChannel(tier, "whatsapp");
+  // Browser Agent (PA-POS-19): Studio+ / Enterprise — hosted browser sessions are the most
+  // expensive thing on the shelf. Card stays on the grid with the upgrade chip below that.
+  const canUseBrowserAgent = tierAllowsBrowserAgent(tier);
   const visibleApps = apps.filter((app) => {
     if (app.id === "landing-page-builder") return tierCanSeeLandingPageBuilder(tier);
     return true;
@@ -171,6 +175,7 @@ export default async function AppsPage() {
             const lockedSms = app.id === "sms-channel" && !canUseSmsChannel;
             const lockedImessage = app.id === "imessage-channel" && !canUseImessageChannel;
             const lockedWhatsapp = app.id === "whatsapp-channel" && !canUseWhatsappChannel;
+            const lockedBrowserAgent = app.id === "browser-agent" && !canUseBrowserAgent;
             // Any gate puts the card in its "show with upgrade chip" state. The chip text is the
             // tier each App unlocks at — Studio for the builder, Pro+ for the Idea Engine, Studio+
             // for iMessage, Pro (Business Agent) for the other channels.
@@ -180,12 +185,13 @@ export default async function AppsPage() {
               lockedChannels ||
               lockedSms ||
               lockedImessage ||
-              lockedWhatsapp;
+              lockedWhatsapp ||
+              lockedBrowserAgent;
             const unlockTier = lockedLandingPages
               ? "Studio"
               : lockedIdeaEngine
                 ? "Pro+"
-                : lockedImessage
+                : lockedImessage || lockedBrowserAgent
                   ? "Studio+"
                   : "Pro";
             // Tier allows the App but a required Build Tool isn't connected: send the card to

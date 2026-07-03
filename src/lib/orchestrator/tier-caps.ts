@@ -107,6 +107,10 @@ export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> 
   "browser:browser_type": Number.POSITIVE_INFINITY,
   "browser:browser_extract_table": Number.POSITIVE_INFINITY,
   "browser:browser_wait_for": Number.POSITIVE_INFINITY,
+  // Browser Agent App (PA-POS-19): a held job step is by definition an irreversible browser
+  // action (form submit, purchase, delete, auth, new domain). Every one is a human tap,
+  // forever — no approval streak ever unlocks generic auto-approve for it.
+  "browser_agent:job_step": Number.POSITIVE_INFINITY,
 };
 
 /** The trust window for a specific (connector, action), honoring the money/build overrides. */

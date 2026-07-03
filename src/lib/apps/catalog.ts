@@ -23,6 +23,7 @@ export const APP_IDS = [
   "competitor-inspector",
   "website-monitor",
   "proposal-generator",
+  "browser-agent",
   "channels",
   "sms-channel",
   "imessage-channel",
@@ -252,6 +253,18 @@ export const APP_CATALOG: AppDef[] = [
       "Pick a Persona, drop in the client and the scope, and PA drafts a full proposal in their voice — cover summary, the problems you're solving, deliverables, timeline, investment, success criteria, next steps, signatures. Edit it, then send it as a Gmail draft with the PDF attached or file it to your brain.",
     blurb: "Turn a brief into a full, on-voice client proposal — markdown + PDF.",
     tag: "Output",
+    tagColor: "cyan",
+  },
+  {
+    id: "browser-agent",
+    slashCommand: "browser-agent",
+    href: "/app/apps/browser",
+    label: "Browser Agent",
+    shortLabel: "Browser",
+    description:
+      "The agent that operates tools without APIs — sites you'd otherwise have to click through yourself. Screenshots + approvals on every step.",
+    blurb: "Operate the sites that have no API — with a screenshot record of every step.",
+    tag: "Operates Tools",
     tagColor: "cyan",
   },
   {

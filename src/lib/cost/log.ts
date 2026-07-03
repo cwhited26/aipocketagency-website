@@ -58,7 +58,10 @@ export type CostFeatureSlug =
   // the event exists for usage accounting, not billing (a HEAD/GET poll is negligible).
   | "website_monitor"
   // One row per Proposal Generator draft. backend 'anthropic', model claude-sonnet-4-6.
-  | "proposal_generator";
+  | "proposal_generator"
+  // One row per Browser Agent job step (PA-POS-19): the Computer Use planning tokens + the
+  // Browserbase seconds since the last step, idempotency `browser:<jobId>:<step>`.
+  | "browser_agent";
 
 /**
  * The per-call-site context a metered backend carries: who's paying, which feature area, and a

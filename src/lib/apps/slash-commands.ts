@@ -14,6 +14,7 @@
 import { z } from "zod";
 import { APP_CATALOG, getApp, type AppDef, type AppId } from "./catalog";
 import {
+  tierAllowsBrowserAgent,
   TIER_LABELS,
   tierAllowsChannel,
   tierAllowsCompetitorInspector,
@@ -108,6 +109,8 @@ function appMinTier(appId: AppId): Tier {
       return "pro"; // tierAllowsChannel (Phase 2/4, Business Agent+)
     case "imessage-channel":
       return "studio_plus"; // tierAllowsChannel (Phase 3 — power-user channel)
+    case "browser-agent":
+      return "studio_plus"; // tierAllowsBrowserAgent (PA-POS-19 — hosted browser sessions are expensive)
     default:
       return "starter";
   }
@@ -136,6 +139,8 @@ export function tierAllowsApp(tier: Tier, appId: AppId): boolean {
       return tierAllowsChannel(tier, "imessage");
     case "whatsapp-channel":
       return tierAllowsChannel(tier, "whatsapp");
+    case "browser-agent":
+      return tierAllowsBrowserAgent(tier);
     default:
       return tierRank(tier) >= tierRank("starter"); // every tier
   }

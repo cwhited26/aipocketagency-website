@@ -139,9 +139,12 @@ describe("tier-gated invocation (PA-SLASH-1)", () => {
     expect(studio).toContain("landing-page-builder");
     expect(studio).toContain("competitor-inspector");
     expect(studio).toContain("idea-engine");
-    // iMessage (Channels Gateway Phase 3) is the one App above Studio — it unlocks at Studio+.
+    // Two Apps sit above Studio: iMessage (Channels Gateway Phase 3) and the Browser Agent
+    // (PA-POS-19, hosted browser sessions) — both unlock at Studio+.
     expect(studio).not.toContain("imessage-channel");
-    expect(studio.length).toBe(APP_CATALOG.length - 1);
+    expect(studio).not.toContain("browser-agent");
+    expect(studio.length).toBe(APP_CATALOG.length - 2);
+    expect(studioPlus).toContain("browser-agent");
     expect(studioPlus.length).toBe(APP_CATALOG.length);
   });
 });
