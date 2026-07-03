@@ -66,6 +66,10 @@ export type CostFeatureSlug =
   // `agent_builder:parse:<buildId>`. Studio+ includes an allowance for composes; overage rides
   // the PA-POS-30 Top Up lane, which reads this ledger.
   | "agent_builder"
+  // One Haiku call per owner chat message the Signal Catcher reads (PA-SIGNAL-1), idempotency
+  // `signal_catcher:classify:<messageId>`. Studio+/Enterprise only; included in the PA-POS-30
+  // credit allowance, which reads this ledger.
+  | "signal_catcher"
   // Zero-cost accounting rows for the PA-POS-31 conversion-nudge funnel: one row per nudge
   // impression + one per click-through, metadata.action distinguishes them. backend 'vercel',
   // cost 0 — the event exists so nudge→upgrade conversion is measurable, not for billing.

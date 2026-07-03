@@ -57,6 +57,17 @@ export function tierAllowsPodcastPacks(tier: Tier): boolean {
 }
 
 /**
+ * Can this tier run the Signal Catcher (PA-SIGNAL-1)? Studio+ / Enterprise only — it spends a
+ * Haiku classification on every owner chat message, so it sits with the other cost-bearing
+ * always-on features (Lead Scout packs, podcast packs) and inside the PA-POS-30 credit allowance.
+ * Note the Ritual Scheduler itself is NOT tier-locked (every tier holds rituals under the
+ * PA-RITUAL-8 active caps); Signal Catcher is the metered layer above it.
+ */
+export function tierAllowsSignalCatcher(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio_plus");
+}
+
+/**
  * Can this tier use a given channel of the Channels Gateway (PA-CHAN-7 + the Phase 2–4 gates)? The
  * "your agent is wherever you work" pitch is the Business-Agent-and-up value tier in the v5 funnel:
  *   • Personal Brain ($37, `starter`) — channels OFF.

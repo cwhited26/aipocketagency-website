@@ -129,6 +129,18 @@ const SOUL_KIND_LABELS: Record<string, string> = {
   affective_signal: "Reading your state",
 };
 
+// Signal Catcher (PA-SIGNAL-1): a caught standing wish proposed as a Ritual. The owner may edit
+// the name + cadence inline before approving; Edit deep-links the pre-filled Ritual wizard.
+type SignalProposalDetail = {
+  signalCatchId: string;
+  quote: string;
+  ritualName: string;
+  cadenceText: string;
+  cadenceSummary: string;
+  appSlug: string;
+  appLabel: string;
+};
+
 type InboxCard = {
   id: string;
   system: "inbox" | "legacy";
@@ -149,6 +161,7 @@ type InboxCard = {
   memoryProposal: MemoryProposalDetail | null;
   soulProposal: SoulProposalDetail | null;
   agentBuild: AgentBuildProposalDetail | null;
+  signalProposal: SignalProposalDetail | null;
   sourceSurface: string | null;
   threadId: string | null;
 };
@@ -247,6 +260,8 @@ function sectionFor(kind: InboxItemKind): AwaitingSection {
     case "website_alert":
       return "briefs";
     case "agent_builder_proposal":
+      return "decisions";
+    case "signal_catcher_ritual_proposal":
       return "decisions";
     case "persona_lead":
       return "hidden";
@@ -857,6 +872,7 @@ function TriageCard({
         memoryProposal: null,
         soulProposal: null,
         agentBuild: null,
+        signalProposal: null,
         sourceSurface: "inbox",
         threadId: triage!.threadId,
       });
@@ -1077,6 +1093,164 @@ function AgentBuildProposalCard({
           className="min-h-[44px] px-4 rounded-xl text-slate-500 text-sm hover:text-slate-300 transition-colors disabled:opacity-50"
         >
           {busy === "reject" ? "…" : "Reject"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Signal Catcher proposal card (PA-SIGNAL-1) ────────────────────────────────
+//
+// PA noticed a standing wish in a Persona chat and proposes it as a Ritual. The owner's exact
+// words render as a quote; the name + cadence are editable inline; Approve creates the ritual
+// through the shipped Scheduler; Edit opens the Ritual wizard pre-filled; Reject stands down for
+// 30 days on the same theme.
+
+function SignalProposalCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState<"approve" | "reject" | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const detail = card.signalProposal;
+  const [ritualName, setRitualName] = useState(detail?.ritualName ?? card.title);
+  const [cadence, setCadence] = useState(detail?.cadenceText ?? "");
+
+  const wizardHref = detail
+    ? `/app/apps/rituals?signal=${encodeURIComponent(detail.signalCatchId)}` +
+      `&name=${encodeURIComponent(ritualName)}` +
+      `&schedule=${encodeURIComponent(cadence)}` +
+      `&app=${encodeURIComponent(detail.appSlug)}`
+    : "/app/apps/rituals";
+
+  async function handleApprove() {
+    setBusy("approve");
+    setErr(null);
+    try {
+      const res = await fetch(approveEndpoint(card), {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ritualName: ritualName.trim(),
+          ritualCadence: cadence.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const b = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(b.error ?? `Approve failed (${res.status})`);
+      }
+      onResolved(card.id, "approved");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  async function handleReject() {
+    setBusy("reject");
+    setErr(null);
+    try {
+      await postDecision(rejectEndpoint(card));
+      onResolved(card.id, "rejected");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-[#22d3ee]/20 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-[#22d3ee]/70 uppercase tracking-[0.18em]">
+          Signal Catcher · noticed something
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
+      </div>
+
+      {detail?.quote && (
+        <blockquote className="mb-3 border-l-2 border-[#22d3ee]/40 pl-3 text-sm text-slate-300 italic leading-relaxed">
+          &ldquo;{detail.quote}&rdquo;
+        </blockquote>
+      )}
+
+      {editing ? (
+        <div className="space-y-2">
+          <input
+            value={ritualName}
+            onChange={(e) => setRitualName(e.target.value)}
+            aria-label="Ritual name"
+            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 focus:border-[#22d3ee] focus:outline-none"
+          />
+          <input
+            value={cadence}
+            onChange={(e) => setCadence(e.target.value)}
+            aria-label="When it runs"
+            placeholder='Like "every Monday at 8am"'
+            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-200 focus:border-[#22d3ee] focus:outline-none"
+          />
+        </div>
+      ) : (
+        <>
+          <p className="text-[15px] font-semibold text-slate-100 leading-snug">{ritualName}</p>
+          {detail && (
+            <p className="mt-1 text-xs text-slate-500 font-mono">
+              {detail.appLabel} · {detail.cadenceSummary}
+            </p>
+          )}
+        </>
+      )}
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <p className="mt-3 text-[11px] text-slate-600 leading-relaxed">
+        Approving creates a real ritual — it runs on this schedule and every result lands here for
+        your review. Nothing sends on its own.
+      </p>
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          onClick={handleApprove}
+          disabled={busy !== null}
+          className="flex-1 min-h-[44px] py-3 px-4 rounded-xl bg-[#22d3ee] hover:bg-[#06b6d4] text-[#031820] text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {busy === "approve" ? "Setting it up…" : "Make it a ritual"}
+        </button>
+        {editing ? (
+          <button
+            onClick={() => setEditing(false)}
+            disabled={busy !== null}
+            className="min-h-[44px] px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors disabled:opacity-50"
+          >
+            Done
+          </button>
+        ) : (
+          <button
+            onClick={() => setEditing(true)}
+            disabled={busy !== null}
+            className="min-h-[44px] px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors disabled:opacity-50"
+          >
+            Edit
+          </button>
+        )}
+        <Link
+          href={wizardHref}
+          className="min-h-[44px] px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors inline-flex items-center"
+        >
+          Open wizard
+        </Link>
+        <button
+          onClick={handleReject}
+          disabled={busy !== null}
+          aria-label="Reject ritual proposal"
+          className="min-h-[44px] px-4 rounded-xl text-slate-500 text-sm hover:text-slate-300 transition-colors disabled:opacity-50"
+        >
+          {busy === "reject" ? "…" : "Not this one"}
         </button>
       </div>
     </div>
@@ -2705,6 +2879,8 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
                   {decisions.map((card) =>
                     card.kind === "agent_builder_proposal" ? (
                       <AgentBuildProposalCard key={card.id} card={card} onResolved={onResolved} />
+                    ) : card.kind === "signal_catcher_ritual_proposal" ? (
+                      <SignalProposalCard key={card.id} card={card} onResolved={onResolved} />
                     ) : (
                       <DecisionCard key={card.id} card={card} onResolved={onResolved} />
                     ),

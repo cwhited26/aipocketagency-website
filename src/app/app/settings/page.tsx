@@ -205,6 +205,7 @@ export default async function SettingsPage({
           <SettingsRow label="Capture routing" value="File what you share into your brain" href="/app/captures/settings#routing-rules" />
           <SettingsRow label="Mac Capture App" value="Auto-capture clipboard & screenshots" href="/app/settings/mac-app" />
           <SettingsRow label="Auto-approve" value="Let trusted actions run on their own" href="/app/settings/auto-approve" />
+          <SettingsRow label="Signal Catcher" value="Mention a wish in chat, get the ritual proposed" href="/app/settings/signal-catcher" />
           <SettingsRow label="Browser permissions" value="Which sites your agent can drive" href="/app/settings/browser/permissions" />
           <SettingsRow label="Browser action log" value="Every browser action your agent took" href="/app/settings/browser/log" />
           <SettingsRow label="Tier & limits" value="Your plan and what's included each month" href="/app/settings/tier" />

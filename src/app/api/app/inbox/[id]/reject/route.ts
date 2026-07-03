@@ -3,6 +3,8 @@ import { fetchInboxItemById, resolveInboxItem } from "@/lib/pa-inbox-items";
 import { extractSoulFromInboxResolution } from "@/lib/personas/soul-extract";
 import { rejectAgentBuildProposal } from "@/lib/agent-builder/approve";
 import { AGENT_BUILDER_PROPOSAL_KIND } from "@/lib/agent-builder/types";
+import { rejectSignalProposal } from "@/lib/signal-catcher/apply";
+import { SIGNAL_CATCHER_PROPOSAL_KIND } from "@/lib/signal-catcher/types";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -43,6 +45,12 @@ export async function POST(
   // so the App surface shows the outcome. Best-effort; the rejection above already stands.
   if (item.kind === AGENT_BUILDER_PROPOSAL_KIND) {
     await rejectAgentBuildProposal({ ownerId: user.id, payload: item.payload });
+  }
+
+  // Signal Catcher proposal (PA-SIGNAL-1): flip the catch row so the same theme stays quiet for
+  // 30 days. Best-effort; the rejection above already stands.
+  if (item.kind === SIGNAL_CATCHER_PROPOSAL_KIND) {
+    await rejectSignalProposal({ ownerId: user.id, payload: item.payload });
   }
 
   // Continuous Soul extraction (Soul System SPEC): a rejection is a verdict too — the owner pushing

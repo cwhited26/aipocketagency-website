@@ -28,7 +28,8 @@ export type InboxItemKind =
   | "soul_attribute_proposal"
   | "browser_action_approval"
   | "website_alert"
-  | "agent_builder_proposal";
+  | "agent_builder_proposal"
+  | "signal_catcher_ritual_proposal";
 
 export type AffordanceRole = "primary" | "secondary" | "destructive";
 
@@ -244,6 +245,20 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
           { key: "approve", label: "Approve & deploy", role: "primary" },
           { key: "edit", label: "Edit", role: "secondary" },
           { key: "reject", label: "Reject", role: "destructive" },
+        ],
+      };
+
+    // The Signal Catcher's ritual proposal (PA-SIGNAL-1): PA noticed a standing wish in a Persona
+    // chat and proposes the Ritual. Approving CREATES a pa_rituals row through the shipped
+    // Scheduler — a commit-on-approve primitive — so it carries Approve / Edit / Reject. Edit
+    // opens the Ritual wizard pre-filled; Reject suppresses the theme for 30 days.
+    case "signal_catcher_ritual_proposal":
+      return {
+        hasApproval: true,
+        affordances: [
+          { key: "approve", label: "Make it a ritual", role: "primary" },
+          { key: "edit", label: "Edit", role: "secondary" },
+          { key: "reject", label: "Not this one", role: "destructive" },
         ],
       };
 

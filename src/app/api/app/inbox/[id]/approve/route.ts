@@ -20,6 +20,8 @@ import {
 import { isBlueprintDecision, advanceAfterBlueprintApproval } from "@/lib/idea-engine/engine";
 import { acceptAgentBuildProposal } from "@/lib/agent-builder/approve";
 import { AGENT_BUILDER_PROPOSAL_KIND } from "@/lib/agent-builder/types";
+import { approveSignalProposal } from "@/lib/signal-catcher/apply";
+import { SIGNAL_CATCHER_PROPOSAL_KIND } from "@/lib/signal-catcher/types";
 import { acceptMemoryProposal } from "@/lib/persona-memory/write";
 import { getCurrentTier } from "@/lib/personas/tier-caps";
 import { isMemoryPartition, isMemoryTier } from "@/lib/persona-memory/types";
@@ -58,6 +60,10 @@ const OverrideSchema = z.object({
   // starter prompt inline on the card before approving.
   personaName: z.string().max(120).optional(),
   starterPrompt: z.string().max(400).optional(),
+  // Signal Catcher proposals (PA-SIGNAL-1): the owner may rename the proposed ritual and retype
+  // its plain-English cadence inline on the card before approving.
+  ritualName: z.string().max(120).optional(),
+  ritualCadence: z.string().max(160).optional(),
 });
 
 function str(v: unknown): string {
@@ -235,6 +241,30 @@ export async function POST(
       personaSlug: accepted.personaSlug,
       pushInboxItemId: accepted.pushInboxItemId,
     });
+  }
+
+  // Signal Catcher proposal (PA-SIGNAL-1): approve creates a REAL ritual through the shipped
+  // Scheduler — same cap, parser, and target checks as the manual create route — then flips the
+  // catch row. The card resolves only after the ritual exists.
+  if (item.kind === SIGNAL_CATCHER_PROPOSAL_KIND) {
+    const tier = await getCurrentTier(user.id);
+    const created = await approveSignalProposal({
+      ownerId: user.id,
+      tier,
+      payload: item.payload,
+      overrides: {
+        ritualName: override.ritualName,
+        ritualCadence: override.ritualCadence,
+      },
+    });
+    if (!created.ok) {
+      return NextResponse.json({ error: created.error }, { status: created.status });
+    }
+    const resolved = await resolveInboxItem(id, "approved", user.id);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+    }
+    return NextResponse.json({ status: "approved", ritualId: created.ritualId });
   }
 
   // Idea Engine blueprint (PA-IDEA-5): an approved MVP-plan `decision` card advances the idea from

@@ -44,6 +44,8 @@ import {
 } from "./store";
 import { dispatchOutbound, type OutboundResult } from "./outbound";
 import { channelLog } from "./log";
+import { runSignalCatcherForMessage } from "@/lib/signal-catcher/catch";
+import { signalCatcherLog } from "@/lib/signal-catcher/log";
 import type {
   ChannelConnection,
   ChannelMessage,
@@ -251,6 +253,32 @@ export async function routeChannelMessage(
     body: response.text,
     threadId: message.threadId,
   });
+
+  // 8. Signal Catcher (PA-SIGNAL-1): a channel thread is the same owner chat surface — read the
+  // message for a standing wish now that the reply is on its way. Covers every gateway channel,
+  // including PA-POS-32 WhatsApp cold-onboarding threads once they've converted to real
+  // workspaces (trial threads never reach here — they have no channel connection). Best-effort
+  // with a logged reason; a catch failure never affects the roundtrip. The persona_messages FK
+  // and the persona-conversation id don't apply on this surface, so both ride as null — the
+  // theme-level dedup windows still hold.
+  try {
+    await runSignalCatcherForMessage({
+      ownerId: connection.ownerId,
+      tier,
+      personaMode: "internal_team",
+      apiKey: paUser.anthropic_api_key,
+      conversationId: null,
+      userMessageId: null,
+      costAnchor:
+        message.providerMessageId ?? inboundId ?? `${connection.id}:${message.threadId ?? "im"}`,
+      message: message.body,
+    });
+  } catch (e) {
+    signalCatcherLog.warn("signal catch failed after a channel roundtrip", {
+      channelSlug: message.channelSlug,
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
 
   return { handled: "replied", ok: sent.ok };
 }

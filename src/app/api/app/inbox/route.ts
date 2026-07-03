@@ -35,7 +35,8 @@ export type InboxCardKind =
   | "soul_attribute_proposal"
   | "browser_action_approval"
   | "website_alert"
-  | "agent_builder_proposal";
+  | "agent_builder_proposal"
+  | "signal_catcher_ritual_proposal";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -151,6 +152,18 @@ export type AgentBuildProposalDetail = {
   candidateSkill: { slug: string; name: string; body: string } | null;
 };
 
+// Signal Catcher (PA-SIGNAL-1): a caught standing wish proposed as a Ritual. The owner may edit
+// the name + cadence inline before approving; Edit deep-links the pre-filled Ritual wizard.
+export type SignalProposalDetail = {
+  signalCatchId: string;
+  quote: string;
+  ritualName: string;
+  cadenceText: string;
+  cadenceSummary: string;
+  appSlug: string;
+  appLabel: string;
+};
+
 export type InboxCard = {
   id: string;
   system: InboxCardSystem;
@@ -171,6 +184,7 @@ export type InboxCard = {
   memoryProposal: MemoryProposalDetail | null;
   soulProposal: SoulProposalDetail | null;
   agentBuild: AgentBuildProposalDetail | null;
+  signalProposal: SignalProposalDetail | null;
   // The surface the draft was initiated from. 'inbox' means it was drafted from
   // within the Inbox (a reply to a triaged thread) and is rendered inline on its
   // originating thread instead of in the generic drafts list. threadId links it back.
@@ -186,6 +200,7 @@ const SOURCE_LABELS: Record<string, string> = {
   routine: "Routine",
   "follow-up-sweeps": "Follow-Up Sweeps",
   "agent-builder": "Agent Builder",
+  "signal-catcher": "Signal Catcher",
 };
 
 function previewOf(text: string, max = 180): string {
@@ -307,6 +322,20 @@ function agentBuildOf(item: InboxItem): AgentBuildProposalDetail {
   };
 }
 
+// Defensive read of the signal_catcher_ritual_proposal payload (staged by
+// lib/signal-catcher/catch.ts; the approve route re-parses it through Zod before acting).
+function signalProposalOf(item: InboxItem): SignalProposalDetail {
+  return {
+    signalCatchId: str(item.payload.signalCatchId),
+    quote: str(item.payload.quote),
+    ritualName: str(item.payload.ritualName) || item.title,
+    cadenceText: str(item.payload.cadenceText),
+    cadenceSummary: str(item.payload.cadenceSummary),
+    appSlug: str(item.payload.appSlug),
+    appLabel: str(item.payload.appLabel),
+  };
+}
+
 type GateSeverity = "low" | "medium" | "high" | "critical";
 function severityOf(v: unknown): GateSeverity {
   return v === "low" || v === "high" || v === "critical" ? v : "medium";
@@ -365,6 +394,8 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
   const memoryProposal = item.kind === "persona_memory_proposal" ? memoryProposalOf(item) : null;
   const soulProposal = item.kind === "soul_attribute_proposal" ? soulProposalOf(item) : null;
   const agentBuild = item.kind === "agent_builder_proposal" ? agentBuildOf(item) : null;
+  const signalProposal =
+    item.kind === "signal_catcher_ritual_proposal" ? signalProposalOf(item) : null;
   return {
     id: item.id,
     system: "inbox",
@@ -391,6 +422,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
     memoryProposal,
     soulProposal,
     agentBuild,
+    signalProposal,
     sourceSurface: str(item.payload.sourceSurface) || null,
     threadId: str(item.payload.threadId) || null,
   };
@@ -433,6 +465,7 @@ function normalizeLegacyAction(action: PendingAction): InboxCard {
     memoryProposal: null,
     soulProposal: null,
     agentBuild: null,
+    signalProposal: null,
     sourceSurface: null,
     threadId: null,
   };

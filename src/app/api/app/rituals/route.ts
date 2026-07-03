@@ -12,6 +12,7 @@ import { parseSchedule, cronNextRun } from "@/lib/rituals/parser";
 import { getSeed, resolveRitualTarget } from "@/lib/rituals/seed";
 import { isRitualDelivery, type RitualDelivery } from "@/lib/rituals/types";
 import { evaluateCanActivateRitual, getCurrentTier } from "@/lib/personas/tier-caps";
+import { markSignalCatchRitualized } from "@/lib/signal-catcher/apply";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -37,6 +38,9 @@ const manualSchema = z.object({
   scheduleText: z.string().min(1).max(160),
   delivery: z.string().refine(isRitualDelivery, "Invalid delivery").optional(),
   note: z.string().max(500).optional(),
+  // The Signal Catcher's Edit path (PA-SIGNAL-1): the pre-filled wizard carries the originating
+  // catch id so creating the ritual settles the catch + its Mission Control card.
+  signalCatchId: z.string().uuid().optional(),
 });
 
 const seedSchema = z.object({
@@ -73,6 +77,21 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const result = await createRitual(params.data);
   if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+
+  // Signal Catcher hand-off (PA-SIGNAL-1): the wizard was opened from a proposal card — settle
+  // the catch + its card. Best-effort by contract; the ritual above is the owner-visible outcome.
+  const signalCatchId =
+    !isSeed && typeof raw === "object" && raw !== null
+      ? (raw as { signalCatchId?: unknown }).signalCatchId
+      : undefined;
+  if (typeof signalCatchId === "string" && signalCatchId) {
+    await markSignalCatchRitualized({
+      ownerId: user.id,
+      signalCatchId,
+      ritualId: result.data.id,
+    });
+  }
+
   return NextResponse.json({ ritual: result.data }, { status: 201 });
 }
 

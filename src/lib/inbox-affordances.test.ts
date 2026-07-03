@@ -19,16 +19,19 @@ const ALL_KINDS: InboxItemKind[] = [
   "cost_budget_gate",
   "skill_evolution_proposal",
   "website_alert",
+  "signal_catcher_ritual_proposal",
 ];
 
 // Kinds that commit a real-world / irreversible write ONLY because the user approved
 // — these are the only kinds allowed to show an approve/reject button. A skill_evolution_proposal
-// writes a versioned SKILL.md to the brain on approval, so it belongs here.
+// writes a versioned SKILL.md to the brain on approval, so it belongs here. A
+// signal_catcher_ritual_proposal creates a pa_rituals row on approval, so it does too.
 const ACTION_KINDS: InboxItemKind[] = [
   "draft",
   "decision",
   "action_approval",
   "skill_evolution_proposal",
+  "signal_catcher_ritual_proposal",
 ];
 
 // Kinds that are pure outputs the user reads and clears — nothing fires either way.

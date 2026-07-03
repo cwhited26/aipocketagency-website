@@ -102,19 +102,30 @@ function SchedulePreview({ text }: { text: string }) {
 
 // ── Create flow ─────────────────────────────────────────────────────────────────────
 
+// A Signal Catcher hand-off (PA-SIGNAL-1): the proposal card's Edit path lands here with the
+// wizard open and pre-filled. Creating the ritual settles the originating catch + its card.
+export type PrefillView = {
+  name: string;
+  appSlug: string;
+  scheduleText: string;
+  signalCatchId: string;
+};
+
 function CreateRitual({
   apps,
   atCap,
   onCreated,
+  prefill,
 }: {
   apps: AppOption[];
   atCap: boolean;
   onCreated: () => void;
+  prefill: PrefillView | null;
 }) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [appSlug, setAppSlug] = useState(apps[0]?.id ?? "");
-  const [scheduleText, setScheduleText] = useState("");
+  const [open, setOpen] = useState(Boolean(prefill));
+  const [name, setName] = useState(prefill?.name ?? "");
+  const [appSlug, setAppSlug] = useState(prefill?.appSlug ?? apps[0]?.id ?? "");
+  const [scheduleText, setScheduleText] = useState(prefill?.scheduleText ?? "");
   const [delivery, setDelivery] = useState<Delivery>("inbox");
   const [showPicker, setShowPicker] = useState(false);
   const [pickDay, setPickDay] = useState(PICKER_DAYS[0].value);
@@ -132,7 +143,14 @@ function CreateRitual({
     const res = await fetch("/api/app/rituals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: "manual", name: name.trim(), appSlug, scheduleText, delivery }),
+      body: JSON.stringify({
+        mode: "manual",
+        name: name.trim(),
+        appSlug,
+        scheduleText,
+        delivery,
+        ...(prefill ? { signalCatchId: prefill.signalCatchId } : {}),
+      }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -432,6 +450,7 @@ export default function RitualsClient({
   cap,
   activeCount,
   hasApiKey,
+  prefill,
 }: {
   rituals: RitualView[];
   seeds: SeedView[];
@@ -439,6 +458,7 @@ export default function RitualsClient({
   cap: number;
   activeCount: number;
   hasApiKey: boolean;
+  prefill: PrefillView | null;
 }) {
   const router = useRouter();
   const refresh = () => router.refresh();
@@ -487,7 +507,7 @@ export default function RitualsClient({
         )}
 
         <div className="mb-6">
-          <CreateRitual apps={apps} atCap={atCap} onCreated={refresh} />
+          <CreateRitual apps={apps} atCap={atCap} onCreated={refresh} prefill={prefill} />
         </div>
 
         {rituals.length > 0 && (

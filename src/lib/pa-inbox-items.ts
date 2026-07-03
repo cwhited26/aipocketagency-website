@@ -45,6 +45,10 @@
 // card: the whole composed agent (Persona + Apps + Skills + brain scopes + candidate Skill draft).
 // Approve creates the Persona and stages the push_files commit into the owner's Business Brain
 // repo (always single-approval); reject persists nothing.
+// 'signal_catcher_ritual_proposal' (migration 103, PA-SIGNAL-1) is the Signal Catcher's proposal
+// card: PA noticed a standing wish in a Persona chat ("I keep meaning to check my pipeline every
+// Monday") and proposes the Ritual. Approve creates a real pa_rituals row through the shipped
+// Scheduler; Edit opens the pre-filled Ritual wizard; reject suppresses the theme for 30 days.
 export type InboxKind =
   | "draft"
   | "decision"
@@ -66,7 +70,8 @@ export type InboxKind =
   | "soul_attribute_proposal"
   | "browser_action_approval"
   | "website_alert"
-  | "agent_builder_proposal";
+  | "agent_builder_proposal"
+  | "signal_catcher_ritual_proposal";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

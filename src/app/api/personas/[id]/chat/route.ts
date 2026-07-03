@@ -23,6 +23,8 @@ import { isPublicMode } from "@/lib/personas/types";
 import { loadPersonaMemory } from "@/lib/persona-memory/read";
 import { runMemoryLearnPhase, defaultMemoryLearnLlm } from "@/lib/persona-memory/write";
 import { loadPersonaSoul } from "@/lib/personas/soul-load";
+import { runSignalCatcherForMessage } from "@/lib/signal-catcher/catch";
+import { signalCatcherLog } from "@/lib/signal-catcher/log";
 import type { PersonaRow } from "@/lib/personas/types";
 import { loadZoneConfig } from "@/lib/brain/containment-guard";
 import { ContainmentBlockedError } from "@/lib/brain/containment-guard";
@@ -180,7 +182,12 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
       soulBlock: soul.block,
     });
 
-    await insertMessage({ conversation_id: convoId, role: "user", content: message, tokens_used: 0 });
+    const userMessageRow = await insertMessage({
+      conversation_id: convoId,
+      role: "user",
+      content: message,
+      tokens_used: 0,
+    });
 
     // 6. Open the model stream (default model, fallback on hard failure). Recent turns flow verbatim;
     // older context rides in the system prompt via smart.promptBlock above.
@@ -195,6 +202,7 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
       conversationId: convoId,
       personaId: persona.id,
       learn: { persona, tier, userMessage: message },
+      signal: { apiKey: anthropic_api_key, userMessageId: userMessageRow.id },
     });
   } catch (e) {
     const status = e instanceof PersonaDbError ? e.status : 500;
@@ -307,8 +315,11 @@ function streamResponse(args: {
   // LEARN-phase context (PA-MEM-3): after the turn completes, classify it for memory writes. Optional
   // so the streaming helper stays usable without it.
   learn: { persona: PersonaRow; tier: Tier; userMessage: string };
+  // Signal Catcher context (PA-SIGNAL-1): after the turn completes, read the owner's message for a
+  // standing wish worth proposing as a Ritual. Same post-stream slot as LEARN — never blocks the reply.
+  signal: { apiKey: string; userMessageId: string };
 }): Response {
-  const { upstream, conversationId, personaId, learn } = args;
+  const { upstream, conversationId, personaId, learn, signal } = args;
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
@@ -389,6 +400,26 @@ function streamResponse(args: {
           });
         } catch {
           // swallowed by design — the turn already succeeded.
+        }
+
+        // Signal Catcher (PA-SIGNAL-1): the turn is done — now read the owner's message for a
+        // standing wish. Best-effort with a logged reason: a catch failure never fails the turn.
+        try {
+          await runSignalCatcherForMessage({
+            ownerId: learn.persona.business_id,
+            tier: learn.tier,
+            personaMode: learn.persona.mode,
+            apiKey: signal.apiKey,
+            conversationId,
+            userMessageId: signal.userMessageId,
+            costAnchor: signal.userMessageId,
+            message: learn.userMessage,
+          });
+        } catch (e) {
+          signalCatcherLog.warn("signal catch failed after a completed turn", {
+            conversationId,
+            error: e instanceof Error ? e.message : String(e),
+          });
         }
       } catch (e) {
         send({ type: "error", error: e instanceof Error ? e.message : "stream error" });
