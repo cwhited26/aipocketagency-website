@@ -10,6 +10,7 @@ import { z } from "zod";
 import { resolveOwner, requireOwnedPersona } from "@/lib/personas/owner";
 import { updatePersona, PersonaDbError } from "@/lib/personas/db";
 import { getPersonaDisplayName, personaDisplayNameSchema } from "@/lib/personas/types";
+import { markOnboardingStepComplete } from "@/lib/onboarding/progress";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +42,11 @@ export async function PATCH(req: Request, { params }: Params): Promise<NextRespo
   try {
     const updated = await updatePersona(params.id, { display_name: parsed.data.display_name });
     if (!updated) return NextResponse.json({ error: "Persona not found" }, { status: 404 });
+    // PA-POS-36: naming a Persona here completes "Name a Persona" — same hook as the legacy
+    // PATCH's `name` field, since this is where the PA-POS-35 rename surfaces land. Never throws.
+    if (parsed.data.display_name !== null) {
+      await markOnboardingStepComplete(owner.ctx.userId, "name_persona");
+    }
     return NextResponse.json({ persona: updated, displayName: getPersonaDisplayName(updated) });
   } catch (e) {
     const status = e instanceof PersonaDbError ? e.status : 500;
