@@ -281,6 +281,36 @@ export async function fetchInboxItemById(id: string): Promise<PaResult<InboxItem
   return { ok: true, data: rows[0] ?? null };
 }
 
+// ─── Latest pending (Channels Gateway APPROVE/EDIT/REJECT text protocol) ─────
+//
+// A button-less channel (SMS / iMessage) approves a staged action by texting back APPROVE; the
+// reply is matched to the owner's LATEST pending inbox item, newest-first (Channels Gateway Phase
+// 2–4). Optionally narrowed to a kind set so the protocol only ever touches kinds it knows how to
+// resolve safely.
+
+export async function fetchLatestPendingInboxItem(
+  userId: string,
+  kinds?: readonly InboxKind[],
+): Promise<PaResult<InboxItem | null>> {
+  const env = paEnv();
+  if ("error" in env) return { ok: false, status: 500, error: env.error };
+
+  const kindFilter =
+    kinds && kinds.length > 0 ? `&kind=in.(${kinds.map((k) => encodeURIComponent(k)).join(",")})` : "";
+  const res = await fetch(
+    `${env.url}/rest/v1/${TABLE}?user_id=eq.${encodeURIComponent(userId)}` +
+      `&status=eq.pending${kindFilter}&order=created_at.desc&limit=1`,
+    { headers: authHeaders(env.key), cache: "no-store" },
+  );
+  if (!res.ok) {
+    const body = await res.text();
+    if (isMissingTable(res.status, body)) return { ok: true, data: null };
+    return { ok: false, status: res.status, error: body };
+  }
+  const rows = (await res.json()) as InboxItem[];
+  return { ok: true, data: rows[0] ?? null };
+}
+
 // ─── Update staged content ───────────────────────────────────────────────────
 
 export async function updateInboxItemPayload(

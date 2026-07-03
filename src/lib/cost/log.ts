@@ -36,6 +36,12 @@ export type CostFeatureSlug =
   | "channels:slack"
   // One row per inbound Channels Gateway roundtrip (Phase 2 Telegram adapter); same meter as Slack.
   | "channels:telegram"
+  // One row per inbound Channels Gateway roundtrip (Phase 2 SMS adapter, Twilio); same meter as Slack.
+  | "channels:sms"
+  // One row per inbound Channels Gateway roundtrip (Phase 3 iMessage adapter, BlueBubbles relay).
+  | "channels:imessage"
+  // One row per inbound Channels Gateway roundtrip (Phase 4 WhatsApp adapter, Meta Cloud API).
+  | "channels:whatsapp"
   // One summary row per Voice Call (Phase 6) + per-turn dispatcher rows; Twilio+ElevenLabs+Whisper+LLM.
   | "voice_call"
   // One row per headless URL extraction run (recon Lane C, PA-CINS); backend 'vercel', priced by run time.

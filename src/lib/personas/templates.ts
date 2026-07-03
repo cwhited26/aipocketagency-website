@@ -294,7 +294,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Your right hand for the daily admin — what's on today, who's waiting on you, and the quick emails that keep things moving.",
     sampleQuestion: "What's on my plate today and who am I behind on?",
     defaultTone: "conversational",
-    defaultApps: ["daily-brief", "upcoming", "email-drafter", "followups", "follow-up-sweeps", "workflow-vault", "ritual-scheduler", "channels"],
+    defaultApps: ["daily-brief", "upcoming", "email-drafter", "followups", "follow-up-sweeps", "workflow-vault", "ritual-scheduler", "channels", "sms-channel", "imessage-channel", "whatsapp-channel"],
     starterPrompt: "Give me my morning rundown — what's pending and who I'm behind on.",
     fields: {
       problem:
@@ -322,7 +322,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Keeps deals moving — finds the next prospect, drafts the outreach, and chases the quotes that have gone quiet.",
     sampleQuestion: "Draft a first outreach to a prospect who fits our best customers.",
     defaultTone: "direct",
-    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote", "proposal-generator", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler", "website-monitor", "channels"],
+    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote", "proposal-generator", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler", "website-monitor", "channels", "sms-channel", "imessage-channel", "whatsapp-channel"],
     starterPrompt: "Draft a first outreach email to a regional homebuilder who'd be a good fit.",
     fields: {
       problem:
@@ -350,7 +350,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Watches for the deals, leads, and relationships that have gone quiet — and drafts the nudge for each one.",
     sampleQuestion: "Which leads have gone cold this week, and what should I send them?",
     defaultTone: "conversational",
-    defaultApps: ["followups", "follow-up-sweeps", "email-drafter"],
+    defaultApps: ["followups", "follow-up-sweeps", "email-drafter", "sms-channel", "imessage-channel", "whatsapp-channel"],
     starterPrompt: "Show me which relationships have gone quiet and draft a nudge for each.",
     fields: {
       problem:

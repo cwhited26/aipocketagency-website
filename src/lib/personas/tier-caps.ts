@@ -57,15 +57,26 @@ export function tierAllowsPodcastPacks(tier: Tier): boolean {
 }
 
 /**
- * Can this tier use a given channel of the Channels Gateway (PA-CHAN-7)? The "your agent is wherever
- * you work" pitch is the Business-Agent-and-up value tier in the v5 funnel:
+ * Can this tier use a given channel of the Channels Gateway (PA-CHAN-7 + the Phase 2–4 gates)? The
+ * "your agent is wherever you work" pitch is the Business-Agent-and-up value tier in the v5 funnel:
  *   • Personal Brain ($37, `starter`) — channels OFF.
- *   • Business Agent ($97, `pro`)     — Slack + Telegram (the shipped text channels).
- *   • Pro+ ($149, `pro_plus`) and up  — every shipped channel.
+ *   • Business Agent ($97, `pro`)     — Slack, Telegram, SMS, WhatsApp (the shipped text channels).
+ *   • AI Agent Workspace (`studio_plus`) and up — iMessage (self-hosted BlueBubbles relay; the
+ *     power-user channel).
+ *   • Pro+ ($149, `pro_plus`) and up  — every other (queued) channel.
  */
 export function tierAllowsChannel(tier: Tier, channelSlug: string): boolean {
-  // The shipped text channels (Slack, Telegram) unlock at Business Agent and up.
-  if (channelSlug === "slack" || channelSlug === "telegram") return tierRank(tier) >= tierRank("pro");
+  // The shipped text channels unlock at Business Agent and up.
+  if (
+    channelSlug === "slack" ||
+    channelSlug === "telegram" ||
+    channelSlug === "sms" ||
+    channelSlug === "whatsapp"
+  ) {
+    return tierRank(tier) >= tierRank("pro");
+  }
+  // iMessage rides the owner's own BlueBubbles Mac relay — Studio+ / Enterprise only.
+  if (channelSlug === "imessage") return tierRank(tier) >= tierRank("studio_plus");
   // Every other (queued) channel is Pro+ and up.
   return tierRank(tier) >= tierRank("pro_plus");
 }

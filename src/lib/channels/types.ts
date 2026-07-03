@@ -79,6 +79,9 @@ export type ChannelMessage = {
   // Channel-specific routing metadata the adapter needs to send the reply back (Slack: channel id,
   // thread_ts, the inbound surface im|channel). Opaque to the gateway.
   channelMeta: Record<string, unknown>;
+  // Attachment descriptors persisted to pa_channel_messages.attachments (Phase 2 SMS: the Supabase
+  // Storage paths MMS media was saved to). Opaque to the gateway; omitted for text-only inbounds.
+  attachments?: unknown;
   // The verbatim provider payload, persisted to pa_channel_messages.raw_payload (pruned after 30d).
   rawPayload: unknown;
 };
@@ -99,6 +102,10 @@ export type ChannelButton = {
 export type ChannelResponse = {
   text: string;
   buttons?: ChannelButton[];
+  // True when this reply surfaces a freshly STAGED action (a draft waiting in Mission Control).
+  // Button-less channels (SMS, iMessage) render the APPROVE / EDIT / REJECT text protocol from it;
+  // WhatsApp renders native reply buttons. Channels with URL buttons (Slack, Telegram) ignore it.
+  staged?: boolean;
   // Echo the inbound thread handle so the adapter replies in-place.
   threadId: string | null;
   channelMeta: Record<string, unknown>;

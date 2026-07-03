@@ -40,6 +40,7 @@ import ZoomConnectionCard from "./ZoomConnectionCard";
 import CalendlyConnectionCard from "./CalendlyConnectionCard";
 import SmsConnectionCard from "./SmsConnectionCard";
 import TelegramConnectionCard from "./TelegramConnectionCard";
+import ChannelConnectionCard from "./ChannelConnectionCard";
 import InboundEmailCard from "./InboundEmailCard";
 import LeadScoutConnectionCard from "./LeadScoutConnectionCard";
 import VercelConnectionCard from "./VercelConnectionCard";
@@ -289,16 +290,36 @@ export default async function ConnectionsPage({
   const supabaseConn = supabaseResult.ok ? supabaseResult.data : null;
   const leadScoutSharedEligible = tierAllowsSharedBrightData(tier);
 
-  // Telegram channel (Channels Gateway Phase 2): the connection + the owner's Personas for the
-  // default-Persona picker (PA-CHAN-8). Tier-gated at Business Agent and up (PA-CHAN-7).
-  const [telegramResult, personas] = await Promise.all([
-    fetchChannelConnectionForOwner(user.id, "telegram"),
-    listPersonasForBusiness(user.id),
-  ]);
+  // Channels Gateway connections (Telegram + the Phase 2–4 paste-in channels) + the owner's
+  // Personas for the default-Persona pickers (PA-CHAN-8). Tier-gated per channel (PA-CHAN-7).
+  const [telegramResult, smsChannelResult, imessageResult, whatsappResult, personas] =
+    await Promise.all([
+      fetchChannelConnectionForOwner(user.id, "telegram"),
+      fetchChannelConnectionForOwner(user.id, "sms"),
+      fetchChannelConnectionForOwner(user.id, "imessage"),
+      fetchChannelConnectionForOwner(user.id, "whatsapp"),
+      listPersonasForBusiness(user.id),
+    ]);
   const telegram = telegramResult.ok ? telegramResult.data : null;
+  const smsChannel = smsChannelResult.ok ? smsChannelResult.data : null;
+  const imessageChannel = imessageResult.ok ? imessageResult.data : null;
+  const whatsappChannel = whatsappResult.ok ? whatsappResult.data : null;
   const telegramPersonaOptions = personas.map((p) => ({ id: p.id, name: p.name }));
   const telegramBotUsername =
     typeof telegram?.config.botUsername === "string" ? telegram.config.botUsername : null;
+  const smsChannelOwnerPhone =
+    typeof smsChannel?.config.ownerPhone === "string" ? smsChannel.config.ownerPhone : null;
+  const imessageOwnerHandle =
+    typeof imessageChannel?.config.ownerHandle === "string"
+      ? imessageChannel.config.ownerHandle
+      : null;
+  const whatsappDisplayNumber =
+    typeof whatsappChannel?.config.displayNumber === "string"
+      ? whatsappChannel.config.displayNumber
+      : null;
+  const channelInboundBase = (
+    process.env.PA_OAUTH_REDIRECT_BASE ?? "https://aipocketagent.com"
+  ).replace(/\/+$/, "");
   const slackOAuthConfigured = isSlackOAuthConfigured();
   const quickBooksOAuthConfigured = isQuickBooksOAuthConfigured();
   const stripeConfigured = isStripeConnectConfigured();
@@ -505,6 +526,136 @@ export default async function ConnectionsPage({
           personas={telegramPersonaOptions}
           tierCanConnect={tierAllowsChannel(tier, "telegram")}
           tierLabel={TIER_LABELS[tier]}
+        />
+
+        <ChannelConnectionCard
+          channel="sms"
+          icon="sms"
+          title="Text Your Agent (SMS)"
+          connected={Boolean(smsChannel)}
+          enabled={smsChannel?.enabled ?? false}
+          connectedLine={smsChannelOwnerPhone ? `Texting from ${smsChannelOwnerPhone}` : "Twilio paired"}
+          connectedHint="Text your Twilio number anything — even a photo. Your agent answers by text, and drafts wait for a reply of APPROVE, EDIT, or REJECT."
+          reconnectHint="Reconnect needed — the Twilio credentials stopped working."
+          description="Text your agent from your own phone through your Twilio account. It answers by text; anything it drafts waits for you to reply APPROVE, EDIT, or REJECT."
+          steps={[
+            "In the Twilio Console, copy your Account SID and Auth Token (Account → API keys & tokens).",
+            "Pick the Twilio number (or Messaging Service) your agent will text from.",
+            "Set that number's “A message comes in” webhook to the URL below (HTTP POST).",
+            "Paste everything here, add your own cell number, and connect.",
+          ]}
+          webhookLabel="Twilio webhook URL (A message comes in)"
+          webhookUrl={`${channelInboundBase}/api/channels/inbound/sms`}
+          fields={[
+            { key: "accountSid", label: "Twilio Account SID", placeholder: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", mono: true },
+            { key: "authToken", label: "Twilio Auth Token", placeholder: "Your Twilio auth token", password: true },
+            { key: "ownerPhone", label: "Your cell number", placeholder: "+15551234567", mono: true },
+            { key: "fromNumber", label: "Twilio number the agent texts from", placeholder: "+15559876543", mono: true, optional: true },
+            { key: "messagingServiceSid", label: "Messaging Service SID (instead of a number)", placeholder: "MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", mono: true, optional: true },
+          ]}
+          errorCopy={{
+            invalid_sid: "That doesn't look like a Twilio Account SID (it starts with AC).",
+            missing_token: "Paste your Twilio Auth Token.",
+            invalid_owner_phone: "Your cell number needs to be in +15551234567 format.",
+            missing_sender: "Add the Twilio number (or a Messaging Service SID) the agent texts from.",
+            invalid_from_number: "The Twilio number needs to be in +15559876543 format.",
+            invalid_messaging_service: "That doesn't look like a Messaging Service SID (it starts with MG).",
+            invalid_credentials: "Twilio rejected that SID + token pair. Copy them again and retry.",
+            twilio_unreachable: "Couldn't reach Twilio. Give it a moment and try again.",
+            twilio_error: "Twilio didn't respond. Give it a moment and try again.",
+            tier_blocked: "Texting your agent is part of the Business Agent plan and up.",
+            store_failed: "Validated with Twilio but couldn't store the connection. Try again.",
+          }}
+          upgradeCopy={`Text your agent from your phone — part of the Business Agent plan and up. You're on ${TIER_LABELS[tier]}.`}
+          connectLabel="Connect SMS →"
+          currentPersonaId={smsChannel?.personaId ?? null}
+          personas={telegramPersonaOptions}
+          tierCanConnect={tierAllowsChannel(tier, "sms")}
+        />
+
+        <ChannelConnectionCard
+          channel="imessage"
+          icon="imessage"
+          title="iMessage"
+          connected={Boolean(imessageChannel)}
+          enabled={imessageChannel?.enabled ?? false}
+          connectedLine={imessageOwnerHandle ? `Paired to ${imessageOwnerHandle}` : "BlueBubbles paired"}
+          connectedHint="Message your Mac's iMessage account from your phone — your agent answers in the thread. Drafts wait for APPROVE, EDIT, or REJECT."
+          reconnectHint="Reconnect needed — the BlueBubbles server password stopped working."
+          description="Run BlueBubbles on your own Mac and your agent lives in an iMessage thread. Your Mac relays both directions; nothing routes through anyone else's Apple account."
+          steps={[
+            "Install the BlueBubbles server on your Mac (bluebubbles.app) and set a server password.",
+            "In BlueBubbles → API & Webhooks, add the webhook URL below and enable payload signing with a secret.",
+            "Paste your server URL, password, and that webhook secret here.",
+            "Add the phone number or Apple ID email you'll message from, and connect.",
+          ]}
+          webhookLabel="BlueBubbles webhook URL"
+          webhookUrl={`${channelInboundBase}/api/channels/inbound/imessage`}
+          fields={[
+            { key: "serverUrl", label: "BlueBubbles server URL", placeholder: "https://your-mac.example.com:1234", mono: true },
+            { key: "password", label: "Server password", placeholder: "Your BlueBubbles password", password: true },
+            { key: "webhookSecret", label: "Webhook signing secret", placeholder: "A long random string", mono: true, generate: true },
+            { key: "ownerHandle", label: "Your iMessage handle", placeholder: "+15551234567 or you@icloud.com", mono: true },
+          ]}
+          errorCopy={{
+            invalid_url: "The server URL needs to start with http:// or https://.",
+            missing_password: "Paste your BlueBubbles server password.",
+            weak_secret: "Use a webhook secret of at least 16 characters (or tap Generate).",
+            invalid_handle: "The handle needs to be a +15551234567 number or an email address.",
+            invalid_password: "The BlueBubbles server rejected that password.",
+            server_unreachable: "Couldn't reach your BlueBubbles server. Is your Mac online and the URL public?",
+            server_error: "Your BlueBubbles server answered with an error. Check it and try again.",
+            tier_blocked: "iMessage is part of the AI Agent Workspace plan and up.",
+            store_failed: "Reached your server but couldn't store the connection. Try again.",
+          }}
+          upgradeCopy={`Your agent in iMessage, relayed by your own Mac — part of the AI Agent Workspace plan and up. You're on ${TIER_LABELS[tier]}.`}
+          connectLabel="Connect iMessage →"
+          currentPersonaId={imessageChannel?.personaId ?? null}
+          personas={telegramPersonaOptions}
+          tierCanConnect={tierAllowsChannel(tier, "imessage")}
+        />
+
+        <ChannelConnectionCard
+          channel="whatsapp"
+          icon="whatsapp"
+          title="WhatsApp"
+          connected={Boolean(whatsappChannel)}
+          enabled={whatsappChannel?.enabled ?? false}
+          connectedLine={whatsappDisplayNumber ? `Business number ${whatsappDisplayNumber}` : "Cloud API paired"}
+          connectedHint="Message your Business number on WhatsApp — your agent answers there. Drafts arrive with Approve & send / Edit / Reject buttons."
+          reconnectHint="Reconnect needed — the access token expired or was revoked."
+          description="Message your agent on WhatsApp through your own Meta Business number. Drafts arrive with tap-to-answer Approve / Edit / Reject buttons."
+          steps={[
+            "In your Meta app (developers.facebook.com), open WhatsApp → API Setup and copy the Phone Number ID.",
+            "Create a permanent System User access token with the whatsapp_business_messaging permission.",
+            "Copy the App Secret from App Settings → Basic.",
+            "Under WhatsApp → Configuration, set the webhook to the URL below and subscribe to messages.",
+            "Paste everything here, add the WhatsApp number you message from, and connect.",
+          ]}
+          webhookLabel="Meta webhook callback URL"
+          webhookUrl={`${channelInboundBase}/api/channels/inbound/whatsapp`}
+          fields={[
+            { key: "phoneNumberId", label: "Phone Number ID", placeholder: "123456789012345", mono: true },
+            { key: "accessToken", label: "Access token", placeholder: "System User token", password: true },
+            { key: "appSecret", label: "App Secret", placeholder: "Your Meta app secret", password: true },
+            { key: "ownerNumber", label: "Your WhatsApp number", placeholder: "+15551234567", mono: true },
+          ]}
+          errorCopy={{
+            invalid_phone_number_id: "That doesn't look like a Phone Number ID (digits only, from API Setup).",
+            missing_token: "Paste your access token.",
+            weak_app_secret: "That App Secret looks too short — copy it from App Settings → Basic.",
+            invalid_owner_number: "Your WhatsApp number needs at least 8 digits (country code included).",
+            invalid_credentials: "Meta rejected that Phone Number ID + token pair. Copy them again and retry.",
+            meta_unreachable: "Couldn't reach Meta. Give it a moment and try again.",
+            meta_error: "Meta didn't respond. Give it a moment and try again.",
+            tier_blocked: "WhatsApp is part of the Business Agent plan and up.",
+            store_failed: "Validated with Meta but couldn't store the connection. Try again.",
+          }}
+          upgradeCopy={`Message your agent on WhatsApp — part of the Business Agent plan and up. You're on ${TIER_LABELS[tier]}.`}
+          connectLabel="Connect WhatsApp →"
+          currentPersonaId={whatsappChannel?.personaId ?? null}
+          personas={telegramPersonaOptions}
+          tierCanConnect={tierAllowsChannel(tier, "whatsapp")}
         />
 
         <QuickBooksConnectionCard

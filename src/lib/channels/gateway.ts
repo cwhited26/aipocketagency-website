@@ -23,7 +23,13 @@ import { fetchPaUser, type PaUser } from "@/lib/pa-supabase";
 import { fetchPersona } from "@/lib/personas/db";
 import { getOrCreateChannelConversation } from "@/lib/pa-conversations";
 import { runConversationTurn, type ConversationTurnResult } from "@/lib/chat/conversation-agent";
-import { slackOrigin, telegramOrigin } from "@/lib/chat/message-origin";
+import {
+  imessageOrigin,
+  slackOrigin,
+  smsOrigin,
+  telegramOrigin,
+  whatsappOrigin,
+} from "@/lib/chat/message-origin";
 import type { CostFeatureSlug } from "@/lib/cost/log";
 import {
   dispatchUserGoal,
@@ -54,20 +60,37 @@ const STAGING_TOOLS = new Set(["draft_email", "draft_quote", "propose_brain_upda
 const CHANNEL_LABELS: Partial<Record<ChannelSlug, string>> = {
   slack: "Slack",
   telegram: "Telegram",
+  sms: "SMS",
+  imessage: "iMessage",
+  whatsapp: "WhatsApp",
 };
 
+// The plan a tier-blocked channel unlocks at (PA-CHAN-7 + the Phase 2–4 gates) — drives the
+// upgrade-nudge copy. iMessage is the power-user channel and sits at AI Agent Workspace (studio_plus).
+const CHANNEL_UNLOCK_PLAN: Partial<Record<ChannelSlug, string>> = {
+  imessage: "AI Agent Workspace",
+};
+const DEFAULT_UNLOCK_PLAN = "Business Agent";
+
 // The cost featureSlug for an inbound roundtrip on this channel (PA-CHAN §8.4). Only the wired
-// adapters (Slack, Telegram) meter through the gateway; an unmapped channel falls back to plain chat.
+// adapters meter through the gateway; an unmapped channel falls back to plain chat.
 function channelCostSlug(slug: ChannelSlug): CostFeatureSlug {
   if (slug === "slack") return "channels:slack";
   if (slug === "telegram") return "channels:telegram";
+  if (slug === "sms") return "channels:sms";
+  if (slug === "imessage") return "channels:imessage";
+  if (slug === "whatsapp") return "channels:whatsapp";
   return "chat";
 }
 
 // The conversation-origin metadata stamped on the inbound user turn so the Hub thread shows which
 // channel it came from. Defaults to the Slack chip for the (already-wired) Slack surface.
 function channelOriginMetadata(slug: ChannelSlug, surface: "im" | "channel"): unknown {
-  return slug === "telegram" ? telegramOrigin() : slackOrigin(surface);
+  if (slug === "telegram") return telegramOrigin();
+  if (slug === "sms") return smsOrigin();
+  if (slug === "imessage") return imessageOrigin();
+  if (slug === "whatsapp") return whatsappOrigin();
+  return slackOrigin(surface);
 }
 
 // ── Dependency surface (mocked in tests) ──────────────────────────────────────────────────────
@@ -95,6 +118,7 @@ export type GatewayDeps = {
     direction: "inbound" | "outbound";
     body: string;
     threadId: string | null;
+    attachments?: unknown;
     rawPayload?: unknown;
   }) => Promise<string | null>;
   send: (connection: ChannelConnection, response: ChannelResponse) => Promise<OutboundResult>;
@@ -174,8 +198,9 @@ export async function routeChannelMessage(
   const tier = await deps.getTier(connection.ownerId);
   if (!tierAllowsChannel(tier, message.channelSlug)) {
     const label = CHANNEL_LABELS[message.channelSlug] ?? "this channel";
+    const plan = CHANNEL_UNLOCK_PLAN[message.channelSlug] ?? DEFAULT_UNLOCK_PLAN;
     await deps.send(connection, {
-      text: `Texting your agent from ${label} is part of the Business Agent plan and up. Upgrade in Settings and I'll start answering here.`,
+      text: `Texting your agent from ${label} is part of the ${plan} plan and up. Upgrade in Settings and I'll start answering here.`,
       threadId: message.threadId,
       channelMeta: message.channelMeta,
     });
@@ -189,6 +214,7 @@ export async function routeChannelMessage(
     direction: "inbound",
     body: message.body,
     threadId: message.threadId,
+    attachments: message.attachments,
     rawPayload: message.rawPayload,
   });
 
@@ -196,8 +222,9 @@ export async function routeChannelMessage(
   const paUser = await deps.loadPaUser(connection.ownerId);
   if (!paUser) return { handled: "error", reason: "owner_not_found" };
   if (!paUser.anthropic_api_key) {
+    const label = CHANNEL_LABELS[message.channelSlug] ?? "this channel";
     const sent = await deps.send(connection, {
-      text: "I'm connected to your Slack, but your agent still needs an Anthropic API key in Settings before I can answer. Add it and message me again.",
+      text: `I'm connected to your ${label}, but your agent still needs an Anthropic API key in Settings before I can answer. Add it and message me again.`,
       threadId: message.threadId,
       channelMeta: message.channelMeta,
     });
@@ -311,7 +338,14 @@ async function answerInline(
   }
 
   // If PA drafted / proposed something, it's now staged for approval — surface the Mission Control
-  // link + button (PA-CHAN-6: the owner approves in the web app; nothing fires from Slack).
+  // link + button (PA-CHAN-6: the owner approves in the web app; nothing fires from Slack). The
+  // staged flag lets button-less channels render their native approval affordance instead (Phase 2–4:
+  // the APPROVE / EDIT / REJECT text protocol, or WhatsApp reply buttons).
   const staged = turn.toolSteps.some((s) => STAGING_TOOLS.has(s.tool));
-  return { text: turn.finalAnswer, buttons: staged ? [mcButton] : undefined, ...base };
+  return {
+    text: turn.finalAnswer,
+    buttons: staged ? [mcButton] : undefined,
+    staged: staged || undefined,
+    ...base,
+  };
 }

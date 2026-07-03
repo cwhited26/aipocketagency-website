@@ -7,6 +7,7 @@ import {
   tierAllowsIdeaEngine,
   tierAllowsIdeaEngineAutoBuild,
   tierCanSeeChannels,
+  tierAllowsChannel,
 } from "@/lib/personas/tier-caps";
 import { fetchGithubBuildConnectionPublic } from "@/lib/pa-github-build-connections";
 import { fetchVercelConnectionPublic } from "@/lib/pa-vercel-connections";
@@ -62,6 +63,11 @@ export default async function AppsPage() {
   // Channels (PA-CHAN-7): Business Agent (Pro) and up. The card stays on the grid for every tier —
   // same reasoning as the Idea Engine card — with an upgrade chip below Pro.
   const canUseChannels = tierCanSeeChannels(tier);
+  // The Phase 2–4 channel cards gate individually: SMS + WhatsApp unlock at Business Agent (Pro);
+  // iMessage is the self-hosted power-user channel and unlocks at Studio+ (PA-CHAN-7 + Phase gates).
+  const canUseSmsChannel = tierAllowsChannel(tier, "sms");
+  const canUseImessageChannel = tierAllowsChannel(tier, "imessage");
+  const canUseWhatsappChannel = tierAllowsChannel(tier, "whatsapp");
   const visibleApps = apps.filter((app) => {
     if (app.id === "landing-page-builder") return tierCanSeeLandingPageBuilder(tier);
     return true;
@@ -162,11 +168,26 @@ export default async function AppsPage() {
             const lockedLandingPages = app.id === "landing-page-builder" && !canBuildLandingPages;
             const lockedIdeaEngine = app.id === "idea-engine" && !canUseIdeaEngine;
             const lockedChannels = app.id === "channels" && !canUseChannels;
+            const lockedSms = app.id === "sms-channel" && !canUseSmsChannel;
+            const lockedImessage = app.id === "imessage-channel" && !canUseImessageChannel;
+            const lockedWhatsapp = app.id === "whatsapp-channel" && !canUseWhatsappChannel;
             // Any gate puts the card in its "show with upgrade chip" state. The chip text is the
-            // tier each App unlocks at — Studio for the builder, Pro+ for the Idea Engine, Pro
-            // (Business Agent) for Channels.
-            const locked = lockedLandingPages || lockedIdeaEngine || lockedChannels;
-            const unlockTier = lockedLandingPages ? "Studio" : lockedIdeaEngine ? "Pro+" : "Pro";
+            // tier each App unlocks at — Studio for the builder, Pro+ for the Idea Engine, Studio+
+            // for iMessage, Pro (Business Agent) for the other channels.
+            const locked =
+              lockedLandingPages ||
+              lockedIdeaEngine ||
+              lockedChannels ||
+              lockedSms ||
+              lockedImessage ||
+              lockedWhatsapp;
+            const unlockTier = lockedLandingPages
+              ? "Studio"
+              : lockedIdeaEngine
+                ? "Pro+"
+                : lockedImessage
+                  ? "Studio+"
+                  : "Pro";
             // Tier allows the App but a required Build Tool isn't connected: send the card to
             // Connections so the click pre-flights instead of erroring mid-build.
             const missingConnections = locked ? 0 : missingConnectionsFor(app.id);

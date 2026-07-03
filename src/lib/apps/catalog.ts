@@ -24,6 +24,9 @@ export const APP_IDS = [
   "website-monitor",
   "proposal-generator",
   "channels",
+  "sms-channel",
+  "imessage-channel",
+  "whatsapp-channel",
 ] as const;
 
 export type AppId = (typeof APP_IDS)[number];
@@ -260,6 +263,42 @@ export const APP_CATALOG: AppDef[] = [
     description:
       "Message your agent from Slack — same agent, same memory, same approvals. Connect it once and your agent answers where your team already talks; anything that needs your sign-off still waits for you in Mission Control.",
     blurb: "Reach your agent from Slack, like messaging a teammate.",
+    tag: "Wherever You Work",
+    tagColor: "cyan",
+  },
+  {
+    id: "sms-channel",
+    slashCommand: "sms-channel",
+    href: "/app/settings/connections",
+    label: "Text Your Agent (SMS)",
+    shortLabel: "SMS",
+    description:
+      "Text your agent from your phone — same agent, same memory, same approvals. Send a note or a photo and it answers by text; when it drafts something, reply APPROVE to send it, EDIT to change it, or REJECT to cancel.",
+    blurb: "Text your agent from any phone; approve drafts by texting back.",
+    tag: "Wherever You Work",
+    tagColor: "cyan",
+  },
+  {
+    id: "imessage-channel",
+    slashCommand: "imessage-channel",
+    href: "/app/settings/connections",
+    label: "iMessage",
+    shortLabel: "iMessage",
+    description:
+      "Message your agent in iMessage through your own Mac running BlueBubbles — the blue-bubble thread that answers back. Same approvals: reply APPROVE, EDIT, or REJECT when it drafts something for you.",
+    blurb: "Your agent in your iMessage thread, relayed by your own Mac.",
+    tag: "Wherever You Work",
+    tagColor: "cyan",
+  },
+  {
+    id: "whatsapp-channel",
+    slashCommand: "whatsapp-channel",
+    href: "/app/settings/connections",
+    label: "WhatsApp",
+    shortLabel: "WhatsApp",
+    description:
+      "Message your agent on WhatsApp through your Business number — same agent, same memory, same approvals. When it drafts something, tap Approve & send, Edit, or Reject right in the chat.",
+    blurb: "Your agent on WhatsApp, with tap-to-approve drafts.",
     tag: "Wherever You Work",
     tagColor: "cyan",
   },

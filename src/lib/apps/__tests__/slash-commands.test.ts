@@ -132,13 +132,17 @@ describe("tier-gated invocation (PA-SLASH-1)", () => {
   it("the tier popover hides locked Apps and grows with tier", () => {
     const starter = appSlashCommandsForTier("starter").map((c) => c.appId);
     const studio = appSlashCommandsForTier("studio").map((c) => c.appId);
+    const studioPlus = appSlashCommandsForTier("studio_plus").map((c) => c.appId);
     expect(starter).not.toContain("landing-page-builder");
     expect(starter).not.toContain("competitor-inspector");
     expect(starter).not.toContain("idea-engine");
     expect(studio).toContain("landing-page-builder");
     expect(studio).toContain("competitor-inspector");
     expect(studio).toContain("idea-engine");
-    expect(studio.length).toBe(APP_CATALOG.length);
+    // iMessage (Channels Gateway Phase 3) is the one App above Studio — it unlocks at Studio+.
+    expect(studio).not.toContain("imessage-channel");
+    expect(studio.length).toBe(APP_CATALOG.length - 1);
+    expect(studioPlus.length).toBe(APP_CATALOG.length);
   });
 });
 

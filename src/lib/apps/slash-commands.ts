@@ -15,6 +15,7 @@ import { z } from "zod";
 import { APP_CATALOG, getApp, type AppDef, type AppId } from "./catalog";
 import {
   TIER_LABELS,
+  tierAllowsChannel,
   tierAllowsCompetitorInspector,
   tierAllowsIdeaEngine,
   tierAllowsLandingPageBuilder,
@@ -67,6 +68,9 @@ const APP_SLASH_ALIASES: Readonly<Record<string, AppId>> = {
   rituals: "ritual-scheduler",
   vault: "workflow-vault",
   ideas: "idea-engine",
+  sms: "sms-channel",
+  imessage: "imessage-channel",
+  whatsapp: "whatsapp-channel",
 };
 
 function aliasesForApp(id: AppId): string[] {
@@ -99,6 +103,11 @@ function appMinTier(appId: AppId): Tier {
       return "pro"; // tierAllowsProposalGenerator (Business Agent+)
     case "channels":
       return "pro"; // tierCanSeeChannels (PA-CHAN-7, Business Agent+)
+    case "sms-channel":
+    case "whatsapp-channel":
+      return "pro"; // tierAllowsChannel (Phase 2/4, Business Agent+)
+    case "imessage-channel":
+      return "studio_plus"; // tierAllowsChannel (Phase 3 — power-user channel)
     default:
       return "starter";
   }
@@ -121,6 +130,12 @@ export function tierAllowsApp(tier: Tier, appId: AppId): boolean {
       return tierAllowsProposalGenerator(tier);
     case "channels":
       return tierCanSeeChannels(tier);
+    case "sms-channel":
+      return tierAllowsChannel(tier, "sms");
+    case "imessage-channel":
+      return tierAllowsChannel(tier, "imessage");
+    case "whatsapp-channel":
+      return tierAllowsChannel(tier, "whatsapp");
     default:
       return tierRank(tier) >= tierRank("starter"); // every tier
   }

@@ -74,3 +74,47 @@ export function asTelegramOrigin(metadata: unknown): TelegramOrigin | null {
   const parsed = TelegramOriginSchema.safeParse(metadata);
   return parsed.success ? parsed.data : null;
 }
+
+// ── iMessage origin (Channels Gateway Phase 3) ─────────────────────────────────
+// An inbound iMessage relayed by the owner's BlueBubbles server lands in their PA chat thread; the
+// user turn renders with an "iMessage" chip. Same one-origin-per-message contract as above.
+
+export const IMESSAGE_ORIGIN_KIND = "imessage_origin" as const;
+
+export const ImessageOriginSchema = z.object({
+  kind: z.literal(IMESSAGE_ORIGIN_KIND),
+});
+export type ImessageOrigin = z.infer<typeof ImessageOriginSchema>;
+
+/** Build the metadata blob stamped on an inbound iMessage user message. */
+export function imessageOrigin(): ImessageOrigin {
+  return { kind: IMESSAGE_ORIGIN_KIND };
+}
+
+/** Safe-parses message.metadata into an iMessage origin, or null if it isn't one. */
+export function asImessageOrigin(metadata: unknown): ImessageOrigin | null {
+  const parsed = ImessageOriginSchema.safeParse(metadata);
+  return parsed.success ? parsed.data : null;
+}
+
+// ── WhatsApp origin (Channels Gateway Phase 4) ─────────────────────────────────
+// An inbound WhatsApp message to the owner's Business number lands in their PA chat thread; the
+// user turn renders with a "WhatsApp" chip. Same one-origin-per-message contract as above.
+
+export const WHATSAPP_ORIGIN_KIND = "whatsapp_origin" as const;
+
+export const WhatsappOriginSchema = z.object({
+  kind: z.literal(WHATSAPP_ORIGIN_KIND),
+});
+export type WhatsappOrigin = z.infer<typeof WhatsappOriginSchema>;
+
+/** Build the metadata blob stamped on an inbound WhatsApp user message. */
+export function whatsappOrigin(): WhatsappOrigin {
+  return { kind: WHATSAPP_ORIGIN_KIND };
+}
+
+/** Safe-parses message.metadata into a WhatsApp origin, or null if it isn't one. */
+export function asWhatsappOrigin(metadata: unknown): WhatsappOrigin | null {
+  const parsed = WhatsappOriginSchema.safeParse(metadata);
+  return parsed.success ? parsed.data : null;
+}
