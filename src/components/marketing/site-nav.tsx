@@ -1,38 +1,107 @@
 import Link from "next/link";
 import { MONO_FONT } from "./cta";
 import { PERSONA_LINKS } from "@/data/marketing/persona-pages";
+import { USE_CASE_LINKS } from "@/data/use-cases";
 
 const NAV_LINKS: { label: string; href: string }[] = [
+  { label: "Agent Library", href: "/agents" },
   { label: "How it works", href: "/pocket-agent" },
   { label: "Why Pocket Agent", href: "/why-pa" },
   { label: "Pricing", href: "/pricing" },
 ];
 
+// The two Solutions axes (PA-POS-25): what you need done → /use-cases/*, who you are → /for/*.
+const SOLUTIONS_COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
+  {
+    title: "Use cases",
+    links: USE_CASE_LINKS.map((u) => ({ label: u.label, href: `/use-cases/${u.slug}` })),
+  },
+  {
+    title: "Industries",
+    links: PERSONA_LINKS.map((p) => ({ label: p.label, href: `/for/${p.slug}` })),
+  },
+];
+
 // CSS-only dropdown (group-hover + focus-within) so the header stays a server component.
-function ForMenu() {
+function SolutionsMenu() {
   return (
     <div className="group relative">
       <span className="flex cursor-default items-center gap-1 text-sm text-slate-400 transition group-hover:text-slate-100 group-focus-within:text-slate-100">
-        For
+        Solutions
         <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
           <path d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" />
         </svg>
       </span>
       <div className="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
-        <div className="w-72 rounded-2xl border border-white/10 bg-[#0a0d13] p-2 shadow-2xl">
-          {PERSONA_LINKS.map((p) => (
-            <Link
-              key={p.slug}
-              href={`/for/${p.slug}`}
-              className="block rounded-xl px-3 py-2.5 transition hover:bg-white/[0.05]"
-            >
-              <span className="block text-sm font-medium text-slate-200">{p.label}</span>
-              <span className="mt-0.5 block text-xs leading-snug text-slate-500">{p.hook}</span>
-            </Link>
+        <div className="grid w-[26rem] grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-[#0a0d13] p-3 shadow-2xl">
+          {SOLUTIONS_COLUMNS.map((col) => (
+            <div key={col.title}>
+              <span
+                className="block px-3 pb-1 pt-1.5 text-[10px] uppercase tracking-wider text-slate-600"
+                style={{ fontFamily: MONO_FONT }}
+              >
+                {col.title}
+              </span>
+              {col.links.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="block rounded-lg px-3 py-2 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-slate-100"
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </div>
           ))}
         </div>
       </div>
     </div>
+  );
+}
+
+// CSS-only mobile sheet (<details>) — same taxonomy as the desktop menu, no client JS.
+function MobileMenu() {
+  return (
+    <details className="relative md:hidden">
+      <summary
+        className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-lg border border-white/10 text-slate-300 [&::-webkit-details-marker]:hidden"
+        aria-label="Open menu"
+      >
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+          <path d="M4 7h16M4 12h16M4 17h16" strokeLinecap="round" />
+        </svg>
+      </summary>
+      <div className="absolute right-0 top-full z-50 mt-3 max-h-[75vh] w-[19rem] overflow-y-auto rounded-2xl border border-white/10 bg-[#0a0d13] p-3 shadow-2xl">
+        {NAV_LINKS.map((l) => (
+          <Link
+            key={l.href}
+            href={l.href}
+            className="block rounded-lg px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/[0.05]"
+          >
+            {l.label}
+          </Link>
+        ))}
+        {SOLUTIONS_COLUMNS.map((col) => (
+          <div key={col.title} className="mt-2 border-t border-white/5 pt-2">
+            <span
+              className="block px-3 pb-1 text-[10px] uppercase tracking-wider text-slate-600"
+              style={{ fontFamily: MONO_FONT }}
+            >
+              {col.title}
+            </span>
+            {col.links.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="block rounded-lg px-3 py-2 text-sm text-slate-300 transition hover:bg-white/[0.05]"
+              >
+                {l.label}
+              </Link>
+            ))}
+          </div>
+        ))}
+      </div>
+    </details>
   );
 }
 
@@ -49,7 +118,7 @@ export function SiteHeader() {
           <span className="text-[15px] font-semibold tracking-tight">Pocket Agent</span>
         </Link>
         <nav className="hidden items-center gap-7 md:flex">
-          <ForMenu />
+          <SolutionsMenu />
           {NAV_LINKS.map((l) => (
             <Link
               key={l.href}
@@ -73,6 +142,7 @@ export function SiteHeader() {
           >
             Start free
           </Link>
+          <MobileMenu />
         </div>
       </div>
     </header>
@@ -83,6 +153,8 @@ export function SiteFooter() {
   const product: { label: string; href: string; external?: boolean }[] = [
     { label: "How it works", href: "/pocket-agent" },
     { label: "Why Pocket Agent", href: "/why-pa" },
+    { label: "Agent Library", href: "/agents" },
+    { label: "Use cases", href: "/use-cases/lead-generation" },
     { label: "Template Gallery", href: "/templates" },
     { label: "Compare", href: "/compare" },
     { label: "Pricing", href: "/pricing" },
