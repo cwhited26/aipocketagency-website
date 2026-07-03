@@ -80,6 +80,10 @@
     {
       "path": "/api/cron/reset-credit-cycles",
       "schedule": "15 5 * * *"
+    },
+    {
+      "path": "/api/cron/trial-thread-ttl",
+      "schedule": "45 6 * * *"
     }
   ],
   "rewrites": [

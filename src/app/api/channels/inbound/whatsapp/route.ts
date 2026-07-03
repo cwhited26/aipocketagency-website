@@ -12,6 +12,11 @@
 //
 // APPROVE / EDIT / REJECT (PA-CHAN-9): a native reply-button tap (interactive.button_reply with id
 // approve/edit/reject) or a bare typed protocol word resolves the owner's latest pending card.
+//
+// COLD ONBOARDING (PA-POS-32 §22): a delivery whose phone_number_id has NO pairing but matches
+// the PA public number env routes to the cold-onboarding handler — after its own signature
+// check against the env WHATSAPP_APP_SECRET. A paired connection always wins the lookup, so an
+// existing customer's private pairing can never fall into the cold path (§22.4 number cap).
 
 import { NextRequest, NextResponse } from "next/server";
 import { decrypt, DecryptionError } from "@/lib/crypto/encrypt";
@@ -36,6 +41,9 @@ import {
   matchProtocolCommand,
   stagedMissionControlUrl,
 } from "@/lib/channels/staged-actions";
+import { coldWhatsappConfig, isColdInboundNumber } from "@/lib/onboarding/whatsapp-cold/config";
+import { handleColdWhatsappInbound } from "@/lib/onboarding/whatsapp-cold/handler";
+import { coldLog } from "@/lib/onboarding/whatsapp-cold/log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -88,7 +96,38 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     "whatsapp",
     whatsappExternalId(inbound.phoneNumberId),
   );
-  if (!resolved.ok || !resolved.data) return ack();
+  if (!resolved.ok || !resolved.data) {
+    // Unknown sender path (PA-POS-32): no pairing owns this number. If it's the PA public
+    // number, verify the signature with the platform app secret and hand the message to the
+    // cold-onboarding handler. Anything else stays a quiet ack (unchanged Phase 4 behavior).
+    const cold = coldWhatsappConfig();
+    if (!cold || !isColdInboundNumber(inbound.phoneNumberId, cold)) return ack();
+
+    const coldVerified = verifyHubSignature({
+      appSecret: cold.appSecret,
+      rawBody,
+      signature: req.headers.get(HUB_SIGNATURE_HEADER),
+    });
+    if (!coldVerified) {
+      coldLog.warn("cold inbound signature rejected");
+      return NextResponse.json({ error: "bad_signature" }, { status: 401 });
+    }
+
+    // Errors are swallowed into the ack — Meta retries aggressively on non-200s.
+    try {
+      const outcome = await handleColdWhatsappInbound({
+        from: inbound.from,
+        text: inbound.text,
+        messageId: inbound.messageId,
+      });
+      coldLog.info("cold inbound handled", { handled: outcome.handled });
+    } catch (err) {
+      coldLog.error("cold inbound handler threw", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+    return ack();
+  }
   const connection = resolved.data;
 
   // Verify X-Hub-Signature-256 with THIS pairing's app secret (PA-CHAN-4).

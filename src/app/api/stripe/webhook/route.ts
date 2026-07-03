@@ -58,6 +58,11 @@ import { inviteEmailBody } from "@/lib/setup-sprint/calendar-invite-template";
 import { signDiyKitDownload } from "@/lib/diy-kit/download";
 import { PA_METERING_CHECKOUT_SOURCE } from "@/lib/metering/checkout-params";
 import { handlePaMeteringCompleted } from "@/lib/metering/webhook";
+import { WHATSAPP_TRIAL_CHECKOUT_SOURCE } from "@/lib/onboarding/whatsapp-cold/checkout";
+import {
+  applyWhatsappTrialCooloffOnCancel,
+  handleWhatsappTrialCheckoutCompleted,
+} from "@/lib/onboarding/whatsapp-cold/migrate";
 import {
   POCKET_CAPTURE_ADDON_KIND,
   POCKET_CAPTURE_CHECKOUT_SOURCE,
@@ -1556,6 +1561,14 @@ export async function POST(req: Request): Promise<NextResponse> {
         await handlePaMeteringCompleted(session);
       } else if (session.metadata?.source === "pocket_agent_addon") {
         await handlePocketAgentAddonCompleted(session);
+      } else if (session.metadata?.source === WHATSAPP_TRIAL_CHECKOUT_SOURCE) {
+        // WhatsApp cold-onboarding conversion (PA-POS-32 §22.1 step 8): provision the
+        // permanent workspace and migrate the trial thread's composed Persona + facts.
+        await handleWhatsappTrialCheckoutCompleted(
+          event.data.object as unknown as Parameters<
+            typeof handleWhatsappTrialCheckoutCompleted
+          >[0],
+        );
       } else if (session.metadata?.source === "pocket_agent") {
         await handlePocketAgentCheckoutCompleted(session);
       } else {
@@ -1596,6 +1609,13 @@ export async function POST(req: Request): Promise<NextResponse> {
     } else if (event.type === "customer.subscription.deleted") {
       const sub = event.data.object as unknown as StripeSubscription;
       await handlePocketAgentSubscriptionDeleted(sub);
+      // §22.4: an owner who converted from a WhatsApp trial and then canceled starts a
+      // 7-day cool-off before the public number will run them a fresh trial.
+      const canceledRow = await fetchPocketAgentBySubscriptionId(sub.id);
+      const canceledOwnerId = canceledRow.ok ? (canceledRow.row?.user_id ?? null) : null;
+      if (canceledOwnerId) {
+        await applyWhatsappTrialCooloffOnCancel({ ownerId: canceledOwnerId });
+      }
     } else {
       console.warn("[stripe/webhook] ignoring unhandled event type", {
         event_id: event.id,

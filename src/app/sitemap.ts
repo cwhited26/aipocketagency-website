@@ -21,6 +21,7 @@ const STATIC_ROUTES = [
   "/about",
   "/start",
   "/enterprise",
+  "/whatsapp",
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
