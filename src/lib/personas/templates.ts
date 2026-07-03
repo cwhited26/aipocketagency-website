@@ -32,6 +32,10 @@ export type PersonaTemplate = {
   defaultTone: ToneKey;
   // Apps (the WHAT) this role is set up to use — seeded into the create flow, editable.
   defaultApps: AppId[];
+  // Illustrated avatar slug (public/avatars/personas/<slug>.svg, PA-POS-23). The seven role
+  // templates carry their own key; the five legacy templates map onto the nearest role's art
+  // so every card renders — the avatar set stays at 13 files (7 roles + 6 verticals).
+  avatarSlug: string;
   // A first thing to ask once the persona exists, so the owner sees it working.
   starterPrompt: string;
   // All 12 sections prefilled. Must-customize sections carry a starter the owner edits.
@@ -52,6 +56,15 @@ export function getTemplate(key: string): PersonaTemplate | null {
 
 export function isTemplateKey(key: string): boolean {
   return TEMPLATES.some((t) => t.key === key);
+}
+
+/**
+ * The avatar slug behind a persona row's template_key (PA-POS-23). Every surface that renders
+ * a PersonaAvatar for a stored persona resolves through here; an unknown key (a template retired
+ * from the catalog) falls back to the Admin Assistant's art so nothing renders broken.
+ */
+export function avatarSlugForTemplateKey(key: string): string {
+  return getTemplate(key)?.avatarSlug ?? "admin";
 }
 
 function substituteName(text: string, personaName: string): string {
@@ -146,6 +159,7 @@ function commonSections(): Pick<
 export const TEMPLATES: PersonaTemplate[] = [
   {
     key: "vsm",
+    avatarSlug: "sales",
     suggestedName: "Sales Manager",
     role: "Virtual Sales Manager",
     description:
@@ -174,6 +188,7 @@ export const TEMPLATES: PersonaTemplate[] = [
   },
   {
     key: "vcsa",
+    avatarSlug: "admin",
     suggestedName: "Customer Service Agent",
     role: "Virtual Customer Service Agent",
     description:
@@ -202,6 +217,7 @@ export const TEMPLATES: PersonaTemplate[] = [
   },
   {
     key: "vom",
+    avatarSlug: "ops-cos",
     suggestedName: "Operations Manager",
     role: "Virtual Operations Manager",
     description:
@@ -230,6 +246,7 @@ export const TEMPLATES: PersonaTemplate[] = [
   },
   {
     key: "vr",
+    avatarSlug: "admin",
     suggestedName: "Recruiter",
     role: "Virtual Recruiter",
     description:
@@ -258,6 +275,7 @@ export const TEMPLATES: PersonaTemplate[] = [
   },
   {
     key: "vmd",
+    avatarSlug: "content",
     suggestedName: "Marketing Director",
     role: "Virtual Marketing Director",
     description:
@@ -288,6 +306,7 @@ export const TEMPLATES: PersonaTemplate[] = [
   // ── Role templates for owner-led businesses (Wave 2 launch, PA-PERSONA-30) ───────────
   {
     key: "admin",
+    avatarSlug: "admin",
     suggestedName: "Admin Assistant",
     role: "Admin Assistant",
     description:
@@ -316,6 +335,7 @@ export const TEMPLATES: PersonaTemplate[] = [
   },
   {
     key: "sales",
+    avatarSlug: "sales",
     suggestedName: "Sales Assistant",
     role: "Sales Assistant",
     description:
@@ -344,6 +364,7 @@ export const TEMPLATES: PersonaTemplate[] = [
   },
   {
     key: "followup",
+    avatarSlug: "followup",
     suggestedName: "Follow-Up Agent",
     role: "Follow-Up Agent",
     description:
@@ -372,6 +393,7 @@ export const TEMPLATES: PersonaTemplate[] = [
   },
   {
     key: "content",
+    avatarSlug: "content",
     suggestedName: "Content Creator",
     role: "Content Creator",
     description:
@@ -400,6 +422,7 @@ export const TEMPLATES: PersonaTemplate[] = [
   },
   {
     key: "email",
+    avatarSlug: "email",
     suggestedName: "Email Drafter",
     role: "Email Drafter",
     description:
@@ -428,6 +451,7 @@ export const TEMPLATES: PersonaTemplate[] = [
   },
   {
     key: "lead-research",
+    avatarSlug: "lead-research",
     suggestedName: "Lead Researcher",
     role: "Lead Researcher",
     description:
@@ -456,6 +480,7 @@ export const TEMPLATES: PersonaTemplate[] = [
   },
   {
     key: "ops-cos",
+    avatarSlug: "ops-cos",
     suggestedName: "Chief of Staff",
     role: "Operations Chief of Staff",
     description:

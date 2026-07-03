@@ -1,0 +1,18 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Email Drafter avatar placeholder">
+  <!-- Placeholder avatar (PA-POS-23). Temporary geometric stand-in; real illustrated art
+       replaces this file — see public/avatars/personas/README.md for the design brief. -->
+  <defs>
+    <clipPath id="card"><rect x="16" y="16" width="480" height="480" rx="96"/></clipPath>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="#0c1d29"/>
+  <g clip-path="url(#card)">
+    <circle cx="256" cy="404" r="176" fill="#0f2737"/>
+    <circle cx="256" cy="188" r="96" fill="#14394e"/>
+  </g>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="#1d5b7a" stroke-width="4"/>
+  <text x="256" y="330" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="168" font-weight="700" fill="#38bdf8">ED</text>
+  <g transform="translate(372,68)">
+    <rect width="72" height="72" rx="20" fill="#112f40" stroke="#1d5b7a" stroke-width="3"/>
+    <g transform="translate(10,10)"><rect x="6" y="12" width="40" height="28" rx="4" stroke="#38bdf8" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16l18 14 18-14" stroke="#38bdf8" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+  </g>
+</svg>

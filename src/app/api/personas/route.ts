@@ -2,28 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveOwner } from "@/lib/personas/owner";
 import { canCreatePersona, getCurrentTier, TIER_LABELS, TIER_LIMITS } from "@/lib/personas/tier-caps";
-import {
-  insertPersona,
-  insertSpec,
-  listPersonasForBusiness,
-  PersonaDbError,
-  updatePersona,
-} from "@/lib/personas/db";
-import { applyTemplate, getTemplate } from "@/lib/personas/templates";
+import { listPersonasForBusiness, PersonaDbError } from "@/lib/personas/db";
+import { getTemplate } from "@/lib/personas/templates";
+import { createPersonaFromTemplate } from "@/lib/personas/create";
 import { sanitizeAppIds } from "@/lib/apps/catalog";
-import { buildPersonaSpecMarkdown } from "@/lib/personas/spec";
-import {
-  customFieldsSchema,
-  personaNameSchema,
-  personaScope,
-  personaSpecPath,
-  personaZoneKey,
-  personaZonePattern,
-  slugifyPersonaName,
-  toneSchema,
-} from "@/lib/personas/types";
-import { commitMemoryFile } from "@/lib/pa-brain";
-import { loadZoneConfig, saveZoneConfig, withZone } from "@/lib/brain/containment-guard";
+import { customFieldsSchema, personaNameSchema, toneSchema } from "@/lib/personas/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -89,51 +72,17 @@ export async function POST(req: Request): Promise<NextResponse> {
     const cap = await canCreatePersona(ctx.userId);
     if (!cap.ok) return NextResponse.json({ error: cap.reason, capped: true }, { status: 403 });
 
-    const slug = slugifyPersonaName(name);
-    const specFields = applyTemplate({ template, personaName: name, customFields });
-    const specMarkdown = buildPersonaSpecMarkdown(specFields);
-    const specPath = personaSpecPath(slug);
-    const zoneKey = personaZoneKey(slug);
-
-    // 1. Write the spec file (persona.md) into the brain repo.
-    const specWrite = await commitMemoryFile({
-      repo: ctx.brainRepo,
-      token: ctx.githubToken,
-      path: specPath,
-      mode: "replace",
-      content: specMarkdown,
-      commitMessage: `persona: create ${personaScope(slug)} from template ${templateKey}`,
-    });
-    if (!specWrite.ok) {
-      return NextResponse.json({ error: specWrite.error }, { status: 502 });
-    }
-
-    // 2. Declare the persona's ContainmentGuard zone (knowledge folder).
-    const { config } = await loadZoneConfig(ctx.brainRepo, ctx.githubToken);
-    const nextConfig = withZone(config, zoneKey, [personaZonePattern(slug)]);
-    const zoneWrite = await saveZoneConfig({
-      repo: ctx.brainRepo,
-      token: ctx.githubToken,
-      config: nextConfig,
-    });
-    if (!zoneWrite.ok) {
-      return NextResponse.json({ error: zoneWrite.error }, { status: 502 });
-    }
-
-    // 3. Create the persona row.
-    let persona;
+    // The shared creation sequence (spec file → zone → row → v1 spec) — the same path the
+    // vertical-onboarding seeder uses (lib/personas/create.ts).
+    let result;
     try {
-      persona = await insertPersona({
-        business_id: ctx.userId,
-        owner_user_id: ctx.userId,
+      result = await createPersonaFromTemplate({
+        ctx: { userId: ctx.userId, brainRepo: ctx.brainRepo, githubToken: ctx.githubToken },
+        template,
         name,
-        slug,
-        template_key: templateKey,
         tone,
-        status: "active",
-        spec_path: specPath,
-        knowledge_zone_key: zoneKey,
-        accessible_apps: apps,
+        customFields,
+        apps,
       });
     } catch (e) {
       if (e instanceof PersonaDbError && (e.status === 409 || /duplicate|23505/.test(e.message))) {
@@ -144,17 +93,11 @@ export async function POST(req: Request): Promise<NextResponse> {
       }
       throw e;
     }
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
 
-    // 4. Insert the immutable v1 spec row and point the persona at it.
-    const spec = await insertSpec({
-      persona_id: persona.id,
-      version: 1,
-      body_md: specMarkdown,
-      created_by: ctx.userId,
-    });
-    const updated = await updatePersona(persona.id, { current_spec_version: spec.id });
-
-    return NextResponse.json({ persona: updated ?? persona }, { status: 201 });
+    return NextResponse.json({ persona: result.persona }, { status: 201 });
   } catch (e) {
     const status = e instanceof PersonaDbError ? e.status : 500;
     return NextResponse.json({ error: errMsg(e) }, { status });

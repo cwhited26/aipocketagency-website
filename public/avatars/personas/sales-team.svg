@@ -1,0 +1,18 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sales team avatar placeholder">
+  <!-- Placeholder avatar (PA-POS-23). Temporary geometric stand-in; real illustrated art
+       replaces this file — see public/avatars/personas/README.md for the design brief. -->
+  <defs>
+    <clipPath id="card"><rect x="16" y="16" width="480" height="480" rx="96"/></clipPath>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="#172116"/>
+  <g clip-path="url(#card)">
+    <circle cx="256" cy="404" r="176" fill="#202e18"/>
+    <circle cx="256" cy="188" r="96" fill="#30441b"/>
+  </g>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="#4d6e22" stroke-width="4"/>
+  <text x="256" y="330" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="168" font-weight="700" fill="#a3e635">ST</text>
+  <g transform="translate(372,68)">
+    <rect width="72" height="72" rx="20" fill="#263719" stroke="#4d6e22" stroke-width="3"/>
+    <g transform="translate(10,10)"><path d="M10 44V30M26 44V18M42 44V8" stroke="#a3e635" stroke-width="9" fill="none" stroke-linecap="round"/></g>
+  </g>
+</svg>

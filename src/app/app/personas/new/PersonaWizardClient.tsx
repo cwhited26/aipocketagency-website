@@ -15,21 +15,34 @@ import {
   type ToneKey,
 } from "@/lib/personas/types";
 import { APP_CATALOG, appsByIds } from "@/lib/apps/catalog";
+import { PersonaAvatar } from "@/components/personas/avatar";
 
 type StagedUrl = { url: string };
 
 const TOTAL_STEPS = 6;
 
-export default function PersonaWizardClient() {
+export default function PersonaWizardClient({
+  initialTemplateKey = null,
+}: {
+  // Preselects a template and jumps to step 2 — the Home example-agent card's
+  // "Clone and customize" deep link (/app/personas/new?template=<key>, PA-POS-22).
+  initialTemplateKey?: string | null;
+}) {
   const router = useRouter();
   const templates = useMemo(() => listTemplates(), []);
 
-  const [step, setStep] = useState(1);
-  const [templateKey, setTemplateKey] = useState<string | null>(null);
-  const [name, setName] = useState("");
-  const [tone, setTone] = useState<ToneKey>("conversational");
-  const [customFields, setCustomFields] = useState<Record<string, string>>({});
-  const [apps, setApps] = useState<string[]>([]);
+  const initial = initialTemplateKey ? getTemplate(initialTemplateKey) : null;
+  const [step, setStep] = useState(initial ? 2 : 1);
+  const [templateKey, setTemplateKey] = useState<string | null>(initial ? initial.key : null);
+  const [name, setName] = useState(initial ? initial.suggestedName : "");
+  const [tone, setTone] = useState<ToneKey>(initial ? initial.defaultTone : "conversational");
+  const [customFields, setCustomFields] = useState<Record<string, string>>(() => {
+    if (!initial) return {};
+    const seed: Record<string, string> = {};
+    for (const f of templateCustomizeFields(initial)) seed[f.key] = f.starter;
+    return seed;
+  });
+  const [apps, setApps] = useState<string[]>(initial ? [...initial.defaultApps] : []);
   const [files, setFiles] = useState<File[]>([]);
   const [urls, setUrls] = useState<StagedUrl[]>([]);
   const [urlDraft, setUrlDraft] = useState("");
@@ -162,8 +175,11 @@ export default function PersonaWizardClient() {
                       : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
                   }`}
                 >
-                  <h3 className="text-slate-100 font-medium">{t.role}</h3>
-                  <p className="text-sm text-slate-400 mt-1">{t.description}</p>
+                  <div className="flex items-center gap-3">
+                    <PersonaAvatar slug={t.avatarSlug} size="md" alt={t.role} />
+                    <h3 className="text-slate-100 font-medium">{t.role}</h3>
+                  </div>
+                  <p className="text-sm text-slate-400 mt-2">{t.description}</p>
                   <p className="text-xs text-slate-500 mt-3 italic">“{t.sampleQuestion}”</p>
                 </button>
               ))}

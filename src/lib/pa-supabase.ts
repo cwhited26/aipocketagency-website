@@ -8,6 +8,9 @@ export type PaUser = {
   brain_indexed_at: string | null;
   // When the owner explicitly hid the Agent-landing setup status bar (null = still showing).
   setup_bar_dismissed_at: string | null;
+  // The vertical picked at onboarding (PA-POS-22, migration 099). NULL = skipped or pre-picker;
+  // optional because rows read before migration 099 applies don't carry the column.
+  vertical?: string | null;
   created_at: string;
   updated_at: string;
 };

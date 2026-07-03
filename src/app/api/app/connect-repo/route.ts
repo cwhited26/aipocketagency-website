@@ -3,6 +3,7 @@ import { upsertPaUser, fetchPaUser } from "@/lib/pa-supabase";
 import { indexBrain } from "@/lib/pa-brain-index";
 import { ensureInboundAddresses } from "@/lib/inbound-email/addresses";
 import { backfillStarterSkillsOnBrainConnect } from "@/lib/launch-kit/seed";
+import { ensureVerticalSeed } from "@/lib/onboarding/vertical-seed";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -87,6 +88,10 @@ export async function POST(req: Request): Promise<NextResponse> {
   // no brain was connected at subscribe time (the first-time-buyer race). Idempotent and non-fatal —
   // fires only on a first connect / reconnect, and never blocks connecting the brain.
   await backfillStarterSkillsOnBrainConnect({ ownerId: user.id, previousRepo, newRepo: repo });
+
+  // Same race for the vertical pick (PA-POS-22): the picker runs before the brain exists, so the
+  // Persona seed deferred until now. Idempotent and non-fatal — never blocks connecting the brain.
+  await ensureVerticalSeed(user.id);
 
   // Provision the owner's two inbound-email addresses (forwarding + BCC). Idempotent and
   // non-fatal — a failure here never blocks connecting the brain; the Connections page

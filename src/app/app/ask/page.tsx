@@ -9,6 +9,7 @@ import { listScaffolds, type ScaffoldEntry } from "@/lib/pa-brain";
 import { fetchGmailConnectionPublic } from "@/lib/pa-gmail-connections";
 import { fetchCalendarConnectionPublic } from "@/lib/pa-calendar-connections";
 import { fetchYouTubePrefs } from "@/lib/youtube/prefs";
+import { ensureVerticalSeed, homeVerticalCard } from "@/lib/onboarding/vertical-seed";
 import { redirect } from "next/navigation";
 import HomeClient from "./HomeClient";
 
@@ -32,15 +33,22 @@ export default async function AskPage({
   // If there's no user record at all, send them through onboarding to create one.
   if (!paUser) redirect("/app/onboarding");
 
+  // Home load is the self-healing trigger for the vertical seed (PA-POS-22): an owner who picked
+  // before connecting a brain — or whose tier cap paused the seed — gets the missing Personas
+  // landed here. No-op once seeded (one state read); never throws.
+  await ensureVerticalSeed(user.id);
+
   // The Agent landing is the mascot page: the Ask box, the recent-threads list, and in-flight
   // plans all live here, so load them alongside the sidebar conversations.
-  const [convsResult, threadsResult, gmailResult, calendarResult, youtubePrefs] = await Promise.all([
-    listConversations(user.id),
-    listConversationThreads(user.id),
-    fetchGmailConnectionPublic(user.id),
-    fetchCalendarConnectionPublic(user.id),
-    fetchYouTubePrefs(user.id),
-  ]);
+  const [convsResult, threadsResult, gmailResult, calendarResult, youtubePrefs, verticalCard] =
+    await Promise.all([
+      listConversations(user.id),
+      listConversationThreads(user.id),
+      fetchGmailConnectionPublic(user.id),
+      fetchCalendarConnectionPublic(user.id),
+      fetchYouTubePrefs(user.id),
+      homeVerticalCard(user.id),
+    ]);
   const initialConversations = convsResult.ok ? convsResult.data : [];
   const threads: ConversationThread[] = threadsResult.ok ? threadsResult.data : [];
 
@@ -66,6 +74,7 @@ export default async function AskPage({
       initialConversationId={searchParams.c ?? null}
       initialQuery={searchParams.q ?? null}
       youtubeHintInitiallyVisible={!youtubePrefs.chatHintDismissed}
+      verticalCard={verticalCard}
     />
   );
 }

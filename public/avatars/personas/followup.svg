@@ -1,0 +1,18 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Follow-Up Agent avatar placeholder">
+  <!-- Placeholder avatar (PA-POS-23). Temporary geometric stand-in; real illustrated art
+       replaces this file — see public/avatars/personas/README.md for the design brief. -->
+  <defs>
+    <clipPath id="card"><rect x="16" y="16" width="480" height="480" rx="96"/></clipPath>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="#1f1d14"/>
+  <g clip-path="url(#card)">
+    <circle cx="256" cy="404" r="176" fill="#2e2815"/>
+    <circle cx="256" cy="188" r="96" fill="#463a17"/>
+  </g>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="#755c1a" stroke-width="4"/>
+  <text x="256" y="330" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="168" font-weight="700" fill="#fbbf24">FA</text>
+  <g transform="translate(372,68)">
+    <rect width="72" height="72" rx="20" fill="#382f16" stroke="#755c1a" stroke-width="3"/>
+    <g transform="translate(10,10)"><path d="M42 26a16 16 0 1 1 -6-12.5" stroke="#fbbf24" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 6v9h-9" stroke="#fbbf24" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+  </g>
+</svg>

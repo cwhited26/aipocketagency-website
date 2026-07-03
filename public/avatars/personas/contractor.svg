@@ -1,0 +1,18 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Contractor avatar placeholder">
+  <!-- Placeholder avatar (PA-POS-23). Temporary geometric stand-in; real illustrated art
+       replaces this file — see public/avatars/personas/README.md for the design brief. -->
+  <defs>
+    <clipPath id="card"><rect x="16" y="16" width="480" height="480" rx="96"/></clipPath>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="#1f1816"/>
+  <g clip-path="url(#card)">
+    <circle cx="256" cy="404" r="176" fill="#2e2119"/>
+    <circle cx="256" cy="188" r="96" fill="#462e1d"/>
+  </g>
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="none" stroke="#754825" stroke-width="4"/>
+  <text x="256" y="330" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="168" font-weight="700" fill="#fb923c">CT</text>
+  <g transform="translate(372,68)">
+    <rect width="72" height="72" rx="20" fill="#38261a" stroke="#754825" stroke-width="3"/>
+    <g transform="translate(10,10)"><path d="M8 24L26 8l18 16" stroke="#fb923c" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M13 24v18h26V24" stroke="#fb923c" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+  </g>
+</svg>

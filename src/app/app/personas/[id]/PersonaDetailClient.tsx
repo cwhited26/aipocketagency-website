@@ -12,7 +12,8 @@ import {
   type PersonaStatus,
 } from "@/lib/personas/types";
 import { APP_CATALOG, appsByIds } from "@/lib/apps/catalog";
-import { getTemplate } from "@/lib/personas/templates";
+import { avatarSlugForTemplateKey, getTemplate } from "@/lib/personas/templates";
+import { PersonaAvatar } from "@/components/personas/avatar";
 
 type SpecPayload = { id: string; version: number; fields: Record<string, string>; createdAt: string };
 type SeatView = {
@@ -69,10 +70,19 @@ export default function PersonaDetailClient({ personaId }: { personaId: string }
         <Link href="/app/personas" className="text-sm text-slate-500 hover:text-slate-300">
           ← Personas
         </Link>
-        <h1 className="text-2xl font-semibold text-slate-100 mt-2">{persona.name}</h1>
-        <p className="text-sm text-slate-500">
-          {persona.template_key} · {persona.status} · {bundle.tier}
-        </p>
+        <div className="flex items-center gap-4 mt-3">
+          <PersonaAvatar
+            slug={avatarSlugForTemplateKey(persona.template_key)}
+            size="lg"
+            alt={persona.name}
+          />
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold text-slate-100">{persona.name}</h1>
+            <p className="text-sm text-slate-500">
+              {persona.template_key} · {persona.status} · {bundle.tier}
+            </p>
+          </div>
+        </div>
 
         <nav className="flex gap-1 mt-6 border-b border-slate-800 overflow-x-auto">
           {TABS.map((t) => (

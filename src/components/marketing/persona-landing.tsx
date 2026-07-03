@@ -2,10 +2,14 @@ import Link from "next/link";
 import { SiteHeader, SiteFooter } from "@/components/marketing/site-nav";
 import { PrimaryCTA, SecondaryCTA, MONO_FONT } from "@/components/marketing/cta";
 import { otherPersonas } from "@/data/marketing/persona-pages";
+import { verticalForMarketingSlug, verticalTemplates } from "@/lib/onboarding/verticals";
+import { PersonaAvatar } from "@/components/personas/avatar";
 
 // Shared shell for the six /for/[persona] landing pages (PA-POS-17). Every page is the
 // same product told through one owner's day — only the copy changes. The shell mirrors
-// the homepage: same header, same hero treatment, same trust bar, same CTA row.
+// the homepage: same header, same hero treatment, same trust bar, same CTA row. The
+// seeded-Personas section (PA-POS-22/23) reads the vertical registry so the marketing
+// page and the onboarding picker never drift.
 
 export type DayEntry = { time: string; body: string };
 
@@ -95,6 +99,40 @@ function DayColumn({
   );
 }
 
+function SeededPersonas({ slug }: { slug: string }) {
+  const vertical = verticalForMarketingSlug(slug);
+  if (!vertical) return null;
+  const templates = verticalTemplates(vertical);
+
+  return (
+    <section className="border-b border-white/5">
+      <div className="mx-auto max-w-4xl px-6 py-20">
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          The crew that lands with your pick.
+        </h2>
+        <p className="mt-4 max-w-2xl text-slate-400">
+          Pick <span className="text-slate-200">{vertical.label}</span> when you set up your
+          workspace and these three Personas arrive ready to customize — their specs written into
+          your own Business Brain repo (a GitHub repository you own), not our database. Everything
+          they prepare is staged for your review; nothing goes out until you approve it.
+        </p>
+        <div className="mt-10 grid gap-5 sm:grid-cols-3">
+          {templates.map((t) => (
+            <div
+              key={t.key}
+              className="rounded-2xl border border-white/10 bg-white/[0.02] p-6"
+            >
+              <PersonaAvatar slug={t.avatarSlug} size="xl" alt={t.suggestedName} />
+              <h3 className="mt-4 font-semibold text-slate-100">{t.suggestedName}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-400">{t.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function PersonaLanding({ copy }: { copy: PersonaPageCopy }) {
   return (
     <>
@@ -163,6 +201,9 @@ export function PersonaLanding({ copy }: { copy: PersonaPageCopy }) {
             </ul>
           </div>
         </section>
+
+        {/* THE SEEDED CREW — the three Personas this vertical starts with (PA-POS-22/23) */}
+        <SeededPersonas slug={copy.slug} />
 
         {/* THE ANCHOR — what the alternative costs */}
         <section className="border-b border-white/5 bg-black/20">

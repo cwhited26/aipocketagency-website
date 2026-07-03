@@ -25,6 +25,8 @@ import { asDecisionRoundtablePayload } from "@/lib/decisions/card";
 import DecisionRoundtableCard from "./_components/DecisionRoundtableCard";
 import RoundtableOfferChip, { type RoundtableOffer } from "./_components/RoundtableOfferChip";
 import { isVisionUploadType } from "@/lib/vision/ocr";
+import { PersonaAvatar } from "@/components/personas/avatar";
+import type { HomeVerticalCard } from "@/lib/onboarding/vertical-seed";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -606,6 +608,74 @@ function MascotNavHub({
   );
 }
 
+// ─── Example agent card (PA-POS-22) ────────────────────────────────────────────
+// One agent per vertical, shown after the pick seeds the workspace: the flagship role for the
+// owner's business with a clone-and-customize CTA into the wizard (preselected template).
+// Dismiss is local — the card is a first-week pointer, not state worth a table.
+
+const VERTICAL_CARD_DISMISS_KEY = "pa_vertical_example_dismissed";
+
+function ExampleAgentCard({ card }: { card: HomeVerticalCard }) {
+  const [dismissed, setDismissed] = useState(true);
+
+  useEffect(() => {
+    setDismissed(localStorage.getItem(VERTICAL_CARD_DISMISS_KEY) === "1");
+  }, []);
+
+  function dismiss() {
+    localStorage.setItem(VERTICAL_CARD_DISMISS_KEY, "1");
+    setDismissed(true);
+  }
+
+  if (dismissed) return null;
+
+  return (
+    <div className="rounded-xl border border-[#22d3ee]/20 bg-[#22d3ee]/[0.04] p-4">
+      <div className="flex items-start gap-3">
+        <PersonaAvatar slug={card.avatarSlug} size="lg" alt={card.personaName} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-mono tracking-[0.14em] uppercase text-[#22d3ee]/70">
+                Seeded from your pick · {card.verticalLabel}
+              </p>
+              <h3 className="text-slate-100 font-medium mt-1">
+                {card.personaName} — ready to put to work
+              </h3>
+            </div>
+            <button
+              type="button"
+              onClick={dismiss}
+              aria-label="Dismiss example agent card"
+              className="shrink-0 text-slate-600 hover:text-slate-300 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          <p className="text-sm text-slate-400 mt-1.5 leading-relaxed">{card.description}</p>
+          <p className="text-xs text-slate-500 mt-2 font-mono">
+            Try: &ldquo;{card.starterPrompt}&rdquo;
+          </p>
+          <div className="flex items-center gap-2 mt-3">
+            <a
+              href={`/app/personas/new?template=${encodeURIComponent(card.templateKey)}`}
+              className="text-xs rounded-md bg-[#22d3ee] text-[#031820] font-semibold px-3 py-1.5 hover:bg-[#06b6d4] transition-colors"
+            >
+              Clone and customize
+            </a>
+            <a
+              href="/app/personas"
+              className="text-xs rounded-md border border-slate-700 text-slate-300 px-3 py-1.5 hover:bg-slate-800 transition-colors"
+            >
+              See all Personas
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Hub View ──────────────────────────────────────────────────────────────────
 
 const CHIPS = [
@@ -637,6 +707,7 @@ function HubView({
   attachError,
   youtubeHint,
   onDismissYouTubeHint,
+  verticalCard,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
@@ -659,6 +730,8 @@ function HubView({
   // One-time first-touch hint that PA reads YouTube links dropped into the chat box.
   youtubeHint: boolean;
   onDismissYouTubeHint: () => void;
+  // The example agent from the owner's vertical pick (PA-POS-22); null hides the card.
+  verticalCard: HomeVerticalCard | null;
 }) {
   return (
     <div className="h-full overflow-y-auto" style={{ animation: "hub-fadein 0.4s ease-out" }}>
@@ -686,6 +759,9 @@ function HubView({
           hasConnection={hasConnection}
           setupBarDismissedAt={setupBarDismissedAt}
         />
+
+        {/* The example agent from the vertical pick (PA-POS-22) — one card, dismissable */}
+        {verticalCard && <ExampleAgentCard card={verticalCard} />}
 
         {/* The full story — this is the one box that does everything */}
         <p className="text-sm text-slate-300 leading-relaxed text-center max-w-xl mx-auto">
@@ -1043,6 +1119,7 @@ export default function HomeClient({
   initialConversationId,
   initialQuery,
   youtubeHintInitiallyVisible,
+  verticalCard,
 }: {
   brainRepo: string | null;
   hasApiKey: boolean;
@@ -1062,6 +1139,8 @@ export default function HomeClient({
   initialQuery: string | null;
   // First time on the chat box (and not yet dismissed) → show the "PA reads YouTube links" hint.
   youtubeHintInitiallyVisible: boolean;
+  // The example agent seeded from the owner's vertical pick (PA-POS-22); null = skipped/undecided.
+  verticalCard: HomeVerticalCard | null;
 }) {
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [activeConvId, setActiveConvId] = useState<string | null>(initialConversationId);
@@ -1569,6 +1648,7 @@ export default function HomeClient({
             attachError={attachError}
             youtubeHint={youtubeHint}
             onDismissYouTubeHint={dismissYouTubeHint}
+            verticalCard={verticalCard}
           />
         )}
       </div>
