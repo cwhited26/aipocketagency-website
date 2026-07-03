@@ -85,7 +85,7 @@ export default function AboutPage() {
           </div>
 
           <div className="mt-16">
-            <PrimaryCTA label="Start for $37" href="/start?tier=pro" />
+            <PrimaryCTA label="Start for $37" href="/start?tier=starter" />
           </div>
         </div>
       </section>

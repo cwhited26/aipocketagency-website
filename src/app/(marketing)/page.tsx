@@ -345,7 +345,7 @@ export default function HomePage() {
               your second brain. Your Packaged AI Agents do the rest. $37 a month.
             </p>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <PrimaryCTA href="/start?tier=pro" label="Start for $37" />
+              <PrimaryCTA href="/start?tier=starter" label="Start for $37" />
               <SecondaryCTA href="/pricing" label="See how it works" />
             </div>
             <p className="mt-6 text-sm text-slate-400">
@@ -1068,12 +1068,11 @@ export default function HomePage() {
               Every AI Agent your business needs. Packaged.
             </h2>
             <p className="mt-5 text-lg text-slate-300">
-              All of them, connected for you, running on your own business context,
-              in accounts you own. Cancel anytime and it all keeps running. $37 a
-              month.
+              All of them, connected for you, running on your own business context.
+              $37 a month.
             </p>
             <div className="mt-8 flex justify-center">
-              <PrimaryCTA href="/start?tier=pro" label="Start for $37" />
+              <PrimaryCTA href="/start?tier=starter" label="Start for $37" />
             </div>
             <p className="mt-5 text-sm text-slate-500">
               Generic AI starts from zero. Pocket Agent starts from your business.
