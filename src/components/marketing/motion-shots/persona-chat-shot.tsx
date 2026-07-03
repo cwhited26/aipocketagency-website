@@ -3,6 +3,7 @@
 // Shot A (PA-POS-26): a Persona works a request in chat — user asks, the agent narrates
 // what it's reading, then a draft lands as an approval card. Nothing sends itself.
 import { motion } from "framer-motion";
+import { PersonaAvatar } from "@/components/personas/avatar";
 import { ApprovalButtons, ShotFrame, Typewriter, useShotLoop, useTimeline } from "./shot-frame";
 
 const USER_ASK = "draft a follow-up to Jenny at Acme";
@@ -31,9 +32,8 @@ function Scene({ active }: { active: boolean }) {
 
       {step >= 2 && (
         <div className="flex items-start gap-2.5">
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent/20 text-[10px] font-bold text-accent ring-1 ring-accent/30">
-            AA
-          </span>
+          <PersonaAvatar slug="admin" size="sm" alt="Admin Assistant" />
+
           <div className="space-y-1.5 pt-1">
             {STATUS_LINES.map((line, i) => {
               if (step < i + 2) return null;
