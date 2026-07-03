@@ -1,14 +1,13 @@
 "use client";
 
-// The Agent Builder hero box (PA-POS-28 — the marketing surface of PA-POS-27). The owner
-// describes the agent they need; the box previews what Pocket Agent would compose from the
-// real catalogs (client-side keyword match, no LLM call). The Compose button routes an
-// entitled signed-in owner (Studio+/Enterprise — the entitlement endpoint decides; it widens
-// to Project Passes when PA-POS-31 lands) straight into the shipped App at
-// /app/apps/agent-builder with the spec; everyone else carries the spec into signup at
-// /start?intent=agent-builder. The real composition runs inside the workspace and stages
-// for approval before anything runs. The page stays static — entitlement is one client
-// fetch after mount, defaulting to the signup route on any failure.
+// The Agent Builder hero box (PA-POS-28 — the marketing surface of PA-POS-27, placement per
+// PA-POS-34). The owner describes the agent they need; the box previews what Pocket Agent
+// would compose from the real catalogs (client-side keyword match, no LLM call). The Compose
+// button routes a signed-in owner — ANY tier; composing has no tier gate — to the Library
+// create surface at /agents#compose with the spec; everyone else carries the spec into signup
+// at /start?intent=agent-builder. The real composition runs inside the workspace and stages
+// for approval before anything runs. The page stays static — the signed-in check is one
+// client fetch after mount, defaulting to the signup route on any failure.
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -60,8 +59,8 @@ export function AgentBuilderHero({ composeData }: { composeData: ComposeData }) 
   const [preview, setPreview] = useState<ComposePreview | null>(null);
   const [entitled, setEntitled] = useState(false);
 
-  // One post-mount check: does this visitor already own the Agent Builder App? Any failure
-  // (signed out, network, endpoint missing) leaves the default signup route in place.
+  // One post-mount check: is this visitor signed in? (PA-POS-34 — every owner composes.) Any
+  // failure (signed out, network, endpoint missing) leaves the default signup route in place.
   useEffect(() => {
     let cancelled = false;
     fetch("/api/app/agent-builder/entitlement", { cache: "no-store" })
@@ -101,10 +100,11 @@ export function AgentBuilderHero({ composeData }: { composeData: ComposeData }) 
   function compose() {
     const trimmed = spec.trim();
     if (entitled) {
+      // Signed in → the Library create surface (PA-POS-34), spec riding along.
       router.push(
         trimmed
-          ? `/app/apps/agent-builder?spec=${encodeURIComponent(trimmed)}`
-          : "/app/apps/agent-builder",
+          ? `/agents?spec=${encodeURIComponent(trimmed)}#compose`
+          : "/agents#compose",
       );
       return;
     }

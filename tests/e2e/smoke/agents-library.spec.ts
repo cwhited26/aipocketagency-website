@@ -10,6 +10,24 @@ test("smoke: /agents renders the library with at least 20 cards", async ({ page 
   expect(await page.locator("[data-agent-card]").count()).toBeGreaterThanOrEqual(20);
 });
 
+test("smoke: /agents carries the compose surface at #compose (PA-POS-34)", async ({ page }) => {
+  const res = await page.goto("/agents#compose", { waitUntil: "domcontentloaded" });
+  expect(res!.status()).toBe(200);
+  await expect(page.locator("#compose")).toBeAttached();
+  await expect(page.locator("[data-agents-compose-input]")).toBeVisible();
+  await expect(page.locator("[data-agents-compose-button]")).toBeVisible();
+});
+
+test("smoke: the App tile route forwards to the Library create surface (PA-POS-34)", async ({
+  page,
+}) => {
+  // Signed out this still resolves — the redirect target is the public /agents page.
+  await page.goto("/app/apps/agent-builder?spec=watch%20my%20inbox", {
+    waitUntil: "domcontentloaded",
+  });
+  await expect(page).toHaveURL(/\/agents\?spec=.*#compose$/);
+});
+
 test("smoke: /use-cases/lead-generation renders the rail, the steps, and shots A/B/E", async ({
   page,
 }) => {

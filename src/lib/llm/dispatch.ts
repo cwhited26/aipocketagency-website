@@ -75,6 +75,11 @@ export type DispatchParams = {
   system: string;
   messages: LlmChatMessage[];
   maxTokens?: number;
+  // Overrides the PA-managed model for this one call — a cheap structured task (a parse, a
+  // bucket pick) can ride Haiku instead of the premium default (PA-POS-34: the Agent Builder
+  // parse is free on every tier because it's small). BYO targets are never overridden — an
+  // owner running their own key keeps the model they chose.
+  managedModelOverride?: string;
 };
 
 type LlmTarget = {
@@ -113,13 +118,13 @@ export type DispatchCompletionResult =
 
 // ── Resolution ────────────────────────────────────────────────────────────────────────
 
-function managedTarget(paManagedKey: string): LlmTarget | null {
+function managedTarget(paManagedKey: string, modelOverride?: string): LlmTarget | null {
   if (!paManagedKey) return null;
   return {
     provider: "pa_managed",
-    model: PA_MANAGED_MODEL,
+    model: modelOverride ?? PA_MANAGED_MODEL,
     apiKey: paManagedKey,
-    qualityWarning: false, // PA-managed is always a premium-tier model
+    qualityWarning: false, // PA-managed models are curated — override included
   };
 }
 
@@ -132,7 +137,7 @@ async function resolveTargets(
   params: DispatchParams,
   deps: DispatchDeps,
 ): Promise<{ primary: LlmTarget | null; managed: LlmTarget | null; configError: string | null }> {
-  const managed = managedTarget(params.paManagedKey);
+  const managed = managedTarget(params.paManagedKey, params.managedModelOverride);
   let settings: LlmProviderSettingsRow | null = null;
   try {
     settings = await deps.loadSettings(params.userId);

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   resolveCheckoutTier,
@@ -42,7 +43,7 @@ const FUNNEL_TIER_LABEL: Record<PaidTier, string> = {
 export default async function StartPage({
   searchParams,
 }: {
-  searchParams: { tier?: string };
+  searchParams: { tier?: string; intent?: string; spec?: string };
 }) {
   // ?tier= is routed in from the /pricing CTAs. Validate against the ladder; anything
   // unknown/missing/enterprise falls back to ’starter’.
@@ -56,6 +57,14 @@ export default async function StartPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // The agent-builder deep link (PA-POS-28 address contract, placement per PA-POS-34): a
+  // signed-in owner doesn't need the order form — the compose action is theirs on every tier.
+  // Forward them to the Library create surface with the spec riding along.
+  if (user && searchParams.intent === "agent-builder") {
+    const spec = typeof searchParams.spec === "string" ? searchParams.spec.slice(0, 4_000) : "";
+    redirect(spec ? `/agents?spec=${encodeURIComponent(spec)}#compose` : "/agents#compose");
+  }
 
   return (
     <StartForm

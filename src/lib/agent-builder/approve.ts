@@ -37,6 +37,9 @@ const ProposalPayloadSchema = z.object({
 export type AgentBuildOverrides = {
   personaName?: string;
   starterPrompt?: string;
+  /** The scoped-version choice (PA-POS-34): App ids the owner dropped before approving —
+   *  usually the ones their plan hasn't unlocked. The agent deploys without them. */
+  excludeApps?: string[];
 };
 
 export type AcceptAgentBuildResult =
@@ -53,7 +56,9 @@ function applyOverrides(
 ): ComposedAgent {
   const personaName = overrides.personaName?.trim() || composed.personaName;
   const starterPrompt = overrides.starterPrompt?.trim() || composed.starterPrompt;
-  return { ...composed, personaName, starterPrompt };
+  const excluded = new Set(overrides.excludeApps ?? []);
+  const apps = excluded.size > 0 ? composed.apps.filter((a) => !excluded.has(a)) : composed.apps;
+  return { ...composed, personaName, starterPrompt, apps };
 }
 
 export async function acceptAgentBuildProposal(params: {

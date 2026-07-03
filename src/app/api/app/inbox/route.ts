@@ -140,7 +140,16 @@ export type SoulProposalDetail = {
 
 // Custom Agent Builder (PA-POS-27): the whole composed agent staged as one approval card. The
 // compact detail drives the card; the full ComposedAgent stays on the payload for the approve
-// callback. The owner may edit personaName + starterPrompt inline before approving.
+// callback. The owner may edit personaName + starterPrompt inline before approving — and drop
+// the tier-gated Apps for a scoped version (PA-POS-34).
+export type GatedAppOfferDetail = {
+  appId: string;
+  label: string;
+  includedInTierLabel: string;
+  passPriceCents: number | null;
+  passWindowLabel: string | null;
+};
+
 export type AgentBuildProposalDetail = {
   buildId: string;
   personaName: string;
@@ -150,6 +159,9 @@ export type AgentBuildProposalDetail = {
   brainScopes: string[];
   schedule: string | null;
   candidateSkill: { slug: string; name: string; body: string } | null;
+  /** Composed Apps the owner's plan hasn't unlocked (PA-POS-34) — each with a Project Pass
+   *  offer when one exists. Empty when the whole toolkit is already covered. */
+  gatedApps: GatedAppOfferDetail[];
 };
 
 // Signal Catcher (PA-SIGNAL-1): a caught standing wish proposed as a Ritual. The owner may edit
@@ -310,6 +322,22 @@ function agentBuildOf(item: InboxItem): AgentBuildProposalDetail {
     const c = rawCandidate as Record<string, unknown>;
     candidateSkill = { slug: str(c.slug), name: str(c.name), body: str(c.body) };
   }
+  // gatedApps (PA-POS-34) is staged next to `composed`; a pre-correction card just has none.
+  const rawGated = Array.isArray(item.payload.gatedApps) ? (item.payload.gatedApps as unknown[]) : [];
+  const gatedApps: GatedAppOfferDetail[] = rawGated.flatMap((g) => {
+    if (!g || typeof g !== "object") return [];
+    const o = g as Record<string, unknown>;
+    if (!o.appId || typeof o.appId !== "string") return [];
+    return [
+      {
+        appId: o.appId,
+        label: str(o.label) || o.appId,
+        includedInTierLabel: str(o.includedInTierLabel),
+        passPriceCents: typeof o.passPriceCents === "number" ? o.passPriceCents : null,
+        passWindowLabel: str(o.passWindowLabel) || null,
+      },
+    ];
+  });
   return {
     buildId: str(item.payload.buildId) || str(composed.buildId),
     personaName: str(composed.personaName) || item.title,
@@ -319,6 +347,7 @@ function agentBuildOf(item: InboxItem): AgentBuildProposalDetail {
     brainScopes: strArray(composed.brainScopes),
     schedule: str(composed.schedule) || null,
     candidateSkill,
+    gatedApps,
   };
 }
 

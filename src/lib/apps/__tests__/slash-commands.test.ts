@@ -139,18 +139,34 @@ describe("tier-gated invocation (PA-SLASH-1)", () => {
     expect(studio).toContain("landing-page-builder");
     expect(studio).toContain("competitor-inspector");
     expect(studio).toContain("idea-engine");
-    // Four Apps sit above Studio: iMessage (Channels Gateway Phase 3), the Browser Agent
-    // (PA-POS-19, hosted browser sessions), the Custom Agent Builder (PA-POS-27), and Voice
-    // (PA-CHAN-16, realtime audio) — all unlock at Studio+.
+    // The Custom Agent Builder opens on EVERY tier (PA-POS-34) — the tier gate applies to the
+    // composed spec's Apps at review time, not to composing.
+    expect(starter).toContain("agent-builder");
+    expect(studio).toContain("agent-builder");
+    // Three Apps sit above Studio: iMessage (Channels Gateway Phase 3), the Browser Agent
+    // (PA-POS-19, hosted browser sessions), and Voice (PA-CHAN-16, realtime audio) — all
+    // unlock at Studio+. Every list also carries the /build entry (+1 vs the catalog count).
     expect(studio).not.toContain("imessage-channel");
     expect(studio).not.toContain("browser-agent");
-    expect(studio).not.toContain("agent-builder");
     expect(studio).not.toContain("voice");
-    expect(studio.length).toBe(APP_CATALOG.length - 4);
+    expect(studio.length).toBe(APP_CATALOG.length - 3 + 1);
     expect(studioPlus).toContain("browser-agent");
     expect(studioPlus).toContain("agent-builder");
     expect(studioPlus).toContain("voice");
-    expect(studioPlus.length).toBe(APP_CATALOG.length);
+    expect(studioPlus.length).toBe(APP_CATALOG.length + 1);
+  });
+
+  it("/build resolves to the inline composer on every tier (PA-POS-34)", () => {
+    const starter = resolveAppSlashCommand("/build", "starter");
+    expect(starter.kind).toBe("compose");
+    const withSpec = resolveAppSlashCommand(
+      "/build an agent that watches my inbox",
+      "starter",
+    );
+    expect(withSpec).toEqual({ kind: "compose", args: "an agent that watches my inbox" });
+    // The autocomplete offers it from the first keystroke, on the lowest tier.
+    const suggested = appSlashAutocomplete("/bu", "starter").map((e) => e.command);
+    expect(suggested).toContain("build");
   });
 
   it("`/call <number>` resolves to the Voice App with the number as prefill (PA-CHAN-16)", () => {
@@ -212,6 +228,8 @@ describe("catalog invariants the dispatcher relies on", () => {
   it("formats the available-commands list as one line per command", () => {
     const text = formatAppSlashList(appSlashCommandsForTier("starter"));
     expect(text.split("\n").length).toBe(appSlashCommandsForTier("starter").length);
-    expect(text.startsWith("/quote — ")).toBe(true);
+    // `/build` leads the list (PA-POS-34 — the compose action on every tier), then the catalog.
+    expect(text.startsWith("/build — ")).toBe(true);
+    expect(text).toContain("/quote — ");
   });
 });

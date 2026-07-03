@@ -107,6 +107,16 @@ type SoulProposalDetail = {
   body: string | null;
 };
 
+// A composed App the owner's plan hasn't unlocked (PA-POS-34) — priced with its Project Pass
+// when one exists. Mirrors GatedAppOfferDetail on the inbox API.
+type GatedAppOffer = {
+  appId: string;
+  label: string;
+  includedInTierLabel: string;
+  passPriceCents: number | null;
+  passWindowLabel: string | null;
+};
+
 type AgentBuildProposalDetail = {
   buildId: string;
   personaName: string;
@@ -116,6 +126,7 @@ type AgentBuildProposalDetail = {
   brainScopes: string[];
   schedule: string | null;
   candidateSkill: { slug: string; name: string; body: string } | null;
+  gatedApps: GatedAppOffer[];
 };
 
 // Owner-friendly heading per Soul attribute kind (mirrors lib/personas/soul-types SOUL_KIND_LABELS).
@@ -969,6 +980,10 @@ function AgentBuildProposalCard({
   const detail = card.agentBuild;
   const [personaName, setPersonaName] = useState(detail?.personaName ?? card.title);
   const [starterPrompt, setStarterPrompt] = useState(detail?.starterPrompt ?? "");
+  // PA-POS-34: composed Apps the plan hasn't unlocked. The owner picks — approve as-is (they
+  // ride along and wait for a pass or an upgrade) or deploy the scoped version without them.
+  const gatedApps = detail?.gatedApps ?? [];
+  const [deployScoped, setDeployScoped] = useState(false);
 
   async function handleApprove() {
     setBusy("approve");
@@ -981,6 +996,9 @@ function AgentBuildProposalCard({
         body: JSON.stringify({
           personaName: personaName.trim(),
           starterPrompt: starterPrompt.trim(),
+          ...(deployScoped && gatedApps.length > 0
+            ? { excludeApps: gatedApps.map((g) => g.appId) }
+            : {}),
         }),
       });
       if (!res.ok) {
@@ -1062,6 +1080,41 @@ function AgentBuildProposalCard({
             </div>
           )}
         </>
+      )}
+
+      {gatedApps.length > 0 && (
+        <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] px-4 py-3">
+          <p className="text-[11px] font-mono uppercase tracking-[0.14em] text-amber-400/80">
+            Not in your plan yet
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            {gatedApps.map((g) => (
+              <li key={g.appId} className="text-sm text-slate-300 leading-relaxed">
+                {g.label}
+                {g.passPriceCents !== null ? (
+                  <span className="text-slate-500">
+                    {" "}— Project Pass ${Math.round(g.passPriceCents / 100)} / {g.passWindowLabel}
+                    {g.includedInTierLabel ? `, or included in ${g.includedInTierLabel}` : ""}
+                  </span>
+                ) : g.includedInTierLabel ? (
+                  <span className="text-slate-500"> — included in {g.includedInTierLabel}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <label className="mt-2 flex items-start gap-2 text-xs text-slate-400 leading-relaxed cursor-pointer">
+            <input
+              type="checkbox"
+              checked={deployScoped}
+              onChange={(e) => setDeployScoped(e.target.checked)}
+              className="mt-0.5 accent-[#22d3ee]"
+            />
+            <span>
+              Deploy the scoped version — leave these Apps off. Approve as-is instead and they
+              ride along, waiting until a Project Pass or your plan unlocks them. Your call.
+            </span>
+          </label>
+        </div>
       )}
 
       {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}

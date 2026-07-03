@@ -276,7 +276,7 @@ export const APP_CATALOG: AppDef[] = [
     label: "Custom Agent Builder",
     shortLabel: "Agent Builder",
     description:
-      "Describe the agent you need. Pocket Agent composes it inside your workspace and stages it for your approval before it runs.",
+      "Describe the agent you need — Pocket Agent composes it inside your workspace. Every composed agent stages for your approval before it runs.",
     blurb: "Composes a new agent from a plain-English spec — Persona, Apps, Skills, brain scopes.",
     tag: "Composes Agents",
     tagColor: "cyan",

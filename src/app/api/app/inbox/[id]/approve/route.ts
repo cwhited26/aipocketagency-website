@@ -57,9 +57,11 @@ const OverrideSchema = z.object({
   soulSummary: z.string().max(240).optional(),
   soulBody: z.string().max(4_000).optional(),
   // Agent Builder proposals (PA-POS-27): the owner may rename the composed persona and tune its
-  // starter prompt inline on the card before approving.
+  // starter prompt inline on the card before approving. excludeApps is the scoped-version
+  // choice (PA-POS-34) — App ids dropped from the composed toolkit, usually the tier-gated ones.
   personaName: z.string().max(120).optional(),
   starterPrompt: z.string().max(400).optional(),
+  excludeApps: z.array(z.string().max(60)).max(20).optional(),
   // Signal Catcher proposals (PA-SIGNAL-1): the owner may rename the proposed ritual and retype
   // its plain-English cadence inline on the card before approving.
   ritualName: z.string().max(120).optional(),
@@ -227,6 +229,7 @@ export async function POST(
       overrides: {
         personaName: override.personaName,
         starterPrompt: override.starterPrompt,
+        excludeApps: override.excludeApps,
       },
     });
     if (!accepted.ok) {

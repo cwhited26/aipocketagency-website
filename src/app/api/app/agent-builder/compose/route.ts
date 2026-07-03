@@ -1,18 +1,24 @@
-// POST /api/app/agent-builder/compose — the Custom Agent Builder's one entry point (PA-POS-27).
-// Owner's plain-English spec in; ONE agent_builder_proposal card in Mission Control out.
+// POST /api/app/agent-builder/compose — the Custom Agent Builder's one entry point (PA-POS-27,
+// placement corrected by PA-POS-34). Owner's plain-English spec in; ONE agent_builder_proposal
+// card in Mission Control out.
 //
-// Sequence: tier gate (Studio+/Enterprise) → build row (draft) → parse (one model call, cost
-// ledgered) → deterministic compose (persona / toolkit / skills / brain scopes) → Gate Phase
-// against the composed spec → stage the approval card. A gate refusal or parse failure flips
-// the build row to failed and returns the reason — nothing is staged, nothing persists beyond
-// the record of the attempt.
+// Every tier composes (PA-POS-34) — the compose primitive is one small Haiku parse call. The
+// tier gate applies to the COMPOSED SPEC: any composed App the owner's tier (or an active
+// Project Pass) hasn't unlocked is surfaced at review time with a Project Pass offer on that
+// specific App, and the owner can approve a scoped version without it.
+//
+// Sequence: build row (draft) → parse (one model call, cost ledgered) → deterministic compose
+// (persona / toolkit / skills / brain scopes) → Gate Phase against the composed spec → stage
+// the approval card. A gate refusal or parse failure flips the build row to failed and returns
+// the reason — nothing is staged, nothing persists beyond the record of the attempt.
 
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { getCurrentTier } from "@/lib/personas/tier-caps";
-import { hasAppEntitlement } from "@/lib/metering/entitlement";
+import { listPassesForOwner } from "@/lib/metering/store";
+import { gatedAppOffers, gatedAppsSentence } from "@/lib/agent-builder/gated-apps";
 import { listPersonasForBusiness } from "@/lib/personas/db";
 import { createAgentBuild, updateAgentBuild } from "@/lib/agent-builder/db";
 import { AgentSpecParseError, parseAgentSpec } from "@/lib/agent-builder/parse";
@@ -52,18 +58,9 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: parsedBody.error.message }, { status: 422 });
   }
 
-  // Tier OR active Project Pass (PA-POS-31) — the widened gate.
-  const tier = await getCurrentTier(user.id);
-  const access = await hasAppEntitlement(user.id, "agent_builder", { tier });
-  if (!access.allowed) {
-    return NextResponse.json(
-      {
-        error:
-          "The Custom Agent Builder is part of the AI Agent Workspace tier. Upgrade to compose agents from a description — or grab a Project Pass on the App page.",
-      },
-      { status: 403 },
-    );
-  }
+  // No compose gate (PA-POS-34) — tier + passes resolve once here and price the COMPOSED
+  // spec's Apps at review time instead.
+  const [tier, passes] = await Promise.all([getCurrentTier(user.id), listPassesForOwner(user.id)]);
 
   const paRes = await fetchPaUser(user.id);
   const pa = paRes.ok ? paRes.data : null;
@@ -137,8 +134,13 @@ export async function POST(req: Request): Promise<NextResponse> {
     );
   }
 
-  // 4. Stage the ONE approval card.
-  const staged = await stageAgentBuildApproval({ ownerId: user.id, composed });
+  // 4. Which composed Apps this owner can't run yet (PA-POS-34) — surfaced on the card and in
+  //    the response with a Project Pass offer per App. Never a block: approve as-is and the App
+  //    waits, or approve the scoped version without it.
+  const gatedApps = gatedAppOffers({ tier, passes, appIds: composed.apps });
+
+  // 5. Stage the ONE approval card.
+  const staged = await stageAgentBuildApproval({ ownerId: user.id, composed, gatedApps });
   if (!staged.ok) {
     await failBuild();
     return NextResponse.json({ error: staged.error }, { status: staged.status });
@@ -165,6 +167,8 @@ export async function POST(req: Request): Promise<NextResponse> {
       candidateSkill: composed.candidateSkill
         ? { slug: composed.candidateSkill.slug, name: composed.candidateSkill.name }
         : null,
+      gatedApps,
+      gatedAppsNote: gatedAppsSentence(gatedApps),
     },
     { status: 201 },
   );

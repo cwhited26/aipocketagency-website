@@ -158,6 +158,21 @@ describe("acceptAgentBuildProposal", () => {
     expect(payload.files[0].content).toContain("Start with today's inbox");
   });
 
+  it("deploys the scoped version when the owner drops the gated Apps (PA-POS-34)", async () => {
+    const withGated: ComposedAgent = {
+      ...COMPOSED,
+      apps: ["email-drafter", "followups", "browser-agent"],
+    };
+    const result = await acceptAgentBuildProposal({
+      ownerId: "owner-1",
+      payload: payloadOf(withGated),
+      overrides: { excludeApps: ["browser-agent"] },
+    });
+    expect(result.ok).toBe(true);
+    // The persona goes live WITHOUT the dropped App — the scoped version, not a block.
+    expect(mockCreatePersona.mock.calls[0][0].apps).toEqual(["email-drafter", "followups"]);
+  });
+
   it("refuses before creating anything when GitHub Build isn't connected", async () => {
     mockBuildConn.mockResolvedValue({
       ok: true,

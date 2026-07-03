@@ -8,6 +8,7 @@ import { createInboxItem } from "@/lib/pa-inbox-items";
 import { appsByIds, sanitizeAppIds } from "@/lib/apps/catalog";
 import { starterSkillBySlug } from "@/lib/starter-skills/catalog";
 import { updateAgentBuild } from "./db";
+import { gatedAppsSentence, type GatedAppOffer } from "./gated-apps";
 import {
   AGENT_BUILDER_PROPOSAL_KIND,
   AGENT_BUILDER_SOURCE,
@@ -20,7 +21,10 @@ export type StageAgentBuildResult =
   | { ok: false; status: number; error: string };
 
 /** The owner-readable summary the card renders (body_md). Voice-checked per §19. */
-export function proposalBodyMarkdown(composed: ComposedAgent): string {
+export function proposalBodyMarkdown(
+  composed: ComposedAgent,
+  gatedApps: readonly GatedAppOffer[] = [],
+): string {
   const appLabels = appsByIds(sanitizeAppIds(composed.apps)).map((a) => a.label);
   const skillNames = composed.skillSlugs.map((slug) => starterSkillBySlug(slug)?.name ?? slug);
 
@@ -41,6 +45,11 @@ export function proposalBodyMarkdown(composed: ComposedAgent): string {
     );
   }
 
+  // PA-POS-34: the tier gate applies to the composed spec, priced right here — never a block.
+  if (gatedApps.length > 0) {
+    lines.push("", gatedAppsSentence(gatedApps));
+  }
+
   lines.push(
     "",
     "Approve and Pocket Agent stages the commit that writes this agent into your Business Brain repo. The agent lives in your Business Brain repo. Not our database. Reject and nothing is saved.",
@@ -57,16 +66,24 @@ export function proposalBodyMarkdown(composed: ComposedAgent): string {
 export async function stageAgentBuildApproval(params: {
   ownerId: string;
   composed: ComposedAgent;
+  /** Composed Apps the owner's tier/passes haven't unlocked (PA-POS-34) — rendered on the
+   *  card with a Project Pass offer per App; the owner can approve a scoped version. */
+  gatedApps?: readonly GatedAppOffer[];
 }): Promise<StageAgentBuildResult> {
   const { ownerId, composed } = params;
+  const gatedApps = params.gatedApps ?? [];
 
   const inbox = await createInboxItem({
     userId: ownerId,
     kind: AGENT_BUILDER_PROPOSAL_KIND,
     title: `New agent for your approval: ${composed.personaName}`,
-    bodyMd: proposalBodyMarkdown(composed),
+    bodyMd: proposalBodyMarkdown(composed, gatedApps),
     source: AGENT_BUILDER_SOURCE,
-    payload: { buildId: composed.buildId, composed } as unknown as Record<string, unknown>,
+    payload: {
+      buildId: composed.buildId,
+      composed,
+      gatedApps,
+    } as unknown as Record<string, unknown>,
   });
   if (!inbox.ok) {
     agentBuilderLog.error("staging the approval card failed", {

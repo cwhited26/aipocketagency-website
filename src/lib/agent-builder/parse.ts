@@ -5,7 +5,8 @@
 // intent's fields are enums over those primitives.
 //
 // Rides the BYO LLM dispatcher (completeLlm) like every other PA agent call — PA-managed
-// Claude Sonnet by default, the owner's own provider when configured. Every call writes one
+// Haiku for this structured pick (PA-POS-34: composing is free on every tier because the
+// parse is small), the owner's own provider when configured. Every call writes one
 // pa_cost_events row (featureSlug 'agent_builder', deterministic idempotency key).
 
 import { completeLlm, type DispatchCompletionResult, type DispatchParams } from "@/lib/llm/dispatch";
@@ -103,6 +104,9 @@ export async function parseAgentSpec(
     system: SYSTEM,
     messages: [{ role: "user", content: params.specText }],
     maxTokens: 1_000,
+    // A structured pick over shipped enums — Haiku handles it. This is what keeps the
+    // compose primitive free on every tier (PA-POS-34); BYO owners keep their own model.
+    managedModelOverride: "claude-haiku-4-5-20251001",
   });
 
   if (!res.ok) {

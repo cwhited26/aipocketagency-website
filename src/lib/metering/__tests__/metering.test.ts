@@ -191,6 +191,9 @@ describe("resolveAppEntitlement — tier OR active pass", () => {
     // The idea_engine pass sells the auto-build MVP ship — the Studio+ capability.
     expect(tierIncludesApp("pro_plus", "idea_engine")).toBe(false);
     expect(tierIncludesApp("studio_plus", "idea_engine")).toBe(true);
+    // The Custom Agent Builder composes on EVERY tier (PA-POS-34) — the compose primitive has
+    // no tier gate; the gate applies to the composed spec's Apps at review time.
+    expect(tierIncludesApp("starter", "agent_builder")).toBe(true);
     expect(tierIncludesApp("studio_plus", "agent_builder")).toBe(true);
   });
 });

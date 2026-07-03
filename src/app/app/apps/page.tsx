@@ -9,7 +9,6 @@ import {
   tierCanSeeChannels,
   tierAllowsChannel,
   tierAllowsBrowserAgent,
-  tierAllowsAgentBuilder,
 } from "@/lib/personas/tier-caps";
 import { fetchGithubBuildConnectionPublic } from "@/lib/pa-github-build-connections";
 import { fetchVercelConnectionPublic } from "@/lib/pa-vercel-connections";
@@ -81,9 +80,9 @@ export default async function AppsPage() {
   // Browser Agent (PA-POS-19): Studio+ / Enterprise — hosted browser sessions are the most
   // expensive thing on the shelf. Card stays on the grid with the upgrade chip below that.
   const canUseBrowserAgent = tierAllowsBrowserAgent(tier) || hasPass("browser_agent");
-  // Custom Agent Builder (PA-POS-27): Studio+ / Enterprise — same cost profile as the Idea
-  // Engine. Card stays on the grid with the upgrade chip below that (or a Project Pass).
-  const canUseAgentBuilder = tierAllowsAgentBuilder(tier) || hasPass("agent_builder");
+  // Custom Agent Builder (PA-POS-34): no tile gate — every tier composes. The tier gate
+  // applies to the composed spec's Apps at review time. The tile itself forwards to the
+  // /agents#compose create surface.
   const visibleApps = apps.filter((app) => {
     if (app.id === "landing-page-builder") return tierCanSeeLandingPageBuilder(tier);
     return true;
@@ -188,7 +187,6 @@ export default async function AppsPage() {
             const lockedImessage = app.id === "imessage-channel" && !canUseImessageChannel;
             const lockedWhatsapp = app.id === "whatsapp-channel" && !canUseWhatsappChannel;
             const lockedBrowserAgent = app.id === "browser-agent" && !canUseBrowserAgent;
-            const lockedAgentBuilder = app.id === "agent-builder" && !canUseAgentBuilder;
             // Any gate puts the card in its "show with upgrade chip" state. The chip text is the
             // tier each App unlocks at — Studio for the builder, Pro+ for the Idea Engine, Studio+
             // for iMessage, Pro (Business Agent) for the other channels.
@@ -199,13 +197,12 @@ export default async function AppsPage() {
               lockedSms ||
               lockedImessage ||
               lockedWhatsapp ||
-              lockedBrowserAgent ||
-              lockedAgentBuilder;
+              lockedBrowserAgent;
             const unlockTier = lockedLandingPages
               ? "Studio"
               : lockedIdeaEngine
                 ? "Pro+"
-                : lockedImessage || lockedBrowserAgent || lockedAgentBuilder
+                : lockedImessage || lockedBrowserAgent
                   ? "Studio+"
                   : "Pro";
             // Tier allows the App but a required Build Tool isn't connected: send the card to
@@ -219,7 +216,6 @@ export default async function AppsPage() {
               lockedLandingPages ? "landing_page_builder"
               : lockedIdeaEngine ? "idea_engine"
               : lockedBrowserAgent ? "browser_agent"
-              : lockedAgentBuilder ? "agent_builder"
               : null;
             const passDef = passSlug ? getPassDef(passSlug) : null;
             const passHint = passDef

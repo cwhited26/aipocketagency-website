@@ -27,6 +27,7 @@ import RoundtableOfferChip, { type RoundtableOffer } from "./_components/Roundta
 import { isVisionUploadType } from "@/lib/vision/ocr";
 import { PersonaAvatar } from "@/components/personas/avatar";
 import type { HomeVerticalCard } from "@/lib/onboarding/vertical-seed";
+import BuildComposerModal from "@/components/chat/BuildComposerModal";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1153,6 +1154,9 @@ export default function HomeClient({
   const [inputValue, setInputValue] = useState(initialQuery ?? "");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [attachError, setAttachError] = useState<string | null>(null);
+  // `/build` (PA-POS-34): the inline agent composer — describe a new agent without leaving
+  // this conversation. Null = closed; a string = open with that prefill (the slash args).
+  const [buildSpec, setBuildSpec] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [youtubeHint, setYoutubeHint] = useState(youtubeHintInitiallyVisible);
   // Post-reply flourish — drives the mascot through tool_calling → responding → done
@@ -1319,6 +1323,15 @@ export default function HomeClient({
     const content = inputValue.trim();
     const filesToSend = attachments;
     if ((!content && filesToSend.length === 0) || isLoading) return;
+
+    // `/build [spec]` (PA-POS-34) — open the inline composer instead of sending a turn. The
+    // composed proposal card fires into Mission Control the same way as /agents#compose.
+    const buildMatch = content.match(/^\/build\b\s*([\s\S]*)$/i);
+    if (buildMatch) {
+      setInputValue("");
+      setBuildSpec(buildMatch[1] ?? "");
+      return;
+    }
     setInputValue("");
     setAttachments([]);
     setAttachError(null);
@@ -1421,6 +1434,9 @@ export default function HomeClient({
 
   return (
     <div className="flex h-full overflow-hidden bg-[#06080b]">
+      {buildSpec !== null && (
+        <BuildComposerModal initialSpec={buildSpec} onClose={() => setBuildSpec(null)} />
+      )}
       <ConvSidebar
         conversations={conversations}
         activeConvId={activeConvId}

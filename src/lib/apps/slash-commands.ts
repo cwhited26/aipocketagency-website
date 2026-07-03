@@ -97,7 +97,7 @@ const APP_BY_TOKEN: ReadonlyMap<string, AppId> = (() => {
 // The minimum SMB tier that unlocks each App, derived from the existing per-App gates in
 // tier-caps so the two never drift. Core Apps (quote, email, brief, …) are available to every
 // tier; the three build-grade Apps sit higher.
-function appMinTier(appId: AppId): Tier {
+export function appMinTier(appId: AppId): Tier {
   switch (appId) {
     case "landing-page-builder":
       return "studio"; // tierAllowsLandingPageBuilder
@@ -117,7 +117,7 @@ function appMinTier(appId: AppId): Tier {
     case "browser-agent":
       return "studio_plus"; // tierAllowsBrowserAgent (PA-POS-19 — hosted browser sessions are expensive)
     case "agent-builder":
-      return "studio_plus"; // tierAllowsAgentBuilder (PA-POS-27)
+      return "starter"; // tierAllowsAgentBuilder (PA-POS-34 — compose on every tier; the gate moved to the composed spec's Apps)
     case "voice":
       return "studio_plus"; // tierAllowsVoiceApp (PA-CHAN-16 — realtime audio is the priciest surface)
     default:
@@ -190,12 +190,34 @@ export type AppSlashResolution =
   | { kind: "open"; app: AppDef; args: string; href: string }
   // A known App the tier hasn't unlocked — surface the upgrade path, don't open it.
   | { kind: "locked"; app: AppDef; reason: string }
+  // `/build [spec]` (PA-POS-34) — open the inline agent composer right in the chat, every
+  // tier. The composed proposal card fires into Mission Control like every other compose.
+  | { kind: "compose"; args: string }
   // No App by that token — polite miss + the list of what's available.
   | { kind: "unknown"; attempted: string; commands: AppSlashEntry[] };
 
-/** Every App command this tier has unlocked, in catalog order (the `/` popover + help list). */
+// ── /build — the in-chat compose command (PA-POS-34) ────────────────────────────────────────
+//
+// Not an App navigation: `/build` opens the inline composer modal in the current conversation,
+// so describing a new agent never means leaving the thread. Available on every tier — the tier
+// gate applies to the composed spec's Apps at review time, not to composing.
+export const BUILD_SLASH_TOKEN = "build";
+
+const BUILD_SLASH_ENTRY: AppSlashEntry = {
+  command: BUILD_SLASH_TOKEN,
+  label: "Compose an agent",
+  description: "Describe the agent you need — Pocket Agent composes it for your approval.",
+  href: "/agents#compose",
+  appId: "agent-builder",
+};
+
+/** Every App command this tier has unlocked, in catalog order, plus `/build` (every tier) —
+ *  the `/` popover + help list. */
 export function appSlashCommandsForTier(tier: Tier, passApps: readonly AppId[] = []): AppSlashEntry[] {
-  return APP_CATALOG.filter((a) => tierAllowsApp(tier, a.id, passApps)).map(toEntry);
+  return [
+    BUILD_SLASH_ENTRY,
+    ...APP_CATALOG.filter((a) => tierAllowsApp(tier, a.id, passApps)).map(toEntry),
+  ];
 }
 
 function lockedReason(app: AppDef): string {
@@ -222,6 +244,11 @@ export function resolveAppSlashCommand(
     // A slash input whose token is malformed (e.g. "/123", "/-x"). Treat the raw token as a miss.
     const attempted = trimmed.replace(/^\/+/, "").split(/\s/, 1)[0] ?? "";
     return { kind: "unknown", attempted, commands: appSlashCommandsForTier(tier, passApps) };
+  }
+
+  // `/build [spec]` opens the inline composer in the chat — every tier (PA-POS-34).
+  if (parsed.command === BUILD_SLASH_TOKEN) {
+    return { kind: "compose", args: parsed.args };
   }
 
   const appId = APP_BY_TOKEN.get(parsed.command);
@@ -262,6 +289,9 @@ export function appSlashAutocomplete(
 
   const partial = body.toLowerCase();
   const out: AppSlashEntry[] = [];
+  if (partial === "" || BUILD_SLASH_TOKEN.startsWith(partial)) {
+    out.push(BUILD_SLASH_ENTRY);
+  }
   for (const app of APP_CATALOG) {
     if (!tierAllowsApp(tier, app.id, passApps)) continue;
     const tokens = [app.slashCommand, ...aliasesForApp(app.id)];

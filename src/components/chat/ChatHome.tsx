@@ -13,6 +13,7 @@ import type { AppId } from "@/lib/apps/catalog";
 import type { Tier } from "@/lib/personas/tier-caps";
 import { searchMessages, exportToJson, exportToMarkdown, type SearchQuery } from "@/lib/chat/search";
 import SideRail from "./SideRail";
+import BuildComposerModal from "./BuildComposerModal";
 import ChatInput from "./ChatInput";
 import ChatMessageList from "./ChatMessageList";
 import ChatSearchBar from "./ChatSearchBar";
@@ -49,6 +50,9 @@ export default function ChatHome({
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [sending, setSending] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
+  // `/build` (PA-POS-34): the inline agent composer. Null = closed; a string = open with that
+  // prefill (the slash args, usually empty).
+  const [buildSpec, setBuildSpec] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState<SearchQuery>({});
   const [searchAll, setSearchAll] = useState<ChatMessage[] | null>(null);
@@ -247,6 +251,11 @@ export default function ChatHome({
         case "locked":
           pushSystem(resolution.reason);
           break;
+        case "compose":
+          // `/build [spec]` — the inline composer opens right here (PA-POS-34); the composed
+          // proposal card fires into Mission Control like every other compose.
+          setBuildSpec(resolution.args);
+          break;
         case "unknown":
           pushSystem(
             `I don't have an App called /${resolution.attempted}. Try /apps for the list.\n\n${formatAppSlashList(
@@ -384,6 +393,10 @@ export default function ChatHome({
           onSaved={(card) => setMessages((cur) => [...cur, card])}
           onClose={() => setVoiceOpen(false)}
         />
+      )}
+
+      {buildSpec !== null && (
+        <BuildComposerModal initialSpec={buildSpec} onClose={() => setBuildSpec(null)} />
       )}
 
       <input
