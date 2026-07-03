@@ -135,6 +135,8 @@ export async function updatePersona(
   id: string,
   patch: Partial<{
     name: string;
+    // The customer-chosen name (migration 106, PA-POS-35). null clears back to the template's.
+    display_name: string | null;
     tone: ToneKey;
     status: PersonaStatus;
     mode: PersonaMode;

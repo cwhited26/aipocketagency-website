@@ -1,5 +1,6 @@
 import { fetchPersona, fetchShareToken } from "@/lib/personas/db";
 import { isTokenLive } from "@/lib/personas/tokens";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 import PersonaChatClient from "./PersonaChatClient";
 
 export const dynamic = "force-dynamic";
@@ -21,10 +22,10 @@ export default async function PersonaChatPage({ params }: { params: { token: str
         invalid = true;
       } else if (persona.status !== "active") {
         paused = true;
-        personaName = persona.name;
+        personaName = getPersonaDisplayName(persona);
       } else {
         personaId = persona.id;
-        personaName = persona.name;
+        personaName = getPersonaDisplayName(persona);
       }
     }
   } catch {

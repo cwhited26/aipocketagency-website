@@ -9,6 +9,7 @@ import {
 } from "@/lib/personas/db";
 import { isTokenLive } from "@/lib/personas/tokens";
 import { chatUrlForToken } from "@/lib/personas/links";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -50,7 +51,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     }
 
     return NextResponse.json({
-      personaName: persona.name,
+      personaName: getPersonaDisplayName(persona),
       chatUrl: chatUrlForToken(tokenRow.token),
     });
   } catch (e) {

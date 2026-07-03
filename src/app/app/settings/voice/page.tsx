@@ -9,6 +9,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { listPersonasForBusiness } from "@/lib/personas/db";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 import { getCurrentTier, TIER_LABELS } from "@/lib/personas/tier-caps";
 import {
   tierAllowsOwnVoiceNumber,
@@ -66,7 +67,7 @@ export default async function VoiceSettingsPage() {
           callerNumber={connection.config?.callerNumber ?? null}
           currentPersonaId={connection.personaId}
           currentVoiceId={connection.config?.voiceId ?? null}
-          personas={personas.map((p) => ({ id: p.id, name: p.name }))}
+          personas={personas.map((p) => ({ id: p.id, name: getPersonaDisplayName(p) }))}
           voiceCatalog={VOICE_CATALOG.map((v) => ({ id: v.id, label: v.label, blurb: v.blurb }))}
           tierLabel={TIER_LABELS[tier]}
           canUseOwnNumber={tierAllowsOwnVoiceNumber(tier)}

@@ -112,7 +112,7 @@ export default function PersonaChatClient({
         <div className="max-w-2xl mx-auto space-y-4">
           {messages.length === 0 && (
             <div className="text-center text-slate-500 text-sm mt-16">
-              <p className="text-slate-300">Hi, I&apos;m {personaName}.</p>
+              <p className="text-slate-300">Hey — {personaName} here.</p>
               <p className="mt-1">What can I help you with?</p>
             </div>
           )}

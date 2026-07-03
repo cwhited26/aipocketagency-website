@@ -19,6 +19,7 @@ import {
 import { listLiveForPersona } from "@/lib/personas/soul-db";
 import { addSoulAttributeManually } from "@/lib/personas/soul-extract";
 import { SOUL_ATTRIBUTE_KINDS, type SoulAttributeRow } from "@/lib/personas/soul-types";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,7 +64,7 @@ export async function GET(_req: Request, { params }: Params): Promise<NextRespon
   const cap = soulActiveCap(tier);
 
   return NextResponse.json({
-    personaName: owned.persona.name,
+    personaName: getPersonaDisplayName(owned.persona),
     attributes: list.data.map(toView),
     tier,
     extractionMode: soulExtractionMode(tier),

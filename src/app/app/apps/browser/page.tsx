@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { fetchPaUser } from "@/lib/pa-supabase"
 import { listPersonasForBusiness } from "@/lib/personas/db"
+import { getPersonaDisplayName } from "@/lib/personas/types"
 import { browserAgentJobLimits, getCurrentTier } from "@/lib/personas/tier-caps"
 import { hasAppEntitlement } from "@/lib/metering/entitlement"
 import { getPassDef, passPriceCents } from "@/data/project-passes"
@@ -60,7 +61,7 @@ export default async function BrowserAgentPage() {
         <BrowserAgentClient
           unlocked={unlocked}
           initialJobs={jobs}
-          personas={personas.map((p) => ({ id: p.id, name: p.name }))}
+          personas={personas.map((p) => ({ id: p.id, name: getPersonaDisplayName(p) }))}
           limits={limits}
         />
       </div>

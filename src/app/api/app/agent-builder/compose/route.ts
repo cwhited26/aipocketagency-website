@@ -102,7 +102,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   const personas = await listPersonasForBusiness(user.id).catch(() => []);
   const persona = composePersona({
     intent,
-    existingNames: personas.map((p) => p.name),
+    existingNames: personas.flatMap((p) => (p.display_name?.trim() ? [p.name, p.display_name.trim()] : [p.name])),
   });
   const apps = composeToolkit(intent);
   const { skillSlugs, candidateSkill } = composeSkills(intent);

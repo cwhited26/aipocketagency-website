@@ -7,6 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { resolveOwner, requireOwnedPersona } from "@/lib/personas/owner";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 import { getCurrentTier, personaMemoryCap } from "@/lib/personas/tier-caps";
 import { countLiveForOwner, listLiveForPersona } from "@/lib/persona-memory/db";
 import type { PersonaMemoryRow } from "@/lib/persona-memory/types";
@@ -67,7 +68,7 @@ export async function GET(req: Request, { params }: Params): Promise<NextRespons
   const ownerCount = await countLiveForOwner(owner.ctx.userId);
 
   return NextResponse.json({
-    personaName: owned.persona.name,
+    personaName: getPersonaDisplayName(owned.persona),
     memories: rows.map(toView),
     contacts,
     tier,

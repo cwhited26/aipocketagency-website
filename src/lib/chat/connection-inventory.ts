@@ -8,6 +8,7 @@
 // pocket_agent_users row; persona names from the personas table. Service-role REST, no SDK.
 
 import { fetchPaUser } from "@/lib/pa-supabase";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 
 // Connectors this lane knows how to drive inline (read) or stage (write). Stripe/QuickBooks are
 // owned by their own dispatch lanes and intentionally excluded here. Zoom is in-process (registry),
@@ -68,7 +69,7 @@ type ConnectionRow = {
   scopes: string[] | null;
   access_token: string | null;
 };
-type PersonaRow = { name: string };
+type PersonaRow = { name: string; display_name?: string | null };
 
 /**
  * Connector grants for the user that the agent can actually drive, restricted to the
@@ -112,12 +113,12 @@ async function fetchPersonaNames(userId: string): Promise<string[]> {
   const env = paEnv();
   if (!env) return [];
   const res = await fetch(
-    `${env.url}/rest/v1/personas?business_id=eq.${enc(userId)}&status=eq.active&select=name&order=name.asc&limit=25`,
+    `${env.url}/rest/v1/personas?business_id=eq.${enc(userId)}&status=eq.active&select=name,display_name&order=name.asc&limit=25`,
     { headers: { apikey: env.key, Authorization: `Bearer ${env.key}` }, cache: "no-store" },
   ).catch(() => null);
   if (!res || !res.ok) return [];
   const rows = (await res.json().catch(() => [])) as PersonaRow[];
-  return rows.map((r) => r.name).filter((n): n is string => Boolean(n));
+  return rows.map((r) => getPersonaDisplayName(r)).filter((n) => Boolean(n));
 }
 
 /**

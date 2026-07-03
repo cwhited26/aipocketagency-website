@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { TabGuide } from "../_components/TabGuide";
 import { AppEmptyState } from "../_components/AppEmptyState";
-import { personaApps, type PersonaRow } from "@/lib/personas/types";
+import { getPersonaDisplayName, personaApps, type PersonaRow } from "@/lib/personas/types";
 import { avatarSlugForTemplateKey } from "@/lib/personas/templates";
 import { PersonaAvatar } from "@/components/personas/avatar";
 import { appsByIds } from "@/lib/apps/catalog";
@@ -135,10 +135,10 @@ export default function PersonasCatalogClient() {
             >
               <div className="flex items-start justify-between gap-2 mb-3">
                 <Link href={`/app/personas/${p.id}`} className="flex min-w-0 items-start gap-3">
-                  <PersonaAvatar slug={avatarSlugForTemplateKey(p.template_key)} size="sm" alt={p.name} />
+                  <PersonaAvatar slug={avatarSlugForTemplateKey(p.template_key)} size="sm" alt={getPersonaDisplayName(p)} />
                   <span className="min-w-0">
                     <h3 className="text-slate-100 font-medium truncate hover:text-[#22d3ee] transition-colors">
-                      {p.name}
+                      {getPersonaDisplayName(p)}
                     </h3>
                     <p className="text-[11px] text-slate-500 uppercase tracking-wide mt-0.5">
                       {p.template_key}

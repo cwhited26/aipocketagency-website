@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { PERSONA_SECTIONS } from "@/lib/personas/spec";
 import {
+  getPersonaDisplayName,
   PERSONA_MODE_LABELS,
   PERSONA_MODES,
   personaApps,
+  personaDisplayNameSchema,
   type PersonaMode,
   type PersonaRow,
   type PersonaStatus,
@@ -74,11 +76,12 @@ export default function PersonaDetailClient({ personaId }: { personaId: string }
           <PersonaAvatar
             slug={avatarSlugForTemplateKey(persona.template_key)}
             size="lg"
-            alt={persona.name}
+            alt={getPersonaDisplayName(persona)}
           />
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold text-slate-100">{persona.name}</h1>
+            <NameChip persona={persona} onRenamed={reload} />
             <p className="text-sm text-slate-500">
+              {persona.display_name?.trim() ? `${persona.name} · ` : ""}
               {persona.template_key} · {persona.status} · {bundle.tier}
             </p>
           </div>
@@ -113,6 +116,105 @@ export default function PersonaDetailClient({ personaId }: { personaId: string }
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Name chip (PA-POS-35) ─────────────────────────────────────────────────────────────
+// Edit-in-place rename: the heading doubles as the control. The customer-chosen name
+// lives in personas.display_name; clearing it falls back to the template-derived name.
+function NameChip({ persona, onRenamed }: { persona: PersonaRow; onRenamed: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const hasCustomName = Boolean(persona.display_name?.trim());
+
+  async function save(value: string | null) {
+    if (value !== null) {
+      const check = personaDisplayNameSchema.safeParse(value);
+      if (!check.success) {
+        setErr(check.error.issues[0]?.message ?? "That name won't work");
+        return;
+      }
+      value = check.data;
+    }
+    setSaving(true);
+    setErr(null);
+    const res = await fetch(`/api/app/personas/${persona.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ display_name: value }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      setErr((await res.json().catch(() => ({}))).error ?? "Rename failed");
+      return;
+    }
+    setEditing(false);
+    onRenamed();
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-2 min-w-0">
+        <h1 className="text-2xl font-semibold text-slate-100 truncate">
+          {getPersonaDisplayName(persona)}
+        </h1>
+        <button
+          onClick={() => {
+            setDraft(persona.display_name?.trim() ?? "");
+            setErr(null);
+            setEditing(true);
+          }}
+          className="shrink-0 text-[11px] font-mono rounded-md border border-slate-700 text-slate-400 px-2 py-1 hover:border-[#22d3ee]/50 hover:text-[#22d3ee] transition-colors"
+          aria-label={hasCustomName ? "Rename this persona" : "Give this persona a name"}
+        >
+          {hasCustomName ? "rename" : "name it"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-w-0">
+      <div className="flex items-center gap-2">
+        <input
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") save(draft);
+            if (e.key === "Escape") setEditing(false);
+          }}
+          maxLength={40}
+          placeholder={persona.name}
+          className="w-48 rounded-lg bg-slate-900 border border-slate-700 px-3 py-1.5 text-lg font-semibold text-slate-100 outline-none focus:border-[#22d3ee]"
+        />
+        <button
+          onClick={() => save(draft)}
+          disabled={saving}
+          className="text-xs rounded-md bg-[#22d3ee] text-[#06222a] font-semibold px-3 py-1.5 disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+        {hasCustomName && (
+          <button
+            onClick={() => save(null)}
+            disabled={saving}
+            className="text-xs rounded-md border border-slate-700 text-slate-400 px-2.5 py-1.5 hover:text-slate-200"
+          >
+            Use {persona.name}
+          </button>
+        )}
+        <button
+          onClick={() => setEditing(false)}
+          className="text-xs text-slate-500 hover:text-slate-300"
+        >
+          Cancel
+        </button>
+      </div>
+      {err && <p className="text-xs text-red-300 mt-1">{err}</p>}
     </div>
   );
 }
@@ -526,7 +628,7 @@ function AppsTab({
       {template && (
         <div className="rounded-xl border border-slate-800/60 bg-slate-950/50 p-4">
           <div className="text-[11px] font-mono text-[#22d3ee]/60 uppercase tracking-[0.16em]">
-            Try this with {persona.name}
+            Try this with {getPersonaDisplayName(persona)}
           </div>
           <p className="mt-1.5 text-sm text-slate-300 leading-relaxed">
             &ldquo;{template.starterPrompt}&rdquo;

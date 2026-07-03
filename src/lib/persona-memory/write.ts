@@ -20,7 +20,7 @@ import { extractJsonObject } from "@/lib/orchestrator/planner";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { createInboxItem, listInboxItems, type InboxItem } from "@/lib/pa-inbox-items";
 import { personaMemoryCap, type Tier } from "@/lib/personas/tier-caps";
-import { isPublicMode, type PersonaMode } from "@/lib/personas/types";
+import { getPersonaDisplayName, isPublicMode, type PersonaMode } from "@/lib/personas/types";
 import {
   countLiveForOwner,
   fetchOverflowVictimForOwner,
@@ -237,7 +237,7 @@ export type ProposeResult =
   | { action: "error"; error: string };
 
 export async function proposeMemoryWrite(input: {
-  persona: { id: string; name: string };
+  persona: { id: string; name: string; display_name?: string | null };
   ownerId: string;
   tier: Tier;
   candidate: MemoryCandidate;
@@ -274,12 +274,12 @@ export async function proposeMemoryWrite(input: {
   const created = await createInboxItem({
     userId: ownerId,
     kind: PERSONA_MEMORY_PROPOSAL_KIND,
-    title: proposalTitle(candidate, persona.name),
+    title: proposalTitle(candidate, getPersonaDisplayName(persona)),
     bodyMd: proposalBody(candidate),
     source: "persona-memory",
     payload: {
       personaId: persona.id,
-      personaName: persona.name,
+      personaName: getPersonaDisplayName(persona),
       partition: candidate.partition,
       tier: candidate.tier,
       body: candidate.body,
@@ -303,7 +303,7 @@ export type MemoryLearnSummary =
  * effort: the caller wraps it so a LEARN error never fails the (already-streamed) turn.
  */
 export async function runMemoryLearnPhase(input: {
-  persona: { id: string; name: string; business_id: string; mode: PersonaMode };
+  persona: { id: string; name: string; display_name?: string | null; business_id: string; mode: PersonaMode };
   tier: Tier;
   conversationId: string;
   userMessage: string;
@@ -328,7 +328,7 @@ export async function runMemoryLearnPhase(input: {
   for (const candidate of decision.candidates) {
     results.push(
       await proposeMemoryWrite({
-        persona: { id: input.persona.id, name: input.persona.name },
+        persona: { id: input.persona.id, name: input.persona.name, display_name: input.persona.display_name ?? null },
         ownerId: input.persona.business_id,
         tier: input.tier,
         candidate,

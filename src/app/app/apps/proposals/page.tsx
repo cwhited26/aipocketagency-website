@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { fetchPaUser } from "@/lib/pa-supabase"
 import { listPersonasForBusiness } from "@/lib/personas/db"
+import { getPersonaDisplayName } from "@/lib/personas/types"
 import { getCurrentTier, tierAllowsProposalGenerator } from "@/lib/personas/tier-caps"
 import { listProposals } from "@/lib/proposals/db"
 import { signProposalPdf } from "@/lib/proposals/storage"
@@ -55,7 +56,7 @@ export default async function ProposalsPage() {
     <ProposalsClient
       locked={locked}
       proposals={views}
-      personas={personas.map((p) => ({ id: p.id, name: p.name, isSales: p.template_key === "sales" }))}
+      personas={personas.map((p) => ({ id: p.id, name: getPersonaDisplayName(p), isSales: p.template_key === "sales" }))}
       hasApiKey={Boolean(paUser.anthropic_api_key)}
       hasBrain={Boolean(paUser.brain_repo && paUser.github_token)}
     />

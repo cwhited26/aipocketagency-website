@@ -4,7 +4,7 @@
 
 import { fetchPersona, fetchShareToken, fetchWidgetConfig } from "@/lib/personas/db";
 import { isTokenLive } from "@/lib/personas/tokens";
-import { isPublicMode } from "@/lib/personas/types";
+import { getPersonaDisplayName, isPublicMode } from "@/lib/personas/types";
 import { publicModesEnabled } from "@/lib/personas/feature-flags";
 import PublicPersonaClient from "./PublicPersonaClient";
 
@@ -49,10 +49,10 @@ export default async function PublicPersonaPage({
         invalid = true;
       } else if (persona.status !== "active") {
         paused = true;
-        personaName = persona.name;
+        personaName = getPersonaDisplayName(persona);
       } else {
         personaId = persona.id;
-        personaName = persona.name;
+        personaName = getPersonaDisplayName(persona);
         const config = await fetchWidgetConfig(persona.id);
         if (config) {
           badgeRemoved = config.badge_removed;

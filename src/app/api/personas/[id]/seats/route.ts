@@ -12,7 +12,7 @@ import { canInviteSeat } from "@/lib/personas/tier-caps";
 import { generateShareToken, isTokenLive } from "@/lib/personas/tokens";
 import { acceptUrlForToken } from "@/lib/personas/links";
 import { sendEmail } from "@/lib/resend";
-import { SEAT_ROLES, type PersonaShareTokenRow } from "@/lib/personas/types";
+import { getPersonaDisplayName, SEAT_ROLES, type PersonaShareTokenRow } from "@/lib/personas/types";
 import { markOnboardingStepComplete } from "@/lib/onboarding/progress";
 
 export const runtime = "nodejs";
@@ -90,13 +90,14 @@ export async function POST(req: Request, { params }: Params): Promise<NextRespon
     });
     const acceptUrl = acceptUrlForToken(tokenRow.token);
 
+    const personaName = getPersonaDisplayName(persona);
     const send = await sendEmail({
       from: FROM,
       to: seat.invited_email,
       replyTo: REPLY_TO,
-      subject: `You've been given access to ${persona.name}`,
-      html: inviteHtml(persona.name, acceptUrl),
-      text: inviteText(persona.name, acceptUrl),
+      subject: `You've been given access to ${personaName}`,
+      html: inviteHtml(personaName, acceptUrl),
+      text: inviteText(personaName, acceptUrl),
     });
     // PA-POS-36: the first seat invite completes "Invite a teammate" — the seat + link exist
     // even when the email failed, so the invite counts either way. Never throws.

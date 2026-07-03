@@ -65,6 +65,19 @@ export function parseVoiceProfile(raw: unknown): VoiceProfile {
   };
 }
 
+/**
+ * The line spoken on answer (PA-POS-35). An owner-configured greeting always wins; the neutral
+ * default upgrades to the persona's chosen name so a named persona answers as itself:
+ * "Hey — Marcus here. What do you need?" A null display_name resolves upstream to the
+ * template-derived name via getPersonaDisplayName, so the fallback reads
+ * "Hey — Sales Assistant here. What do you need?"
+ */
+export function voiceIntroLine(profile: VoiceProfile, personaDisplayName: string): string {
+  if (profile.greeting !== DEFAULT_VOICE_PROFILE.greeting) return profile.greeting;
+  const name = personaDisplayName.trim();
+  return name === "" ? profile.greeting : `Hey — ${name} here. What do you need?`;
+}
+
 /** Serialize a VoiceProfile back to the jsonb shape stored on personas.voice_profile_json. */
 export function serializeVoiceProfile(profile: VoiceProfile): Record<string, unknown> {
   return {

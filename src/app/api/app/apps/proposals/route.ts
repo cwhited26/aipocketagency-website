@@ -5,7 +5,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { fetchPaUser } from "@/lib/pa-supabase"
 import { fetchPersona, listPersonasForBusiness } from "@/lib/personas/db"
-import { TONE_GUIDANCE } from "@/lib/personas/types"
+import { getPersonaDisplayName, TONE_GUIDANCE } from "@/lib/personas/types"
 import { getCurrentTier, tierAllowsProposalGenerator } from "@/lib/personas/tier-caps"
 import { generateProposal, type PersonaVoice } from "@/lib/proposals/generate"
 import { createProposal, listProposals } from "@/lib/proposals/db"
@@ -37,7 +37,7 @@ async function resolvePersonaVoice(
     if (persona && persona.business_id === userId) {
       return {
         id: persona.id,
-        voice: { name: persona.name, role: persona.name, toneGuidance: TONE_GUIDANCE[persona.tone] },
+        voice: { name: getPersonaDisplayName(persona), role: getPersonaDisplayName(persona), toneGuidance: TONE_GUIDANCE[persona.tone] },
       }
     }
     return { id: null, voice: null }
@@ -45,7 +45,7 @@ async function resolvePersonaVoice(
   const personas = await listPersonasForBusiness(userId)
   const sales = personas.find((p) => p.template_key === "sales") ?? personas[0]
   if (sales) {
-    return { id: sales.id, voice: { name: sales.name, role: sales.name, toneGuidance: TONE_GUIDANCE[sales.tone] } }
+    return { id: sales.id, voice: { name: getPersonaDisplayName(sales), role: getPersonaDisplayName(sales), toneGuidance: TONE_GUIDANCE[sales.tone] } }
   }
   return { id: null, voice: null }
 }

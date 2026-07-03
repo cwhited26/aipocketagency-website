@@ -6,7 +6,7 @@
 
 import { createInboxItem } from "@/lib/pa-inbox-items";
 import { sendEmail } from "@/lib/resend";
-import type { PersonaLeadRow, PersonaRow } from "./types";
+import { getPersonaDisplayName, type PersonaLeadRow, type PersonaRow } from "./types";
 
 const FROM = "Pocket Agent <chase@aipocketagent.com>";
 const REPLY_TO = "chase@aipocketagent.com";
@@ -31,6 +31,7 @@ export async function routeLeadToInbox(params: {
   ownerEmail: string | null;
 }): Promise<void> {
   const { persona, lead, transcript, ownerEmail } = params;
+  const personaName = getPersonaDisplayName(persona);
   const who = lead.name || lead.email || lead.phone || "A visitor";
   const contactLines = [
     lead.name ? `Name: ${lead.name}` : null,
@@ -40,11 +41,11 @@ export async function routeLeadToInbox(params: {
 
   const transcriptMd = transcript
     .filter((m) => m.role === "user" || m.role === "assistant")
-    .map((m) => `**${m.role === "user" ? "Visitor" : persona.name}:** ${m.content}`)
+    .map((m) => `**${m.role === "user" ? "Visitor" : personaName}:** ${m.content}`)
     .join("\n\n");
 
   const bodyMd = [
-    `**New lead from ${persona.name}** (${lead.source})`,
+    `**New lead from ${personaName}** (${lead.source})`,
     "",
     ...contactLines,
     "",
@@ -59,7 +60,7 @@ export async function routeLeadToInbox(params: {
   await createInboxItem({
     userId: persona.business_id,
     kind: "persona_lead",
-    title: `New lead from ${persona.name}: ${who}`,
+    title: `New lead from ${personaName}: ${who}`,
     bodyMd,
     source: `persona:${persona.id}`,
     payload: {
@@ -78,14 +79,14 @@ export async function routeLeadToInbox(params: {
       from: FROM,
       to: ownerEmail,
       replyTo: lead.email ?? REPLY_TO,
-      subject: `New lead from ${persona.name}: ${who}`,
+      subject: `New lead from ${personaName}: ${who}`,
       html: `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto">
-  <p>${esc(persona.name)} captured a new lead.</p>
+  <p>${esc(personaName)} captured a new lead.</p>
   <p>${contactLines.map(esc).join("<br>")}</p>
   <p style="color:#64748b;font-size:13px">The full transcript is in your Pocket Agent inbox.</p>
   <p style="color:#94a3b8;font-size:12px">Built with Pocket Agent.</p>
 </div>`,
-      text: `${persona.name} captured a new lead.\n\n${contactLines.join("\n")}\n\nThe full transcript is in your Pocket Agent inbox.`,
+      text: `${personaName} captured a new lead.\n\n${contactLines.join("\n")}\n\nThe full transcript is in your Pocket Agent inbox.`,
     }).catch(() => {});
   }
 }
@@ -100,10 +101,11 @@ export async function notifyCapThreshold(params: {
 }): Promise<void> {
   if (!params.ownerEmail) return;
   const { persona, ownerEmail, threshold, cap } = params;
+  const personaName = getPersonaDisplayName(persona);
   const subject =
     threshold === 100
-      ? `${persona.name} hit its monthly message cap`
-      : `${persona.name} is at ${threshold}% of its monthly message cap`;
+      ? `${personaName} hit its monthly message cap`
+      : `${personaName} is at ${threshold}% of its monthly message cap`;
   const detail =
     threshold === 100
       ? `Your persona has used all ${cap.toLocaleString()} messages for this month. Its public link and widget are paused for the rest of the month. Upgrade to Studio to lift the cap.`
@@ -128,12 +130,13 @@ export async function notifyAbuseSpike(params: {
 }): Promise<void> {
   if (!params.ownerEmail) return;
   const { persona, ownerEmail, blockedThisHour } = params;
-  const detail = `${persona.name} blocked ${blockedThisHour} suspicious messages in the last hour. This can indicate someone probing your public persona. Your privacy zones still protect your data — no action is required, but you may want to review the conversation log or pause the persona if it continues.`;
+  const personaName = getPersonaDisplayName(persona);
+  const detail = `${personaName} blocked ${blockedThisHour} suspicious messages in the last hour. This can indicate someone probing your public persona. Your privacy zones still protect your data — no action is required, but you may want to review the conversation log or pause the persona if it continues.`;
   await sendEmail({
     from: FROM,
     to: ownerEmail,
     replyTo: REPLY_TO,
-    subject: `Heads up: unusual activity on ${persona.name}`,
+    subject: `Heads up: unusual activity on ${personaName}`,
     html: `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:0 auto"><p>${esc(detail)}</p><p style="color:#94a3b8;font-size:12px">Built with Pocket Agent.</p></div>`,
     text: detail,
   }).catch(() => {});

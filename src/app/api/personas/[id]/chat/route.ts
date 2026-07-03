@@ -19,7 +19,7 @@ import { loadKnowledgeForChat } from "@/lib/personas/knowledge";
 import { buildPersonaSystemPrompt, parsePersonaSpecMarkdown } from "@/lib/personas/spec";
 import { buildSmartContext, type ContextMessage } from "@/lib/personas/build-smart-context";
 import { getDailyLogsForContext } from "@/lib/personas/daily-logs";
-import { isPublicMode } from "@/lib/personas/types";
+import { getPersonaDisplayName, isPublicMode } from "@/lib/personas/types";
 import { loadPersonaMemory } from "@/lib/persona-memory/read";
 import { runMemoryLearnPhase, defaultMemoryLearnLlm } from "@/lib/persona-memory/write";
 import { loadPersonaSoul } from "@/lib/personas/soul-load";
@@ -172,7 +172,7 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
     });
 
     const systemPrompt = buildPersonaSystemPrompt({
-      personaName: persona.name,
+      personaName: getPersonaDisplayName(persona),
       tone: persona.tone,
       spec: specFields,
       knowledgeMarkup: knowledge.markup,

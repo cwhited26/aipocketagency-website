@@ -9,6 +9,7 @@ import {
 } from "@/lib/api-v1/context";
 import { personaListResponseSchema } from "@/lib/api-v1/schemas";
 import { listPersonasForBusiness } from "@/lib/personas/db";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ async function personasHandler(_req: Request, ctx: V1Context): Promise<V1Handler
   const rows = await listPersonasForBusiness(ctx.userId);
   const personas = rows.map((p) => ({
     id: p.id,
-    name: p.name,
+    name: getPersonaDisplayName(p),
     slug: p.slug,
     mode: p.mode,
     status: p.status,

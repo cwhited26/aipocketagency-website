@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveOwner, requireOwnedPersona } from "@/lib/personas/owner";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 import { getCurrentTier, tierAllowsSoulExtraction } from "@/lib/personas/tier-caps";
 import { defaultSoulExtractLlm, runSoulExtraction } from "@/lib/personas/soul-extract";
 
@@ -58,7 +59,7 @@ export async function POST(req: Request, { params }: Params): Promise<NextRespon
   });
 
   const summary = await runSoulExtraction({
-    persona: { id: owned.persona.id, name: owned.persona.name, mode: owned.persona.mode },
+    persona: { id: owned.persona.id, name: getPersonaDisplayName(owned.persona), mode: owned.persona.mode },
     ownerId: owner.ctx.userId,
     tier,
     trigger: "explicit",

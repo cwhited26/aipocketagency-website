@@ -10,6 +10,7 @@
 
 import { fetchPersona, fetchShareToken, fetchWidgetConfig } from "@/lib/personas/db";
 import { isTokenLive } from "@/lib/personas/tokens";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 import { publicModesEnabled } from "@/lib/personas/feature-flags";
 import { personasBaseUrl } from "@/lib/personas/links";
 import { buildBlockedLoaderJs, buildWidgetLoaderJs, isOriginAllowed, normalizeOrigin } from "@/lib/personas/widget";
@@ -65,7 +66,7 @@ export async function GET(req: Request, { params }: Params): Promise<Response> {
     buildWidgetLoaderJs({
       token,
       baseUrl: personasBaseUrl(),
-      personaName: persona.name,
+      personaName: getPersonaDisplayName(persona),
       greeting: config?.greeting_text ?? "Hi! How can I help you today?",
       bubbleColor: config?.bubble_color ?? "#22d3ee",
       position: config?.bubble_position ?? "bottom-right",

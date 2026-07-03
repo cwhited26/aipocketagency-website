@@ -28,7 +28,7 @@ import { loadKnowledgeForChat } from "@/lib/personas/knowledge";
 import { buildPersonaSystemPrompt, parsePersonaSpecMarkdown } from "@/lib/personas/spec";
 import { loadZoneConfig, ContainmentBlockedError } from "@/lib/brain/containment-guard";
 import { comingSoon503, publicModesEnabled } from "@/lib/personas/feature-flags";
-import { isPublicMode } from "@/lib/personas/types";
+import { getPersonaDisplayName, isPublicMode } from "@/lib/personas/types";
 import { enforceRateLimits, recordBlockedHit } from "@/lib/personas/rate-limit";
 import {
   BLOCKED_ALERT_THRESHOLD_PER_HOUR,
@@ -195,7 +195,7 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
 
       const redirector = offTopicRedirector({
         override: widgetConfig?.off_topic_message ?? null,
-        personaRole: persona.name,
+        personaRole: getPersonaDisplayName(persona),
         ownerEmail,
       });
       return NextResponse.json(
@@ -241,7 +241,7 @@ export async function POST(req: Request, { params }: Params): Promise<Response> 
     }
 
     const systemPrompt = buildPersonaSystemPrompt({
-      personaName: persona.name,
+      personaName: getPersonaDisplayName(persona),
       tone: persona.tone,
       spec: specFields,
       knowledgeMarkup: knowledge.markup,

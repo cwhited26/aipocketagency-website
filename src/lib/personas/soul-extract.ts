@@ -32,7 +32,7 @@ import {
   tierAllowsSoulExtraction,
   type Tier,
 } from "./tier-caps";
-import { isPublicMode, type PersonaMode } from "./types";
+import { getPersonaDisplayName, isPublicMode, type PersonaMode } from "./types";
 import {
   countLiveForPersona,
   insertSoulAttribute,
@@ -305,7 +305,7 @@ export type SoulRouteResult =
   | { action: "error"; error: string };
 
 async function routeObservation(input: {
-  persona: { id: string; name: string };
+  persona: { id: string; name: string; display_name?: string | null };
   ownerId: string;
   tier: Tier;
   observation: SoulObservation;
@@ -339,12 +339,12 @@ async function routeObservation(input: {
   const created = await createInboxItem({
     userId: input.ownerId,
     kind: SOUL_ATTRIBUTE_PROPOSAL_KIND,
-    title: `${input.persona.name} noticed how you like to work`,
+    title: `${getPersonaDisplayName(input.persona)} noticed how you like to work`,
     bodyMd: proposalBody(o),
     source: "persona-soul",
     payload: {
       personaId: input.persona.id,
-      personaName: input.persona.name,
+      personaName: getPersonaDisplayName(input.persona),
       kind: o.kind,
       summary: o.summary,
       body: o.body ?? null,
@@ -372,7 +372,7 @@ export type SoulExtractionSummary =
  *                  Personal tier still can't spend a model call, so it's skipped 'read_only'.
  */
 export async function runSoulExtraction(input: {
-  persona: { id: string; name: string; mode: PersonaMode };
+  persona: { id: string; name: string; display_name?: string | null; mode: PersonaMode };
   ownerId: string;
   tier: Tier;
   trigger: SoulExtractionTrigger;
@@ -406,7 +406,7 @@ export async function runSoulExtraction(input: {
   for (const observation of observations) {
     results.push(
       await routeObservation({
-        persona: { id: input.persona.id, name: input.persona.name },
+        persona: { id: input.persona.id, name: input.persona.name, display_name: input.persona.display_name ?? null },
         ownerId: input.ownerId,
         tier: input.tier,
         observation,
@@ -458,7 +458,7 @@ export async function extractSoulFromInboxResolution(input: {
   });
 
   await runSoulExtraction({
-    persona: { id: persona.id, name: persona.name, mode: persona.mode },
+    persona: { id: persona.id, name: persona.name, display_name: persona.display_name ?? null, mode: persona.mode },
     ownerId: item.user_id,
     tier,
     trigger: "continuous",

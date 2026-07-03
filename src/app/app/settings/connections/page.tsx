@@ -24,6 +24,7 @@ import { fetchSupabaseConnectionPublic } from "@/lib/pa-supabase-connections";
 import { getCurrentTier, tierAllowsChannel, TIER_LABELS } from "@/lib/personas/tier-caps";
 import { fetchChannelConnectionForOwner } from "@/lib/channels/store";
 import { listPersonasForBusiness } from "@/lib/personas/db";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 import { fetchActiveSmsNumber } from "@/lib/pa-sms-numbers";
 import { fetchRecentSmsActivity } from "@/lib/pa-conversations";
 import { ensureInboundAddresses } from "@/lib/inbound-email/addresses";
@@ -304,7 +305,7 @@ export default async function ConnectionsPage({
   const smsChannel = smsChannelResult.ok ? smsChannelResult.data : null;
   const imessageChannel = imessageResult.ok ? imessageResult.data : null;
   const whatsappChannel = whatsappResult.ok ? whatsappResult.data : null;
-  const telegramPersonaOptions = personas.map((p) => ({ id: p.id, name: p.name }));
+  const telegramPersonaOptions = personas.map((p) => ({ id: p.id, name: getPersonaDisplayName(p) }));
   const telegramBotUsername =
     typeof telegram?.config.botUsername === "string" ? telegram.config.botUsername : null;
   const smsChannelOwnerPhone =

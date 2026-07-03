@@ -51,6 +51,7 @@ import { speak, elevenLabsSynthesize } from "@/lib/channels/voice/tts";
 import { handleVoiceTurn, initialVoiceTurnState } from "@/lib/channels/voice/dispatcher-voice";
 // resolve owner/persona/voiceProfile/ceiling from ?owner=&callSid= on the WS upgrade URL,
 // then adapt the Twilio media protocol (start/media/stop JSON frames) to VoiceSocket and:
+//   greeting = voiceIntroLine(voiceProfile, getPersonaDisplayName(persona))  // lib/channels/voice/profile.ts (PA-POS-35)
 //   const session = new VoiceCallSession(voiceSocket, { transcriber, speak, handleTurn, ceilingSeconds, greeting });
 //   await session.start();
 // On stop, finalize the pa_voice_calls row (finalizeVoiceCall) with session.transcript + durations.

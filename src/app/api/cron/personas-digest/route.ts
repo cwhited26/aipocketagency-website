@@ -8,7 +8,7 @@ import {
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { commitMemoryFile } from "@/lib/pa-brain";
 import { sendEmail } from "@/lib/resend";
-import type { PersonaMessageRow, PersonaRow } from "@/lib/personas/types";
+import { getPersonaDisplayName, type PersonaMessageRow, type PersonaRow } from "@/lib/personas/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -81,8 +81,9 @@ async function digestForPersona(persona: PersonaRow, sinceIso: string): Promise<
   const brainRepo = ownerRes.ok ? ownerRes.data?.brain_repo ?? null : null;
   const githubToken = ownerRes.ok ? ownerRes.data?.github_token ?? null : null;
 
+  const personaName = getPersonaDisplayName(persona);
   const summary = apiKey
-    ? await summarize(apiKey, persona.name, allMessages, blockedCount)
+    ? await summarize(apiKey, personaName, allMessages, blockedCount)
     : fallbackSummary(conversations.length, allMessages.length, blockedCount);
 
   // Log the digest to the owner's brain (inbox/digests/personas/...).
@@ -93,7 +94,7 @@ async function digestForPersona(persona: PersonaRow, sinceIso: string): Promise<
       token: githubToken,
       path: `inbox/digests/personas/${date}-${persona.slug}.md`,
       mode: "replace",
-      content: `# ${persona.name} — weekly digest (${date})\n\n${summary}\n`,
+      content: `# ${personaName} — weekly digest (${date})\n\n${summary}\n`,
       commitMessage: `persona digest: ${persona.slug} ${date}`,
     });
   }
@@ -105,9 +106,9 @@ async function digestForPersona(persona: PersonaRow, sinceIso: string): Promise<
     from: FROM,
     to: email,
     replyTo: REPLY_TO,
-    subject: `Weekly digest — ${persona.name}`,
-    html: `<div style="font-family:system-ui,sans-serif;max-width:560px"><h2>${escapeHtml(persona.name)} — this week</h2><pre style="white-space:pre-wrap;font-family:inherit">${escapeHtml(summary)}</pre><p style="color:#94a3b8;font-size:12px">Pocket Agent · ${conversations.length} conversations this week</p></div>`,
-    text: `${persona.name} — this week\n\n${summary}\n\n${conversations.length} conversations this week.`,
+    subject: `Weekly digest — ${personaName}`,
+    html: `<div style="font-family:system-ui,sans-serif;max-width:560px"><h2>${escapeHtml(personaName)} — this week</h2><pre style="white-space:pre-wrap;font-family:inherit">${escapeHtml(summary)}</pre><p style="color:#94a3b8;font-size:12px">Pocket Agent · ${conversations.length} conversations this week</p></div>`,
+    text: `${personaName} — this week\n\n${summary}\n\n${conversations.length} conversations this week.`,
   });
   if (!send.ok) return { personaId: persona.id, status: "error", reason: send.error };
   return { personaId: persona.id, status: "sent" };

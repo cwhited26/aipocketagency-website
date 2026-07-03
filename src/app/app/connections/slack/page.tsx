@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchChannelConnectionForOwner } from "@/lib/channels/store";
 import { channelSlackOAuthConfigured } from "@/lib/channels/adapters/slack/oauth";
 import { listPersonasForBusiness } from "@/lib/personas/db";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 import { getCurrentTier, tierCanSeeChannels, tierAllowsChannel, TIER_LABELS } from "@/lib/personas/tier-caps";
 import SlackChannelClient from "./SlackChannelClient";
 
@@ -33,7 +34,7 @@ export default async function SlackChannelPage({
   ]);
 
   const connection = connectionResult.ok ? connectionResult.data : null;
-  const personaOptions = personas.map((p) => ({ id: p.id, name: p.name, role: p.template_key }));
+  const personaOptions = personas.map((p) => ({ id: p.id, name: getPersonaDisplayName(p), role: p.template_key }));
 
   return (
     <div className="h-full overflow-y-auto bg-[#06080b]">

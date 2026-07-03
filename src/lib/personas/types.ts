@@ -40,6 +40,9 @@ export type PersonaRow = {
   business_id: string;
   owner_user_id: string;
   name: string;
+  // The customer-chosen name (migration 106, PA-POS-35). NULL/undefined on rows the
+  // owner never named — every render resolves through getPersonaDisplayName().
+  display_name?: string | null;
   slug: string;
   template_key: string;
   tone: ToneKey;
@@ -62,6 +65,17 @@ export type PersonaRow = {
 /** The persona's declared Apps, tolerant of rows predating migration 062. */
 export function personaApps(persona: Pick<PersonaRow, "accessible_apps">): string[] {
   return persona.accessible_apps ?? [];
+}
+
+/**
+ * The name every surface renders for a Persona instance (PA-POS-35): the customer-chosen
+ * `display_name` when set, else the template-derived `name` seeded at creation. Tolerant
+ * of rows predating migration 106 (`display_name` undefined).
+ */
+export function getPersonaDisplayName(
+  persona: Pick<PersonaRow, "name" | "display_name">,
+): string {
+  return persona.display_name?.trim() || persona.name;
 }
 
 export type PersonaSpecRow = {
@@ -254,6 +268,16 @@ export const TONE_GUIDANCE: Record<ToneKey, string> = {
 
 // A persona name: human-facing label. A slug is derived from it server-side.
 export const personaNameSchema = z.string().trim().min(2, "Name is too short").max(80);
+
+// PA-POS-35: the customer-chosen display name ("Marcus"). 1-40 chars after trim, and
+// must contain at least one letter or number — an emoji-only name renders unreadably
+// in greeting strings ("Hey — 🚀 here."). `null` clears the name back to the template's.
+export const personaDisplayNameSchema = z
+  .string()
+  .trim()
+  .min(1, "Name is empty")
+  .max(40, "Keep it under 40 characters")
+  .refine((s) => /[\p{L}\p{N}]/u.test(s), "Name needs at least one letter or number");
 
 export const toneSchema = z.enum(TONE_KEYS);
 

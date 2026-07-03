@@ -25,6 +25,7 @@ import { canSendMessage, monthKey } from "@/lib/personas/tier-caps";
 import { loadKnowledgeForChat } from "@/lib/personas/knowledge";
 import { buildPersonaSystemPrompt, parsePersonaSpecMarkdown } from "@/lib/personas/spec";
 import { getDailyLogsForContext } from "@/lib/personas/daily-logs";
+import { getPersonaDisplayName } from "@/lib/personas/types";
 import {
   loadZoneConfig,
   ContainmentBlockedError,
@@ -119,7 +120,7 @@ async function invokeHandler(
   const recentActivityBlock = await getDailyLogsForContext(persona.business_id, 3);
 
   const systemPrompt = buildPersonaSystemPrompt({
-    personaName: persona.name,
+    personaName: getPersonaDisplayName(persona),
     tone: persona.tone,
     spec: specFields,
     knowledgeMarkup: knowledge.markup,

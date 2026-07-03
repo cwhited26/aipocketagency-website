@@ -5,6 +5,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import Link from "next/link";
 import Mascot from "@/components/Mascot";
 import UsageTab from "./UsageTab";
+import PersonaNameChip from "./PersonaNameChip";
 import { AppEmptyState } from "@/app/app/_components/AppEmptyState";
 import { MISSION_CONTROL } from "@/lib/copy/in-app";
 import { trackEvent } from "@/lib/analytics/events";
@@ -2808,6 +2809,9 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
                 onArrow={handleTileArrow}
               />
             </div>
+
+            {/* Naming nudge (PA-POS-35) — offers a name for the newest unnamed persona */}
+            <PersonaNameChip />
 
             {/* 1 · Attention — failed / lost-contact / parked sub-agents */}
             {attention.length > 0 && (
