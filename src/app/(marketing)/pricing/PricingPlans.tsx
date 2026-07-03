@@ -32,6 +32,8 @@ const VISIBLE_TIERS: VisibleTier[] = [
       "AI Office Launch Kit + Launchpad access — free",
     ],
     ctaLabel: "Start Personal Brain",
+    anchor:
+      "The tool stack this replaces — a notes app, a scheduler, an inbox helper, a meeting note-taker — runs $60–90 a month and none of them talk to each other. Personal Brain is $37 and it’s one workspace.",
   },
   {
     name: "Business Agent",
@@ -49,6 +51,8 @@ const VISIBLE_TIERS: VisibleTier[] = [
       "5 prebuilt Skills — 20 at Pro+",
     ],
     ctaLabel: "Get My AI Team",
+    anchor:
+      "A part-time VA runs $1,500–2,500 a month and comes with your training curve. Business Agent is $97 and starts from your Business Brain — your voice, your prices, your customers — the day you connect it.",
   },
   {
     name: "AI Agent Workspace",
@@ -67,7 +71,7 @@ const VISIBLE_TIERS: VisibleTier[] = [
     ],
     ctaLabel: "Get AI Agent Workspace",
     anchor:
-      "PaidCreators sells you a $497 plan. You still spend the next twelve months executing it. Pocket Agent sells you the workers who execute it for you — one month at $497 delivers what PaidCreators' whole plan tells you to go build.",
+      "The admin hire you can’t quite justify runs $50–65k a year loaded — and you’re the one training them. The AI Agent Workspace is $497 a month, no benefits, no vacation, no notice, and when the load drops you drop back to Business Agent or cancel.",
   },
 ];
 

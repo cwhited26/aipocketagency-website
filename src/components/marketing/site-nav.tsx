@@ -1,11 +1,40 @@
 import Link from "next/link";
 import { MONO_FONT } from "./cta";
+import { PERSONA_LINKS } from "@/data/marketing/persona-pages";
 
 const NAV_LINKS: { label: string; href: string }[] = [
   { label: "How it works", href: "/pocket-agent" },
   { label: "Why Pocket Agent", href: "/why-pa" },
   { label: "Pricing", href: "/pricing" },
 ];
+
+// CSS-only dropdown (group-hover + focus-within) so the header stays a server component.
+function ForMenu() {
+  return (
+    <div className="group relative">
+      <span className="flex cursor-default items-center gap-1 text-sm text-slate-400 transition group-hover:text-slate-100 group-focus-within:text-slate-100">
+        For
+        <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
+          <path d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" />
+        </svg>
+      </span>
+      <div className="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-3 opacity-0 transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+        <div className="w-72 rounded-2xl border border-white/10 bg-[#0a0d13] p-2 shadow-2xl">
+          {PERSONA_LINKS.map((p) => (
+            <Link
+              key={p.slug}
+              href={`/for/${p.slug}`}
+              className="block rounded-xl px-3 py-2.5 transition hover:bg-white/[0.05]"
+            >
+              <span className="block text-sm font-medium text-slate-200">{p.label}</span>
+              <span className="mt-0.5 block text-xs leading-snug text-slate-500">{p.hook}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function SiteHeader() {
   return (
@@ -20,6 +49,7 @@ export function SiteHeader() {
           <span className="text-[15px] font-semibold tracking-tight">Pocket Agent</span>
         </Link>
         <nav className="hidden items-center gap-7 md:flex">
+          <ForMenu />
           {NAV_LINKS.map((l) => (
             <Link
               key={l.href}

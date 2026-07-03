@@ -32,6 +32,13 @@ const MARKETING_ROUTES: RouteCase[] = [
   { name: "thanks (subscription only)", path: "/thanks?bought=subscription_only" },
   { name: "thanks (subscription plus setup)", path: "/thanks?bought=subscription_plus_setup" },
   { name: "thanks (pilot)", path: "/thanks?bought=pilot" },
+  // Persona landing pages (PA-POS-17) — six static doorways, same shell, tailored copy.
+  { name: "for coaches", path: "/for/coaches" },
+  { name: "for consultants", path: "/for/consultants" },
+  { name: "for contractors", path: "/for/contractors" },
+  { name: "for med spas", path: "/for/med-spas" },
+  { name: "for agencies", path: "/for/agencies" },
+  { name: "for sales teams", path: "/for/sales-teams" },
 ];
 
 const PRODUCT_ROUTES: RouteCase[] = [
