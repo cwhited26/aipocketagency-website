@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 const INCLUDES = [
-  "A Business Brain starter — set up from your business, yours to keep",
+  "A Business Brain starter — set up from your real business",
   "1 Persona — pick the worker burying you most (Admin, Sales, or Content)",
   "1 workflow — one real job, set up and running",
   "1 Mission Control review — we walk you through reading the cockpit",

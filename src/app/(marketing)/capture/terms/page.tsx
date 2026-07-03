@@ -78,7 +78,7 @@ export default function CaptureTermsPage() {
 
             <div className="mt-12">
               <Link
-                href="/capture"
+                href="https://capture.aipocketagent.com"
                 className="text-sm font-semibold text-cyan-300 transition hover:underline"
               >
                 ← Back to Pocket Capture

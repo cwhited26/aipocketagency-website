@@ -55,7 +55,7 @@ const VISIBLE_PLANS: { name: string; price: string; blurb: string; cta: string; 
     price: "$497/month",
     blurb:
       "For businesses that want Idea Engine, Lead Scout vertical packs, Decision Roundtable, full cockpit, and all 30 Skills.",
-    cta: "Unlock AI Agent Workspace",
+    cta: "Get AI Agent Workspace",
     href: "/start?tier=studio_plus",
   },
 ];
