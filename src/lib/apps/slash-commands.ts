@@ -26,6 +26,7 @@ import {
   tierRank,
   type Tier,
 } from "@/lib/personas/tier-caps";
+import { tierAllowsVoiceApp } from "@/lib/tiers/voice";
 
 // ── Zod schema for a parsed slash command ───────────────────────────────────────────────────
 //
@@ -73,6 +74,9 @@ const APP_SLASH_ALIASES: Readonly<Record<string, AppId>> = {
   sms: "sms-channel",
   imessage: "imessage-channel",
   whatsapp: "whatsapp-channel",
+  // `/call <number>` — the natural spelling for "Poc, call someone" (PA-CHAN-16). The args carry
+  // through resolveAppSlashCommand's href, so the Voice App opens with the dialer pre-filled.
+  call: "voice",
 };
 
 function aliasesForApp(id: AppId): string[] {
@@ -114,6 +118,8 @@ function appMinTier(appId: AppId): Tier {
       return "studio_plus"; // tierAllowsBrowserAgent (PA-POS-19 — hosted browser sessions are expensive)
     case "agent-builder":
       return "studio_plus"; // tierAllowsAgentBuilder (PA-POS-27)
+    case "voice":
+      return "studio_plus"; // tierAllowsVoiceApp (PA-CHAN-16 — realtime audio is the priciest surface)
     default:
       return "starter";
   }
@@ -149,6 +155,8 @@ export function tierAllowsApp(tier: Tier, appId: AppId, passApps: readonly AppId
       return tierAllowsBrowserAgent(tier);
     case "agent-builder":
       return tierAllowsAgentBuilder(tier);
+    case "voice":
+      return tierAllowsVoiceApp(tier);
     default:
       return tierRank(tier) >= tierRank("starter"); // every tier
   }

@@ -61,6 +61,16 @@ export function tierAllowsCustomVoiceId(tier: Tier): boolean {
   return tierRank(tier) >= tierRank("studio_plus");
 }
 
+/**
+ * Voice v2 (PA-CHAN-16): the realtime Voice App — Poc answers the phone AND makes outbound calls.
+ * Studio+ / Enterprise only at launch: realtime audio is the most expensive surface PA runs
+ * (~$0.30/min at cost across both legs), so it starts where Credits + Top Ups (PA-POS-30) can
+ * meter it. Widening down-tier is a pricing decision, not a code change beyond this line.
+ */
+export function tierAllowsVoiceApp(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio_plus");
+}
+
 /** This tier's monthly minute cap (null = unlimited). */
 export function voiceMonthlyMinuteCap(tier: Tier): number | null {
   return VOICE_MONTHLY_MINUTE_CAPS[tier];

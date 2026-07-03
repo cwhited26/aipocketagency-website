@@ -7,7 +7,7 @@
 // estimate — the per-turn anthropic rows remain the authoritative LLM ledger).
 
 import { NextRequest, NextResponse } from "next/server";
-import { voiceCallEnabled } from "@/lib/channels/voice/feature-flag";
+import { voiceCallEnabled, voiceRealtimeEnabled } from "@/lib/channels/voice/feature-flag";
 import { twilioEnv, publicWebhookBase } from "@/lib/channels/voice/env";
 import { verifyTwilioSignature } from "@/lib/channels/voice/twilio";
 import {
@@ -17,6 +17,10 @@ import {
 } from "@/lib/channels/voice/calls-store";
 import { getVoiceConnectionFull } from "@/lib/channels/voice/connection";
 import { computeCallCostBreakdown, logVoiceCallSummaryCost } from "@/lib/channels/voice/cost";
+import {
+  estimateRealtimeCallMicroCents,
+  logRealtimeCallSummaryCost,
+} from "@/lib/channels/voice/realtime/cost";
 import { voiceLog } from "@/lib/channels/voice/log";
 
 export const runtime = "nodejs";
@@ -48,7 +52,8 @@ function mapStatus(twilioStatus: string): VoiceCallStatus {
 const TERMINAL: ReadonlySet<string> = new Set(["completed", "busy", "failed", "no-answer", "canceled"]);
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  if (!voiceCallEnabled()) return NextResponse.json({ ok: true });
+  // Either engine's flag keeps this callback live — v2 realtime calls send their lifecycle here too.
+  if (!voiceCallEnabled() && !voiceRealtimeEnabled()) return NextResponse.json({ ok: true });
 
   const env = twilioEnv();
   if (!env) return NextResponse.json({ ok: true });
@@ -87,14 +92,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   let costCents: number | null = null;
   if (ownerId && durationSeconds > 0) {
-    // Fallback pricing from the billed call duration: split caller/agent audio ~50/50 for the whisper
-    // + TTS segment estimate (the WS service can finalize with exact per-segment seconds when wired).
-    const breakdown = computeCallCostBreakdown({
-      callSeconds: durationSeconds,
-      whisperAudioSeconds: durationSeconds * 0.5,
-      ttsAudioSeconds: durationSeconds * 0.5,
-    });
-    costCents = await logVoiceCallSummaryCost({ ownerId, callSid, breakdown });
+    if (existing?.engine === "realtime_v2") {
+      // Voice v2: price the realtime engine (Twilio leg + OpenAI Realtime audio, 50/50 split
+      // fallback). Same summary idempotency key as the bridge's exact finalize — first write wins.
+      costCents = await logRealtimeCallSummaryCost({
+        ownerId,
+        callSid,
+        microCents: estimateRealtimeCallMicroCents(durationSeconds),
+      });
+    } else {
+      // Fallback pricing from the billed call duration: split caller/agent audio ~50/50 for the
+      // whisper + TTS segment estimate (the WS service can finalize with exact seconds when wired).
+      const breakdown = computeCallCostBreakdown({
+        callSeconds: durationSeconds,
+        whisperAudioSeconds: durationSeconds * 0.5,
+        ttsAudioSeconds: durationSeconds * 0.5,
+      });
+      costCents = await logVoiceCallSummaryCost({ ownerId, callSid, breakdown });
+    }
   }
 
   await finalizeVoiceCall({

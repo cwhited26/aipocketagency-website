@@ -1,4 +1,9 @@
-# Voice Call channel — handoff (Channels Gateway Phase 6, v0.1)
+# Voice Call channel — handoff (Channels Gateway Phase 6, v0.1 + Voice v2 realtime)
+
+> **Voice v2 (PA-CHAN-15/16) shipped on top of this.** The realtime engine — Poc answers the phone
+> AND makes outbound calls, OpenAI Realtime instead of the Whisper→dispatcher→ElevenLabs pipeline —
+> is documented in the **Voice v2** section at the bottom. v0.1 below still describes the pipeline
+> engine, which stays behind its own flag.
 
 Inbound phone → owner's Persona → spoken reply, looping until hangup. Ships **behind the
 `PA_VOICE_CALL_ENABLED` flag (default OFF)**. Spec:
@@ -103,3 +108,77 @@ Supabase MCP / dashboard).
   to v1.5). No audio recording — transcripts only.
 - The status-callback cost is priced from billed call duration (caller/agent audio split ~50/50);
   the WS service can finalize with exact per-segment seconds when wired.
+
+---
+
+## Voice v2 — realtime engine (PA-CHAN-15/16, migration 104)
+
+Poc on the phone, both directions. Inbound: a caller rings the v2 DID, `/api/channels/inbound/voice`
+verifies the Twilio signature, applies the caller gate + daily cap, and returns `<Connect><Stream>`
+to the realtime bridge. Outbound: the owner (or `/call <number>` in chat) hits
+`POST /api/app/apps/voice/calls`; Twilio dials, the callee answers, and
+`/api/channels/voice/realtime-twiml` opens the same stream. The audio pipeline is OpenAI Realtime
+(`gpt-realtime`, g711_ulaw both directions — Twilio frames relay verbatim, no transcoding).
+
+### What shipped
+
+- **Migration `104_voice_realtime_v2.sql`** — v2 columns on `pa_voice_calls` (`transcript_json`,
+  `function_calls`, `engine`, `purpose`) + the append-only `pa_voice_call_events` ledger
+  (speech / function_call / approval_request / approval_response / speak_queue).
+- **ChannelAdapter** `src/lib/channels/adapters/voice/adapter.ts` — voice finally implements the
+  contract (inbound = a signed ringing call, outbound = placing one) and is registered.
+- **Realtime bridge libs** `src/lib/channels/voice/realtime/` — `session.ts` (the VoiceSocket ↔
+  RealtimeSocket relay; approval gate is structural: the ONLY side-effect path a call has is
+  `stageFunctionCall` → inbox card), `prompt.ts` (Poc's instructions from the character bio;
+  banned-phrase list is a vitest gate), `cost.ts` (the two hard caps: **30 min wall-clock** and
+  **$5.00 realized cost**, enforced on the session's own audio clock), `stage.ts` (send_email →
+  one-tap-approvable draft; schedule_meeting / create_follow_up → decision cards), `bridge.ts`
+  (prepare/finalize for the standalone service), `events-store.ts`, `views.ts`.
+- **App** `/app/apps/voice` (+ `/[callId]` live transcript, staged-approval queue, speak-as-Poc,
+  hang-up) — Studio+ / Enterprise, catalog slug `voice`, chat alias `/call <number>`.
+- **Caps** — 30 min + $5 per call, **10 calls/owner/day** default (override:
+  `pa_channel_connections.config.daily_call_cap`). Cost ledgers as `featureSlug='voice_call'`
+  (Credits + Top Ups meter it at Studio+, PA-POS-30).
+- **Cold-inbound posture** — unknown callers get Poc's polite decline unless
+  `config.allow_unknown_callers=true` (default false; `config.allowed_callers[]` is the allow-list).
+  Voice cold-onboarding deliberately waits for the WhatsApp funnel's moderation proof (§22.4).
+
+### The standalone WS service, extended for v2
+
+Same deployment as v0.1 (Fly/Render/Railway — anywhere a socket can live; `pnpm add ws` there).
+For each Twilio Media Stream connection carrying `engine=realtime_v2`:
+
+```ts
+import WebSocket, { WebSocketServer } from "ws";
+import { RealtimeBridgeSession, type RealtimeSocket } from "@/lib/channels/voice/realtime/session";
+import {
+  prepareRealtimeCall,
+  finalizeRealtimeCall,
+  realtimeAuthHeaders,
+  REALTIME_WSS_URL,
+} from "@/lib/channels/voice/realtime/bridge";
+// 1. On WS upgrade, read ?callSid= and: const prepared = await prepareRealtimeCall(callSid);
+//    (null → close; the TwiML routes only mint stream URLs for live v2 rows).
+// 2. Dial OpenAI: new WebSocket(REALTIME_WSS_URL, { headers: realtimeAuthHeaders()! }) and adapt
+//    it to RealtimeSocket; adapt the Twilio stream (start/media/stop frames) to VoiceSocket.
+// 3. const session = new RealtimeBridgeSession(voiceSocket, realtimeSocket, prepared.deps);
+//    session.start();
+// 4. On stop: await finalizeRealtimeCall({ callSid, ownerId: prepared.ownerId, session });
+```
+
+### Chase — env vars for v2 (production + preview)
+
+| Var | Value |
+|---|---|
+| `PA_VOICE_REALTIME_ENABLED` | leave UNSET until the bridge service is live; then `true` |
+| `TWILIO_VOICE_PHONE_NUMBER` | the voice-enabled E.164 DID for v2 (inbound line + outbound caller ID) |
+| `OPENAI_REALTIME_API_KEY` | optional — a dedicated key for realtime spend; falls back to `OPENAI_API_KEY` |
+| `PA_VOICE_REALTIME_WSS_URL` | the bridge service origin, e.g. `wss://voice.aipocketagent.com/realtime`; falls back to `PA_VOICE_STREAM_WSS_URL` |
+
+Twilio console for the v2 DID: Voice webhook → `https://aipocketagent.com/api/channels/inbound/voice`
+(POST), status callback → `https://aipocketagent.com/api/channels/voice/status` (POST). The owner's
+voice connection row must carry the DID as `external_id` (the inbound route resolves the owner by it).
+
+### Migration
+
+`supabase/migrations/104_voice_realtime_v2.sql` — additive, idempotent. Apply to `haizcnyywvewjygzeaaf`.

@@ -30,7 +30,10 @@ export type CostBackend =
   // providers, with the per-segment split in metadata.cost_breakdown. The per-turn LLM rows use the
   // plain "anthropic" backend; the Twilio/Whisper/ElevenLabs segment costs are computed in
   // lib/channels/voice/cost.ts and written with an explicit costMicroCents (not via getCostMicroCents).
-  | "twilio+elevenlabs+openai";
+  | "twilio+elevenlabs+openai"
+  // The composite backend of a Voice v2 realtime call summary (PA-CHAN-16): Twilio leg + OpenAI
+  // Realtime audio, computed in lib/channels/voice/realtime/cost.ts with an explicit costMicroCents.
+  | "twilio+openai-realtime";
 
 /** The usage payload a metered call returns. Every field optional — each backend reads what it needs. */
 export type CostUsage = {

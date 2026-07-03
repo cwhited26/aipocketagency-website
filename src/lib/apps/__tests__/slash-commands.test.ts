@@ -139,16 +139,30 @@ describe("tier-gated invocation (PA-SLASH-1)", () => {
     expect(studio).toContain("landing-page-builder");
     expect(studio).toContain("competitor-inspector");
     expect(studio).toContain("idea-engine");
-    // Three Apps sit above Studio: iMessage (Channels Gateway Phase 3), the Browser Agent
-    // (PA-POS-19, hosted browser sessions), and the Custom Agent Builder (PA-POS-27) —
-    // all unlock at Studio+.
+    // Four Apps sit above Studio: iMessage (Channels Gateway Phase 3), the Browser Agent
+    // (PA-POS-19, hosted browser sessions), the Custom Agent Builder (PA-POS-27), and Voice
+    // (PA-CHAN-16, realtime audio) — all unlock at Studio+.
     expect(studio).not.toContain("imessage-channel");
     expect(studio).not.toContain("browser-agent");
     expect(studio).not.toContain("agent-builder");
-    expect(studio.length).toBe(APP_CATALOG.length - 3);
+    expect(studio).not.toContain("voice");
+    expect(studio.length).toBe(APP_CATALOG.length - 4);
     expect(studioPlus).toContain("browser-agent");
     expect(studioPlus).toContain("agent-builder");
+    expect(studioPlus).toContain("voice");
     expect(studioPlus.length).toBe(APP_CATALOG.length);
+  });
+
+  it("`/call <number>` resolves to the Voice App with the number as prefill (PA-CHAN-16)", () => {
+    const res = resolveAppSlashCommand("/call +14045551234", "studio_plus");
+    expect(res.kind).toBe("open");
+    if (res.kind === "open") {
+      expect(res.app.id).toBe("voice");
+      expect(res.href).toBe("/app/apps/voice?prefill=%2B14045551234");
+    }
+    // Below Studio+ the same command surfaces the upgrade path, not the App.
+    const locked = resolveAppSlashCommand("/call +14045551234", "studio");
+    expect(locked.kind).toBe("locked");
   });
 
   it("an active Project Pass opens its App in the popover and resolver (PA-POS-31)", () => {

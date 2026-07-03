@@ -41,6 +41,31 @@ export function publicWebhookBase(): string {
   return base.replace(/\/$/, "");
 }
 
+/**
+ * Voice v2: the OpenAI key the realtime bridge authenticates with. A dedicated
+ * OPENAI_REALTIME_API_KEY wins (lets Chase scope realtime spend separately); falls back to the
+ * OPENAI_API_KEY already set for Whisper.
+ */
+export function openAiRealtimeKey(): string | null {
+  return process.env.OPENAI_REALTIME_API_KEY ?? process.env.OPENAI_API_KEY ?? null;
+}
+
+/**
+ * Voice v2: the voice-enabled DID outbound calls originate from (and the default inbound line).
+ * Distinct from TWILIO_SHARED_POOL_NUMBER so the v1 pipeline pool and the v2 realtime line can be
+ * different numbers during rollout.
+ */
+export function twilioVoiceNumber(): string | null {
+  return process.env.TWILIO_VOICE_PHONE_NUMBER ?? null;
+}
+
+/** Voice v2: the wss:// origin for the realtime bridge. Falls back to the v1 stream service. */
+export function voiceRealtimeWsBase(): string {
+  const explicit = process.env.PA_VOICE_REALTIME_WSS_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
+  return voiceStreamWsBase();
+}
+
 /** The wss:// origin for the Twilio Media Stream (the standalone WS service, spec build-step 6). */
 export function voiceStreamWsBase(): string {
   // The standalone WS service runs at its own origin; default derives from the webhook base by

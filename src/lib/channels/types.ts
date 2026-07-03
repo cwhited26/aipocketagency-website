@@ -24,9 +24,10 @@ export const CHANNEL_SLUGS = [
   "whatsapp",
   "telegram",
   "web_widget",
-  // Phase 6 — Voice Call (Twilio + ElevenLabs + Whisper). No ChannelAdapter (the WS streaming model
-  // doesn't fit parseInbound/sendOutbound); a voice connection rides pa_channel_connections for
-  // storage + the settings surface, and the voice routes own the answer/stream/status flow.
+  // Phase 6 — Voice. v0.1 shipped adapter-less (the WS streaming model didn't fit parseInbound/
+  // sendOutbound); Voice v2 (PA-CHAN-15) mapped call semantics onto the contract — inbound = a
+  // signature-verified ringing call, outbound = placing a call — so voice now has a real adapter
+  // (adapters/voice). The realtime bridge owns the audio once a call is live.
   "voice",
 ] as const;
 export type ChannelSlug = (typeof CHANNEL_SLUGS)[number];

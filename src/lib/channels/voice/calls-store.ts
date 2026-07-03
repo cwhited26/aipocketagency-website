@@ -45,7 +45,28 @@ export type VoiceCallRow = {
   hangup_reason: string | null;
   untrusted_origin: boolean;
   created_at: string;
+  // Voice v2 columns (migration 104). Null on pre-v2 rows and on a DB the migration hasn't
+  // reached yet — every reader treats null as "v1 pipeline call".
+  transcript_json: { role: string; text: string; at_ms: number }[] | null;
+  function_calls:
+    | { name: string; arguments: Record<string, unknown>; staged_action_id: string | null; outcome: string }[]
+    | null;
+  engine: "pipeline_v1" | "realtime_v2" | null;
+  purpose: string | null;
 };
+
+/** One call by row id, owner-scoped (the /app/apps/voice detail page + its API). */
+export async function fetchVoiceCallById(id: string, ownerId: string): Promise<VoiceCallRow | null> {
+  const env = paEnv();
+  if ("error" in env) return null;
+  const endpoint =
+    `${env.url}/rest/v1/${TABLE}` +
+    `?id=eq.${encodeURIComponent(id)}&owner_id=eq.${encodeURIComponent(ownerId)}&limit=1`;
+  const res = await fetch(endpoint, { headers: authHeaders(env.key), cache: "no-store" });
+  if (!res.ok) return null;
+  const rows = (await res.json()) as VoiceCallRow[];
+  return rows[0] ?? null;
+}
 
 /**
  * Upsert a voice-call row keyed on twilio_call_sid (idempotent — a retried 'ringing'/'in_progress'

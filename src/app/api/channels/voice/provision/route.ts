@@ -84,6 +84,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     numberSid: null,
     maxCallSeconds: null,
     callerNumber: pool === "shared" ? callerNumber : null,
+    // Voice v2 defaults (PA-CHAN-15): cold-inbound OFF, no allow-list, default daily cap.
+    allowUnknownCallers: false,
+    allowedCallers: [],
+    dailyCallCap: null,
   };
 
   let phoneNumber: string;

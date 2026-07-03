@@ -26,6 +26,16 @@ export type VoiceConnectionConfig = {
   maxCallSeconds: number | null;
   /** Shared-pool only: the owner's phone, resolved on inbound by caller ID. Null for own-number. */
   callerNumber: string | null;
+  /**
+   * Voice v2 (PA-CHAN-15): cold-inbound opt-in. Default FALSE — a caller who isn't the owner or on
+   * allowedCallers gets the polite decline, not a live Poc (voice cold-onboarding is deferred until
+   * the WhatsApp funnel's moderation stack is proven; Positioning Lock §22.4 posture).
+   */
+  allowUnknownCallers: boolean;
+  /** Voice v2: E.164 numbers the owner has explicitly allowed to reach Poc. */
+  allowedCallers: string[];
+  /** Voice v2: per-owner daily call cap override (inbound + outbound). Null = the default (10). */
+  dailyCallCap: number | null;
 };
 
 function parseConfig(raw: Record<string, unknown>): VoiceConnectionConfig {
@@ -36,6 +46,13 @@ function parseConfig(raw: Record<string, unknown>): VoiceConnectionConfig {
     typeof raw.max_call_seconds === "number" && Number.isFinite(raw.max_call_seconds)
       ? raw.max_call_seconds
       : null;
+  const allowedCallers = Array.isArray(raw.allowed_callers)
+    ? raw.allowed_callers.filter((v): v is string => typeof v === "string" && v !== "")
+    : [];
+  const dailyCap =
+    typeof raw.daily_call_cap === "number" && Number.isFinite(raw.daily_call_cap) && raw.daily_call_cap > 0
+      ? Math.floor(raw.daily_call_cap)
+      : null;
   return {
     accountSid: str(raw.account_sid, ""),
     voiceId: str(raw.voice_id, DEFAULT_VOICE_ID),
@@ -43,6 +60,9 @@ function parseConfig(raw: Record<string, unknown>): VoiceConnectionConfig {
     numberSid,
     maxCallSeconds: maxCall,
     callerNumber: typeof raw.caller_number === "string" ? raw.caller_number : null,
+    allowUnknownCallers: raw.allow_unknown_callers === true,
+    allowedCallers,
+    dailyCallCap: dailyCap,
   };
 }
 
@@ -54,7 +74,23 @@ function serializeConfig(config: VoiceConnectionConfig): Record<string, unknown>
     number_sid: config.numberSid,
     max_call_seconds: config.maxCallSeconds,
     caller_number: config.callerNumber,
+    allow_unknown_callers: config.allowUnknownCallers,
+    allowed_callers: config.allowedCallers,
+    daily_call_cap: config.dailyCallCap,
   };
+}
+
+/**
+ * Voice v2 (PA-CHAN-15): may this caller reach Poc? The owner always may (their own verified
+ * number), explicit allowedCallers may, and everyone else only when the owner opted into
+ * cold-inbound. Pure — pinned by vitest.
+ */
+export function isCallerAllowed(config: VoiceConnectionConfig, fromNumber: string): boolean {
+  if (config.allowUnknownCallers) return true;
+  const from = fromNumber.trim();
+  if (from === "") return false;
+  if (config.callerNumber !== null && config.callerNumber === from) return true;
+  return config.allowedCallers.includes(from);
 }
 
 export type VoiceConnectionPublic = {
@@ -160,6 +196,49 @@ function poolEnv(): { url: string; key: string } | null {
  * caller_number equals `callerNumber` and pool is 'shared'. Returns null when no match (an unknown
  * caller on the shared pool — the answer route hangs up).
  */
+/**
+ * Voice v2 (PA-CHAN-15): resolve the owner behind a voice DID — the To number on an inbound call
+ * to /api/channels/inbound/voice. Matches a 'voice' connection by external_id (the E.164 DID).
+ * Returns null for a number PA doesn't manage (the route declines).
+ */
+export async function resolveVoiceOwnerByNumber(
+  didNumber: string,
+): Promise<ResolvedVoiceOwner | null> {
+  const env = poolEnv();
+  if (!env) return null;
+  const endpoint =
+    `${env.url}/rest/v1/pa_channel_connections` +
+    `?channel_slug=eq.voice` +
+    `&external_id=eq.${encodeURIComponent(didNumber)}&limit=1`;
+  const res = await fetch(endpoint, {
+    headers: { apikey: env.key, Authorization: `Bearer ${env.key}` },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const rows = (await res.json()) as {
+    owner_id: string;
+    persona_id: string | null;
+    auth_token_encrypted: string | null;
+    config: Record<string, unknown> | null;
+  }[];
+  const row = rows[0];
+  if (!row) return null;
+  let authToken: string | null = null;
+  if (row.auth_token_encrypted) {
+    try {
+      authToken = decrypt(row.auth_token_encrypted);
+    } catch (err) {
+      if (!(err instanceof DecryptionError)) throw err;
+    }
+  }
+  return {
+    ownerId: row.owner_id,
+    personaId: row.persona_id,
+    authToken,
+    config: parseConfig(row.config ?? {}),
+  };
+}
+
 export async function resolveSharedVoiceOwnerByCaller(
   callerNumber: string,
 ): Promise<ResolvedVoiceOwner | null> {

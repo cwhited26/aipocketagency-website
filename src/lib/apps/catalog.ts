@@ -29,6 +29,7 @@ export const APP_IDS = [
   "sms-channel",
   "imessage-channel",
   "whatsapp-channel",
+  "voice",
 ] as const;
 
 export type AppId = (typeof APP_IDS)[number];
@@ -325,6 +326,18 @@ export const APP_CATALOG: AppDef[] = [
     description:
       "Message your agent on WhatsApp through your Business number — same agent, same memory, same approvals. When it drafts something, tap Approve & send, Edit, or Reject right in the chat.",
     blurb: "Your agent on WhatsApp, with tap-to-approve drafts.",
+    tag: "Wherever You Work",
+    tagColor: "cyan",
+  },
+  {
+    id: "voice",
+    slashCommand: "voice",
+    href: "/app/apps/voice",
+    label: "Voice",
+    shortLabel: "Voice",
+    description:
+      "Poc answers your phone. And makes calls when you ask. Anything a call would change — an email, a booking — waits for your approval, and every call leaves a full transcript.",
+    blurb: "Poc on the phone — answering yours, making calls for you, approvals intact.",
     tag: "Wherever You Work",
     tagColor: "cyan",
   },

@@ -179,6 +179,20 @@ export async function placeTestCall(
   return { callSid: res.sid };
 }
 
+/**
+ * Voice v2 (PA-CHAN-16): place a general outbound call — Poc calls someone on the owner's behalf.
+ * Same REST call as the v0.1 test-call, but the destination is owner-chosen (the app route gates
+ * tier + daily cap + E.164 shape before this fires) and the TwiML URL points at the realtime
+ * bridge answer route. Kept as its own export so the v0.1 "test-call only" guard comment on
+ * placeTestCall stays true for the v1 pipeline.
+ */
+export async function placeOutboundCall(
+  creds: TwilioCreds,
+  opts: { to: string; from: string; twimlUrl: string; statusCallbackUrl: string },
+): Promise<{ callSid: string }> {
+  return placeTestCall(creds, opts);
+}
+
 // ── Inbound webhook signature verification (X-Twilio-Signature) ────────────────────────────────
 
 /**
