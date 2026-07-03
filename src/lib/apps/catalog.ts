@@ -23,6 +23,7 @@ export const APP_IDS = [
   "competitor-inspector",
   "website-monitor",
   "proposal-generator",
+  "channels",
 ] as const;
 
 export type AppId = (typeof APP_IDS)[number];
@@ -248,6 +249,18 @@ export const APP_CATALOG: AppDef[] = [
       "Pick a Persona, drop in the client and the scope, and PA drafts a full proposal in their voice — cover summary, the problems you're solving, deliverables, timeline, investment, success criteria, next steps, signatures. Edit it, then send it as a Gmail draft with the PDF attached or file it to your brain.",
     blurb: "Turn a brief into a full, on-voice client proposal — markdown + PDF.",
     tag: "Output",
+    tagColor: "cyan",
+  },
+  {
+    id: "channels",
+    slashCommand: "channels",
+    href: "/app/connections/slack",
+    label: "Channels",
+    shortLabel: "Channels",
+    description:
+      "Message your agent from Slack — same agent, same memory, same approvals. Connect it once and your agent answers where your team already talks; anything that needs your sign-off still waits for you in Mission Control.",
+    blurb: "Reach your agent from Slack, like messaging a teammate.",
+    tag: "Wherever You Work",
     tagColor: "cyan",
   },
 ];

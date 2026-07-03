@@ -68,6 +68,10 @@
     {
       "path": "/api/cron/orphaned-signups",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/channels-retention-sweep",
+      "schedule": "30 6 * * *"
     }
   ],
   "rewrites": [

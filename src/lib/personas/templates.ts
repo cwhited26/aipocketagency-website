@@ -294,7 +294,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Your right hand for the daily admin — what's on today, who's waiting on you, and the quick emails that keep things moving.",
     sampleQuestion: "What's on my plate today and who am I behind on?",
     defaultTone: "conversational",
-    defaultApps: ["daily-brief", "upcoming", "email-drafter", "followups", "follow-up-sweeps", "workflow-vault", "ritual-scheduler"],
+    defaultApps: ["daily-brief", "upcoming", "email-drafter", "followups", "follow-up-sweeps", "workflow-vault", "ritual-scheduler", "channels"],
     starterPrompt: "Give me my morning rundown — what's pending and who I'm behind on.",
     fields: {
       problem:
@@ -322,7 +322,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Keeps deals moving — finds the next prospect, drafts the outreach, and chases the quotes that have gone quiet.",
     sampleQuestion: "Draft a first outreach to a prospect who fits our best customers.",
     defaultTone: "direct",
-    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote", "proposal-generator", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler", "website-monitor"],
+    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote", "proposal-generator", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler", "website-monitor", "channels"],
     starterPrompt: "Draft a first outreach email to a regional homebuilder who'd be a good fit.",
     fields: {
       problem:

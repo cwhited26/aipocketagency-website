@@ -6,6 +6,7 @@ import {
   tierCanSeeLandingPageBuilder,
   tierAllowsIdeaEngine,
   tierAllowsIdeaEngineAutoBuild,
+  tierCanSeeChannels,
 } from "@/lib/personas/tier-caps";
 import { fetchGithubBuildConnectionPublic } from "@/lib/pa-github-build-connections";
 import { fetchVercelConnectionPublic } from "@/lib/pa-vercel-connections";
@@ -58,6 +59,9 @@ export default async function AppsPage() {
   // app page enforces the real gate and shows the same upgrade state for anyone who follows the card.
   const canUseIdeaEngine = tierAllowsIdeaEngine(tier);
   const ideaEngineAutoBuild = tierAllowsIdeaEngineAutoBuild(tier);
+  // Channels (PA-CHAN-7): Business Agent (Pro) and up. The card stays on the grid for every tier —
+  // same reasoning as the Idea Engine card — with an upgrade chip below Pro.
+  const canUseChannels = tierCanSeeChannels(tier);
   const visibleApps = apps.filter((app) => {
     if (app.id === "landing-page-builder") return tierCanSeeLandingPageBuilder(tier);
     return true;
@@ -157,10 +161,12 @@ export default async function AppsPage() {
           {visibleApps.map((app) => {
             const lockedLandingPages = app.id === "landing-page-builder" && !canBuildLandingPages;
             const lockedIdeaEngine = app.id === "idea-engine" && !canUseIdeaEngine;
-            // Either gate puts the card in its "show with upgrade chip" state. The chip text is the
-            // tier each App unlocks at — Studio for the builder, Pro+ for the Idea Engine.
-            const locked = lockedLandingPages || lockedIdeaEngine;
-            const unlockTier = lockedLandingPages ? "Studio" : "Pro+";
+            const lockedChannels = app.id === "channels" && !canUseChannels;
+            // Any gate puts the card in its "show with upgrade chip" state. The chip text is the
+            // tier each App unlocks at — Studio for the builder, Pro+ for the Idea Engine, Pro
+            // (Business Agent) for Channels.
+            const locked = lockedLandingPages || lockedIdeaEngine || lockedChannels;
+            const unlockTier = lockedLandingPages ? "Studio" : lockedIdeaEngine ? "Pro+" : "Pro";
             // Tier allows the App but a required Build Tool isn't connected: send the card to
             // Connections so the click pre-flights instead of erroring mid-build.
             const missingConnections = locked ? 0 : missingConnectionsFor(app.id);
