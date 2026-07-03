@@ -193,7 +193,9 @@ export async function fetchSignalCatchById(
 
 // ── Settings ────────────────────────────────────────────────────────────────────────
 
-/** The owner's toggle + sensitivity. No row (or table pre-migration) → the defaults: ON, medium. */
+/** The owner's toggle + sensitivity. No ROW → the defaults (ON, medium). No TABLE (migration 103
+ *  not applied yet) → disabled — fail closed so the catcher never spends a classification it has
+ *  nowhere to store. */
 export async function fetchSignalCatcherSettings(
   ownerId: string,
 ): Promise<PaResult<SignalCatcherSettings>> {
@@ -206,7 +208,9 @@ export async function fetchSignalCatcherSettings(
   );
   if (!res.ok) {
     const body = await res.text();
-    if (res.status === 404 || body.includes(SETTINGS)) return { ok: true, data: DEFAULT_SETTINGS };
+    if (res.status === 404 || body.includes(SETTINGS)) {
+      return { ok: true, data: { ...DEFAULT_SETTINGS, enabled: false } };
+    }
     return { ok: false, status: res.status, error: body };
   }
   const rows = (await res.json()) as Array<{ enabled: boolean; sensitivity: string }>;
