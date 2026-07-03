@@ -10,6 +10,7 @@
 // for approval before anything runs. The page stays static — entitlement is one client
 // fetch after mount, defaulting to the signup route on any failure.
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   AnimatePresence,
@@ -27,6 +28,7 @@ import {
   type ComposeData,
   type ComposePreview,
 } from "@/lib/marketing/compose-preview";
+import { pocArtSrc } from "@/lib/personas/poc-variants";
 
 const PLACEHOLDERS = [
   "An agent that watches Gmail for adjuster emails and drafts SRA responses in my voice.",
@@ -179,8 +181,12 @@ export function AgentBuilderHero({ composeData }: { composeData: ComposeData }) 
               initial={reduced ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 6 }}
-              className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3"
+              className="relative mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3"
             >
+              {/* Poc in the corner — the character who'd run this composition (PA-POS-33). */}
+              <span className="absolute -right-2.5 -top-2.5 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-cyan-300/25 bg-[#0a1f28]">
+                <Image src={pocArtSrc("default")} width={32} height={32} alt="Poc" />
+              </span>
               <p className="text-[13px] leading-relaxed text-slate-300">
                 <span className="text-slate-500">Would compose:</span>{" "}
                 <span className="text-slate-100">[Persona: {preview.persona}]</span>

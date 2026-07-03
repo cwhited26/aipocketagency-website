@@ -247,7 +247,8 @@ export const APPS = {
 // ── Part 7G: Mission Control ──────────────────────────────────────────────────────────────────
 export const MISSION_CONTROL = {
   empty: {
-    headline: "Nothing is waiting for review yet.",
+    // Poc is the character doing the prep (PA-POS-33) — the mascot beside this copy is Poc.
+    headline: "Nothing yet — Poc will drop new drafts here as your agents work.",
     subheadline: "Mission Control fills up when your Personas use Apps to prepare work.",
     body: "Install a workflow first.\n\nGood first workflows: Email Drafting. Follow-Up Sweeps. Capture Inbox to Content. Lead Scout run.\n\nAI does the prep. You stay in control.",
     cta: "Install A Workflow",

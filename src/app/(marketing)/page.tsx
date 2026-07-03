@@ -1,10 +1,12 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { SiteHeader, SiteFooter } from "@/components/marketing/site-nav";
 import { PrimaryCTA, SecondaryCTA, MONO_FONT } from "@/components/marketing/cta";
 import { DIRECTION_COUNTS } from "@/data/landing-page-templates/directions-meta";
 import { AgentBuilderHero } from "@/components/marketing/agent-builder-hero";
 import { buildComposeData } from "@/lib/marketing/compose-preview-data";
+import { pocArtSrc } from "@/lib/personas/poc-variants";
 import { RunningAgentShot } from "@/components/marketing/motion-shots/shot-f-running-agent";
 import { IntegrationsShot } from "@/components/marketing/motion-shots/shot-g-integrations";
 import { BrowserAgentShot } from "@/components/marketing/motion-shots/shot-h-browser-agent";
@@ -580,6 +582,38 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* MEET POC — the character behind every Persona (PA-POS-33). First-touch copy
+            spells "Pocket" per §23.1, then contracts to Poc. */}
+        <section className="border-b border-white/5">
+          <div className="mx-auto max-w-3xl px-6 py-14">
+            <Link
+              href="/poc"
+              className="group flex flex-col items-center gap-6 rounded-3xl border border-white/10 bg-white/[0.02] p-7 transition hover:border-cyan-300/30 sm:flex-row sm:p-8"
+            >
+              <span className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#0a1f28]">
+                <Image
+                  src={pocArtSrc("default")}
+                  width={96}
+                  height={96}
+                  alt="Poc, Pocket Agent's alien character"
+                />
+              </span>
+              <span className="text-center sm:text-left">
+                <span className="block text-xl font-semibold text-slate-100">
+                  Meet Pocket. Poc for short.
+                </span>
+                <span className="mt-2 block text-[15px] leading-relaxed text-slate-400">
+                  The alien behind every Persona you just read about. Poc lives in
+                  your pocket and does the work — same character, different props.
+                </span>
+                <span className="mt-3 inline-block text-sm font-semibold text-accent transition group-hover:translate-x-1">
+                  Meet Poc →
+                </span>
+              </span>
+            </Link>
           </div>
         </section>
 

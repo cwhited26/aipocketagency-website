@@ -12,6 +12,7 @@ const BASE = "https://aipocketagent.com";
 const STATIC_ROUTES = [
   "",
   "/pocket-agent",
+  "/poc",
   "/why-pa",
   "/pricing",
   "/agents",
