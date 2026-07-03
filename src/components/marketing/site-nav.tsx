@@ -84,6 +84,7 @@ export function SiteFooter() {
     { label: "How it works", href: "/pocket-agent" },
     { label: "Why Pocket Agent", href: "/why-pa" },
     { label: "Template Gallery", href: "/templates" },
+    { label: "Compare", href: "/compare" },
     { label: "Pricing", href: "/pricing" },
     { label: "Open the app", href: "/app" },
   ];
