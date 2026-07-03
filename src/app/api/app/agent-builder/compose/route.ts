@@ -11,7 +11,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { fetchPaUser } from "@/lib/pa-supabase";
-import { getCurrentTier, tierAllowsAgentBuilder } from "@/lib/personas/tier-caps";
+import { getCurrentTier } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
 import { listPersonasForBusiness } from "@/lib/personas/db";
 import { createAgentBuild, updateAgentBuild } from "@/lib/agent-builder/db";
 import { AgentSpecParseError, parseAgentSpec } from "@/lib/agent-builder/parse";
@@ -51,12 +52,14 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: parsedBody.error.message }, { status: 422 });
   }
 
+  // Tier OR active Project Pass (PA-POS-31) — the widened gate.
   const tier = await getCurrentTier(user.id);
-  if (!tierAllowsAgentBuilder(tier)) {
+  const access = await hasAppEntitlement(user.id, "agent_builder", { tier });
+  if (!access.allowed) {
     return NextResponse.json(
       {
         error:
-          "The Custom Agent Builder is part of the AI Agent Workspace tier. Upgrade to compose agents from a description.",
+          "The Custom Agent Builder is part of the AI Agent Workspace tier. Upgrade to compose agents from a description — or grab a Project Pass on the App page.",
       },
       { status: 403 },
     );

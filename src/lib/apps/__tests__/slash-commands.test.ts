@@ -139,13 +139,25 @@ describe("tier-gated invocation (PA-SLASH-1)", () => {
     expect(studio).toContain("landing-page-builder");
     expect(studio).toContain("competitor-inspector");
     expect(studio).toContain("idea-engine");
-    // Two Apps sit above Studio: iMessage (Channels Gateway Phase 3) and the Browser Agent
-    // (PA-POS-19, hosted browser sessions) — both unlock at Studio+.
+    // Three Apps sit above Studio: iMessage (Channels Gateway Phase 3), the Browser Agent
+    // (PA-POS-19, hosted browser sessions), and the Custom Agent Builder (PA-POS-27) —
+    // all unlock at Studio+.
     expect(studio).not.toContain("imessage-channel");
     expect(studio).not.toContain("browser-agent");
-    expect(studio.length).toBe(APP_CATALOG.length - 2);
+    expect(studio).not.toContain("agent-builder");
+    expect(studio.length).toBe(APP_CATALOG.length - 3);
     expect(studioPlus).toContain("browser-agent");
+    expect(studioPlus).toContain("agent-builder");
     expect(studioPlus.length).toBe(APP_CATALOG.length);
+  });
+
+  it("an active Project Pass opens its App in the popover and resolver (PA-POS-31)", () => {
+    const rented = appSlashCommandsForTier("starter", ["browser-agent"]).map((c) => c.appId);
+    expect(rented).toContain("browser-agent");
+    expect(tierAllowsApp("starter", "browser-agent", ["browser-agent"])).toBe(true);
+    expect(tierAllowsApp("starter", "browser-agent", [])).toBe(false);
+    // The pass opens ONLY its own App — no bleed into other gates.
+    expect(rented).not.toContain("landing-page-builder");
   });
 });
 

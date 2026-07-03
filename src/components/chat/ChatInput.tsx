@@ -22,6 +22,7 @@ import {
   resolveAppSlashCommand,
   type AppSlashResolution,
 } from "@/lib/apps/slash-commands";
+import type { AppId } from "@/lib/apps/catalog";
 import type { Tier } from "@/lib/personas/tier-caps";
 import SlashAutocomplete, { type SlashSuggestionItem } from "./SlashAutocomplete";
 import { MicIcon, SendIcon } from "./icons";
@@ -31,6 +32,7 @@ type Suggestion = { item: SlashSuggestionItem; run: () => void };
 export default function ChatInput({
   inputRef,
   tier,
+  passApps = [],
   onSend,
   onSlash,
   onAppCommand,
@@ -39,6 +41,8 @@ export default function ChatInput({
 }: {
   inputRef: MutableRefObject<HTMLTextAreaElement | null>;
   tier: Tier;
+  /** Apps unlocked by an active Project Pass rather than the tier (PA-POS-31). */
+  passApps?: readonly AppId[];
   onSend: (content: string) => void;
   onSlash: (action: SlashAction) => void;
   onAppCommand: (resolution: AppSlashResolution) => void;
@@ -73,7 +77,7 @@ export default function ChatInput({
         },
       });
     });
-    const appEntries = appSlashAutocomplete(value, tier);
+    const appEntries = appSlashAutocomplete(value, tier, 6, passApps);
     appEntries.forEach((entry, i) => {
       suggestions.push({
         item: {
@@ -83,7 +87,7 @@ export default function ChatInput({
           groupLabel: i === 0 ? "Open an App" : undefined,
         },
         run: () => {
-          onAppCommand(resolveAppSlashCommand(`/${entry.command}`, tier));
+          onAppCommand(resolveAppSlashCommand(`/${entry.command}`, tier, passApps));
           reset();
         },
       });
@@ -99,7 +103,7 @@ export default function ChatInput({
       onSlash(resolveSlashAction(navParsed));
     } else if (isSlashInput(trimmed)) {
       // A slash input the nav registry didn't claim — hand it to the App dispatcher.
-      onAppCommand(resolveAppSlashCommand(trimmed, tier));
+      onAppCommand(resolveAppSlashCommand(trimmed, tier, passApps));
     } else {
       onSend(trimmed);
     }

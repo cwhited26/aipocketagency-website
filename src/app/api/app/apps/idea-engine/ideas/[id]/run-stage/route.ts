@@ -11,6 +11,8 @@ import {
   tierAllowsIdeaEngine,
   tierAllowsIdeaEngineAutoBuild,
 } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
+import { decrementPassRunBudget } from "@/lib/metering/store";
 import {
   runMarketValidation,
   runBlueprint,
@@ -49,9 +51,17 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Tier OR active Project Pass (PA-POS-31). A pass grants the full chain including one
+  // auto-build MVP ship; the run budget burns at stage 6 (the ship), so a rented chain is
+  // never stranded between build and launch.
   const tier = await getCurrentTier(user.id);
-  if (!tierAllowsIdeaEngine(tier)) {
-    return NextResponse.json({ error: "The Idea Engine is a Pro+ feature." }, { status: 403 });
+  const access = await hasAppEntitlement(user.id, "idea_engine", { tier });
+  const passEntitled = access.source === "project_pass";
+  if (!tierAllowsIdeaEngine(tier) && !passEntitled) {
+    return NextResponse.json(
+      { error: "The Idea Engine is a Pro+ feature — or grab a Project Pass on the App page." },
+      { status: 403 },
+    );
   }
 
   const raw = await req.json().catch(() => null);
@@ -133,7 +143,7 @@ export async function POST(
       | { markdown?: string; needsDatabase?: boolean; schemaSql?: string }
       | undefined;
     const blueprintMd = blueprint?.markdown ?? "";
-    const mode = tierAllowsIdeaEngineAutoBuild(tier) ? "auto_build" : "prompt_pack";
+    const mode = tierAllowsIdeaEngineAutoBuild(tier) || passEntitled ? "auto_build" : "prompt_pack";
     const run = await createStageRun({ ideaId: idea.id, ownerId: user.id, stage, status: "running" });
     if (!run.ok) return NextResponse.json({ error: run.error }, { status: run.status });
     const result = await runBuildStage({
@@ -174,6 +184,11 @@ export async function POST(
     if (!result.ok) {
       await updateStageRun(run.data.id, { status: "error", error: result.error, completed_at: new Date().toISOString() });
       return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+    // A pass-entitled launch is the pass's "one MVP ship" — burn the run budget now, at the
+    // ship, never mid-chain (PA-POS-31).
+    if (passEntitled && access.pass && access.pass.remainingRunBudget !== null) {
+      await decrementPassRunBudget(access.pass.id);
     }
     return NextResponse.json({ stage: 6, ...result.data });
   }

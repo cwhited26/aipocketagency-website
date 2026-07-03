@@ -65,7 +65,18 @@ export type CostFeatureSlug =
   // One row per Custom Agent Builder spec parse (PA-POS-27), idempotency
   // `agent_builder:parse:<buildId>`. Studio+ includes an allowance for composes; overage rides
   // the PA-POS-30 Top Up lane, which reads this ledger.
-  | "agent_builder";
+  | "agent_builder"
+  // Zero-cost accounting rows for the PA-POS-31 conversion-nudge funnel: one row per nudge
+  // impression + one per click-through, metadata.action distinguishes them. backend 'vercel',
+  // cost 0 — the event exists so nudge→upgrade conversion is measurable, not for billing.
+  | "project_pass_nudge";
+
+/**
+ * Which entitlement paid for this usage (PA-POS-31 cost analytics): the owner's tier, an active
+ * Project Pass, or Top Up credits past the allowance. Column default is 'tier' (migration 100),
+ * so legacy call sites never change — only pass-entitled paths set 'project_pass'.
+ */
+export type CostEntitlementSource = "tier" | "project_pass" | "top_up";
 
 /**
  * The per-call-site context a metered backend carries: who's paying, which feature area, and a
@@ -83,6 +94,8 @@ export type CostContext = {
   conversationId?: string;
   /** Extra forensic tags merged into the event metadata (e.g. `{ rag_fallback: "exact_cosine" }`). */
   metadata?: Record<string, string>;
+  /** Rented vs tier-included usage (PA-POS-31). Omit = 'tier' (the column default). */
+  entitlementSource?: CostEntitlementSource;
 };
 
 export type LogCostEventInput = {
@@ -99,6 +112,8 @@ export type LogCostEventInput = {
   conversationId?: string;
   /** Extra forensic tags merged into the event metadata (e.g. `{ rag_fallback: "exact_cosine" }`). */
   metadata?: Record<string, string>;
+  /** Rented vs tier-included usage (PA-POS-31). Omit = 'tier' (the column default). */
+  entitlementSource?: CostEntitlementSource;
 };
 
 const TABLE = "pa_cost_events";
@@ -140,7 +155,7 @@ export async function logCostEvent(input: LogCostEventInput): Promise<void> {
   // Caller-supplied forensic tags last — they can't shadow the reserved keys above (distinct names).
   if (input.metadata) Object.assign(metadata, input.metadata);
 
-  const row = {
+  const row: Record<string, unknown> = {
     owner_id: input.ownerId,
     feature_slug: input.featureSlug,
     backend: input.backend,
@@ -153,6 +168,11 @@ export async function logCostEvent(input: LogCostEventInput): Promise<void> {
     tokens_output: input.tokensOutput ?? null,
     metadata,
   };
+  // Only written when the caller knows the usage was pass- or top-up-entitled; omitting the key
+  // lets the column default ('tier') apply, so this insert stays valid pre-migration-100 too.
+  if (input.entitlementSource && input.entitlementSource !== "tier") {
+    row.entitlement_source = input.entitlementSource;
+  }
 
   let res: Response;
   try {
@@ -212,5 +232,6 @@ export async function logCostFromUsage(
     subAgentRunId: cost.subAgentRunId,
     conversationId: cost.conversationId,
     metadata: cost.metadata,
+    entitlementSource: cost.entitlementSource,
   });
 }

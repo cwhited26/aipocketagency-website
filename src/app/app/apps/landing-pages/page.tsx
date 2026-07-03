@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
-import { getCurrentTier, tierAllowsLandingPageBuilder } from "@/lib/personas/tier-caps";
+import { getCurrentTier } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
+import { getPassDef, passPriceCents } from "@/data/project-passes";
+import { MeteringPanel } from "@/components/metering/MeteringPanel";
+import { PassOfferCard } from "@/components/metering/PassOfferCard";
 import { listPages, toView } from "@/lib/landing-pages/pages";
 import { listTemplates } from "@/lib/landing-pages/templates";
 import { getMoonchildConfig } from "@/lib/connectors/moonchild/client";
@@ -28,7 +32,10 @@ export default async function LandingPagesPage() {
     listPages(user.id),
     fetchMoonchildConnectionPublic(user.id),
   ]);
-  const canBuild = tierAllowsLandingPageBuilder(tier);
+  // Tier OR active Project Pass (PA-POS-31) — the widened gate.
+  const access = await hasAppEntitlement(user.id, "landing_page_builder", { tier });
+  const canBuild = access.allowed;
+  const lpbPassDef = getPassDef("landing_page_builder");
   const pages = pagesResult.ok ? pagesResult.data.map(toView) : [];
   const moonchildConfigured = getMoonchildConfig().configured;
   const urlImportEnabled = moonchildConfigured && process.env.PA_MOONCHILD_URL_IMPORT_ENABLED === "true";
@@ -90,6 +97,26 @@ export default async function LandingPagesPage() {
               <p className="text-[13px] text-slate-400 mt-1 leading-relaxed">{s.b}</p>
             </div>
           ))}
+        </div>
+
+        <div className="mb-6 space-y-3">
+          {/* Pass chip + conversion nudge; no credits chip here — LPB isn't credit-metered (§20). */}
+          <MeteringPanel
+            ownerId={user.id}
+            appSlug="landing_page_builder"
+            access={access}
+            showCredits={false}
+          />
+          {!canBuild && lpbPassDef ? (
+            <PassOfferCard
+              offer={{
+                appSlug: "landing_page_builder",
+                label: lpbPassDef.label,
+                priceCents: passPriceCents(lpbPassDef, tier),
+                windowLabel: lpbPassDef.windowLabel,
+              }}
+            />
+          ) : null}
         </div>
 
         <LandingPagesClient

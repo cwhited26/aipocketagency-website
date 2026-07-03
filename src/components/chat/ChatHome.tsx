@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage, FilterTag } from "@/lib/chat/types";
 import type { SlashAction } from "@/lib/chat/filters";
 import { formatAppSlashList, type AppSlashResolution } from "@/lib/apps/slash-commands";
+import type { AppId } from "@/lib/apps/catalog";
 import type { Tier } from "@/lib/personas/tier-caps";
 import { searchMessages, exportToJson, exportToMarkdown, type SearchQuery } from "@/lib/chat/search";
 import SideRail from "./SideRail";
@@ -31,11 +32,14 @@ function asc(messages: ChatMessage[]): ChatMessage[] {
 export default function ChatHome({
   userId,
   tier,
+  passApps = [],
   initialMessages,
   initialFilter,
 }: {
   userId: string;
   tier: Tier;
+  /** Apps unlocked by an active Project Pass rather than the tier (PA-POS-31). */
+  passApps?: readonly AppId[];
   initialMessages: ChatMessage[];
   initialFilter: FilterTag;
 }) {
@@ -366,6 +370,7 @@ export default function ChatHome({
         <ChatInput
           inputRef={inputRef}
           tier={tier}
+          passApps={passApps}
           onSend={send}
           onSlash={onAction}
           onAppCommand={onAppCommand}

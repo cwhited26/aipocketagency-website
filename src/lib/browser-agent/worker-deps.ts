@@ -182,6 +182,7 @@ export function makeWorkerDeps(): WorkerDeps {
         tokensOutput: params.tokensOutput,
         idempotencyKey: `browser:${params.jobId}:${params.stepNumber}`,
         metadata: { job_id: params.jobId, step: String(params.stepNumber) },
+        entitlementSource: params.entitlementSource,
       });
     },
     now: () => Date.now(),

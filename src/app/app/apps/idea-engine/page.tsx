@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { getCurrentTier, tierAllowsIdeaEngine, tierAllowsIdeaEngineAutoBuild } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
+import { getPassDef, passPriceCents } from "@/data/project-passes";
+import { MeteringPanel } from "@/components/metering/MeteringPanel";
+import { PassOfferCard } from "@/components/metering/PassOfferCard";
 import { listIdeas } from "@/lib/idea-engine/store";
 import { fetchGithubBuildConnectionPublic } from "@/lib/pa-github-build-connections";
 import { fetchVercelConnectionPublic } from "@/lib/pa-vercel-connections";
@@ -31,8 +35,13 @@ export default async function IdeaEnginePage() {
   if (!pa.ok || !pa.data) redirect("/app/onboarding");
 
   const tier = await getCurrentTier(user.id);
-  // Pro+ and above only. Below that the card isn't even on the Apps grid, but guard the URL too.
-  if (!tierAllowsIdeaEngine(tier)) {
+  // Pro+ and above only — or an active Project Pass (PA-POS-31), which grants the full chain
+  // including one auto-build MVP ship. Below both, the card isn't even on the Apps grid, but
+  // guard the URL too.
+  const access = await hasAppEntitlement(user.id, "idea_engine", { tier });
+  const passEntitled = access.source === "project_pass";
+  if (!tierAllowsIdeaEngine(tier) && !passEntitled) {
+    const passDef = getPassDef("idea_engine");
     return (
       <div className="h-full overflow-y-auto bg-[#06080b]">
         <div className="max-w-2xl mx-auto px-6 py-10">
@@ -46,12 +55,24 @@ export default async function IdeaEnginePage() {
               ctaHref="/app/settings/tier"
             />
           </div>
+          {passDef ? (
+            <div className="mt-4">
+              <PassOfferCard
+                offer={{
+                  appSlug: "idea_engine",
+                  label: passDef.label,
+                  priceCents: passPriceCents(passDef, tier),
+                  windowLabel: passDef.windowLabel,
+                }}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     );
   }
 
-  const autoBuild = tierAllowsIdeaEngineAutoBuild(tier);
+  const autoBuild = tierAllowsIdeaEngineAutoBuild(tier) || passEntitled;
 
   // Build Tools pre-flight (PA-BUILDONBOARD-1): auto-build ships the MVP to the owner's own GitHub,
   // Vercel, and Supabase. Surface what's missing up front so the chain doesn't stall at a build gate.
@@ -92,6 +113,9 @@ export default async function IdeaEnginePage() {
         <Link href="/app/apps" className="text-[11px] text-[#22d3ee]/60 font-mono hover:text-[#22d3ee]">
           ← Apps
         </Link>
+        <div className="mt-4">
+          <MeteringPanel ownerId={user.id} appSlug="idea_engine" access={access} />
+        </div>
         <div className="mt-4 mb-7">
           <h1 className="text-2xl font-bold text-slate-100">Idea Engine</h1>
           <p className="text-slate-200 text-sm mt-3 leading-relaxed">

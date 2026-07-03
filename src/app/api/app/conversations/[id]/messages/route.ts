@@ -33,7 +33,8 @@ import {
   buildPodcastContextAppend,
 } from "@/lib/podcasts/hooks";
 import { type PodcastIngestPayload } from "@/lib/podcasts/card";
-import { getCurrentTier, tierAllowsDecisionRoundtable } from "@/lib/personas/tier-caps";
+import { getCurrentTier } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
 import { detectDecision } from "@/lib/decisions/classify";
 import { findPrecedent } from "@/lib/decisions/brain";
 import { NextResponse } from "next/server";
@@ -745,8 +746,10 @@ export async function POST(
     const detection = await detectDecision(caption.trim(), anthropic_api_key, cost);
     const highConfidence = detection.confidence >= 0.85;
     if (forceRoundtable || highConfidence) {
+      // Tier OR active Project Pass (PA-POS-31): a pass holder's offer is actionable, not a teaser.
       const tier = await getCurrentTier(user.id);
-      const eligible = tierAllowsDecisionRoundtable(tier);
+      const rtAccess = await hasAppEntitlement(user.id, "roundtable", { tier });
+      const eligible = rtAccess.allowed;
       // Surface a matching prior verdict before a fresh debate (PA-DR §9 precedents) — eligible owners only.
       const precedent = eligible ? await findPrecedent(brain_repo, github_token, caption.trim()) : null;
       roundtableOffer = {

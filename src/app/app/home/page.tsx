@@ -4,6 +4,9 @@ import { chatAsHomeEnabled, TABBED_HOME_PATH } from "@/lib/chat/feature-flag";
 import { getFilterState, listMessages } from "@/lib/chat/db";
 import type { ChatMessage, FilterTag } from "@/lib/chat/types";
 import { getCurrentTier, type Tier } from "@/lib/personas/tier-caps";
+import { listPassesForOwner } from "@/lib/metering/store";
+import { activePassForApp } from "@/lib/metering/passes";
+import type { AppId } from "@/lib/apps/catalog";
 import ChatHome from "@/components/chat/ChatHome";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +48,23 @@ export default async function ChatHomePage() {
     tier = "starter";
   }
 
+  // Apps opened by an active Project Pass rather than the tier (PA-POS-31) — the slash popover
+  // and /commands treat them as unlocked. Pass slugs map to their catalog App ids.
+  const passes = await listPassesForOwner(user.id);
+  const now = new Date();
+  const passApps: AppId[] = [];
+  if (activePassForApp(passes, "landing_page_builder", now)) passApps.push("landing-page-builder");
+  if (activePassForApp(passes, "idea_engine", now)) passApps.push("idea-engine");
+  if (activePassForApp(passes, "browser_agent", now)) passApps.push("browser-agent");
+  if (activePassForApp(passes, "agent_builder", now)) passApps.push("agent-builder");
+
   return (
-    <ChatHome userId={user.id} tier={tier} initialMessages={messages} initialFilter={filter} />
+    <ChatHome
+      userId={user.id}
+      tier={tier}
+      passApps={passApps}
+      initialMessages={messages}
+      initialFilter={filter}
+    />
   );
 }

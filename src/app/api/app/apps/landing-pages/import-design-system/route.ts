@@ -7,7 +7,8 @@
 // Studio+ gated — the same gate that guards the LPB itself.
 
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentTier, tierAllowsLandingPageBuilder } from "@/lib/personas/tier-caps";
+import { getCurrentTier } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
 import { importDesignSystemFromUrl } from "@/lib/connectors/moonchild/client";
 import { getPage, updatePage } from "@/lib/landing-pages/pages";
 import { NextResponse } from "next/server";
@@ -31,8 +32,10 @@ export async function POST(req: Request): Promise<NextResponse> {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Tier OR active Project Pass (PA-POS-31) — the widened gate.
   const tier = await getCurrentTier(user.id);
-  if (!tierAllowsLandingPageBuilder(tier)) {
+  const lpbAccess = await hasAppEntitlement(user.id, "landing_page_builder", { tier });
+  if (!lpbAccess.allowed) {
     return NextResponse.json(
       {
         error: "upgrade_required",

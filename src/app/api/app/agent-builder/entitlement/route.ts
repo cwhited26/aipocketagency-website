@@ -2,11 +2,10 @@
 // button should land (PA-POS-28 → PA-POS-27 hand-off). Entitled owners go straight to
 // /app/apps/agent-builder with their spec; everyone else keeps the /start signup route.
 //
-// Entitlement today is tier-only (Studio+ / Enterprise). When the PA-POS-31 Project Pass
-// lane lands, this is the ONE place that widens to `tier OR active pass for agent-builder`.
+// Widened per PA-POS-31: tier OR active Project Pass for agent_builder.
 
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentTier, tierAllowsAgentBuilder } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -19,6 +18,6 @@ export async function GET(): Promise<NextResponse> {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ entitled: false });
 
-  const tier = await getCurrentTier(user.id);
-  return NextResponse.json({ entitled: tierAllowsAgentBuilder(tier) });
+  const access = await hasAppEntitlement(user.id, "agent_builder");
+  return NextResponse.json({ entitled: access.allowed });
 }

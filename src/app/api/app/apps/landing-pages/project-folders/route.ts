@@ -7,7 +7,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
-import { getCurrentTier, tierAllowsLandingPageBuilder } from "@/lib/personas/tier-caps";
+import { getCurrentTier } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
 import { discoverProjectFolders } from "@/lib/landing-pages/scope";
 import { NextResponse } from "next/server";
 
@@ -21,8 +22,10 @@ export async function GET(): Promise<NextResponse> {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Tier OR active Project Pass (PA-POS-31) — the widened gate.
   const tier = await getCurrentTier(user.id);
-  if (!tierAllowsLandingPageBuilder(tier)) {
+  const lpbAccess = await hasAppEntitlement(user.id, "landing_page_builder", { tier });
+  if (!lpbAccess.allowed) {
     return NextResponse.json({ folders: [] });
   }
 

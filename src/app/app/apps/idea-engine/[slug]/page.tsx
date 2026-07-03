@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { getCurrentTier, tierAllowsIdeaEngine, tierAllowsIdeaEngineAutoBuild } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
 import { getIdeaBySlug, listStageRuns, latestRunsByStage } from "@/lib/idea-engine/store";
 import { toIdeaView } from "@/lib/idea-engine/types";
 import { redirect, notFound } from "next/navigation";
@@ -19,8 +20,11 @@ export default async function IdeaDetailPage({ params }: { params: { slug: strin
   const pa = await fetchPaUser(user.id);
   if (!pa.ok || !pa.data) redirect("/app/onboarding");
 
+  // Tier OR active Project Pass (PA-POS-31); the pass grants the full chain incl. auto-build.
   const tier = await getCurrentTier(user.id);
-  if (!tierAllowsIdeaEngine(tier)) redirect("/app/apps/idea-engine");
+  const access = await hasAppEntitlement(user.id, "idea_engine", { tier });
+  const passEntitled = access.source === "project_pass";
+  if (!tierAllowsIdeaEngine(tier) && !passEntitled) redirect("/app/apps/idea-engine");
 
   const ideaRes = await getIdeaBySlug(user.id, params.slug);
   if (!ideaRes.ok) notFound();
@@ -39,7 +43,7 @@ export default async function IdeaDetailPage({ params }: { params: { slug: strin
         </Link>
         <IdeaDetailClient
           idea={view}
-          autoBuild={tierAllowsIdeaEngineAutoBuild(tier)}
+          autoBuild={tierAllowsIdeaEngineAutoBuild(tier) || passEntitled}
           hasApiKey={Boolean(pa.data.anthropic_api_key)}
         />
       </div>

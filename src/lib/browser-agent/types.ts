@@ -128,6 +128,9 @@ export const BrowserJobRowSchema = z.object({
   gate_findings: z.unknown().nullable(),
   result_summary: z.string().nullable(),
   error: z.string().nullable(),
+  // How the job was entitled at creation (PA-POS-31): the owner's tier or a Project Pass.
+  // Defaulted so rows written before migration 100 parse unchanged.
+  entitlement_source: z.enum(["tier", "project_pass"]).default("tier"),
   lease_until: z.string().nullable(),
   started_at: z.string().nullable(),
   completed_at: z.string().nullable(),

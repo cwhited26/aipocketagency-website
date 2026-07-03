@@ -4,7 +4,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { resolveMoonchildToken } from "@/lib/pa-moonchild-connections";
 import { listMoonchildScenesWithCredentials } from "@/lib/connectors/moonchild/client";
-import { tierAllowsLandingPageBuilder } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
 import { getCurrentTier } from "@/lib/personas/tier-caps";
 import { NextResponse } from "next/server";
 
@@ -18,8 +18,10 @@ export async function GET(): Promise<NextResponse> {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Tier OR active Project Pass (PA-POS-31) — the widened gate.
   const tier = await getCurrentTier(user.id);
-  if (!tierAllowsLandingPageBuilder(tier)) {
+  const lpbAccess = await hasAppEntitlement(user.id, "landing_page_builder", { tier });
+  if (!lpbAccess.allowed) {
     return NextResponse.json({ error: "Landing Page Builder is a Studio feature." }, { status: 403 });
   }
 

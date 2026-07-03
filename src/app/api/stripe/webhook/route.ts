@@ -56,6 +56,8 @@ import { ensureLaunchKitSeeded, seedStarterSkillsForSubscription } from "@/lib/l
 import { createSprintFromCheckout } from "@/lib/setup-sprint/sprints";
 import { inviteEmailBody } from "@/lib/setup-sprint/calendar-invite-template";
 import { signDiyKitDownload } from "@/lib/diy-kit/download";
+import { PA_METERING_CHECKOUT_SOURCE } from "@/lib/metering/checkout-params";
+import { handlePaMeteringCompleted } from "@/lib/metering/webhook";
 import {
   POCKET_CAPTURE_ADDON_KIND,
   POCKET_CAPTURE_CHECKOUT_SOURCE,
@@ -1549,6 +1551,9 @@ export async function POST(req: Request): Promise<NextResponse> {
       const session = event.data.object as unknown as CheckoutSession;
       if (session.metadata?.source === POCKET_CAPTURE_CHECKOUT_SOURCE) {
         await handlePocketCaptureStandaloneCompleted(session);
+      } else if (session.metadata?.source === PA_METERING_CHECKOUT_SOURCE) {
+        // Top Up bundles + Project Passes (PA-POS-30/31) — one-time metering charges.
+        await handlePaMeteringCompleted(session);
       } else if (session.metadata?.source === "pocket_agent_addon") {
         await handlePocketAgentAddonCompleted(session);
       } else if (session.metadata?.source === "pocket_agent") {

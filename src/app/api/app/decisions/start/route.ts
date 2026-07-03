@@ -8,6 +8,8 @@ import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { insertMessage } from "@/lib/pa-conversations";
 import { getCurrentTier, evaluateCanRunRoundtable } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
+import { decrementPassRunBudget } from "@/lib/metering/store";
 import { scoreDecisionHeuristics } from "@/lib/decisions/classify";
 import { detectVerticalForOwner } from "@/lib/decisions/verticals";
 import { resolveBackings, backingLabel } from "@/lib/decisions/providers";
@@ -44,13 +46,18 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (!parsed.success) return NextResponse.json({ error: parsed.error.message }, { status: 422 });
   const { conversationId, question } = parsed.data;
 
-  // Tier gate + monthly cap (PA-DR-1 / §11). The cap count and tier are read together so the refusal
-  // reason is specific (upgrade teaser vs cap-reached).
+  // Tier gate + monthly cap (PA-DR-1 / §11), widened by Project Pass (PA-POS-31): a pass buys
+  // one debate — its run budget, not the tier's monthly cap, bounds it. The cap count and tier
+  // are read together so the refusal reason is specific (upgrade teaser vs cap-reached).
   const tier = await getCurrentTier(user.id);
-  const monthCount = await countRoundtablesThisMonth(user.id);
-  const gate = evaluateCanRunRoundtable(tier, monthCount.ok ? monthCount.data : 0);
-  if (!gate.ok) {
-    return NextResponse.json({ error: "not_allowed", message: gate.reason, tier }, { status: 403 });
+  const access = await hasAppEntitlement(user.id, "roundtable", { tier });
+  const passEntitled = access.source === "project_pass";
+  if (!passEntitled) {
+    const monthCount = await countRoundtablesThisMonth(user.id);
+    const gate = evaluateCanRunRoundtable(tier, monthCount.ok ? monthCount.data : 0);
+    if (!gate.ok) {
+      return NextResponse.json({ error: "not_allowed", message: gate.reason, tier }, { status: 403 });
+    }
   }
 
   const paResult = await fetchPaUser(user.id);
@@ -93,6 +100,12 @@ export async function POST(req: Request): Promise<NextResponse> {
     return NextResponse.json({ error: created.error }, { status: created.status });
   }
   const roundtable = created.data;
+
+  // A pass-entitled debate is the pass's "one debate" — burn the run budget at creation, so the
+  // whole debate (all rounds + verdict) rides on it without a mid-debate stop (PA-POS-31).
+  if (passEntitled && access.pass && access.pass.remainingRunBudget !== null) {
+    await decrementPassRunBudget(access.pass.id);
+  }
 
   // Drop the live card into the thread so the debate streams in-place. It rides message.metadata (the
   // same jsonb seam upload/YouTube cards use); the DecisionRoundtableCard reads the id and polls.

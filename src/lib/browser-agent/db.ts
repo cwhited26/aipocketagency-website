@@ -83,6 +83,7 @@ export async function insertBrowserJob(params: {
   maxWallSeconds: number;
   maxCostMicroCents: number;
   gateFindings: unknown | null;
+  entitlementSource: "tier" | "project_pass";
 }): Promise<DbResult<BrowserJobRow>> {
   const res = await rest<unknown[]>("pa_browser_jobs", {
     method: "POST",
@@ -96,6 +97,7 @@ export async function insertBrowserJob(params: {
       max_wall_seconds: params.maxWallSeconds,
       max_cost_micro_cents: params.maxCostMicroCents,
       gate_findings: params.gateFindings,
+      entitlement_source: params.entitlementSource,
       status: "queued",
     },
   });

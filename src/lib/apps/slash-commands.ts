@@ -14,6 +14,7 @@
 import { z } from "zod";
 import { APP_CATALOG, getApp, type AppDef, type AppId } from "./catalog";
 import {
+  tierAllowsAgentBuilder,
   tierAllowsBrowserAgent,
   TIER_LABELS,
   tierAllowsChannel,
@@ -111,6 +112,8 @@ function appMinTier(appId: AppId): Tier {
       return "studio_plus"; // tierAllowsChannel (Phase 3 — power-user channel)
     case "browser-agent":
       return "studio_plus"; // tierAllowsBrowserAgent (PA-POS-19 — hosted browser sessions are expensive)
+    case "agent-builder":
+      return "studio_plus"; // tierAllowsAgentBuilder (PA-POS-27)
     default:
       return "starter";
   }
@@ -121,7 +124,10 @@ function appMinTier(appId: AppId): Tier {
  * source of truth for what each tier has unlocked — a locked App is never shown in the `/`
  * popover and never opened by a slash command.
  */
-export function tierAllowsApp(tier: Tier, appId: AppId): boolean {
+export function tierAllowsApp(tier: Tier, appId: AppId, passApps: readonly AppId[] = []): boolean {
+  // An active Project Pass opens its App like the tier would (PA-POS-31) — the caller resolves
+  // which Apps are pass-entitled (server-side, lib/metering) and threads the ids through.
+  if (passApps.includes(appId)) return true;
   switch (appId) {
     case "landing-page-builder":
       return tierAllowsLandingPageBuilder(tier);
@@ -141,6 +147,8 @@ export function tierAllowsApp(tier: Tier, appId: AppId): boolean {
       return tierAllowsChannel(tier, "whatsapp");
     case "browser-agent":
       return tierAllowsBrowserAgent(tier);
+    case "agent-builder":
+      return tierAllowsAgentBuilder(tier);
     default:
       return tierRank(tier) >= tierRank("starter"); // every tier
   }
@@ -178,8 +186,8 @@ export type AppSlashResolution =
   | { kind: "unknown"; attempted: string; commands: AppSlashEntry[] };
 
 /** Every App command this tier has unlocked, in catalog order (the `/` popover + help list). */
-export function appSlashCommandsForTier(tier: Tier): AppSlashEntry[] {
-  return APP_CATALOG.filter((a) => tierAllowsApp(tier, a.id)).map(toEntry);
+export function appSlashCommandsForTier(tier: Tier, passApps: readonly AppId[] = []): AppSlashEntry[] {
+  return APP_CATALOG.filter((a) => tierAllowsApp(tier, a.id, passApps)).map(toEntry);
 }
 
 function lockedReason(app: AppDef): string {
@@ -193,27 +201,31 @@ function lockedReason(app: AppDef): string {
  * Bare `/` → help; a known unlocked App → open; a known locked App → upgrade path; anything else →
  * a polite unknown with the available list.
  */
-export function resolveAppSlashCommand(input: string, tier: Tier): AppSlashResolution {
+export function resolveAppSlashCommand(
+  input: string,
+  tier: Tier,
+  passApps: readonly AppId[] = [],
+): AppSlashResolution {
   const trimmed = input.trim();
-  if (trimmed === "/") return { kind: "help", commands: appSlashCommandsForTier(tier) };
+  if (trimmed === "/") return { kind: "help", commands: appSlashCommandsForTier(tier, passApps) };
 
   const parsed = parseAppSlash(trimmed);
   if (!parsed) {
     // A slash input whose token is malformed (e.g. "/123", "/-x"). Treat the raw token as a miss.
     const attempted = trimmed.replace(/^\/+/, "").split(/\s/, 1)[0] ?? "";
-    return { kind: "unknown", attempted, commands: appSlashCommandsForTier(tier) };
+    return { kind: "unknown", attempted, commands: appSlashCommandsForTier(tier, passApps) };
   }
 
   const appId = APP_BY_TOKEN.get(parsed.command);
   if (!appId) {
-    return { kind: "unknown", attempted: parsed.command, commands: appSlashCommandsForTier(tier) };
+    return { kind: "unknown", attempted: parsed.command, commands: appSlashCommandsForTier(tier, passApps) };
   }
 
   const app = getApp(appId);
   if (!app) {
-    return { kind: "unknown", attempted: parsed.command, commands: appSlashCommandsForTier(tier) };
+    return { kind: "unknown", attempted: parsed.command, commands: appSlashCommandsForTier(tier, passApps) };
   }
-  if (!tierAllowsApp(tier, appId)) {
+  if (!tierAllowsApp(tier, appId, passApps)) {
     return { kind: "locked", app, reason: lockedReason(app) };
   }
 
@@ -229,7 +241,12 @@ export function resolveAppSlashCommand(input: string, tier: Tier): AppSlashResol
  * every unlocked App on bare `/`, and caps the result so the dropdown stays bounded. Locked Apps
  * are never suggested.
  */
-export function appSlashAutocomplete(input: string, tier: Tier, limit = 6): AppSlashEntry[] {
+export function appSlashAutocomplete(
+  input: string,
+  tier: Tier,
+  limit = 6,
+  passApps: readonly AppId[] = [],
+): AppSlashEntry[] {
   const trimmed = input.trimStart();
   if (!trimmed.startsWith("/")) return [];
   const body = trimmed.slice(1);
@@ -238,7 +255,7 @@ export function appSlashAutocomplete(input: string, tier: Tier, limit = 6): AppS
   const partial = body.toLowerCase();
   const out: AppSlashEntry[] = [];
   for (const app of APP_CATALOG) {
-    if (!tierAllowsApp(tier, app.id)) continue;
+    if (!tierAllowsApp(tier, app.id, passApps)) continue;
     const tokens = [app.slashCommand, ...aliasesForApp(app.id)];
     if (partial === "" || tokens.some((t) => t.startsWith(partial))) {
       out.push(toEntry(app));

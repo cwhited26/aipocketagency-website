@@ -91,6 +91,8 @@ export type WorkerDeps = {
     tokensInput: number;
     tokensOutput: number;
     costMicroCents: number;
+    /** From the job row — segments rented vs tier-included spend (PA-POS-31). */
+    entitlementSource: "tier" | "project_pass";
   }) => Promise<void>;
   now: () => number;
 };
@@ -406,6 +408,7 @@ export async function advanceJob(
           tokensInput: result.usage.input_tokens,
           tokensOutput: result.usage.output_tokens,
           costMicroCents: added,
+          entitlementSource: job.entitlement_source,
         });
 
         state.messages.push({ role: "assistant", content: result.content });

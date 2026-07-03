@@ -23,6 +23,9 @@ import { StarterBox } from "../_components/StarterBox";
 import YouTubeExplainerCard from "@/components/youtube/ExplainerCard";
 import { APP_CATALOG, type AppDef } from "@/lib/apps/catalog";
 import { DIRECTION_COUNTS } from "@/data/landing-page-templates/directions-meta";
+import { listPassesForOwner } from "@/lib/metering/store";
+import { activePassForApp } from "@/lib/metering/passes";
+import { getPassDef, passPriceCents, type PassAppSlug } from "@/data/project-passes";
 
 // The Apps menu reads from the shared catalog (lib/apps/catalog.ts) — the same source the
 // Personas surface uses to let each persona declare which Apps it can reach.
@@ -55,13 +58,18 @@ export default async function AppsPage() {
   // The Landing Page Builder is Studio-gated (PA-LPB-4): Studio+ build, Pro/Pro+ see the card with an
   // upgrade nudge, the free Starter tier doesn't see it at all.
   const tier = await getCurrentTier(user.id);
-  const canBuildLandingPages = tierAllowsLandingPageBuilder(tier);
+  // Active Project Passes widen the tier gates below (PA-POS-31): a rented App opens like an
+  // owned one for the length of the window.
+  const passes = await listPassesForOwner(user.id);
+  const now = new Date();
+  const hasPass = (slug: PassAppSlug) => activePassForApp(passes, slug, now) !== null;
+  const canBuildLandingPages = tierAllowsLandingPageBuilder(tier) || hasPass("landing_page_builder");
   // The Idea Engine is a Pro+ feature (PA-IDEA-3). The card is always on the grid — the product
   // exists, so we show it with an "Upgrade to Pro+" chip below Pro+ rather than hiding it (the card
   // vanishing on lower tiers is what made a paying customer think it wasn't shipped). The Idea Engine
   // app page enforces the real gate and shows the same upgrade state for anyone who follows the card.
-  const canUseIdeaEngine = tierAllowsIdeaEngine(tier);
-  const ideaEngineAutoBuild = tierAllowsIdeaEngineAutoBuild(tier);
+  const canUseIdeaEngine = tierAllowsIdeaEngine(tier) || hasPass("idea_engine");
+  const ideaEngineAutoBuild = tierAllowsIdeaEngineAutoBuild(tier) || hasPass("idea_engine");
   // Channels (PA-CHAN-7): Business Agent (Pro) and up. The card stays on the grid for every tier —
   // same reasoning as the Idea Engine card — with an upgrade chip below Pro.
   const canUseChannels = tierCanSeeChannels(tier);
@@ -72,10 +80,10 @@ export default async function AppsPage() {
   const canUseWhatsappChannel = tierAllowsChannel(tier, "whatsapp");
   // Browser Agent (PA-POS-19): Studio+ / Enterprise — hosted browser sessions are the most
   // expensive thing on the shelf. Card stays on the grid with the upgrade chip below that.
-  const canUseBrowserAgent = tierAllowsBrowserAgent(tier);
+  const canUseBrowserAgent = tierAllowsBrowserAgent(tier) || hasPass("browser_agent");
   // Custom Agent Builder (PA-POS-27): Studio+ / Enterprise — same cost profile as the Idea
-  // Engine. Card stays on the grid with the upgrade chip below that.
-  const canUseAgentBuilder = tierAllowsAgentBuilder(tier);
+  // Engine. Card stays on the grid with the upgrade chip below that (or a Project Pass).
+  const canUseAgentBuilder = tierAllowsAgentBuilder(tier) || hasPass("agent_builder");
   const visibleApps = apps.filter((app) => {
     if (app.id === "landing-page-builder") return tierCanSeeLandingPageBuilder(tier);
     return true;
@@ -205,6 +213,18 @@ export default async function AppsPage() {
             const missingConnections = locked ? 0 : missingConnectionsFor(app.id);
             const needsConnections = missingConnections > 0;
             const cardHref = needsConnections ? CONNECTIONS_HREF : app.href;
+            // Rentable locked Apps also show the Project Pass path (PA-POS-31) — the card click
+            // lands on the App page, where the pass purchase button lives next to the upgrade CTA.
+            const passSlug: PassAppSlug | null =
+              lockedLandingPages ? "landing_page_builder"
+              : lockedIdeaEngine ? "idea_engine"
+              : lockedBrowserAgent ? "browser_agent"
+              : lockedAgentBuilder ? "agent_builder"
+              : null;
+            const passDef = passSlug ? getPassDef(passSlug) : null;
+            const passHint = passDef
+              ? `or Project Pass — $${(passPriceCents(passDef, tier) / 100).toFixed(0)} / ${passDef.windowLabel}`
+              : null;
             return (
               <GlowCard key={app.href} href={cardHref} className="px-5 py-5 group">
                 <div className="flex items-start justify-between gap-3 mb-2">
@@ -235,6 +255,9 @@ export default async function AppsPage() {
                       ? connectPillLabel(missingConnections)
                       : "Open →"}
                 </div>
+                {locked && passHint ? (
+                  <div className="mt-1 text-[11px] text-slate-500 font-mono">{passHint}</div>
+                ) : null}
               </GlowCard>
             );
           })}

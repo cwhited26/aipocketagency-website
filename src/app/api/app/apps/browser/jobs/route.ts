@@ -4,11 +4,8 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import {
-  browserAgentJobLimits,
-  getCurrentTier,
-  tierAllowsBrowserAgent,
-} from "@/lib/personas/tier-caps";
+import { browserAgentJobLimits, getCurrentTier } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
 import { insertBrowserJob, listBrowserJobs } from "@/lib/browser-agent/db";
 import { runBrowserJobGates } from "@/lib/browser-agent/gates";
 import { CreateJobBodySchema } from "@/lib/browser-agent/types";
@@ -36,10 +33,15 @@ export async function POST(req: Request): Promise<NextResponse> {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Tier OR active Project Pass (PA-POS-31) — the widened gate.
   const tier = await getCurrentTier(user.id);
-  if (!tierAllowsBrowserAgent(tier)) {
+  const access = await hasAppEntitlement(user.id, "browser_agent", { tier });
+  if (!access.allowed) {
     return NextResponse.json(
-      { error: "The Browser Agent is part of the AI Agent Workspace plan and up." },
+      {
+        error:
+          "The Browser Agent is part of the AI Agent Workspace plan and up — or grab a Project Pass on the App page.",
+      },
       { status: 403 },
     );
   }
@@ -56,8 +58,9 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
   const body = parsed.data;
 
-  // Tier ceilings clamp server-side too — the sliders are UI sugar, not the gate.
-  const limits = browserAgentJobLimits(tier);
+  // Tier ceilings clamp server-side too — the sliders are UI sugar, not the gate. A pass-entitled
+  // job gets the Studio+ ceilings; the $5/run cost cap inside them still holds (PA-POS-31 guard rail).
+  const limits = browserAgentJobLimits(access.source === "project_pass" ? "studio_plus" : tier);
   const maxSteps = Math.min(body.maxSteps, limits.maxSteps);
   const maxWallSeconds = Math.min(body.maxWallSeconds, limits.maxWallSeconds);
   const maxCostMicroCents = Math.min(body.maxCostCents, limits.maxCostCents) * 10_000;
@@ -84,6 +87,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     maxWallSeconds,
     maxCostMicroCents,
     gateFindings: gates.findings.length > 0 ? gates.findings : null,
+    entitlementSource: access.source === "project_pass" ? "project_pass" : "tier",
   });
   if (!inserted.ok) {
     console.error("[browser-agent/jobs] insert failed", { error: inserted.error });

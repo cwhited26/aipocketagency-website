@@ -76,6 +76,10 @@
     {
       "path": "/api/cron/browser-worker",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/reset-credit-cycles",
+      "schedule": "15 5 * * *"
     }
   ],
   "rewrites": [

@@ -7,6 +7,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
 import { getCurrentTier, tierAllowsIdeaEngine } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
 import { dropIdea } from "@/lib/idea-engine/engine";
 import { listIdeas } from "@/lib/idea-engine/store";
 import { IDEA_SOURCES } from "@/lib/idea-engine/types";
@@ -31,9 +32,14 @@ export async function GET(): Promise<NextResponse> {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Tier OR active Project Pass (PA-POS-31) — the widened gate.
   const tier = await getCurrentTier(user.id);
-  if (!tierAllowsIdeaEngine(tier)) {
-    return NextResponse.json({ error: "The Idea Engine is a Pro+ feature." }, { status: 403 });
+  const access = await hasAppEntitlement(user.id, "idea_engine", { tier });
+  if (!tierAllowsIdeaEngine(tier) && access.source !== "project_pass") {
+    return NextResponse.json(
+      { error: "The Idea Engine is a Pro+ feature — or grab a Project Pass on the App page." },
+      { status: 403 },
+    );
   }
   const res = await listIdeas(user.id);
   if (!res.ok) return NextResponse.json({ error: res.error }, { status: res.status });
@@ -47,9 +53,14 @@ export async function POST(req: Request): Promise<NextResponse> {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Tier OR active Project Pass (PA-POS-31) — the widened gate.
   const tier = await getCurrentTier(user.id);
-  if (!tierAllowsIdeaEngine(tier)) {
-    return NextResponse.json({ error: "The Idea Engine is a Pro+ feature." }, { status: 403 });
+  const access = await hasAppEntitlement(user.id, "idea_engine", { tier });
+  if (!tierAllowsIdeaEngine(tier) && access.source !== "project_pass") {
+    return NextResponse.json(
+      { error: "The Idea Engine is a Pro+ feature — or grab a Project Pass on the App page." },
+      { status: 403 },
+    );
   }
 
   const raw = await req.json().catch(() => null);

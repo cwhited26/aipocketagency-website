@@ -9,7 +9,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { fetchPaUser } from "@/lib/pa-supabase";
-import { getCurrentTier, tierAllowsLandingPageBuilder, tierRank } from "@/lib/personas/tier-caps";
+import { getCurrentTier, tierRank } from "@/lib/personas/tier-caps";
+import { hasAppEntitlement } from "@/lib/metering/entitlement";
 import {
   directionTierLabel,
   listDirections,
@@ -47,7 +48,9 @@ export default async function TemplateGalleryPage() {
     fetchGithubBuildConnectionPublic(user.id),
     fetchVercelConnectionPublic(user.id),
   ]);
-  const canBuild = tierAllowsLandingPageBuilder(tier);
+  // Tier OR active Project Pass (PA-POS-31) — the widened gate.
+  const lpbAccess = await hasAppEntitlement(user.id, "landing_page_builder", { tier });
+  const canBuild = lpbAccess.allowed;
   // Build Tools pre-flight (PA-BUILDONBOARD-1): the Build button intercepts when GitHub or Vercel
   // isn't connected, so a page commits to the owner's own repo and deploys to their own URL.
   const githubOAuthConfigured = isGithubBuildOAuthConfigured();
