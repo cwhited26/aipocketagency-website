@@ -18,6 +18,8 @@ import {
   type CaptureTriagePayload,
 } from "@/lib/capture-inbox/types";
 import { isBlueprintDecision, advanceAfterBlueprintApproval } from "@/lib/idea-engine/engine";
+import { acceptAgentBuildProposal } from "@/lib/agent-builder/approve";
+import { AGENT_BUILDER_PROPOSAL_KIND } from "@/lib/agent-builder/types";
 import { acceptMemoryProposal } from "@/lib/persona-memory/write";
 import { getCurrentTier } from "@/lib/personas/tier-caps";
 import { isMemoryPartition, isMemoryTier } from "@/lib/persona-memory/types";
@@ -52,6 +54,10 @@ const OverrideSchema = z.object({
   // longer body on the card before approving.
   soulSummary: z.string().max(240).optional(),
   soulBody: z.string().max(4_000).optional(),
+  // Agent Builder proposals (PA-POS-27): the owner may rename the composed persona and tune its
+  // starter prompt inline on the card before approving.
+  personaName: z.string().max(120).optional(),
+  starterPrompt: z.string().max(400).optional(),
 });
 
 function str(v: unknown): string {
@@ -202,6 +208,33 @@ export async function POST(
       return NextResponse.json({ error: resolved.error }, { status: resolved.status });
     }
     return NextResponse.json({ status: "approved", saved: true, soulId: written.data.id });
+  }
+
+  // Custom Agent Builder proposal (PA-POS-27): the whole composed agent approved as one decision.
+  // Creates the Persona (spec into the owner's brain repo + row) and stages the push_files build
+  // action that writes the agent bundle into the owner's Business Brain repo — that commit is
+  // ALWAYS its own approval (PA-BUILD SPEC §11). The card resolves only after both steps stage.
+  if (item.kind === AGENT_BUILDER_PROPOSAL_KIND) {
+    const accepted = await acceptAgentBuildProposal({
+      ownerId: user.id,
+      payload: item.payload,
+      overrides: {
+        personaName: override.personaName,
+        starterPrompt: override.starterPrompt,
+      },
+    });
+    if (!accepted.ok) {
+      return NextResponse.json({ error: accepted.error }, { status: accepted.status });
+    }
+    const resolved = await resolveInboxItem(id, "approved", user.id);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+    }
+    return NextResponse.json({
+      status: "approved",
+      personaSlug: accepted.personaSlug,
+      pushInboxItemId: accepted.pushInboxItemId,
+    });
   }
 
   // Idea Engine blueprint (PA-IDEA-5): an approved MVP-plan `decision` card advances the idea from

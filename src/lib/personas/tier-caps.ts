@@ -439,6 +439,15 @@ export function tierAllowsBrowserAgent(tier: Tier): boolean {
   return tierRank(tier) >= tierRank("studio_plus")
 }
 
+// ── Custom Agent Builder gating (PA-POS-27) ────────────────────────────────────────────────
+//
+// The Agent Builder composes a Persona + Apps + Skills + brain scopes from a plain-English
+// spec — the same cost profile as the Idea Engine (planning calls per spec). Studio+
+// ($497 AI Agent Workspace) and Enterprise only; lower tiers see the tile with an upgrade chip.
+export function tierAllowsAgentBuilder(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("studio_plus")
+}
+
 export type BrowserAgentJobLimits = {
   maxSteps: number
   maxWallSeconds: number

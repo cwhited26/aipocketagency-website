@@ -2,9 +2,13 @@
 
 // The Agent Builder hero box (PA-POS-28 — the marketing surface of PA-POS-27). The owner
 // describes the agent they need; the box previews what Pocket Agent would compose from the
-// real catalogs (client-side keyword match, no LLM call) and the Compose button carries the
-// spec into signup at /start?intent=agent-builder. The real composition runs inside the
-// workspace and stages for approval before anything runs.
+// real catalogs (client-side keyword match, no LLM call). The Compose button routes an
+// entitled signed-in owner (Studio+/Enterprise — the entitlement endpoint decides; it widens
+// to Project Passes when PA-POS-31 lands) straight into the shipped App at
+// /app/apps/agent-builder with the spec; everyone else carries the spec into signup at
+// /start?intent=agent-builder. The real composition runs inside the workspace and stages
+// for approval before anything runs. The page stays static — entitlement is one client
+// fetch after mount, defaulting to the signup route on any failure.
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -41,6 +45,22 @@ export function AgentBuilderHero({ composeData }: { composeData: ComposeData }) 
   const [spec, setSpec] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [preview, setPreview] = useState<ComposePreview | null>(null);
+  const [entitled, setEntitled] = useState(false);
+
+  // One post-mount check: does this visitor already own the Agent Builder App? Any failure
+  // (signed out, network, endpoint missing) leaves the default signup route in place.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/app/agent-builder/entitlement", { cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<{ entitled?: boolean }>) : null))
+      .catch(() => null)
+      .then((body) => {
+        if (!cancelled && body?.entitled === true) setEntitled(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Rotate the placeholder while the box is empty. Reduced motion pins the first one.
   useEffect(() => {
@@ -65,6 +85,14 @@ export function AgentBuilderHero({ composeData }: { composeData: ComposeData }) 
 
   function compose() {
     const trimmed = spec.trim();
+    if (entitled) {
+      router.push(
+        trimmed
+          ? `/app/apps/agent-builder?spec=${encodeURIComponent(trimmed)}`
+          : "/app/apps/agent-builder",
+      );
+      return;
+    }
     const query = trimmed
       ? `intent=agent-builder&spec=${encodeURIComponent(trimmed)}`
       : "intent=agent-builder";

@@ -61,7 +61,11 @@ export type CostFeatureSlug =
   | "proposal_generator"
   // One row per Browser Agent job step (PA-POS-19): the Computer Use planning tokens + the
   // Browserbase seconds since the last step, idempotency `browser:<jobId>:<step>`.
-  | "browser_agent";
+  | "browser_agent"
+  // One row per Custom Agent Builder spec parse (PA-POS-27), idempotency
+  // `agent_builder:parse:<buildId>`. Studio+ includes an allowance for composes; overage rides
+  // the PA-POS-30 Top Up lane, which reads this ledger.
+  | "agent_builder";
 
 /**
  * The per-call-site context a metered backend carries: who's paying, which feature area, and a

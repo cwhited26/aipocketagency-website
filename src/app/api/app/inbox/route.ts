@@ -34,7 +34,8 @@ export type InboxCardKind =
   | "persona_memory_proposal"
   | "soul_attribute_proposal"
   | "browser_action_approval"
-  | "website_alert";
+  | "website_alert"
+  | "agent_builder_proposal";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {
@@ -136,6 +137,20 @@ export type SoulProposalDetail = {
   body: string | null;
 };
 
+// Custom Agent Builder (PA-POS-27): the whole composed agent staged as one approval card. The
+// compact detail drives the card; the full ComposedAgent stays on the payload for the approve
+// callback. The owner may edit personaName + starterPrompt inline before approving.
+export type AgentBuildProposalDetail = {
+  buildId: string;
+  personaName: string;
+  starterPrompt: string;
+  apps: string[];
+  skillSlugs: string[];
+  brainScopes: string[];
+  schedule: string | null;
+  candidateSkill: { slug: string; name: string; body: string } | null;
+};
+
 export type InboxCard = {
   id: string;
   system: InboxCardSystem;
@@ -155,6 +170,7 @@ export type InboxCard = {
   gate: GateFindingsDetail | null;
   memoryProposal: MemoryProposalDetail | null;
   soulProposal: SoulProposalDetail | null;
+  agentBuild: AgentBuildProposalDetail | null;
   // The surface the draft was initiated from. 'inbox' means it was drafted from
   // within the Inbox (a reply to a triaged thread) and is rendered inline on its
   // originating thread instead of in the generic drafts list. threadId links it back.
@@ -169,6 +185,7 @@ const SOURCE_LABELS: Record<string, string> = {
   gmail: "Gmail",
   routine: "Routine",
   "follow-up-sweeps": "Follow-Up Sweeps",
+  "agent-builder": "Agent Builder",
 };
 
 function previewOf(text: string, max = 180): string {
@@ -264,6 +281,32 @@ function soulProposalOf(item: InboxItem): SoulProposalDetail {
   };
 }
 
+function strArray(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+}
+
+// Defensive read of the agent_builder_proposal payload (payload.composed is the full
+// ComposedAgent staged by lib/agent-builder/stage-approval.ts).
+function agentBuildOf(item: InboxItem): AgentBuildProposalDetail {
+  const composed = (item.payload.composed ?? {}) as Record<string, unknown>;
+  const rawCandidate = composed.candidateSkill;
+  let candidateSkill: AgentBuildProposalDetail["candidateSkill"] = null;
+  if (rawCandidate && typeof rawCandidate === "object") {
+    const c = rawCandidate as Record<string, unknown>;
+    candidateSkill = { slug: str(c.slug), name: str(c.name), body: str(c.body) };
+  }
+  return {
+    buildId: str(item.payload.buildId) || str(composed.buildId),
+    personaName: str(composed.personaName) || item.title,
+    starterPrompt: str(composed.starterPrompt),
+    apps: strArray(composed.apps),
+    skillSlugs: strArray(composed.skillSlugs),
+    brainScopes: strArray(composed.brainScopes),
+    schedule: str(composed.schedule) || null,
+    candidateSkill,
+  };
+}
+
 type GateSeverity = "low" | "medium" | "high" | "critical";
 function severityOf(v: unknown): GateSeverity {
   return v === "low" || v === "high" || v === "critical" ? v : "medium";
@@ -321,6 +364,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
   const gate = item.kind === "gate_findings" ? gateOf(item) : null;
   const memoryProposal = item.kind === "persona_memory_proposal" ? memoryProposalOf(item) : null;
   const soulProposal = item.kind === "soul_attribute_proposal" ? soulProposalOf(item) : null;
+  const agentBuild = item.kind === "agent_builder_proposal" ? agentBuildOf(item) : null;
   return {
     id: item.id,
     system: "inbox",
@@ -346,6 +390,7 @@ function normalizeInboxItem(item: InboxItem): InboxCard {
     gate,
     memoryProposal,
     soulProposal,
+    agentBuild,
     sourceSurface: str(item.payload.sourceSurface) || null,
     threadId: str(item.payload.threadId) || null,
   };
@@ -387,6 +432,7 @@ function normalizeLegacyAction(action: PendingAction): InboxCard {
     gate: null,
     memoryProposal: null,
     soulProposal: null,
+    agentBuild: null,
     sourceSurface: null,
     threadId: null,
   };

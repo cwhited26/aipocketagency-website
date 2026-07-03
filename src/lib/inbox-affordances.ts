@@ -27,7 +27,8 @@ export type InboxItemKind =
   | "persona_memory_proposal"
   | "soul_attribute_proposal"
   | "browser_action_approval"
-  | "website_alert";
+  | "website_alert"
+  | "agent_builder_proposal";
 
 export type AffordanceRole = "primary" | "secondary" | "destructive";
 
@@ -229,6 +230,20 @@ export function affordancesFor(kind: InboxItemKind): AffordanceSet {
           { key: "revise", label: "Revise plan", role: "primary" },
           { key: "approve_anyway", label: "Approve anyway", role: "secondary" },
           { key: "reject_plan", label: "Reject plan", role: "destructive" },
+        ],
+      };
+
+    // The Custom Agent Builder's composed-agent card (PA-POS-27): the whole agent — Persona +
+    // Apps + Skills + brain scopes + candidate Skill draft — staged as ONE decision. Approving
+    // creates the Persona and stages the repo commit (itself single-approval); a commit-on-approve
+    // primitive, so it carries Approve / Edit / Reject. Edit tunes the name + starter prompt inline.
+    case "agent_builder_proposal":
+      return {
+        hasApproval: true,
+        affordances: [
+          { key: "approve", label: "Approve & deploy", role: "primary" },
+          { key: "edit", label: "Edit", role: "secondary" },
+          { key: "reject", label: "Reject", role: "destructive" },
         ],
       };
 

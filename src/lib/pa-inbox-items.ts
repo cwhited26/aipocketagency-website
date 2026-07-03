@@ -41,6 +41,10 @@
 // against the hidden headless browser. Same commit-on-approve primitive as action_approval — it resolves
 // through the same /api/orchestrator/approvals route + ActionApprovalCard; approve runs the tool, reject
 // drops it. Auto-approved (Trust-Ladder) and refused calls never reach the inbox.
+// 'agent_builder_proposal' (migration 101, PA-POS-27) is the Custom Agent Builder's ONE approval
+// card: the whole composed agent (Persona + Apps + Skills + brain scopes + candidate Skill draft).
+// Approve creates the Persona and stages the push_files commit into the owner's Business Brain
+// repo (always single-approval); reject persists nothing.
 export type InboxKind =
   | "draft"
   | "decision"
@@ -61,7 +65,8 @@ export type InboxKind =
   | "persona_memory_proposal"
   | "soul_attribute_proposal"
   | "browser_action_approval"
-  | "website_alert";
+  | "website_alert"
+  | "agent_builder_proposal";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

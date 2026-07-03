@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { fetchInboxItemById, resolveInboxItem } from "@/lib/pa-inbox-items";
 import { extractSoulFromInboxResolution } from "@/lib/personas/soul-extract";
+import { rejectAgentBuildProposal } from "@/lib/agent-builder/approve";
+import { AGENT_BUILDER_PROPOSAL_KIND } from "@/lib/agent-builder/types";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -35,6 +37,12 @@ export async function POST(
   const resolved = await resolveInboxItem(id, "rejected", user.id);
   if (!resolved.ok) {
     return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+  }
+
+  // Agent Builder proposal (PA-POS-27): a rejected compose persists nothing — flip the build row
+  // so the App surface shows the outcome. Best-effort; the rejection above already stands.
+  if (item.kind === AGENT_BUILDER_PROPOSAL_KIND) {
+    await rejectAgentBuildProposal({ ownerId: user.id, payload: item.payload });
   }
 
   // Continuous Soul extraction (Soul System SPEC): a rejection is a verdict too — the owner pushing

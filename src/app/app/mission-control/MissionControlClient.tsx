@@ -107,6 +107,17 @@ type SoulProposalDetail = {
   body: string | null;
 };
 
+type AgentBuildProposalDetail = {
+  buildId: string;
+  personaName: string;
+  starterPrompt: string;
+  apps: string[];
+  skillSlugs: string[];
+  brainScopes: string[];
+  schedule: string | null;
+  candidateSkill: { slug: string; name: string; body: string } | null;
+};
+
 // Owner-friendly heading per Soul attribute kind (mirrors lib/personas/soul-types SOUL_KIND_LABELS).
 const SOUL_KIND_LABELS: Record<string, string> = {
   communication_style: "Communication style",
@@ -137,6 +148,7 @@ type InboxCard = {
   gate: GateFindingsDetail | null;
   memoryProposal: MemoryProposalDetail | null;
   soulProposal: SoulProposalDetail | null;
+  agentBuild: AgentBuildProposalDetail | null;
   sourceSurface: string | null;
   threadId: string | null;
 };
@@ -234,6 +246,8 @@ function sectionFor(kind: InboxItemKind): AwaitingSection {
       return "soul";
     case "website_alert":
       return "briefs";
+    case "agent_builder_proposal":
+      return "decisions";
     case "persona_lead":
       return "hidden";
     default: {
@@ -842,6 +856,7 @@ function TriageCard({
         gate: null,
         memoryProposal: null,
         soulProposal: null,
+        agentBuild: null,
         sourceSurface: "inbox",
         threadId: triage!.threadId,
       });
@@ -912,6 +927,158 @@ function TriageCard({
           <DraftCard card={replyDraft} onResolved={onResolved} />
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Composed-agent card (PA-POS-27) ───────────────────────────────────────────
+//
+// The Custom Agent Builder's ONE approval card: the whole composed agent — Persona + Apps +
+// Skills + brain scopes + the candidate Skill draft when one exists. Approve creates the
+// Persona and stages the repo commit (which is its own approval); Edit tunes the name and
+// starter prompt inline; Reject persists nothing.
+
+function AgentBuildProposalCard({
+  card,
+  onResolved,
+}: {
+  card: InboxCard;
+  onResolved: (id: string, status: "approved" | "rejected") => void;
+}) {
+  const [busy, setBusy] = useState<"approve" | "reject" | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [showSkill, setShowSkill] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const detail = card.agentBuild;
+  const [personaName, setPersonaName] = useState(detail?.personaName ?? card.title);
+  const [starterPrompt, setStarterPrompt] = useState(detail?.starterPrompt ?? "");
+
+  async function handleApprove() {
+    setBusy("approve");
+    setErr(null);
+    try {
+      const res = await fetch(approveEndpoint(card), {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          personaName: personaName.trim(),
+          starterPrompt: starterPrompt.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const b = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(b.error ?? `Approve failed (${res.status})`);
+      }
+      onResolved(card.id, "approved");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  async function handleReject() {
+    setBusy("reject");
+    setErr(null);
+    try {
+      await postDecision(rejectEndpoint(card));
+      onResolved(card.id, "rejected");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Something went wrong");
+      setBusy(null);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-[#22d3ee]/20 bg-slate-900/60 p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-[10px] font-mono text-[#22d3ee]/70 uppercase tracking-[0.18em]">
+          Agent Builder · composed agent
+        </span>
+        <span className="text-[11px] text-slate-600 shrink-0">{relativeTime(card.createdAt)}</span>
+      </div>
+
+      {editing ? (
+        <div className="space-y-2">
+          <input
+            value={personaName}
+            onChange={(e) => setPersonaName(e.target.value)}
+            aria-label="Agent name"
+            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 focus:border-[#22d3ee] focus:outline-none"
+          />
+          <textarea
+            value={starterPrompt}
+            onChange={(e) => setStarterPrompt(e.target.value)}
+            aria-label="First run prompt"
+            rows={2}
+            className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-200 leading-relaxed focus:border-[#22d3ee] focus:outline-none resize-y"
+          />
+        </div>
+      ) : (
+        <>
+          <p className="text-[15px] font-semibold text-slate-100 leading-snug">{personaName}</p>
+          {starterPrompt && (
+            <p className="mt-1 text-xs text-slate-500 font-mono truncate">
+              First run: {starterPrompt}
+            </p>
+          )}
+        </>
+      )}
+
+      <p className="mt-3 text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">
+        {card.bodyMd}
+      </p>
+
+      {detail?.candidateSkill && (
+        <>
+          <button
+            onClick={() => setShowSkill((v) => !v)}
+            className="mt-2 text-xs font-mono text-[#22d3ee]/80 hover:text-[#22d3ee] transition-colors"
+          >
+            {showSkill
+              ? "Hide the candidate Skill ↑"
+              : `Read the candidate Skill: ${detail.candidateSkill.name} ↓`}
+          </button>
+          {showSkill && (
+            <div className="mt-2 rounded-xl border border-slate-800/60 bg-slate-950/40 px-4 py-3 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+              {detail.candidateSkill.body}
+            </div>
+          )}
+        </>
+      )}
+
+      {err && <p className="mt-3 text-xs text-red-400 font-mono">{err}</p>}
+
+      <p className="mt-3 text-[11px] text-slate-600 leading-relaxed">
+        Approving creates the persona in your workspace and stages the commit that writes this
+        agent into your Business Brain repo — you approve that commit separately, file by file.
+      </p>
+
+      <div className="mt-3 flex items-center gap-2">
+        <button
+          onClick={handleApprove}
+          disabled={busy !== null}
+          className="flex-1 min-h-[44px] py-3 px-4 rounded-xl bg-[#22d3ee] hover:bg-[#06b6d4] text-[#031820] text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {busy === "approve" ? "Approving…" : "Approve & deploy"}
+        </button>
+        <button
+          onClick={() => setEditing((v) => !v)}
+          disabled={busy !== null}
+          className="min-h-[44px] px-4 rounded-xl border border-slate-700/70 text-slate-300 text-sm font-medium hover:border-slate-500 transition-colors disabled:opacity-50"
+        >
+          {editing ? "Done" : "Edit"}
+        </button>
+        <button
+          onClick={handleReject}
+          disabled={busy !== null}
+          aria-label="Reject composed agent"
+          className="min-h-[44px] px-4 rounded-xl text-slate-500 text-sm hover:text-slate-300 transition-colors disabled:opacity-50"
+        >
+          {busy === "reject" ? "…" : "Reject"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -2535,9 +2702,13 @@ export default function MissionControlClient({ brainRepo: _brainRepo }: { brainR
               <section className="mb-8">
                 <SectionHeader label="Quick decisions" count={decisions.length} />
                 <div className="flex flex-col gap-3">
-                  {decisions.map((card) => (
-                    <DecisionCard key={card.id} card={card} onResolved={onResolved} />
-                  ))}
+                  {decisions.map((card) =>
+                    card.kind === "agent_builder_proposal" ? (
+                      <AgentBuildProposalCard key={card.id} card={card} onResolved={onResolved} />
+                    ) : (
+                      <DecisionCard key={card.id} card={card} onResolved={onResolved} />
+                    ),
+                  )}
                 </div>
               </section>
             )}

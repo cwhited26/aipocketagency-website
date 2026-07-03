@@ -24,6 +24,7 @@ export const APP_IDS = [
   "website-monitor",
   "proposal-generator",
   "browser-agent",
+  "agent-builder",
   "channels",
   "sms-channel",
   "imessage-channel",
@@ -265,6 +266,18 @@ export const APP_CATALOG: AppDef[] = [
       "The agent that operates tools without APIs — sites you'd otherwise have to click through yourself. Screenshots + approvals on every step.",
     blurb: "Operate the sites that have no API — with a screenshot record of every step.",
     tag: "Operates Tools",
+    tagColor: "cyan",
+  },
+  {
+    id: "agent-builder",
+    slashCommand: "agent-builder",
+    href: "/app/apps/agent-builder",
+    label: "Custom Agent Builder",
+    shortLabel: "Agent Builder",
+    description:
+      "Describe the agent you need. Pocket Agent composes it inside your workspace and stages it for your approval before it runs.",
+    blurb: "Composes a new agent from a plain-English spec — Persona, Apps, Skills, brain scopes.",
+    tag: "Composes Agents",
     tagColor: "cyan",
   },
   {
