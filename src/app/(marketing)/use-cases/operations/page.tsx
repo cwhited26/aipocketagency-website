@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { UseCasePlaceholder } from "@/components/marketing/use-case-placeholder";
 import { FollowUpSweepsShot } from "@/components/marketing/motion-shots/follow-up-sweeps-shot";
 import { RitualSchedulerShot } from "@/components/marketing/motion-shots/ritual-scheduler-shot";
+import { BrowserAgentShot } from "@/components/marketing/motion-shots/shot-h-browser-agent";
 
 const PAGE_URL = "https://aipocketagent.com/use-cases/operations";
 const TITLE = "Operations with AI Agents — Pocket Agent";
@@ -34,6 +35,9 @@ export default function OperationsPage() {
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
           <FollowUpSweepsShot />
           <RitualSchedulerShot />
+        </div>
+        <div className="mt-6">
+          <BrowserAgentShot />
         </div>
       </section>
     </UseCasePlaceholder>

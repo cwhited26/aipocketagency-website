@@ -3,6 +3,11 @@ import type { Metadata } from "next";
 import { SiteHeader, SiteFooter } from "@/components/marketing/site-nav";
 import { PrimaryCTA, SecondaryCTA, MONO_FONT } from "@/components/marketing/cta";
 import { DIRECTION_COUNTS } from "@/data/landing-page-templates/directions-meta";
+import { AgentBuilderHero } from "@/components/marketing/agent-builder-hero";
+import { buildComposeData } from "@/lib/marketing/compose-preview-data";
+import { RunningAgentShot } from "@/components/marketing/motion-shots/shot-f-running-agent";
+import { IntegrationsShot } from "@/components/marketing/motion-shots/shot-g-integrations";
+import { BrowserAgentShot } from "@/components/marketing/motion-shots/shot-h-browser-agent";
 
 const DESCRIPTION =
   "Sales, marketing, content, customer support, research — every AI Agent everyone else is selling you separately. Pocket Agent packages all of them into one workspace. No coding. No scary tech. $37 a month.";
@@ -323,6 +328,7 @@ function Pill({ children }: { children: React.ReactNode }) {
 }
 
 export default function HomePage() {
+  const composeData = buildComposeData();
   return (
     <>
       <SiteHeader />
@@ -344,6 +350,7 @@ export default function HomePage() {
               all the connecting. You just tell it about your business. It becomes
               your second brain. Your Packaged AI Agents do the rest. $37 a month.
             </p>
+            <AgentBuilderHero composeData={composeData} />
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <PrimaryCTA href="/start?tier=starter" label="Start for $37" />
               <SecondaryCTA href="/pricing" label="See how it works" />
@@ -351,6 +358,18 @@ export default function HomePage() {
             <p className="mt-6 text-sm text-slate-400">
               Generic AI starts from zero. Pocket Agent starts from your business.
             </p>
+          </div>
+        </section>
+
+        {/* THE HONEST COUNTER (PA-POS-29) — no invented numbers, ever. The proof is the
+            three businesses this workspace already runs inside. */}
+        <section className="border-b border-white/5 bg-black/30">
+          <div className="mx-auto max-w-4xl px-6 py-8 text-center text-sm leading-relaxed text-slate-400">
+            Pocket Agent runs inside three businesses of our own.{" "}
+            <span className="text-slate-200">Tennessee Valley Exteriors</span>.{" "}
+            <span className="text-slate-200">Whited Consulting</span>.{" "}
+            <span className="text-slate-200">AthleteOS</span>. Our first customer is
+            us.
           </div>
         </section>
 
@@ -376,15 +395,19 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* TRUST BAR */}
-        <section className="border-b border-white/5 bg-black/30">
-          <div className="mx-auto max-w-4xl px-6 py-8 text-center text-sm leading-relaxed text-slate-400">
-            Built and run inside three businesses Chase Whited owns:{" "}
-            <span className="text-slate-200">Tennessee Valley Exteriors</span> (a
-            contracting company) ·{" "}
-            <span className="text-slate-200">Whited Consulting</span> (a software
-            agency) · <span className="text-slate-200">AthleteOS</span> (a sports
-            SaaS). Same workspace. Same brain. Same cockpit.
+        {/* SHOT F — an agent working a job, live in the page (PA-POS-29). */}
+        <section className="border-b border-white/5">
+          <div className="mx-auto max-w-4xl px-6 py-20">
+            <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
+              Watch an agent work.
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-center text-slate-400">
+              A follow-up sweep in flight — the agent searches, drafts, and stages
+              every draft in your Approval Inbox. Nothing sends until you say so.
+            </p>
+            <div className="mt-10">
+              <RunningAgentShot />
+            </div>
           </div>
         </section>
 
@@ -687,6 +710,41 @@ export default function HomePage() {
                   )}
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* SHOT G — the integrations constellation (PA-POS-29). Honest framing: adapters
+            we've shipped, not a five-thousand-integration catalog claim. */}
+        <section className="border-b border-white/5">
+          <div className="mx-auto max-w-4xl px-6 py-20">
+            <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
+              Connect every tool you already use.
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-center text-slate-400">
+              Your Personas reach into the tools you already run your business on.
+              Gmail, Slack, Google Calendar, HubSpot, QuickBooks, Stripe, Zoom, and
+              the rest. When an API changes, Pocket Agent adjusts.
+            </p>
+            <div className="mt-10">
+              <IntegrationsShot />
+            </div>
+          </div>
+        </section>
+
+        {/* SHOT H — the Browser Agent working a tool that has no API (PA-POS-21/29). */}
+        <section className="border-b border-white/5 bg-black/20">
+          <div className="mx-auto max-w-4xl px-6 py-20">
+            <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
+              The tools without APIs? We reach those too.
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-center text-slate-400">
+              The Browser Agent app logs in and pulls what your other tools miss —
+              internal dashboards, paid tools, public sites, anything you can access
+              yourself. Every step approved by you before it runs.
+            </p>
+            <div className="mt-10">
+              <BrowserAgentShot />
             </div>
           </div>
         </section>

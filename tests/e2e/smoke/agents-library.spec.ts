@@ -18,7 +18,7 @@ test("smoke: /use-cases/lead-generation renders the rail, the steps, and shots A
   await expect(page.locator("h1").first()).toBeVisible();
   expect(await page.locator("[data-agent-card]").count()).toBe(6);
   expect(await page.locator("[data-how-step]").count()).toBe(4);
-  for (const shot of ["persona-chat", "idea-engine", "approval-inbox"]) {
+  for (const shot of ["running-agent", "persona-chat", "idea-engine", "approval-inbox"]) {
     await expect(page.locator(`[data-shot="${shot}"]`)).toBeAttached();
   }
 });
@@ -27,11 +27,11 @@ test("smoke: motion shots report a running loop within 500ms", async ({ page }) 
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/use-cases/lead-generation", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
-  expect(await page.locator('[data-motion="playing"]').count()).toBe(3);
+  expect(await page.locator('[data-motion="playing"]').count()).toBe(4);
 
   await page.goto("/use-cases/operations", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
-  for (const shot of ["follow-up-sweeps", "ritual-scheduler"]) {
+  for (const shot of ["follow-up-sweeps", "ritual-scheduler", "browser-agent"]) {
     await expect(page.locator(`[data-shot="${shot}"][data-motion="playing"]`)).toBeAttached();
   }
 });
@@ -40,7 +40,7 @@ test("smoke: motion shots pin the poster frame under reduced motion", async ({ p
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/use-cases/lead-generation", { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(500);
-  expect(await page.locator('[data-motion="reduced"]').count()).toBe(3);
+  expect(await page.locator('[data-motion="reduced"]').count()).toBe(4);
   expect(await page.locator('[data-motion="playing"]').count()).toBe(0);
 });
 

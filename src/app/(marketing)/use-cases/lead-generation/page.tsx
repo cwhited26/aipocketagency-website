@@ -6,6 +6,7 @@ import { AgentCard } from "@/components/marketing/agent-card";
 import { PersonaChatShot } from "@/components/marketing/motion-shots/persona-chat-shot";
 import { IdeaEngineShot } from "@/components/marketing/motion-shots/idea-engine-shot";
 import { ApprovalInboxShot } from "@/components/marketing/motion-shots/approval-inbox-shot";
+import { RunningAgentShot } from "@/components/marketing/motion-shots/shot-f-running-agent";
 import { agentsForUseCase } from "@/data/agents-library";
 import { otherUseCases } from "@/data/use-cases";
 
@@ -122,7 +123,10 @@ export default function LeadGenerationPage() {
             your own GitHub account, not our database. Cancel tomorrow and the brain is
             still yours.
           </p>
-          <div className="mt-10 grid gap-6 lg:grid-cols-3">
+          <div className="mt-10">
+            <RunningAgentShot />
+          </div>
+          <div className="mt-6 grid gap-6 lg:grid-cols-3">
             <PersonaChatShot />
             <IdeaEngineShot />
             <ApprovalInboxShot />
