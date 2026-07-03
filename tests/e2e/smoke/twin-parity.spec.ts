@@ -44,13 +44,43 @@ test("smoke: the honest counter names the three businesses", async ({ page }) =>
   }
 });
 
-test("smoke: shots F/G/H play on the homepage within 1s", async ({ page }) => {
+test("smoke: shots F/G/H idle below the fold, play in view, pause back out", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(1000); // hydration
+  // Below the fold on initial load: no shot burns frames yet.
   for (const shot of ["running-agent", "integrations", "browser-agent"]) {
-    await expect(page.locator(`[data-shot="${shot}"][data-motion="playing"]`)).toBeAttached();
+    await expect(page.locator(`[data-shot="${shot}"]`)).toHaveAttribute("data-motion", "idle");
   }
+  // Scrolled into view: the IntersectionObserver starts the loop.
+  await page.locator('[data-shot="running-agent"]').scrollIntoViewIfNeeded();
+  await expect(page.locator('[data-shot="running-agent"]')).toHaveAttribute(
+    "data-motion",
+    "playing",
+    { timeout: 500 },
+  );
+  // Scrolled back out: the loop freezes where it stood.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.locator('[data-shot="running-agent"]')).toHaveAttribute(
+    "data-motion",
+    "paused",
+    { timeout: 500 },
+  );
+});
+
+test("smoke: the footer Pause animations toggle freezes every shot", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.locator('[data-shot="running-agent"]').scrollIntoViewIfNeeded();
+  await expect(page.locator('[data-shot="running-agent"]')).toHaveAttribute(
+    "data-motion",
+    "playing",
+  );
+  await page.locator("[data-motion-toggle]").click();
+  for (const shot of ["running-agent", "integrations", "browser-agent"]) {
+    await expect(page.locator(`[data-shot="${shot}"]`)).toHaveAttribute("data-motion", "paused");
+  }
+  await expect(page.locator("[data-motion-toggle]")).toHaveText("Play animations");
 });
 
 test("smoke: shots F/G/H pin the poster frame under reduced motion", async ({ page }) => {

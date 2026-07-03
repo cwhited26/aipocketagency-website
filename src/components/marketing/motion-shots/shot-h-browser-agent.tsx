@@ -4,9 +4,10 @@
 // A hosted browser opens a CRM contact list, the proposed click is spelled out in an amber
 // step pill, the cursor moves to the target — and the caption carries the real product rule:
 // every irreversible step is approved by the owner before it runs (PA-POS-21).
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { MONO_FONT } from "../cta";
-import { ShotFrame, useShotLoop, useTimeline } from "./shot-frame";
+import { MOTION_LAYER } from "../motion-pref";
+import { ShotFrame, useShotPlayback, useTimeline } from "./shot-frame";
 
 // Composite contacts only (PA-POS-13) — the generic CRM-list treatment, not any real
 // vendor's UI.
@@ -24,10 +25,11 @@ const TARGET_ROW = 2;
 const MARKS = [400, 1200, 3300, 3800];
 const TOTAL_MS = 8600;
 
-// Cursor path across the stage, percent coordinates: top-right in, down to the target row's
-// action button.
-const CURSOR_FROM = { left: "88%", top: "6%" };
-const CURSOR_TO = { left: "78%", top: "56%" };
+// Cursor path across the stage: top-right in, down to the target row's action button.
+// The x/y percentages translate a stage-sized wrapper, so the travel stays transform-only —
+// animating `left`/`top` here forces a reflow per frame.
+const CURSOR_FROM = { x: "88%", y: "6%" };
+const CURSOR_TO = { x: "78%", y: "56%" };
 
 function CursorArrow() {
   return (
@@ -42,8 +44,8 @@ function CursorArrow() {
   );
 }
 
-function Scene({ active }: { active: boolean }) {
-  const step = useTimeline(MARKS, active);
+function Scene({ playing, poster }: { playing: boolean; poster: boolean }) {
+  const step = useTimeline(MARKS, playing, poster);
   return (
     <div className="relative">
       {/* Browser chrome — URL bar + the owner's Cancel. */}
@@ -86,16 +88,17 @@ function Scene({ active }: { active: boolean }) {
                     {row.company} · {row.age}
                   </p>
                 </div>
-                <motion.span
+                <m.span
                   data-target-button={isTarget || undefined}
+                  style={isTarget ? MOTION_LAYER : undefined}
                   initial={false}
                   animate={
-                    isTarget && step >= 4 && active
+                    isTarget && step >= 4 && playing
                       ? { scale: [1, 1.07, 1] }
                       : { scale: 1 }
                   }
                   transition={
-                    isTarget && step >= 4 && active
+                    isTarget && step >= 4 && playing
                       ? { duration: 1.1, repeat: Infinity, ease: "easeInOut" }
                       : { duration: 0 }
                   }
@@ -106,7 +109,7 @@ function Scene({ active }: { active: boolean }) {
                   }`}
                 >
                   Add to sequence
-                </motion.span>
+                </m.span>
               </li>
             );
           })}
@@ -114,8 +117,9 @@ function Scene({ active }: { active: boolean }) {
 
         {/* The proposed step — the amber pill the owner approved. */}
         {step >= 2 && (
-          <motion.div
-            initial={active ? { opacity: 0, y: 6 } : false}
+          <m.div
+            style={MOTION_LAYER}
+            initial={poster ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             className="absolute right-3 top-[38%] max-w-[220px] rounded-lg border border-amber-300/40 bg-[#1a1508] px-3 py-2 shadow-lg"
           >
@@ -126,20 +130,22 @@ function Scene({ active }: { active: boolean }) {
               className="absolute -bottom-1.5 right-8 h-3 w-3 rotate-45 border-b border-r border-amber-300/40 bg-[#1a1508]"
               aria-hidden
             />
-          </motion.div>
+          </m.div>
         )}
 
-        {/* The cursor, driven by the agent — travels to the target over ~2s. */}
+        {/* The cursor, driven by the agent — a stage-sized wrapper translated to the
+            target over ~2s, so only the compositor moves; the arrow rides its corner. */}
         {step >= 2 && (
-          <motion.div
-            className="absolute z-10"
-            initial={active ? CURSOR_FROM : CURSOR_TO}
+          <m.div
+            className="pointer-events-none absolute inset-0 z-10"
+            style={MOTION_LAYER}
+            initial={poster ? false : CURSOR_FROM}
             animate={CURSOR_TO}
-            transition={active ? { duration: 2, ease: "easeInOut" } : { duration: 0 }}
+            transition={poster ? { duration: 0 } : { duration: 2, ease: "easeInOut" }}
             aria-hidden
           >
             <CursorArrow />
-          </motion.div>
+          </m.div>
         )}
       </div>
     </div>
@@ -147,16 +153,17 @@ function Scene({ active }: { active: boolean }) {
 }
 
 export function BrowserAgentShot() {
-  const { cycle, reduced } = useShotLoop(TOTAL_MS);
+  const { frameRef, state, playing, poster, sceneKey } = useShotPlayback(TOTAL_MS);
   return (
     <div>
       <ShotFrame
+        ref={frameRef}
         shot="browser-agent"
         title="Browser Agent — hosted browser"
         cornerLabel="you approve each step"
-        reduced={reduced}
+        state={state}
       >
-        <Scene key={reduced ? "poster" : cycle} active={!reduced} />
+        <Scene key={sceneKey} playing={playing} poster={poster} />
       </ShotFrame>
       <p className="mt-3 text-[12px] leading-relaxed text-slate-500">
         Every irreversible action shows you the screenshot + reasoning + reversible/irreversible

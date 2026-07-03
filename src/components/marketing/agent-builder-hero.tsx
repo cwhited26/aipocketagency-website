@@ -9,10 +9,18 @@
 // /start?intent=agent-builder. The real composition runs inside the workspace and stages
 // for approval before anything runs. The page stays static — entitlement is one client
 // fetch after mount, defaulting to the signup route on any failure.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  AnimatePresence,
+  LazyMotion,
+  domAnimation,
+  m,
+  useInView,
+  useReducedMotion,
+} from "framer-motion";
 import { MONO_FONT } from "./cta";
+import { MOTION_LAYER, useMotionPaused } from "./motion-pref";
 import {
   matchSpec,
   type ComposeCategory,
@@ -40,7 +48,10 @@ const DEFAULT_TINT = "border-white/10 bg-white/[0.03]";
 
 export function AgentBuilderHero({ composeData }: { composeData: ComposeData }) {
   const router = useRouter();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const inView = useInView(rootRef, { amount: 0.2 });
   const reduced = useReducedMotion() ?? false;
+  const pausedByOwner = useMotionPaused();
   const [category, setCategory] = useState<ComposeCategory | null>(null);
   const [spec, setSpec] = useState("");
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
@@ -62,15 +73,17 @@ export function AgentBuilderHero({ composeData }: { composeData: ComposeData }) 
     };
   }, []);
 
-  // Rotate the placeholder while the box is empty. Reduced motion pins the first one.
+  // Rotate the placeholder while the box is empty and on screen. Reduced motion and the
+  // footer "Pause animations" toggle pin the current one; scrolling past the hero stops
+  // the interval instead of ticking re-renders forever.
   useEffect(() => {
-    if (reduced || spec !== "") return;
+    if (reduced || pausedByOwner || !inView || spec !== "") return;
     const t = setInterval(
       () => setPlaceholderIndex((i) => (i + 1) % PLACEHOLDERS.length),
       4000,
     );
     return () => clearInterval(t);
-  }, [reduced, spec]);
+  }, [reduced, pausedByOwner, inView, spec]);
 
   // Preview after the owner types 15+ chars and pauses for a second. Pure client-side
   // match against the shipped catalogs — illustrative only.
@@ -102,7 +115,7 @@ export function AgentBuilderHero({ composeData }: { composeData: ComposeData }) 
   const tint = CATEGORIES.find((c) => c.key === category)?.tint ?? DEFAULT_TINT;
 
   return (
-    <div data-agent-builder className="mx-auto mt-10 w-full max-w-2xl text-left">
+    <div ref={rootRef} data-agent-builder className="mx-auto mt-10 w-full max-w-2xl text-left">
       <p className="text-center text-sm text-slate-400">
         Describe the agent you need. Pocket Agent composes it inside your workspace.
       </p>
@@ -158,31 +171,34 @@ export function AgentBuilderHero({ composeData }: { composeData: ComposeData }) 
         </div>
       </div>
 
-      <AnimatePresence>
-        {preview && (
-          <motion.div
-            initial={reduced ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3"
-          >
-            <p className="text-[13px] leading-relaxed text-slate-300">
-              <span className="text-slate-500">Would compose:</span>{" "}
-              <span className="text-slate-100">[Persona: {preview.persona}]</span>
-              {preview.apps.length > 0 && (
-                <> + <span className="text-slate-100">[Apps: {preview.apps.join(", ")}]</span></>
-              )}
-              {preview.skills.length > 0 && (
-                <> + <span className="text-slate-100">[Skills: {preview.skills.join(", ")}]</span></>
-              )}
-            </p>
-            <p className="mt-1.5 text-[11px] text-slate-500">
-              Illustrative — your real agent is tuned to your Business Brain and staged for
-              your approval before it runs.
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <LazyMotion features={domAnimation} strict>
+        <AnimatePresence>
+          {preview && (
+            <m.div
+              style={MOTION_LAYER}
+              initial={reduced ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3"
+            >
+              <p className="text-[13px] leading-relaxed text-slate-300">
+                <span className="text-slate-500">Would compose:</span>{" "}
+                <span className="text-slate-100">[Persona: {preview.persona}]</span>
+                {preview.apps.length > 0 && (
+                  <> + <span className="text-slate-100">[Apps: {preview.apps.join(", ")}]</span></>
+                )}
+                {preview.skills.length > 0 && (
+                  <> + <span className="text-slate-100">[Skills: {preview.skills.join(", ")}]</span></>
+                )}
+              </p>
+              <p className="mt-1.5 text-[11px] text-slate-500">
+                Illustrative — your real agent is tuned to your Business Brain and staged for
+                your approval before it runs.
+              </p>
+            </m.div>
+          )}
+        </AnimatePresence>
+      </LazyMotion>
     </div>
   );
 }

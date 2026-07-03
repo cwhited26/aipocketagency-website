@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MONO_FONT } from "./cta";
+import { MotionPauseToggle } from "./motion-pause-toggle";
 import { PERSONA_LINKS } from "@/data/marketing/persona-pages";
 import { USE_CASE_LINKS } from "@/data/use-cases";
 
@@ -183,7 +184,10 @@ export function SiteFooter() {
       <div className="border-t border-white/5">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-6 py-5 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
           <span>© {new Date().getFullYear()} Whited Consulting. All rights reserved.</span>
-          <span style={{ fontFamily: MONO_FONT }}>aipocketagent.com</span>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-5">
+            <MotionPauseToggle />
+            <span style={{ fontFamily: MONO_FONT }}>aipocketagent.com</span>
+          </div>
         </div>
       </div>
     </footer>

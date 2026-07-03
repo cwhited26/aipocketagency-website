@@ -2,8 +2,9 @@
 
 // Shot D (PA-POS-26): a Ritual fires on schedule — the clock hits Monday 8:00, the weekly
 // job runs, and the drafts it produced fill in beneath it. You set it once.
-import { motion } from "framer-motion";
-import { ShotFrame, useShotLoop, useTimeline } from "./shot-frame";
+import { m } from "framer-motion";
+import { MOTION_LAYER } from "../motion-pref";
+import { ShotFrame, useShotPlayback, useTimeline } from "./shot-frame";
 import { MONO_FONT } from "../cta";
 
 const DRAFTS = [
@@ -15,8 +16,8 @@ const DRAFTS = [
 const MARKS = [1500, 2300, 3400, 4300, 5200];
 const TOTAL_MS = 9600;
 
-function Scene({ active }: { active: boolean }) {
-  const step = useTimeline(MARKS, active);
+function Scene({ playing, poster }: { playing: boolean; poster: boolean }) {
+  const step = useTimeline(MARKS, playing, poster);
   return (
     <div className="flex min-h-[300px] flex-col">
       <div className="flex justify-end">
@@ -30,8 +31,9 @@ function Scene({ active }: { active: boolean }) {
 
       <div className="mt-auto">
         {step >= 2 && (
-          <motion.div
-            initial={active ? { opacity: 0, y: 40 } : false}
+          <m.div
+            style={MOTION_LAYER}
+            initial={poster ? false : { opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 240, damping: 24 }}
             className="rounded-xl border border-accent/25 bg-accent/[0.06] px-4 py-3"
@@ -40,20 +42,21 @@ function Scene({ active }: { active: boolean }) {
               ritual fired
             </p>
             <p className="mt-1 text-[14px] font-semibold text-slate-100">Weekly Pipeline Review</p>
-          </motion.div>
+          </m.div>
         )}
         <ul className="mt-2.5 space-y-2">
           {DRAFTS.map((d, i) => {
             if (step < i + 3) return null;
             return (
-              <motion.li
+              <m.li
                 key={d}
-                initial={active ? { opacity: 0, y: 14 } : false}
+                style={MOTION_LAYER}
+                initial={poster ? false : { opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="rounded-lg border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-[12px] text-slate-300"
               >
                 {d}
-              </motion.li>
+              </m.li>
             );
           })}
         </ul>
@@ -63,15 +66,16 @@ function Scene({ active }: { active: boolean }) {
 }
 
 export function RitualSchedulerShot() {
-  const { cycle, reduced } = useShotLoop(TOTAL_MS);
+  const { frameRef, state, playing, poster, sceneKey } = useShotPlayback(TOTAL_MS);
   return (
     <ShotFrame
+      ref={frameRef}
       shot="ritual-scheduler"
       title="Ritual Scheduler — Monday, on time"
       cornerLabel="set once, runs weekly"
-      reduced={reduced}
+      state={state}
     >
-      <Scene key={reduced ? "poster" : cycle} active={!reduced} />
+      <Scene key={sceneKey} playing={playing} poster={poster} />
     </ShotFrame>
   );
 }

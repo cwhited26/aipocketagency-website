@@ -2,9 +2,16 @@
 
 // Shot A (PA-POS-26): a Persona works a request in chat — user asks, the agent narrates
 // what it's reading, then a draft lands as an approval card. Nothing sends itself.
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { PersonaAvatar } from "@/components/personas/avatar";
-import { ApprovalButtons, ShotFrame, Typewriter, useShotLoop, useTimeline } from "./shot-frame";
+import { MOTION_LAYER } from "../motion-pref";
+import {
+  ApprovalButtons,
+  ShotFrame,
+  Typewriter,
+  useShotPlayback,
+  useTimeline,
+} from "./shot-frame";
 
 const USER_ASK = "draft a follow-up to Jenny at Acme";
 const STATUS_LINES = [
@@ -16,18 +23,19 @@ const STATUS_LINES = [
 const MARKS = [200, 2200, 4200, 6200, 8200];
 const TOTAL_MS = 12600;
 
-function Scene({ active }: { active: boolean }) {
-  const step = useTimeline(MARKS, active);
+function Scene({ playing, poster }: { playing: boolean; poster: boolean }) {
+  const step = useTimeline(MARKS, playing, poster);
   return (
     <div className="flex min-h-[300px] flex-col gap-3">
       {step >= 1 && (
-        <motion.div
-          initial={active ? { opacity: 0, y: 8 } : false}
+        <m.div
+          style={MOTION_LAYER}
+          initial={poster ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           className="self-end rounded-2xl rounded-br-sm bg-accent/15 px-3.5 py-2 text-[13px] text-slate-100"
         >
-          <Typewriter text={USER_ASK} active={active} cps={26} />
-        </motion.div>
+          <Typewriter text={USER_ASK} playing={playing} poster={poster} cps={26} />
+        </m.div>
       )}
 
       {step >= 2 && (
@@ -38,14 +46,15 @@ function Scene({ active }: { active: boolean }) {
             {STATUS_LINES.map((line, i) => {
               if (step < i + 2) return null;
               return (
-                <motion.p
+                <m.p
                   key={line.text}
-                  initial={active ? { opacity: 0 } : false}
+                  style={MOTION_LAYER}
+                  initial={poster ? false : { opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="text-[12px] text-slate-500"
                 >
-                  <Typewriter text={line.text} active={active} cps={40} />
-                </motion.p>
+                  <Typewriter text={line.text} playing={playing} poster={poster} cps={40} />
+                </m.p>
               );
             })}
           </div>
@@ -53,8 +62,9 @@ function Scene({ active }: { active: boolean }) {
       )}
 
       {step >= 5 && (
-        <motion.div
-          initial={active ? { opacity: 0, y: 14, scale: 0.98 } : false}
+        <m.div
+          style={MOTION_LAYER}
+          initial={poster ? false : { opacity: 0, y: 14, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 24 }}
           className="ml-9 rounded-xl border border-white/10 bg-white/[0.03] p-3.5"
@@ -68,24 +78,25 @@ function Scene({ active }: { active: boolean }) {
             so I wanted to check where it landed for your team…
           </p>
           <div className="mt-3 flex items-center justify-between gap-3">
-            <ApprovalButtons pulse={active} />
+            <ApprovalButtons pulse={playing} />
           </div>
-        </motion.div>
+        </m.div>
       )}
     </div>
   );
 }
 
 export function PersonaChatShot() {
-  const { cycle, reduced } = useShotLoop(TOTAL_MS);
+  const { frameRef, state, playing, poster, sceneKey } = useShotPlayback(TOTAL_MS);
   return (
     <ShotFrame
+      ref={frameRef}
       shot="persona-chat"
       title="Admin Assistant — chat"
       cornerLabel="brain · your GitHub repo"
-      reduced={reduced}
+      state={state}
     >
-      <Scene key={reduced ? "poster" : cycle} active={!reduced} />
+      <Scene key={sceneKey} playing={playing} poster={poster} />
     </ShotFrame>
   );
 }

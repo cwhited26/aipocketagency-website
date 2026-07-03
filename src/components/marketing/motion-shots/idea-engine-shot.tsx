@@ -3,8 +3,9 @@
 // Shot B (PA-POS-26): the Idea Engine ships an MVP — six build stages light up in
 // sequence, then the live link slides in. The stage labels are the product's own UI;
 // everything lands on the owner's accounts.
-import { motion } from "framer-motion";
-import { ShotFrame, useShotLoop, useTimeline } from "./shot-frame";
+import { m } from "framer-motion";
+import { MOTION_LAYER } from "../motion-pref";
+import { ShotFrame, useShotPlayback, useTimeline } from "./shot-frame";
 import { MONO_FONT } from "../cta";
 
 const STAGES = [
@@ -21,7 +22,8 @@ const TOTAL_MS = 12400;
 
 function Spinner() {
   return (
-    <motion.span
+    <m.span
+      style={MOTION_LAYER}
       className="h-3.5 w-3.5 rounded-full border-2 border-accent/30 border-t-accent"
       animate={{ rotate: 360 }}
       transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
@@ -41,8 +43,8 @@ function Check() {
   );
 }
 
-function Scene({ active }: { active: boolean }) {
-  const step = useTimeline(MARKS, active);
+function Scene({ playing, poster }: { playing: boolean; poster: boolean }) {
+  const step = useTimeline(MARKS, playing, poster);
   return (
     <div className="flex min-h-[300px] flex-col justify-between">
       <ol className="space-y-2.5">
@@ -53,7 +55,7 @@ function Scene({ active }: { active: boolean }) {
               <span className="grid h-6 w-6 place-items-center rounded-full border border-white/10 bg-white/[0.03]">
                 {state === "done" ? (
                   <Check />
-                ) : state === "running" && active ? (
+                ) : state === "running" && playing ? (
                   <Spinner />
                 ) : state === "running" ? (
                   <Check />
@@ -78,8 +80,9 @@ function Scene({ active }: { active: boolean }) {
       </ol>
 
       {step >= 7 && (
-        <motion.div
-          initial={active ? { opacity: 0, x: 24 } : false}
+        <m.div
+          style={MOTION_LAYER}
+          initial={poster ? false : { opacity: 0, x: 24 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ type: "spring", stiffness: 220, damping: 24 }}
           className="mt-4 flex items-center justify-between rounded-xl border border-emerald-400/25 bg-emerald-400/[0.06] px-4 py-3"
@@ -91,22 +94,23 @@ function Scene({ active }: { active: boolean }) {
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
             Live
           </span>
-        </motion.div>
+        </m.div>
       )}
     </div>
   );
 }
 
 export function IdeaEngineShot() {
-  const { cycle, reduced } = useShotLoop(TOTAL_MS);
+  const { frameRef, state, playing, poster, sceneKey } = useShotPlayback(TOTAL_MS);
   return (
     <ShotFrame
+      ref={frameRef}
       shot="idea-engine"
       title="Idea Engine — shipping your MVP"
       cornerLabel="on your GitHub + Vercel"
-      reduced={reduced}
+      state={state}
     >
-      <Scene key={reduced ? "poster" : cycle} active={!reduced} />
+      <Scene key={sceneKey} playing={playing} poster={poster} />
     </ShotFrame>
   );
 }

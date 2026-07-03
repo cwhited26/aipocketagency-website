@@ -23,16 +23,28 @@ test("smoke: /use-cases/lead-generation renders the rail, the steps, and shots A
   }
 });
 
-test("smoke: motion shots report a running loop within 500ms", async ({ page }) => {
+test("smoke: motion shots play within 500ms of scrolling into view", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/use-cases/lead-generation", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(500);
-  expect(await page.locator('[data-motion="playing"]').count()).toBe(4);
+  await page.waitForTimeout(1000); // hydration
+  for (const shot of ["running-agent", "persona-chat", "idea-engine", "approval-inbox"]) {
+    await page.locator(`[data-shot="${shot}"]`).scrollIntoViewIfNeeded();
+    await expect(page.locator(`[data-shot="${shot}"]`)).toHaveAttribute(
+      "data-motion",
+      "playing",
+      { timeout: 500 },
+    );
+  }
 
   await page.goto("/use-cases/operations", { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000); // hydration
   for (const shot of ["follow-up-sweeps", "ritual-scheduler", "browser-agent"]) {
-    await expect(page.locator(`[data-shot="${shot}"][data-motion="playing"]`)).toBeAttached();
+    await page.locator(`[data-shot="${shot}"]`).scrollIntoViewIfNeeded();
+    await expect(page.locator(`[data-shot="${shot}"]`)).toHaveAttribute(
+      "data-motion",
+      "playing",
+      { timeout: 500 },
+    );
   }
 });
 

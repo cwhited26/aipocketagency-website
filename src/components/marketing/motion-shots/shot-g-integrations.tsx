@@ -5,9 +5,9 @@
 // filter which nodes glow. Honest framing only — these are the adapters we've built, not a
 // five-thousand-integration catalog claim.
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { m } from "framer-motion";
 import { MONO_FONT } from "../cta";
-import { ShotFrame } from "./shot-frame";
+import { ShotFrame, useMotionGate } from "./shot-frame";
 
 type NodeCategory =
   | "sales"
@@ -72,7 +72,9 @@ const POSITIONS: readonly { x: number; y: number }[] = (() => {
 })();
 
 export function IntegrationsShot() {
-  const reduced = useReducedMotion() ?? false;
+  // The pulse loop is infinite, so it gates on `playing` — off-screen (or paused, or
+  // reduced) the lines sit at their static poster opacity and framer's frame loop idles.
+  const { frameRef, state, playing } = useMotionGate();
   const [category, setCategory] = useState<NodeCategory | "all">("all");
 
   const isLit = (node: IntegrationNode) =>
@@ -81,10 +83,11 @@ export function IntegrationsShot() {
   return (
     <div>
       <ShotFrame
+        ref={frameRef}
         shot="integrations"
         title="Pocket Agent — Connections"
         cornerLabel="adapters · already built"
-        reduced={reduced}
+        state={state}
       >
         <div
           className="flex flex-wrap items-center justify-center gap-1.5"
@@ -113,7 +116,9 @@ export function IntegrationsShot() {
         </div>
 
         <div className="relative mx-auto mt-4 aspect-square max-h-[420px] w-full max-w-[420px]">
-          {/* The pulse lines, drawn under the nodes. */}
+          {/* The pulse lines, drawn under the nodes. No per-line compositing hints: the
+              SVG paints as one layer, and 16 promoted line layers would cost more memory
+              than the paint saves. */}
           <svg
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
@@ -124,7 +129,7 @@ export function IntegrationsShot() {
               const pos = POSITIONS[i];
               const lit = isLit(node);
               return (
-                <motion.line
+                <m.line
                   key={node.label}
                   x1={50}
                   y1={50}
@@ -134,12 +139,12 @@ export function IntegrationsShot() {
                   strokeWidth={0.35}
                   initial={false}
                   animate={
-                    reduced || !lit
+                    !playing || !lit
                       ? { opacity: lit ? 0.3 : 0.08 }
                       : { opacity: [0.12, 0.45, 0.12] }
                   }
                   transition={
-                    reduced || !lit
+                    !playing || !lit
                       ? { duration: 0 }
                       : { duration: 3, delay: i * 0.2, repeat: Infinity, ease: "easeInOut" }
                   }
