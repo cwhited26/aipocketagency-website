@@ -447,8 +447,15 @@ export default function HomePage() {
                   memory your Skills save — it all lives inside accounts you own.
                 </p>
                 <p>
-                  Cancel Pocket Agent tomorrow. Your work keeps running. Your agents
-                  keep running. Your website stays live. Your memory stays yours.
+                  Cancel Pocket Agent tomorrow. Your website stays live. Your brain —
+                  every note, every customer, every decision — stays in your own
+                  GitHub. Every email your agents already sent, every landing page
+                  they already built, every workflow they ran — all of it stays.
+                </p>
+                <p>
+                  The agents themselves need Pocket Agent to keep running. But you
+                  keep everything they made, and you can pick up where you left off
+                  the day you come back.
                 </p>
                 <p className="font-semibold text-slate-100">
                   No walled garden. No hostage data. That’s the difference between
