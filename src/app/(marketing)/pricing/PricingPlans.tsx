@@ -67,7 +67,7 @@ const VISIBLE_TIERS: VisibleTier[] = [
     ],
     ctaLabel: "Get AI Agent Workspace",
     anchor:
-      "PaidCreators charges $497 once for a Gameplan you still have to execute. Pocket Agent includes Idea Engine in AI Agent Workspace at $497/month — and it actually ships the working website for you.",
+      "PaidCreators sells you a $497 plan. You still spend the next twelve months executing it. Pocket Agent sells you the workers who execute it for you — one month at $497 delivers what PaidCreators' whole plan tells you to go build.",
   },
 ];
 

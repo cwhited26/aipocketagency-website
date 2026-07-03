@@ -722,10 +722,11 @@ export default function HomePage() {
             <div className="mt-8 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.04] p-6">
               <p className="text-[15px] leading-relaxed text-slate-300">
                 <span className="text-slate-100">The honest comparison:</span>{" "}
-                PaidCreators charges $497 once for a Gameplan you still have to go run
-                somewhere else. Pocket Agent includes the Idea AI Agent in your AI
-                Agent Workspace at $497/month — and it actually ships the working
-                website for you.
+                PaidCreators sells you a $497 plan. You still spend the next
+                twelve months trying to execute it. Pocket Agent sells you the
+                workers who execute it for you — the Idea AI Agent alone ships a
+                working website in your first hour. One month of Pocket Agent =
+                a year of PaidCreators&rsquo; plan already built and running.
               </p>
             </div>
           </div>
