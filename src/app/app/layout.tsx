@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import AppChrome from "./_components/AppChrome";
+import OnboardingProgressChip from "./_components/OnboardingProgressChip";
 
 export const metadata = {
   title: "Pocket Agent",
@@ -24,5 +25,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   // AppChrome (client) renders the standard tabbed chrome for every route except the
   // chat-as-surface home (/app/home), which brings its own full-screen rail + input.
-  return <AppChrome>{children}</AppChrome>;
+  // The onboarding chip (PA-POS-36) is fixed-position and rides outside the chrome so it
+  // persists across the whole workspace, both chrome modes.
+  return (
+    <>
+      <AppChrome>{children}</AppChrome>
+      <OnboardingProgressChip />
+    </>
+  );
 }

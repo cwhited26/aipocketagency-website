@@ -4,6 +4,7 @@
 // callers that must stay non-fatal (the seeder, the onboarding gate) catch and log at their level.
 
 import { onboardingLog } from "./log";
+import { markOnboardingStepComplete } from "./progress";
 
 export class OnboardingDbError extends Error {
   readonly status: number;
@@ -140,6 +141,11 @@ export async function recordSeededPersonas(input: {
       updated_at: now,
     },
   });
+  // PA-POS-36: a vertical-picker seed is the other door into "Compose your first agent"
+  // (the registry says so). Never throws; a no-op once the step is already complete.
+  if (input.seededSlugs.length > 0) {
+    await markOnboardingStepComplete(input.ownerId, "compose_agent");
+  }
 }
 
 /**

@@ -13,6 +13,7 @@ import { generateShareToken, isTokenLive } from "@/lib/personas/tokens";
 import { acceptUrlForToken } from "@/lib/personas/links";
 import { sendEmail } from "@/lib/resend";
 import { SEAT_ROLES, type PersonaShareTokenRow } from "@/lib/personas/types";
+import { markOnboardingStepComplete } from "@/lib/onboarding/progress";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -97,6 +98,10 @@ export async function POST(req: Request, { params }: Params): Promise<NextRespon
       html: inviteHtml(persona.name, acceptUrl),
       text: inviteText(persona.name, acceptUrl),
     });
+    // PA-POS-36: the first seat invite completes "Invite a teammate" — the seat + link exist
+    // even when the email failed, so the invite counts either way. Never throws.
+    await markOnboardingStepComplete(owner.ctx.userId, "invite_teammate");
+
     // The seat + token exist regardless; if the email fails the owner can copy the
     // link from the Team tab. Surface the email failure rather than swallow it.
     return NextResponse.json(

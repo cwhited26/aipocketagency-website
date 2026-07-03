@@ -30,6 +30,7 @@ import { generateShareToken } from "@/lib/personas/tokens";
 import { sanitizeAppIds } from "@/lib/apps/catalog";
 import { publicModesEnabled, PUBLIC_MODES_COMING_SOON } from "@/lib/personas/feature-flags";
 import { publicChatUrlForToken } from "@/lib/personas/links";
+import { markOnboardingStepComplete } from "@/lib/onboarding/progress";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -165,6 +166,11 @@ export async function PATCH(req: Request, { params }: Params): Promise<NextRespo
       ...(mode ? { mode } : {}),
       ...appsPatch,
     });
+    // PA-POS-36: the first name set on any Persona completes "Name a Persona" (couples with the
+    // PA-POS-35 rename surface — any rename lands through this PATCH). Never throws.
+    if (parsed.data.name !== undefined) {
+      await markOnboardingStepComplete(owner.ctx.userId, "name_persona");
+    }
     return NextResponse.json({ persona: updated, publicLink: newPublicLink });
   } catch (e) {
     const status = e instanceof PersonaDbError ? e.status : 500;

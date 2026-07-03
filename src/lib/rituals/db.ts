@@ -5,6 +5,7 @@
 // Typed results, never a silent empty.
 
 import type { Ritual, RitualDelivery, RitualLastRunStatus, RitualRun, RitualRunStatus } from "./types";
+import { markOnboardingStepComplete } from "@/lib/onboarding/progress";
 
 type PaResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
 
@@ -123,6 +124,9 @@ export async function createRitual(params: CreateRitualParams): Promise<PaResult
   if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
   const rows = (await res.json()) as Ritual[];
   if (!rows[0]) return { ok: false, status: 500, error: "No row returned after insert." };
+  // PA-POS-36: every ritual door (manual create, vertical seed, Signal Catcher approve) inserts
+  // through here — the one detection point for "Set up a Ritual". Never throws; no-op after the first.
+  await markOnboardingStepComplete(params.ownerId, "set_up_ritual");
   return { ok: true, data: rows[0] };
 }
 

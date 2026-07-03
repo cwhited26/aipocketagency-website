@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { verifyOAuthState, vaultEncrypt, VaultDecryptError } from "@/lib/pa-vault";
 import { upsertConnection } from "@/lib/pa-connections";
+import { markOnboardingStepComplete } from "@/lib/onboarding/progress";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -138,6 +139,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!result.ok) {
     return settingsRedirect(request, "connection=error");
   }
+
+  // PA-POS-36: the first Connection completes the "Connect your first tool" step. Never throws.
+  await markOnboardingStepComplete(user.id, "connect_tool");
 
   return settingsRedirect(request, `connection=connected&provider=${statePayload.provider}`);
 }

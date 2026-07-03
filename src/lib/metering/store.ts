@@ -170,6 +170,9 @@ export async function insertTopUpPurchase(args: {
   stripeSessionId: string;
   creditsAdded: number;
   amountPaidCents: number;
+  /** 'onboarding_bonus' rows (PA-POS-36) are $0 grants keyed by a synthetic session id —
+   *  same UNIQUE idempotency, same cycle math, segmented in the ledger by this column. */
+  source?: "top_up" | "onboarding_bonus";
 }): Promise<StoreResult> {
   const env = serviceEnv();
   if (!env) return { ok: false, status: 500, error: "service-role env not set" };
@@ -183,6 +186,8 @@ export async function insertTopUpPurchase(args: {
         stripe_session_id: args.stripeSessionId,
         credits_added: args.creditsAdded,
         amount_paid_cents: args.amountPaidCents,
+        // Only sent when set: pre-105 rows/writes keep working, the column default covers Stripe.
+        ...(args.source ? { source: args.source } : {}),
       }),
       cache: "no-store",
     },

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { verifyState, encrypt, DecryptionError } from "@/lib/crypto/encrypt";
 import { exchangeCodeForTokens, slackRedirectUri } from "@/lib/slack";
 import { upsertSlackConnection } from "@/lib/pa-slack-connections";
+import { markOnboardingStepComplete } from "@/lib/onboarding/progress";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -109,6 +110,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!result.ok) {
     return pageRedirect(request, "slack=error");
   }
+
+  // PA-POS-36: the first Connection completes the "Connect your first tool" step. Never throws.
+  await markOnboardingStepComplete(user.id, "connect_tool");
 
   return pageRedirect(request, "slack=connected");
 }

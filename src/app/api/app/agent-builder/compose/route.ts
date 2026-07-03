@@ -30,6 +30,7 @@ import { runAgentBuildGates } from "@/lib/agent-builder/gates";
 import { stageAgentBuildApproval } from "@/lib/agent-builder/stage-approval";
 import { type ComposedAgent } from "@/lib/agent-builder/types";
 import { agentBuilderLog } from "@/lib/agent-builder/log";
+import { markOnboardingStepComplete } from "@/lib/onboarding/progress";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -154,6 +155,9 @@ export async function POST(req: Request): Promise<NextResponse> {
     skills: composed.skillSlugs.join(","),
     candidateSkill: composed.candidateSkill?.slug ?? null,
   });
+
+  // PA-POS-36: the first successful compose completes "Compose your first agent". Never throws.
+  await markOnboardingStepComplete(user.id, "compose_agent");
 
   return NextResponse.json(
     {

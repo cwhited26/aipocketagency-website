@@ -49,6 +49,8 @@
 // card: PA noticed a standing wish in a Persona chat ("I keep meaning to check my pipeline every
 // Monday") and proposes the Ritual. Approve creates a real pa_rituals row through the shipped
 // Scheduler; Edit opens the pre-filled Ritual wizard; reject suppresses the theme for 30 days.
+import { markOnboardingStepComplete } from "@/lib/onboarding/progress";
+
 export type InboxKind =
   | "draft"
   | "decision"
@@ -380,5 +382,11 @@ export async function resolveInboxItem(
   if (!res.ok) return { ok: false, status: res.status, error: await res.text() };
   const rows = (await res.json()) as InboxItem[];
   if (!rows[0]) return { ok: false, status: 500, error: "No row returned after update." };
+  // PA-POS-36: every approve door (inbox route, one-tap channel approve, calendar / gate /
+  // orchestrator cards) resolves through here — the one detection point for the "Approve your
+  // first inbox item" step. Never throws; a no-op after the first approval.
+  if (status === "approved") {
+    await markOnboardingStepComplete(resolvedBy, "approve_inbox");
+  }
   return { ok: true, data: rows[0] };
 }
