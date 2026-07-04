@@ -45,7 +45,7 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
     slug: "compose_agent",
     title: "Compose your first agent",
     detail: "Describe the agent you need and PA assembles it. Picking a vertical seeds one too.",
-    href: "/agents#compose",
+    href: "/app/apps/agent-builder",
   },
   {
     slug: "approve_inbox",
