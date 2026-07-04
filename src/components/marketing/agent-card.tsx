@@ -8,8 +8,10 @@ import {
 import { MONO_FONT } from "./cta";
 
 // One card in the Agents Library grid (PA-POS-24). Pure presentational — rendered by the
-// server rails on /use-cases/* and inside the client filter explorer on /agents.
-export function AgentCard({ agent }: { agent: LibraryAgent }) {
+// server rails on /use-cases/*, inside the client filter explorer on /agents, and on the
+// authenticated mirror at /app/agents (PA-POS-37). The card body is identical everywhere;
+// `cta` swaps the action for the auth state — signup link by default, Clone in the workspace.
+export function AgentCard({ agent, cta }: { agent: LibraryAgent; cta?: React.ReactNode }) {
   return (
     <article
       data-agent-card={agent.slug}
@@ -68,12 +70,14 @@ export function AgentCard({ agent }: { agent: LibraryAgent }) {
             );
           })}
         </div>
-        <Link
-          href={`/start?tier=${agent.tier}&agent=${agent.slug}`}
-          className="shrink-0 rounded-lg border border-accent/40 bg-accent/[0.06] px-3.5 py-2 text-[13px] font-semibold text-accent transition hover:border-accent hover:bg-accent/[0.12]"
-        >
-          Use this agent
-        </Link>
+        {cta ?? (
+          <Link
+            href={`/start?tier=${agent.tier}&agent=${agent.slug}`}
+            className="shrink-0 rounded-lg border border-accent/40 bg-accent/[0.06] px-3.5 py-2 text-[13px] font-semibold text-accent transition hover:border-accent hover:bg-accent/[0.12]"
+          >
+            Use this agent
+          </Link>
+        )}
       </div>
     </article>
   );

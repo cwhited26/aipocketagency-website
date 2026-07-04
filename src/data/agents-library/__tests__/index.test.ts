@@ -10,6 +10,7 @@ import {
   agentFitsIndustry,
   agentsForUseCase,
   getLibraryAgent,
+  libraryAgentSpec,
 } from "..";
 import { isAppId } from "@/lib/apps/catalog";
 import { USE_CASE_LINKS } from "@/data/use-cases";
@@ -109,6 +110,20 @@ describe("agents library registry (PA-POS-24)", () => {
           expect(pattern.test(s), `${agent.slug}: "${s}" matches ${pattern}`).toBe(false);
         }
       }
+    }
+  });
+});
+
+describe("libraryAgentSpec (PA-POS-37)", () => {
+  // The Clone CTA on /app/agents feeds this straight into POST /api/app/agent-builder/compose,
+  // whose Zod boundary is 12-4000 chars — every card must produce a spec that clears it.
+  it("produces a compose-route-valid spec for every library agent", () => {
+    for (const agent of AGENTS_LIBRARY) {
+      const spec = libraryAgentSpec(agent);
+      expect(spec.length, agent.slug).toBeGreaterThanOrEqual(12);
+      expect(spec.length, agent.slug).toBeLessThanOrEqual(4_000);
+      expect(spec, agent.slug).toContain(agent.name);
+      for (const step of agent.workflow) expect(spec, agent.slug).toContain(step);
     }
   });
 });

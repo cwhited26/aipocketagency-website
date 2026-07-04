@@ -34,7 +34,10 @@ describe("onboarding step registry", () => {
     expect(isOnboardingStepSlug("set_up_ritual")).toBe(true);
     expect(isOnboardingStepSlug("click_to_complete")).toBe(false);
     expect(getOnboardingStep("connect_tool").href).toBe("/app/settings/connections");
-    expect(getOnboardingStep("compose_agent").href).toBe("/agents#compose");
+    // PA-POS-37: the authenticated mirror — the chip deep-links into the workspace, not the
+    // marketing page (the 9ddb299 hotfix pointed here via the App-tile redirect; this is the
+    // direct address).
+    expect(getOnboardingStep("compose_agent").href).toBe("/app/agents#compose");
   });
 
   it("pins the bonus sizing: 50 per step, 250 on completion, 550 total", () => {

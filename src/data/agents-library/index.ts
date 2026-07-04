@@ -639,3 +639,13 @@ export const INDUSTRY_FILTERS: { slug: IndustryFilter; label: string }[] = [
 export function agentFitsIndustry(agent: LibraryAgent, industry: IndustryFilter): boolean {
   return agent.industries.length === 0 || agent.industries.includes(industry);
 }
+
+/**
+ * The plain-English spec a library card feeds the Custom Agent Builder when a signed-in owner
+ * clicks Clone on /app/agents (PA-POS-37). The workflow lines already describe what the agent
+ * actually does, review-first — joined, they read like an owner-typed spec, so a clone rides
+ * the SAME compose → gate → approval-card flow as a free-form spec. No parallel clone pipeline.
+ */
+export function libraryAgentSpec(agent: LibraryAgent): string {
+  return `Clone the "${agent.name}" agent from the Agents Library. It should: ${agent.workflow.join("; ")}.`;
+}

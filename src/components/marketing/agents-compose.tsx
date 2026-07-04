@@ -53,9 +53,18 @@ function specFromLocation(): string {
   return "";
 }
 
-export function AgentsCompose({ composeData }: { composeData: ComposeData }) {
+export function AgentsCompose({
+  composeData,
+  initialSignedIn = false,
+}: {
+  composeData: ComposeData;
+  /** The authenticated mirror at /app/agents (PA-POS-37) sits behind the app auth gate, so it
+   *  passes true and skips the entitlement round-trip — Compose runs the real flow from the
+   *  first render. The marketing page keeps the post-mount check. */
+  initialSignedIn?: boolean;
+}) {
   const router = useRouter();
-  const [signedIn, setSignedIn] = useState(false);
+  const [signedIn, setSignedIn] = useState(initialSignedIn);
   const [category, setCategory] = useState<ComposeCategory | null>(null);
   const [spec, setSpec] = useState("");
   const [preview, setPreview] = useState<ComposePreview | null>(null);
@@ -66,6 +75,7 @@ export function AgentsCompose({ composeData }: { composeData: ComposeData }) {
   // One post-mount check: signed in ⇒ the Compose button runs the real flow here (PA-POS-34 —
   // every tier composes). Any failure leaves the signup route in place.
   useEffect(() => {
+    if (initialSignedIn) return;
     let cancelled = false;
     fetch("/api/app/agent-builder/entitlement", { cache: "no-store" })
       .then((r) => (r.ok ? (r.json() as Promise<{ entitled?: boolean }>) : null))
@@ -76,7 +86,7 @@ export function AgentsCompose({ composeData }: { composeData: ComposeData }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialSignedIn]);
 
   // Deep-link prefill from the hero / the App-tile redirect, once on mount.
   useEffect(() => {

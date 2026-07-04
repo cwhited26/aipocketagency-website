@@ -18,14 +18,24 @@ test("smoke: /agents carries the compose surface at #compose (PA-POS-34)", async
   await expect(page.locator("[data-agents-compose-button]")).toBeVisible();
 });
 
-test("smoke: the App tile route forwards to the Library create surface (PA-POS-34)", async ({
+test("smoke: the App tile route forwards to /app/agents#compose (PA-POS-37)", async ({
   page,
 }) => {
-  // Signed out this still resolves — the redirect target is the public /agents page.
-  await page.goto("/app/apps/agent-builder?spec=watch%20my%20inbox", {
-    waitUntil: "domcontentloaded",
+  // /app/agents is behind the app auth gate, so a signed-out browser can't follow the chain to
+  // the page itself — assert the redirect target at the response layer instead.
+  const res = await page.request.get("/app/apps/agent-builder?spec=watch%20my%20inbox", {
+    maxRedirects: 0,
   });
-  await expect(page).toHaveURL(/\/agents\?spec=.*#compose$/);
+  expect(res.status()).toBe(307);
+  expect(res.headers()["location"]).toMatch(/\/app\/agents\?spec=.*#compose$/);
+});
+
+test("smoke: /app/agents exists and gates on auth (PA-POS-37)", async ({ page }) => {
+  // Signed out, the route answers with the login redirect — not a 404. That's the whole
+  // assertion available without a session; the compose + clone flow is covered by vitest.
+  const res = await page.request.get("/app/agents", { maxRedirects: 0 });
+  expect(res.status()).toBe(307);
+  expect(res.headers()["location"]).toContain("/app/login");
 });
 
 test("smoke: /use-cases/lead-generation renders the rail, the steps, and shots A/B/E", async ({

@@ -2,8 +2,11 @@
 
 // The /agents filter surface (PA-POS-24) — Twin-style dual taxonomy: one Industry chip row,
 // one Use Case chip row, both optional, cards filter live. Data is the static library; the
-// only client state is the two selected chips.
+// only client state is the two selected chips. The authenticated mirror at /app/agents
+// (PA-POS-37) renders the SAME explorer with mode="app", which swaps every card's signup
+// link for the Clone action — one grid, one filter model, the auth state changes the CTA.
 import { useMemo, useState } from "react";
+import { CloneAgentButton } from "@/components/agents/clone-agent-button";
 import {
   AGENTS_LIBRARY,
   INDUSTRY_FILTERS,
@@ -63,7 +66,7 @@ function ChipRow<T extends string>({
   );
 }
 
-export function AgentsLibraryExplorer() {
+export function AgentsLibraryExplorer({ mode = "marketing" }: { mode?: "marketing" | "app" }) {
   const [industry, setIndustry] = useState<IndustryFilter | null>(null);
   const [useCase, setUseCase] = useState<UseCaseFilter | null>(null);
 
@@ -90,7 +93,11 @@ export function AgentsLibraryExplorer() {
       </p>
       <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {agents.map((a) => (
-          <AgentCard key={a.slug} agent={a} />
+          <AgentCard
+            key={a.slug}
+            agent={a}
+            cta={mode === "app" ? <CloneAgentButton agent={a} /> : undefined}
+          />
         ))}
       </div>
     </div>
