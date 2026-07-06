@@ -68,6 +68,7 @@ import {
   POCKET_CAPTURE_CHECKOUT_SOURCE,
   POCKET_CAPTURE_PRICE_CENTS,
 } from "@/lib/pocket-capture/product";
+import { WORKSHOP_CHECKOUT_SOURCE } from "@/lib/workshop/product";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -1571,6 +1572,11 @@ export async function POST(req: Request): Promise<NextResponse> {
         );
       } else if (session.metadata?.source === "pocket_agent") {
         await handlePocketAgentCheckoutCompleted(session);
+      } else if (session.metadata?.source === WORKSHOP_CHECKOUT_SOURCE) {
+        // Business Brain Workshop (PA-POS-38): owned by /api/workshop/webhook (its own endpoint +
+        // signing secret). Skip here so the session never falls through to APA kit delivery. The
+        // workshop subscription itself carries source=pocket_agent, so the subscription.created
+        // provisioning below runs unchanged.
       } else {
         await handleCheckoutCompleted(session);
       }

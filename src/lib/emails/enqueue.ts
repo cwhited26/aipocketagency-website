@@ -17,6 +17,7 @@ import {
   ONBOARDING_SEQUENCE,
   PILOT_SEQUENCE,
   computeWebinarSchedule,
+  computeWorkshopSchedule,
   dwySequence,
   planWelcomeStep,
   type SequenceStep,
@@ -100,6 +101,29 @@ export async function enqueueWebinar(
     templateSlug: s.slug,
     templateProps: { email: who.email, firstName: who.firstName ?? null },
     sequenceSlug: SEQUENCE.webinar,
+    sendAt: s.sendAt,
+  }));
+  const r = await enqueueMany(inputs);
+  return r.ok ? { ok: true, count: r.data.length } : { ok: false, error: r.error };
+}
+
+/**
+ * 4-email Business Brain Workshop pre-session sequence (PA-POS-38 §24.4), anchored to the
+ * attendee's chosen slot. `props` carries the lobby URL + display slot time into every email.
+ */
+export async function enqueueWorkshop(
+  who: Recipient,
+  slotAtMs: number,
+  props: { lobbyUrl: string; slotDisplay: string; bump: boolean },
+  nowMs: number = Date.now(),
+): Promise<EnqueueResult> {
+  const scheduled = computeWorkshopSchedule(slotAtMs, nowMs);
+  const inputs: EnqueueInput[] = scheduled.map((s) => ({
+    ownerId: who.ownerId,
+    email: who.email,
+    templateSlug: s.slug,
+    templateProps: { email: who.email, firstName: who.firstName ?? null, ...props },
+    sequenceSlug: SEQUENCE.workshop,
     sendAt: s.sendAt,
   }));
   const r = await enqueueMany(inputs);

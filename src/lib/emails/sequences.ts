@@ -156,3 +156,27 @@ export function computeWebinarSchedule(webinarAtMs: number, nowMs: number): Webi
   }
   return out;
 }
+
+// ── Business Brain Workshop pre-session sequence (PA-POS-38 §24.4). Same anchor mechanics as the
+// webinar sequence: confirmation now, the rest relative to the attendee's chosen slot. Past-due
+// reminders drop for a late booker (someone who books the 1pm slot at 12:40 gets the confirmation
+// and the lobby-open email, not the stale T-24h reminder). ──
+export const WORKSHOP_SEQUENCE: WebinarSequenceStep[] = [
+  { slug: "workshop.purchase-confirmation", base: "now", offsetMinutes: 0 },
+  { slug: "workshop.reminder-24h", base: "webinar", offsetMinutes: -24 * HOUR },
+  { slug: "workshop.reminder-1h", base: "webinar", offsetMinutes: -1 * HOUR },
+  { slug: "workshop.lobby-open", base: "webinar", offsetMinutes: -15 },
+];
+
+/** Resolve the workshop steps to absolute send_at ISO timestamps against the attendee's slot. */
+export function computeWorkshopSchedule(slotAtMs: number, nowMs: number): WebinarScheduledEmail[] {
+  const out: WebinarScheduledEmail[] = [];
+  for (const step of WORKSHOP_SEQUENCE) {
+    const anchor = step.base === "now" ? nowMs : slotAtMs;
+    const at = anchor + step.offsetMinutes * 60_000;
+    const immediate = step.base === "now" && step.offsetMinutes === 0;
+    if (!immediate && at < nowMs) continue;
+    out.push({ slug: step.slug, sendAt: new Date(at).toISOString() });
+  }
+  return out;
+}

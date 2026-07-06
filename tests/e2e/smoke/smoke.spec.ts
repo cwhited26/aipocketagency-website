@@ -32,6 +32,8 @@ const MARKETING_ROUTES: RouteCase[] = [
   { name: "thanks (subscription only)", path: "/thanks?bought=subscription_only" },
   { name: "thanks (subscription plus setup)", path: "/thanks?bought=subscription_plus_setup" },
   { name: "thanks (pilot)", path: "/thanks?bought=pilot" },
+  // Business Brain Workshop (PA-POS-38) — the evergreen funnel front door.
+  { name: "workshop sales page", path: "/workshop" },
   // Persona landing pages (PA-POS-17) — six static doorways, same shell, tailored copy.
   { name: "for coaches", path: "/for/coaches" },
   { name: "for consultants", path: "/for/consultants" },

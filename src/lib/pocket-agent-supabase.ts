@@ -310,7 +310,11 @@ export type PocketAgentAddonKind =
   // column is free-text (no CHECK), so this needs no migration. The row IS the entitlement record:
   // a buyer with a kind='pocket_capture_standalone' row is a Pocket Capture user (claimed by email
   // on first login, like the other one-time purchases).
-  | "pocket_capture_standalone";
+  | "pocket_capture_standalone"
+  // Business Brain Workshop OTO 1 (PA-POS-38 §24.3): the $997 Done-With-You Setup Sprint charged
+  // off-session on the saved payment method. stripe_session_id is the synthetic
+  // `wkshp_oto1:<payment_intent_id>` key — there is no Checkout Session for an OTO charge.
+  | "setup_sprint";
 
 export async function insertPocketAgentAddonPurchase(args: {
   userId: string | null;

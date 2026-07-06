@@ -95,6 +95,12 @@ import {
   pilotPitch,
   diyKitPitch,
 } from "./templates/webinar/webinar";
+import {
+  workshopPurchaseConfirmation,
+  workshopReminder24h,
+  workshopReminder1h,
+  workshopLobbyOpen,
+} from "./templates/workshop/workshop";
 
 const baseSchema = z.object({
   email: z.string().min(3),
@@ -111,6 +117,12 @@ const dwyRecapSchema = baseSchema.extend({
 
 const diyDeliverySchema = baseSchema.extend({
   downloadUrl: z.string().optional(),
+});
+
+const workshopSchema = baseSchema.extend({
+  lobbyUrl: z.string().nullish(),
+  slotDisplay: z.string().nullish(),
+  bump: z.boolean().nullish(),
 });
 
 type RegistryEntry = {
@@ -144,6 +156,7 @@ export const SEQUENCE = {
   dwy: "dwy.setup",
   diy: "diy.delivery",
   webinar: "webinar.sequence",
+  workshop: "workshop.pre-session",
 } as const;
 
 export const EMAIL_REGISTRY: Record<string, RegistryEntry> = {
@@ -244,6 +257,14 @@ export const EMAIL_REGISTRY: Record<string, RegistryEntry> = {
   "webinar.last-call": base(lastCall, false, SEQUENCE.webinar),
   "webinar.pilot-pitch": base(pilotPitch, false, SEQUENCE.webinar),
   "webinar.diy-kit-pitch": base(diyKitPitch, false, SEQUENCE.webinar),
+
+  // ── Business Brain Workshop pre-session (4) — PA-POS-38 §24.4. The purchase confirmation is
+  // transactional (receipt + the honest day-31 renewal math); the slot reminders ride the
+  // workshop sequence so a cancellation clears them. ──
+  "workshop.purchase-confirmation": entry(workshopSchema, workshopPurchaseConfirmation, true, SEQUENCE.workshop),
+  "workshop.reminder-24h": entry(workshopSchema, workshopReminder24h, false, SEQUENCE.workshop),
+  "workshop.reminder-1h": entry(workshopSchema, workshopReminder1h, false, SEQUENCE.workshop),
+  "workshop.lobby-open": entry(workshopSchema, workshopLobbyOpen, false, SEQUENCE.workshop),
 };
 
 export type EmailTemplateSlug = keyof typeof EMAIL_REGISTRY;
