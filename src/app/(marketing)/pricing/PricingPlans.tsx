@@ -23,7 +23,8 @@ const VISIBLE_TIERS: VisibleTier[] = [
     name: "Personal Brain",
     price: "$37",
     tier: "starter",
-    pitch: "Your first Persona with the Apps and Skills to do real work.",
+    pitch:
+      "Your Business Brain, your first Persona, and every core App — in a GitHub repo you own. Not just email.",
     rows: [
       "Single Business Brain + basic capture",
       "1 Persona (your first AI Agent)",
@@ -33,7 +34,7 @@ const VISIBLE_TIERS: VisibleTier[] = [
     ],
     ctaLabel: "Start Personal Brain",
     anchor:
-      "The tool stack this replaces — a notes app, a scheduler, an inbox helper, a meeting note-taker — runs $60–90 a month and none of them talk to each other. Personal Brain is $37 and it’s one workspace.",
+      "The tool stack this replaces — a notes app, a scheduler, an inbox helper, a meeting note-taker — runs $60–90 a month and none of them talk to each other. Personal Brain is $37 and it’s one workspace. And your Business Brain lives in a GitHub repo you own — not in ours.",
   },
   {
     name: "Business Agent",
