@@ -1,24 +1,28 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
+import { saveAgentIdea } from "@/lib/marketing/agent-idea-store";
 
 const MONO_FONT =
   "var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace";
 
 // Display props are resolved server-side from the validated ?tier= param (see start/page.tsx) and
 // passed as primitives so this client component never imports the server-side tier-caps module.
-// `tier` + `bump` are the only values sent to the checkout API.
+// `tier`, `bump`, `vault`, and `agentSpec` are the only values sent to the checkout API.
 export default function StartForm({
   defaultEmail = "",
   tier = "starter",
   tierLabel = "Personal Brain",
   priceUsd = 37,
+  agentSpec = "",
 }: {
   defaultEmail?: string;
   tier?: string;
   tierLabel?: string;
   priceUsd?: number;
+  /** The agent the visitor described before signup (agent-builder intent carry). */
+  agentSpec?: string;
 }) {
   const [email, setEmail] = useState(defaultEmail);
   const [name, setName] = useState("");
@@ -26,6 +30,12 @@ export default function StartForm({
   const [vault, setVault] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  // Re-save the carried idea from the URL (covers a shared /start link where the visitor never
+  // touched the hero) so it survives the Stripe round-trip and the post-payment login.
+  useEffect(() => {
+    if (agentSpec) saveAgentIdea(agentSpec);
+  }, [agentSpec]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,7 +45,16 @@ export default function StartForm({
       const res = await fetch("/api/pocket-agent/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, tier, bump, vault }),
+        body: JSON.stringify({
+          email,
+          name,
+          tier,
+          bump,
+          vault,
+          // Head of the spec only — the checkout API bounds this at Stripe's 500-char
+          // metadata limit; the full text rides the client-side capture.
+          ...(agentSpec ? { agent_spec: agentSpec.slice(0, 500) } : {}),
+        }),
       });
       if (res.status === 502 || res.status === 503) {
         setError("Checkout is temporarily paused — try again in a minute.");
@@ -81,6 +100,30 @@ export default function StartForm({
               first workflows, and review everything from Mission Control.
             </p>
           </div>
+
+          {/* The carried agent idea (agent-builder intent) — show the buyer their prompt made
+              the trip. Composing happens inside the workspace, after checkout, staged for
+              their approval. */}
+          {agentSpec ? (
+            <div className="mt-10 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.04] p-5">
+              <div
+                className="text-xs uppercase tracking-wider text-cyan-300/70"
+                style={{ fontFamily: MONO_FONT }}
+              >
+                your first agent
+              </div>
+              <p
+                className="mt-2 text-sm leading-relaxed text-slate-200"
+                style={{ fontFamily: MONO_FONT }}
+              >
+                &ldquo;{agentSpec}&rdquo;
+              </p>
+              <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
+                This comes with you. The moment you&rsquo;re in your workspace, Pocket Agent
+                composes it and stages it for your approval.
+              </p>
+            </div>
+          ) : null}
 
           {/* ORDER SUMMARY — the plan, the free bonus, the guarantee. */}
           <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-6">

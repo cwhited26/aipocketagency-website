@@ -126,6 +126,29 @@ describe("buildPocketAgentCheckoutParams", () => {
     expect(p.get("metadata[bump_fast_start_brain_import]")).toBeNull();
   });
 
+  it("stamps the agent-builder spec on both session and subscription, capped at Stripe's 500-char metadata limit", () => {
+    const spec = "An agent that watches Gmail and drafts replies in my voice. ".repeat(12);
+    const p = buildPocketAgentCheckoutParams({
+      ...base,
+      userId: null,
+      tier: "starter",
+      priceId: TIER_TO_PRICE.starter,
+      agentSpec: spec,
+    });
+    expect(p.get("metadata[agent_builder_spec]")).toBe(spec.slice(0, 500));
+    expect(p.get("subscription_data[metadata][agent_builder_spec]")).toBe(spec.slice(0, 500));
+  });
+
+  it("omits the agent-builder spec metadata when no spec was carried", () => {
+    const p = buildPocketAgentCheckoutParams({
+      ...base,
+      tier: "pro",
+      priceId: TIER_TO_PRICE.pro,
+    });
+    expect(p.get("metadata[agent_builder_spec]")).toBeNull();
+    expect(p.get("subscription_data[metadata][agent_builder_spec]")).toBeNull();
+  });
+
   it("adds the Fast-Start Brain Import as a one-time first-invoice line when bump is set", () => {
     const p = buildPocketAgentCheckoutParams({
       ...base,

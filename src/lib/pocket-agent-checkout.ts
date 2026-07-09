@@ -52,6 +52,10 @@ export function buildPocketAgentCheckoutParams(args: {
   // encoded answers stand in for client_reference_id when there's no user_id.
   funnel?: boolean;
   funnelAnswers?: string;
+  // Agent-builder intent carry (PA-POS-28/34): the agent the buyer described before signup.
+  // Stamped as attribution so support can see what the buyer came to build; the workspace
+  // prefill itself rides the client-side capture, not this metadata.
+  agentSpec?: string;
 }): URLSearchParams {
   const params = new URLSearchParams();
   params.set("mode", "subscription");
@@ -101,6 +105,12 @@ export function buildPocketAgentCheckoutParams(args: {
         args.funnelAnswers,
       );
     }
+  }
+  if (args.agentSpec) {
+    // Stripe caps metadata values at 500 chars — keep the head of the spec.
+    const spec = args.agentSpec.slice(0, 500);
+    params.set("metadata[agent_builder_spec]", spec);
+    params.set("subscription_data[metadata][agent_builder_spec]", spec);
   }
   // One-time bumps ride add_invoice_items on the first invoice. The index walks forward so the two
   // bumps can stack without colliding (Fast-Start at [0], Vault at [0] or [1]).

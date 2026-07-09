@@ -5,6 +5,7 @@ import { PrimaryCTA } from "@/components/marketing/cta";
 import { createClient } from "@/lib/supabase/server";
 import { retrieveCheckoutSession } from "@/lib/stripe-session";
 import ThanksLogin from "./ThanksLogin";
+import ThanksAgentIdea from "./ThanksAgentIdea";
 
 const PAGE_URL = "https://aipocketagent.com/thanks";
 
@@ -145,6 +146,10 @@ export default async function ThanksPage({
             <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-slate-300">
               {c.body}
             </p>
+
+            {/* The agent the buyer described before signup — picked up client-side so the
+                paywall finishes what they started (agent-builder intent carry). */}
+            {isSubscriptionBranch(branch) ? <ThanksAgentIdea /> : null}
 
             <div className="mx-auto mt-10 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-left">
               <ol className="space-y-3">

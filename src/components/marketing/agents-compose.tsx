@@ -20,6 +20,11 @@ import {
   type ComposeData,
   type ComposePreview,
 } from "@/lib/marketing/compose-preview";
+import {
+  clearAgentIdea,
+  readAgentIdea,
+  saveAgentIdea,
+} from "@/lib/marketing/agent-idea-store";
 
 const CATEGORIES: { key: ComposeCategory; label: string; tint: string }[] = [
   { key: "sales", label: "Sales", tint: "border-emerald-300/25 bg-emerald-400/[0.05]" },
@@ -88,9 +93,11 @@ export function AgentsCompose({
     };
   }, [initialSignedIn]);
 
-  // Deep-link prefill from the hero / the App-tile redirect, once on mount.
+  // Deep-link prefill from the hero / the App-tile redirect, once on mount. With no URL spec,
+  // fall back to the idea captured before signup (the intent carry) — that's how a pay-first
+  // buyer's typed prompt is waiting in the box on their first signed-in visit.
   useEffect(() => {
-    const prefill = specFromLocation();
+    const prefill = specFromLocation() || readAgentIdea();
     if (prefill) {
       setSpec(prefill);
       document.getElementById("compose")?.scrollIntoView({ block: "center" });
@@ -111,6 +118,8 @@ export function AgentsCompose({
   async function compose() {
     const trimmed = spec.trim();
     if (!signedIn) {
+      // Anonymous: nothing is created — capture the idea so signup finishes what they started.
+      if (trimmed) saveAgentIdea(trimmed);
       const query = trimmed
         ? `intent=agent-builder&spec=${encodeURIComponent(trimmed)}`
         : "intent=agent-builder";
@@ -140,6 +149,8 @@ export function AgentsCompose({
       });
       setSpec("");
       setPreview(null);
+      // The carried idea reached Mission Control — its job is done.
+      clearAgentIdea();
     } catch {
       setErr("Composing failed. Check your connection and try again.");
     } finally {

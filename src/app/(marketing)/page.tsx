@@ -12,12 +12,12 @@ import { IntegrationsShot } from "@/components/marketing/motion-shots/shot-g-int
 import { BrowserAgentShot } from "@/components/marketing/motion-shots/shot-h-browser-agent";
 
 const DESCRIPTION =
-  "Sales, marketing, content, customer support, research — every AI Agent everyone else is selling you separately. Pocket Agent packages all of them into one workspace. No coding. No scary tech. $37 a month.";
+  "Don’t learn it, just use it. Sales, marketing, content, customer support, research — every AI Agent everyone else is selling you separately. Pocket Agent packages all of them into one workspace. No coding. No scary tech. $37 a month.";
 
 const OG_TITLE = "Every AI Agent your business needs. Packaged.";
 
 export const metadata: Metadata = {
-  title: "Pocket Agent — Every AI Agent Your Business Needs. Packaged.",
+  title: "Pocket Agent — Don’t learn it, just use it.",
   description: DESCRIPTION,
   metadataBase: new URL("https://aipocketagent.com"),
   alternates: { canonical: "https://aipocketagent.com" },
@@ -357,7 +357,11 @@ export default function HomePage() {
               <PrimaryCTA href="/start?tier=starter" label="Start for $37" />
               <SecondaryCTA href="/pricing" label="See how it works" />
             </div>
-            <p className="mt-6 text-sm text-slate-400">
+            {/* The locked PA tagline (2026-07-08) — the anti-learning-curve wedge in five words. */}
+            <p className="mt-6 text-base font-semibold text-slate-100">
+              Don&rsquo;t learn it, just use it.
+            </p>
+            <p className="mt-2 text-sm text-slate-400">
               Generic AI starts from zero. Pocket Agent starts from your business.
             </p>
           </div>
@@ -458,7 +462,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-3xl px-6 py-20">
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 sm:p-10">
               <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                You&rsquo;re not buying software. You&rsquo;re skipping a year.
+                You&rsquo;re not buying software. You&rsquo;re skipping 12 months of learning.
               </h2>
               <div className="mt-5 space-y-4 text-[15px] leading-relaxed text-slate-300">
                 <p>

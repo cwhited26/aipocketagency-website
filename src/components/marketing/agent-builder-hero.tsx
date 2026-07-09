@@ -27,6 +27,7 @@ import {
   type ComposeData,
   type ComposePreview,
 } from "@/lib/marketing/compose-preview";
+import { saveAgentIdea } from "@/lib/marketing/agent-idea-store";
 import { pocArtSrc } from "@/lib/personas/poc-variants";
 
 const PLACEHOLDERS = [
@@ -108,6 +109,9 @@ export function AgentBuilderHero({ composeData }: { composeData: ComposeData }) 
       );
       return;
     }
+    // Anonymous: nothing is created. The idea is captured so signup can finish what the
+    // visitor started — it prefills the Agent Builder on their first signed-in visit.
+    if (trimmed) saveAgentIdea(trimmed);
     const query = trimmed
       ? `intent=agent-builder&spec=${encodeURIComponent(trimmed)}`
       : "intent=agent-builder";

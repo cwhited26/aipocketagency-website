@@ -31,6 +31,9 @@ const BodySchema = z.object({
   funnel: z.boolean().optional(),
   // Encoded quiz answers ("0.2.1"). Bounded so a crafted body can't bloat the Stripe call.
   answers: z.string().max(64).optional(),
+  // The agent the buyer described in the Agent Builder before signup (intent carry).
+  // Bounded to Stripe's 500-char metadata value limit.
+  agent_spec: z.string().max(500).optional(),
 });
 
 type CheckoutResult =
@@ -51,6 +54,7 @@ async function createPocketAgentCheckout(args: {
   vault: boolean;
   funnel: boolean;
   funnelAnswers: string;
+  agentSpec: string;
 }): Promise<CheckoutResult> {
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) {
@@ -76,6 +80,7 @@ async function createPocketAgentCheckout(args: {
     vault: args.vault,
     funnel: args.funnel,
     funnelAnswers: args.funnelAnswers,
+    agentSpec: args.agentSpec,
   });
 
   const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -121,6 +126,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   const vault = parsed.data.vault === true;
   const funnel = parsed.data.funnel === true;
   const funnelAnswers = parsed.data.answers ?? "";
+  const agentSpec = parsed.data.agent_spec ?? "";
 
   // Read auth from session cookie — null when not logged in (still allowed).
   const supabase = createClient();
@@ -139,6 +145,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     vault,
     funnel,
     funnelAnswers,
+    agentSpec,
   });
 
   if (!checkout.ok) {

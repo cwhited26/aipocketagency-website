@@ -66,12 +66,21 @@ export default async function StartPage({
     redirect(spec ? `/agents?spec=${encodeURIComponent(spec)}#compose` : "/agents#compose");
   }
 
+  // Anonymous agent-builder arrival: the typed spec rides the query string. Hand it to the
+  // order form so the buyer sees their idea is coming with them (and it survives the Stripe
+  // round-trip via the client-side capture + checkout metadata).
+  const agentSpec =
+    searchParams.intent === "agent-builder" && typeof searchParams.spec === "string"
+      ? searchParams.spec.slice(0, 4_000)
+      : "";
+
   return (
     <StartForm
       defaultEmail={user?.email ?? ""}
       tier={tier}
       tierLabel={FUNNEL_TIER_LABEL[tier]}
       priceUsd={TIER_PRICE_USD_MONTHLY[tier]}
+      agentSpec={agentSpec}
     />
   );
 }
