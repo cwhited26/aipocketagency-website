@@ -73,7 +73,11 @@ export type CostFeatureSlug =
   // Zero-cost accounting rows for the PA-POS-31 conversion-nudge funnel: one row per nudge
   // impression + one per click-through, metadata.action distinguishes them. backend 'vercel',
   // cost 0 — the event exists so nudge→upgrade conversion is measurable, not for billing.
-  | "project_pass_nudge";
+  | "project_pass_nudge"
+  // One row per GHL API call (GHL Agencies SPEC v1 §5.6): backend 'ghl', cost 0 (the agency's
+  // own GHL plan covers the API) — the event exists for tier enforcement + observability, with
+  // endpoint / location_id / outcome / latency_ms in metadata.
+  | "ghl_connector";
 
 /**
  * Which entitlement paid for this usage (PA-POS-31 cost analytics): the owner's tier, an active

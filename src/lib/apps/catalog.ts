@@ -30,6 +30,9 @@ export const APP_IDS = [
   "imessage-channel",
   "whatsapp-channel",
   "voice",
+  "ghl-create-contact",
+  "ghl-send-sms",
+  "ghl-book-appointment",
 ] as const;
 
 export type AppId = (typeof APP_IDS)[number];
@@ -339,6 +342,42 @@ export const APP_CATALOG: AppDef[] = [
       "Poc answers your phone. And makes calls when you ask. Anything a call would change — an email, a booking — waits for your approval, and every call leaves a full transcript.",
     blurb: "Poc on the phone — answering yours, making calls for you, approvals intact.",
     tag: "Wherever You Work",
+    tagColor: "cyan",
+  },
+  {
+    id: "ghl-create-contact",
+    slashCommand: "ghl-create-contact",
+    href: "/app/integrations/ghl",
+    label: "GHL Contacts",
+    shortLabel: "GHL Contacts",
+    description:
+      "Add a contact to any client's GHL sub-account. PA drafts the record — name, email, phone, tags — and stages it in Mission Control with the client's name on the card. Approve to fire; nothing lands in a client's CRM without you.",
+    blurb: "Add a contact to a client's GHL sub-account — you approve before it lands.",
+    tag: "GHL",
+    tagColor: "cyan",
+  },
+  {
+    id: "ghl-send-sms",
+    slashCommand: "ghl-send-sms",
+    href: "/app/integrations/ghl",
+    label: "GHL Messages (SMS)",
+    shortLabel: "GHL SMS",
+    description:
+      "Send an SMS to a contact in any client's GHL sub-account. PA drafts the message, the card shows the client and the full text, and you approve before it sends. Every send is logged per client.",
+    blurb: "Draft an SMS to a client's contact — the card shows the client and the text.",
+    tag: "GHL",
+    tagColor: "cyan",
+  },
+  {
+    id: "ghl-book-appointment",
+    slashCommand: "ghl-book-appointment",
+    href: "/app/integrations/ghl",
+    label: "GHL Appointments",
+    shortLabel: "GHL Booking",
+    description:
+      "Book an appointment on any client's GHL calendar. PA stages the slot — calendar, contact, start time — with the client named on the card. Approve to book.",
+    blurb: "Book a slot on a client's GHL calendar — approve to book.",
+    tag: "GHL",
     tagColor: "cyan",
   },
 ];

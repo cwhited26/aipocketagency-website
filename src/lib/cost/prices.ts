@@ -33,7 +33,10 @@ export type CostBackend =
   | "twilio+elevenlabs+openai"
   // The composite backend of a Voice v2 realtime call summary (PA-CHAN-16): Twilio leg + OpenAI
   // Realtime audio, computed in lib/channels/voice/realtime/cost.ts with an explicit costMicroCents.
-  | "twilio+openai-realtime";
+  | "twilio+openai-realtime"
+  // GoHighLevel API (GHL Connector). No per-call dollar cost — the agency's own GHL plan covers
+  // the API — so every row is written with an explicit costMicroCents of 0, never priced here.
+  | "ghl";
 
 /** The usage payload a metered call returns. Every field optional — each backend reads what it needs. */
 export type CostUsage = {

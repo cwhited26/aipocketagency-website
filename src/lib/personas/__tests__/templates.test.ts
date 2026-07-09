@@ -12,7 +12,7 @@ import { PERSONA_SECTION_KEYS } from "../spec";
 import { isAppId } from "@/lib/apps/catalog";
 
 describe("template catalog", () => {
-  it("ships the 5 launch templates plus the 7 role templates", () => {
+  it("ships the 5 launch templates, the 7 role templates, and the GHL Operator", () => {
     const keys = listTemplates().map((t) => t.key).sort();
     expect(keys).toEqual(
       [
@@ -20,6 +20,7 @@ describe("template catalog", () => {
         "content",
         "email",
         "followup",
+        "ghl-operator",
         "lead-research",
         "ops-cos",
         "sales",

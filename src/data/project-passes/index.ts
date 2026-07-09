@@ -20,7 +20,8 @@ export type PassAppSlug =
   | "browser_agent"
   | "idea_engine"
   | "roundtable"
-  | "agent_builder";
+  | "agent_builder"
+  | "ghl_connector";
 
 export type ProjectPassDef = {
   appSlug: PassAppSlug;
@@ -103,6 +104,22 @@ export const PROJECT_PASS_CATALOG: readonly ProjectPassDef[] = [
     windowLabel: "7 days",
     personalBrainCents: 3_000,
     businessAgentCents: 2_200,
+  },
+  // GHL Connector proof-of-concept pass (PA-GHL-6): $50 / 7 days, ONE client sub-account.
+  // Priced flat across renter tiers — the pass exists for Business Agent ($97) to prove the
+  // connector on one client before upgrading to Pro+/Studio+; the 1-client cap is enforced in
+  // lib/ghl/entitlement.ts, not here.
+  {
+    appSlug: "ghl_connector",
+    label: "GHL Connector",
+    checkoutName: "Project Pass — GHL Connector, 7 days, 1 client",
+    appHref: "/app/integrations/ghl",
+    kind: "time",
+    windowDays: 7,
+    runBudget: null,
+    windowLabel: "7 days",
+    personalBrainCents: 5_000,
+    businessAgentCents: 5_000,
   },
 ] as const;
 

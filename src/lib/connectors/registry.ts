@@ -47,6 +47,7 @@ import {
   type DeepgramExecuteResult,
 } from "./deepgram/actions";
 import { executeBrowserAction, BROWSER_CONNECTOR, type BrowserExecuteResult } from "@/lib/browser";
+import { executeGhlAction, GHL_CONNECTOR, type GhlExecuteResult } from "@/lib/ghl/writes";
 
 // All in-process executors share the same terminal result shape ({ok,summary,data} |
 // {ok,status,error}); the union keeps that explicit as more connectors register.
@@ -62,7 +63,8 @@ export type ConnectorExecuteResult =
   | BrainExecuteResult
   | RecallAiExecuteResult
   | DeepgramExecuteResult
-  | BrowserExecuteResult;
+  | BrowserExecuteResult
+  | GhlExecuteResult;
 
 export type ExecuteConnectorActionInput = {
   connector: string;
@@ -200,6 +202,18 @@ export async function executeConnectorAction(
       action: input.action,
       payload: input.payload,
       approvedManually: true,
+    });
+  }
+  if (input.connector === GHL_CONNECTOR) {
+    // GHL Connector (GHL Agencies SPEC v1 §5.3): the executor re-resolves the entitlement (tier
+    // or Project Pass) and requires the payload's locationId to be one of THIS owner's synced
+    // client sub-accounts before any token is minted — the multi-tenant gate runs at execute
+    // time, not just staging. All three v1 actions are always_gated (Infinity trust window).
+    return executeGhlAction({
+      userId: input.userId,
+      action: input.action,
+      payload: input.payload,
+      requestId: input.requestId ?? null,
     });
   }
   if (input.connector === SUPABASE_CONNECTOR) {

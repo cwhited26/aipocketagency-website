@@ -212,6 +212,46 @@ export function personaMemoryCap(tier: Tier): number | null {
   return PERSONA_MEMORY_CAPS[tier];
 }
 
+// ── GHL Connector gating (Pocket Agent for GHL Agencies SPEC v1 §6, PA-GHL-6) ────────────────
+
+/**
+ * How many GHL client sub-accounts each tier syncs (PA-GHL-6, Option B pricing lock). The tier
+ * ladder gains a per-client-cap axis instead of a separate Agency SKU: Pro+ runs 3 clients,
+ * Studio 10, Studio+ 25, Enterprise uncapped (null). Starter/Pro carry 0 — the connector is
+ * locked below Pro+, with the $50 / 7-day GHL Project Pass renting a 1-client proof-of-concept
+ * to Business Agent (the pass cap lives in lib/ghl/entitlement.ts, not this record).
+ * Enforcement is a soft cap in syncGhlLocations: locations past the cap register as
+ * sync_state='over_cap' and the surface shows the upgrade math — education, never a hard error
+ * (the PA-POS-31 posture).
+ */
+export const GHL_CLIENT_CAPS: Record<Tier, number | null> = {
+  starter: 0,
+  pro: 0,
+  pro_plus: 3,
+  studio: 10,
+  studio_plus: 25,
+  enterprise: null,
+};
+
+/** This tier's GHL client sub-account cap (null = uncapped, 0 = connector locked). */
+export function ghlClientCap(tier: Tier): number | null {
+  return GHL_CLIENT_CAPS[tier];
+}
+
+/** Does the tier itself include the GHL Connector (no Project Pass needed)? Pro+ and up. */
+export function tierAllowsGhlConnector(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("pro_plus");
+}
+
+/**
+ * Should this tier even SEE the GHL Connector surface? Business Agent (pro) and up — pro is
+ * Project Pass eligible ($50 / 7 days, 1 client), so the card renders with the pass offer.
+ * Starter (Personal Brain) gets the locked card with the upgrade CTA only.
+ */
+export function tierCanSeeGhlConnector(tier: Tier): boolean {
+  return tierRank(tier) >= tierRank("pro");
+}
+
 // ── Persona Soul System gating (Pocket_Agent_Soul_System_SPEC_v1 §Tier gating) ───────────────
 //
 // The Soul learns HOW to work with this owner (style, preferences, boundaries). Behaviour by tier:

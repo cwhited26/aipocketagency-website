@@ -16,6 +16,7 @@ import {
   tierAllowsAgentBuilder,
   tierAllowsBrowserAgent,
   tierAllowsDecisionRoundtable,
+  tierAllowsGhlConnector,
   tierAllowsIdeaEngineAutoBuild,
   tierAllowsLandingPageBuilder,
   type Tier,
@@ -56,6 +57,8 @@ export function tierIncludesApp(tier: Tier, appSlug: PassAppSlug): boolean {
       return tierAllowsDecisionRoundtable(tier);
     case "agent_builder":
       return tierAllowsAgentBuilder(tier);
+    case "ghl_connector":
+      return tierAllowsGhlConnector(tier);
   }
 }
 

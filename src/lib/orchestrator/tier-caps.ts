@@ -111,6 +111,14 @@ export const CONNECTOR_ACTION_TRUST_OVERRIDES: Readonly<Record<string, number>> 
   // action (form submit, purchase, delete, auth, new domain). Every one is a human tap,
   // forever — no approval streak ever unlocks generic auto-approve for it.
   "browser_agent:job_step": Number.POSITIVE_INFINITY,
+  // GHL Connector v1 (GHL Agencies SPEC v1 §5.3): every write fires against a PAYING CLIENT's
+  // sub-account — the blast radius is the agency's client relationship, not the owner's own
+  // data. The SPEC's auto-approve story is per-Skill-per-CLIENT, which this per-(connector,
+  // action) ladder can't express (the Modal dangerous-command precedent), so all three v1
+  // actions are pinned unreachable until the Ship 5 per-client gate exists.
+  "ghl:create_contact": Number.POSITIVE_INFINITY,
+  "ghl:send_sms": Number.POSITIVE_INFINITY,
+  "ghl:book_appointment": Number.POSITIVE_INFINITY,
 };
 
 /** The trust window for a specific (connector, action), honoring the money/build overrides. */

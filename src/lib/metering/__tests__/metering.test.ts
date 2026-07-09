@@ -284,6 +284,9 @@ describe("catalogs", () => {
       idea_engine: [5_000, 3_500],
       roundtable: [1_000, 700],
       agent_builder: [3_000, 2_200],
+      // GHL Connector pass is $50 flat at every renter tier (PA-GHL-6 — the pass exists for
+      // Business Agent's 1-client proof-of-concept, so there's no lower-tier discount split).
+      ghl_connector: [5_000, 5_000],
     };
     for (const def of PROJECT_PASS_CATALOG) {
       const [personal, business] = expected[def.appSlug];
