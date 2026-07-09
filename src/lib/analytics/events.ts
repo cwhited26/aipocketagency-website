@@ -93,12 +93,19 @@ export const FUNNEL_EVENTS = [
   "funnel_checkout_completed",
 ] as const;
 
+/** GHL Agencies vertical — the /for/ghl-agency design-partner waitlist surface (SPEC v1 §9). */
+export const GHL_AGENCY_EVENTS = [
+  "ghl_agency_page_viewed",
+  "ghl_waitlist_submitted",
+] as const;
+
 export const ANALYTICS_EVENTS = [
   ...ACTIVATION_EVENTS,
   ...APP_USAGE_EVENTS,
   ...MONETIZATION_EVENTS,
   ...RETENTION_EVENTS,
   ...FUNNEL_EVENTS,
+  ...GHL_AGENCY_EVENTS,
 ] as const;
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
