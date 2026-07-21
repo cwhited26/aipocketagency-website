@@ -22,6 +22,9 @@ import { acceptAgentBuildProposal } from "@/lib/agent-builder/approve";
 import { AGENT_BUILDER_PROPOSAL_KIND } from "@/lib/agent-builder/types";
 import { approveSignalProposal } from "@/lib/signal-catcher/apply";
 import { SIGNAL_CATCHER_PROPOSAL_KIND } from "@/lib/signal-catcher/types";
+import { executeLinkedinScoutSend } from "@/lib/linkedin-scout/execute";
+import { LINKEDIN_SCOUT_SEND_KIND, type LinkedinScoutSendPayload } from "@/lib/linkedin-scout/queue";
+import { maybeProposeLinkedinSkills } from "@/lib/linkedin-scout/skills";
 import { acceptMemoryProposal } from "@/lib/persona-memory/write";
 import { getCurrentTier } from "@/lib/personas/tier-caps";
 import { isMemoryPartition, isMemoryTier } from "@/lib/persona-memory/types";
@@ -268,6 +271,32 @@ export async function POST(
       return NextResponse.json({ error: resolved.error }, { status: resolved.status });
     }
     return NextResponse.json({ status: "approved", ritualId: created.ritualId });
+  }
+
+  // LinkedIn Scout send (SPEC §4.6): approving the card dispatches the send to the Browser Agent on
+  // the owner's OWN LinkedIn tab — never auto-sent, one card, one tap (SPEC §3, §11). When the
+  // owner-tab Browser Agent primitive isn't wired yet, the bridge advances the lifecycle + stamps the
+  // draft and reports receiver_missing rather than crashing (Idea Engine bridge precedent).
+  if (item.kind === LINKEDIN_SCOUT_SEND_KIND) {
+    const outcome = await executeLinkedinScoutSend(
+      user.id,
+      item.payload as unknown as LinkedinScoutSendPayload,
+    );
+    if (!outcome.ok) {
+      return NextResponse.json({ error: outcome.error }, { status: outcome.status });
+    }
+    const resolved = await resolveInboxItem(id, "approved", user.id);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+    }
+    // Best-effort LEARN-phase Skill proposal once acceptance data accrues — never undoes the approval.
+    await maybeProposeLinkedinSkills(user.id).catch(() => ({ proposed: [], skipped: [] }));
+    return NextResponse.json({
+      status: "approved",
+      sent: outcome.dispatched,
+      dispatched: outcome.dispatched,
+      ...(outcome.dispatched ? {} : { queued: true, reason: "receiver_missing" }),
+    });
   }
 
   // Idea Engine blueprint (PA-IDEA-5): an approved MVP-plan `decision` card advances the idea from

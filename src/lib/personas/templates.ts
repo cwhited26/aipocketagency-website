@@ -342,7 +342,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Keeps deals moving — finds the next prospect, drafts the outreach, and chases the quotes that have gone quiet.",
     sampleQuestion: "Draft a first outreach to a prospect who fits our best customers.",
     defaultTone: "direct",
-    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "quote", "proposal-generator", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler", "website-monitor", "channels", "sms-channel", "imessage-channel", "whatsapp-channel"],
+    defaultApps: ["email-drafter", "followups", "follow-up-sweeps", "lead-scout", "linkedin-scout", "quote", "proposal-generator", "landing-page-builder", "idea-engine", "workflow-vault", "ritual-scheduler", "website-monitor", "channels", "sms-channel", "imessage-channel", "whatsapp-channel"],
     starterPrompt: "Draft a first outreach email to a regional homebuilder who'd be a good fit.",
     fields: {
       problem:
@@ -458,7 +458,7 @@ export const TEMPLATES: PersonaTemplate[] = [
       "Finds businesses that fit your best customers, sorts them by fit, and tees up who's worth reaching out to.",
     sampleQuestion: "Find roofers near Knoxville without a website and sort them by fit.",
     defaultTone: "direct",
-    defaultApps: ["lead-scout", "idea-engine", "brain-map", "competitor-inspector", "browser-agent"],
+    defaultApps: ["lead-scout", "linkedin-scout", "idea-engine", "brain-map", "competitor-inspector", "browser-agent"],
     starterPrompt: "Find businesses in our area that look like our best customers and rank them by fit.",
     fields: {
       problem:

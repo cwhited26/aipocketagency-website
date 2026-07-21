@@ -36,7 +36,8 @@ export type InboxCardKind =
   | "browser_action_approval"
   | "website_alert"
   | "agent_builder_proposal"
-  | "signal_catcher_ritual_proposal";
+  | "signal_catcher_ritual_proposal"
+  | "linkedin_scout_send";
 export type InboxCardStatus = "pending" | "approved" | "rejected" | "expired" | "failed";
 
 export type TriageDetail = {

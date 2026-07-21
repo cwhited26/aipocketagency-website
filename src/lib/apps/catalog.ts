@@ -14,6 +14,7 @@ export const APP_IDS = [
   "youtube",
   "podcasts",
   "lead-scout",
+  "linkedin-scout",
   "follow-up-sweeps",
   "landing-page-builder",
   "idea-engine",
@@ -146,6 +147,18 @@ export const APP_CATALOG: AppDef[] = [
     description:
       "New: subscribe to a vertical pack and PA runs the full sweep + outreach loop for you — roofing, HVAC, painting, med spa, law firm, and more, each pre-tuned. Or build your own: sweep Google Maps for a category in a place (roofers near Knoxville without a website) or paste your own URLs. Either way PA sorts them by fit and drafts a first email in your voice for Approve & Send.",
     blurb: "Find businesses that fit and draft the first outreach.",
+    tag: "Finds Leads",
+    tagColor: "cyan",
+  },
+  {
+    id: "linkedin-scout",
+    slashCommand: "linkedin-scout",
+    href: "/app/apps/linkedin-scout",
+    label: "LinkedIn Scout",
+    shortLabel: "LinkedIn Scout",
+    description:
+      "Search LinkedIn by your ideal customer — role, seniority, company size, industry — and PA reads each match through the paid data you already pay for (Apollo, Clay, Common Room), never a scrape. It scores them by fit, writes a 3-line brief on each, and drafts the connection note, the day-3 message, and the day-7 follow-up in your voice. Every send waits as its own approval card; the click happens on your own logged-in LinkedIn tab, at human speed.",
+    blurb: "Research LinkedIn prospects and stage the outreach, one tap per send.",
     tag: "Finds Leads",
     tagColor: "cyan",
   },

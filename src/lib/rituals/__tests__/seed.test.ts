@@ -1,14 +1,15 @@
 // Unit tests for the ritual seed pack + the target resolver (lib/rituals/seed). Asserts the pack is the
-// 8 SPEC §10 templates, every seed's target resolves and its cron is computable, ids are unique, and
-// the resolver maps catalog Apps, known surfaces, and the unknown case correctly.
+// 8 SPEC §10 templates plus the 2 LinkedIn Scout follow-up seeds (Day-3 / Day-7), every seed's target
+// resolves and its cron is computable, ids are unique, and the resolver maps catalog Apps, known
+// surfaces, and the unknown case correctly.
 
 import { describe, expect, it } from "vitest";
 import { RITUAL_SEEDS, getSeed, resolveRitualTarget } from "../seed";
 import { cronNextRun } from "../parser";
 
 describe("RITUAL_SEEDS", () => {
-  it("ships exactly 8 templates", () => {
-    expect(RITUAL_SEEDS).toHaveLength(8);
+  it("ships the 8 base templates plus the 2 LinkedIn Scout follow-up seeds", () => {
+    expect(RITUAL_SEEDS).toHaveLength(10);
   });
 
   it("has unique seed ids", () => {

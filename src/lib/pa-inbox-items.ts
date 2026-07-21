@@ -73,7 +73,12 @@ export type InboxKind =
   | "browser_action_approval"
   | "website_alert"
   | "agent_builder_proposal"
-  | "signal_catcher_ritual_proposal";
+  | "signal_catcher_ritual_proposal"
+  // 'linkedin_scout_send' (migration 111, LinkedIn Scout SPEC §4.4) stages ONE queued piece of
+  // LinkedIn outreach (connection note / day-3 InMail / day-7 follow-up) for one-tap approval. Approve
+  // dispatches the send to the Browser Agent on the owner's own LinkedIn tab (never auto-sent, never
+  // batched); reject drops it. Its detail lives in pa_linkedin_scout_drafts.
+  | "linkedin_scout_send";
 export type InboxStatus = "pending" | "approved" | "rejected" | "expired";
 
 export type InboxItem = {

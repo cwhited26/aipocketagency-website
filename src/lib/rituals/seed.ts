@@ -150,6 +150,28 @@ export const RITUAL_SEEDS: RitualSeed[] = [
     delivery: "inbox",
     description: "Pulls what mattered from the shows you watch into one mid-week read, so you skip the hours of audio.",
   },
+  {
+    id: "linkedin-scout-day3-followup",
+    name: "LinkedIn Scout Day-3 follow-up",
+    appSlug: "linkedin-scout",
+    cron: "0 9 * * *",
+    biWeekly: false,
+    scheduleText: "Every day at 9:00 AM",
+    delivery: "inbox",
+    description:
+      "Surfaces the prospects who accepted your connection about three days ago and stages the day-3 message for each, ready to approve.",
+  },
+  {
+    id: "linkedin-scout-day7-followup",
+    name: "LinkedIn Scout Day-7 follow-up",
+    appSlug: "linkedin-scout",
+    cron: "0 9 * * *",
+    biWeekly: false,
+    scheduleText: "Every day at 9:00 AM",
+    delivery: "inbox",
+    description:
+      "Finds the prospects whose message has gone quiet for about a week and stages the day-7 follow-up for each, one tap to send.",
+  },
 ];
 
 export function getSeed(id: string): RitualSeed | null {

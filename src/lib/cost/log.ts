@@ -73,7 +73,12 @@ export type CostFeatureSlug =
   // Zero-cost accounting rows for the PA-POS-31 conversion-nudge funnel: one row per nudge
   // impression + one per click-through, metadata.action distinguishes them. backend 'vercel',
   // cost 0 — the event exists so nudge→upgrade conversion is measurable, not for billing.
-  | "project_pass_nudge";
+  | "project_pass_nudge"
+  // LinkedIn Scout (LinkedIn Scout SPEC §7): the metered LLM work — one row per prospect brief
+  // (metadata.sub_slug 'linkedin_scout_research') and one per generated draft ('linkedin_scout_draft',
+  // both on Sonnet 4.6), plus a $0 audit row per Browser Agent execution ('linkedin_scout_execute').
+  // Enrichment API cost is on the owner's own Apollo/Clay/Common Room bill, not metered here.
+  | "linkedin_scout";
 
 /**
  * Which entitlement paid for this usage (PA-POS-31 cost analytics): the owner's tier, an active
